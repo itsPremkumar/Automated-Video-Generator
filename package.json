@@ -33,9 +33,11 @@
         "segment": "tsx src/cli.ts --segment",
         "remotion:studio": "remotion studio remotion/index.ts",
         "remotion:render": "tsx src/render.ts",
-        "test": "node src/test-generation.js"
+        "test": "node src/test-generation.js",
+        "mcp": "tsx src/mcp-server.ts"
     },
     "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.28.0",
         "@remotion/cli": "^4.0.0",
         "@remotion/media-utils": "^4.0.410",
         "@remotion/renderer": "^4.0.0",

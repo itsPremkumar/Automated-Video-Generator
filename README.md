@@ -226,16 +226,49 @@ Yes. Place your files in the `input-assets/` folder and reference them using `[V
 **How do I make YouTube Shorts or TikToks?**  
 Change the `VIDEO_ORIENTATION` environment variable in your `.env` file to `portrait` to render 9:16 videos.
 
+## 🧠 Claude AI Integration (MCP)
+
+This project ships with a built-in **Model Context Protocol (MCP) Server**, allowing **Claude Desktop**, **Claude Code**, and other MCP-compatible clients to use your video generator as a native tool.
+
+Once configured, you can simply chat with Claude:
+> *"Make me a portrait YouTube Short about space exploration using a calm male voice"*
+
+And Claude will autonomously fetch footage, generate voiceovers, render via Remotion, and return the final `.mp4` path.
+
+### Quick Start
+```json
+// Add to your claude_desktop_config.json
+{
+  "mcpServers": {
+    "automated-video-generator": {
+      "command": "npx",
+      "args": ["tsx", "src/mcp-server.ts"],
+      "cwd": "/path/to/Automated-Video-Generator"
+    }
+  }
+}
+```
+
+📖 Full setup instructions: **[CLAUDE_MCP_SETUP.md](CLAUDE_MCP_SETUP.md)**
+
+### Exposed Tools
+| Tool | Description |
+| :--- | :--- |
+| `generate_video` | Full text-to-video pipeline with all configuration options. |
+| `list_voices` | Browse available AI voice options. |
+| `list_local_assets` | See media files available for `[Visual: ...]` tags. |
+
 ---
 
 ## 🤝 Community & Support
 We welcome contributions! Please refer to our [Contributing Guidelines](CONTRIBUTING.md) to get started.
 
-Interested in automated agents? Check out our [ClawHub Publishing Guide](CLAWHUB_GUIDE.md) to use this project with OpenClaw.
+- 🤖 **Claude Users:** See our [Claude MCP Setup Guide](CLAUDE_MCP_SETUP.md)
+- 🦀 **OpenClaw Users:** See our [ClawHub Publishing Guide](CLAWHUB_GUIDE.md)
 
 <p align="center">
   Made with ❤️ by Premkumar.<br>
   Check out our <a href="CODE_OF_CONDUCT.md">Code of Conduct</a> and <a href="SECURITY.md">Security Policy</a>.
 </p>
 
-<!-- GitHub SEO Tags/Topics: text-to-video, automated-video, video-generation, remotion, edge-tts, ai-video, faceless-youtube, open-source-video-maker, ffmpeg-wrapper -->
+<!-- GitHub SEO Tags/Topics: text-to-video, automated-video, video-generation, remotion, edge-tts, ai-video, faceless-youtube, open-source-video-maker, ffmpeg-wrapper, mcp-server, claude-plugin, model-context-protocol -->

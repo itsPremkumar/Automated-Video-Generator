@@ -1,9 +1,11 @@
 {
   "name": "Automated Video Generator",
   "version": "1.0.0",
-  "description": "Powerful text-to-video pipeline using Remotion, Edge-TTS, and Pexels. Automate your YouTube Shorts, TikToks, and marketing videos.",
+  "description": "Transform text scripts into professional videos with AI voiceovers, stock footage, and Remotion rendering. Supports YouTube Shorts, TikTok, and landscape formats.",
   "icon": "video",
   "author": "Premkumar M (@itsPremkumar)",
+  "repository": "https://github.com/itsPremkumar/Automated-Video-Generator",
+  "license": "MIT",
   "components": {
     "skills": [
       {
@@ -14,6 +16,25 @@
         "name": "generate-script",
         "path": ".agent/skills/generate-script/SKILL.md"
       }
-    ]
+    ],
+    "mcp": {
+      "command": "npx",
+      "args": ["tsx", "src/mcp-server.ts"],
+      "env": ["PEXELS_API_KEY"],
+      "tools": [
+        {
+          "name": "generate_video",
+          "description": "Generate a professional video from a text script with AI voiceovers and stock footage."
+        },
+        {
+          "name": "list_voices",
+          "description": "List all available AI voice options for TTS."
+        },
+        {
+          "name": "list_local_assets",
+          "description": "List media files available in the local assets directory."
+        }
+      ]
+    }
   }
 }
