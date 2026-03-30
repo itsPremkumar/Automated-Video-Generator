@@ -59,3 +59,16 @@ These commands save time by reusing already-completed work.
 | `npm run build` | Full Process | **Fresh** (Alias for generate) |
 | `npm run resume` | Skip Existing | **Resume** (Saves time) |
 | `npm run segment` | Assembly Only | **Fix** (Stitching only) |
+
+---
+
+## 5. Configuration (JSON Script)
+
+When editing `input/input-scripts.json`, agents can use these newer properties:
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `showText` | Boolean | Set to `false` to disable on-screen subtitles. |
+| `defaultVideo` | String | Filename in `input/input-assests/` to use as a visual fallback. |
+| `orientation` | String | `portrait` or `landscape`. |
+| `voice` | String | AI voice ID (e.g., `en-US-JennyNeural`). |
