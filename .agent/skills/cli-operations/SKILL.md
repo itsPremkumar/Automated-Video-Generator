@@ -1,7 +1,7 @@
 ---
-name: cli-operations
+name: Video Generator CLI
 description: Guide for running the Video Generator CLI commands.
-version: 1.0.0
+version: 1.1.2
 metadata:
   requires:
     bins:

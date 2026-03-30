@@ -258,6 +258,11 @@ And Claude will autonomously fetch footage, generate voiceovers, render via Remo
 | `list_voices` | Browse available AI voice options. |
 | `list_local_assets` | See media files available for `[Visual: ...]` tags. |
 
+### 🦀 ClawHub AI Skills
+The Automated Video Generator project is officially available on ClawHub. You can discover and use our native skills:
+- **[Video Generator CLI](https://clawhub.ai/itspremkumar/video-gen-cli)**: High-performance command line tools for mass video production.
+- **[Video Script Generator](https://clawhub.ai/itspremkumar/video-gen-script)**: Agentic skill to turn storytelling prompts into video-ready JSON scripts.
+
 ---
 
 ## 🤝 Community & Support

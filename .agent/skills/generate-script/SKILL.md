@@ -1,7 +1,7 @@
 ---
-name: generate-script
+name: Video Script Generator
 description: How to generate video scripts for the Video Generator from user prompts.
-version: 1.0.0
+version: 1.1.2
 ---
 
 # Video Script Generation Skill
