@@ -8,7 +8,7 @@ output/
 *.wav
 .DS_Store
 .remotion/
-input/input-assests/*
-!input/input-assests/.gitignore
+# input/input-assests/*
+# !input/input-assests/.gitignore
 
 public/visuals/
