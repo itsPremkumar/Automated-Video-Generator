@@ -34,6 +34,7 @@ export interface SingleSceneProps {
     scene: Scene;
     isFirstScene: boolean;
     isLastScene: boolean;
+    showText?: boolean;
     [key: string]: unknown;  // Allow additional props for Remotion compatibility
 }
 
@@ -48,6 +49,7 @@ export const SingleSceneVideo: React.FC<SingleSceneProps> = ({
     scene,
     isFirstScene,
     isLastScene,
+    showText = true,
 }) => {
     const { fps, durationInFrames } = useVideoConfig();
     const frame = useCurrentFrame();
@@ -212,42 +214,44 @@ export const SingleSceneVideo: React.FC<SingleSceneProps> = ({
             )}
 
             {/* Text Overlay */}
-            <div
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    padding: 40,
-                }}
-            >
+            {showText && (
                 <div
                     style={{
-                        textAlign: 'center',
-                        color: '#fff',
-                        maxWidth: '85%',
-                        opacity: combinedTextOpacity,
-                        transform: `translateY(${textSlide}px)`,
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        padding: 40,
                     }}
                 >
-                    <h1
+                    <div
                         style={{
-                            fontSize: 52,
-                            fontWeight: 700,
-                            lineHeight: 1.4,
-                            textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 4px 40px rgba(0,0,0,0.5)',
-                            letterSpacing: '-0.5px',
-                            fontFamily: 'system-ui, -apple-system, sans-serif',
+                            textAlign: 'center',
+                            color: '#fff',
+                            maxWidth: '85%',
+                            opacity: combinedTextOpacity,
+                            transform: `translateY(${textSlide}px)`,
                         }}
                     >
-                        {scene.voiceoverText}
-                    </h1>
+                        <h1
+                            style={{
+                                fontSize: 52,
+                                fontWeight: 700,
+                                lineHeight: 1.4,
+                                textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 4px 40px rgba(0,0,0,0.5)',
+                                letterSpacing: '-0.5px',
+                                fontFamily: 'system-ui, -apple-system, sans-serif',
+                            }}
+                        >
+                            {scene.voiceoverText}
+                        </h1>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Audio */}
             {scene.audioPath && scene.audioPath.endsWith('.mp3') && (

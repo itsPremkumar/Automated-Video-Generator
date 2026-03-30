@@ -4,6 +4,7 @@
     "title": "Welcome to Automation",
     "orientation": "portrait",
     "voice": "en-US-JennyNeural",
+     "showText": false,
     "script": "[Visual: futuristic city neon night] Welcome to the future of content creation. [Visual: typing on computer keyboard] With just a few lines of text, you can automate your entire channel."
   }
 ]

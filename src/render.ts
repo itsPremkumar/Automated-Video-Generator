@@ -30,6 +30,7 @@ interface SceneData {
     style: string;
     orientation?: 'portrait' | 'landscape';
     title?: string;
+    showText?: boolean;
 }
 
 /**
@@ -132,6 +133,7 @@ export const renderVideo = async (outputDir: string = path.join(process.cwd(), '
                     scene: firstScene,
                     isFirstScene: true,
                     isLastScene: false,
+                    showText: sceneData.showText !== false,
                 },
             });
 
@@ -148,6 +150,7 @@ export const renderVideo = async (outputDir: string = path.join(process.cwd(), '
                     scene: firstScene,
                     isFirstScene: true,
                     isLastScene: false,
+                    showText: sceneData.showText !== false,
                 },
             });
 
@@ -228,6 +231,7 @@ export const renderVideo = async (outputDir: string = path.join(process.cwd(), '
                         scene,
                         isFirstScene,
                         isLastScene,
+                        showText: sceneData.showText !== false,
                     },
                 });
 
@@ -246,6 +250,7 @@ export const renderVideo = async (outputDir: string = path.join(process.cwd(), '
                         scene,
                         isFirstScene,
                         isLastScene,
+                        showText: sceneData.showText !== false,
                     },
                     crf: 18,
                     timeoutInMilliseconds: 300000,  // 5 min per scene max

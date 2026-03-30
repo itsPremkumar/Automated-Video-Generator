@@ -15,6 +15,8 @@ interface VideoJob {
     settings?: any;
     orientation?: 'portrait' | 'landscape';
     voice?: string;
+    showText?: boolean;
+    defaultVideo?: string;
 }
 
 function parseArgs() {
@@ -141,7 +143,9 @@ async function main() {
             const result = await generateVideo(job.script, jobOutputDir, {
                 orientation: jobOrientation as 'portrait' | 'landscape',
                 voice: job.voice,
-                title: job.title
+                title: job.title,
+                showText: job.showText !== false,
+                defaultVideo: job.defaultVideo
             });
 
             if (result.success) {

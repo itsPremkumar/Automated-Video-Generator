@@ -41,6 +41,25 @@ You can mix both in a single script:
 
 ---
 
+## 🛡️ Global Default Video Fallback
+The system supports a safety fallback to ensure your videos always have visuals, even if the script keywords return no results from the APIs.
+
+### 📝 How to Configure
+You can define a `defaultVideo` property inside your job config within `input-scripts.json`.
+
+**Example:**
+```json
+{
+  "title": "My Video",
+  "defaultVideo": "fallback.mp4"
+}
+```
+
+### ⚙️ How it Works
+1.  **Hierarchy**: The system first tries the `[Visual: ...]` tag or searches Pexels/Pixabay for a match.
+2.  **Fallback Trigger**: If no visual is found and no API results are returned, the system looks for the file specified in `defaultVideo` inside `input/input-assests/`.
+3.  **Default Behavior**: If you do not provide a `defaultVideo` config, the system will automatically look for a file named `default.mp4` in your assets folder as a last resort.
+
 ## 🛠️ Supported File Types
 - **Images**: `.jpg`, `.jpeg`, `.png`, `.webp`
 - **Videos**: `.mp4`, `.mov`, `.webm`, `.m4v`

@@ -97,6 +97,8 @@ Every job object supports the following configuration properties, allowing you t
 | `script` | String | Yes | The narrative content, including `[Visual: ...]` tags. |
 | `orientation` | String | No | Output format. Options: `landscape` (16:9) or `portrait` (9:16 Shorts/TikToks). |
 | `voice` | String | No | AI Voice ID to override the default `.env` setting. |
+| `showText` | Boolean | No | Toggle on-screen text display. Defaults to `true`. |
+| `defaultVideo` | String | No | Local filename (in `input/input-assests/`) used if no script visual is found. |
 
 #### 🗣️ Available AI Voices
 You have access to several high-quality neural voices natively supported by the TTS engine:
@@ -128,6 +130,13 @@ You can include multiple jobs in the `input-scripts.json` array to batch-generat
     "orientation": "landscape",
     "voice": "en-US-GuyNeural",
     "script": "[Visual: intro.mp4] Welcome to my vlog! [Visual: beach-photo.jpg] The weather today is absolutely perfect."
+  },
+  {
+    "id": "no-text-branding",
+    "title": "Cinematic Visuals",
+    "script": "[Visual: abstract technology] No subtitles on this one.",
+    "showText": false,
+    "defaultVideo": "brand_fallback.mp4"
   }
 ]
 ```

@@ -21,10 +21,13 @@ interface GenerationOptions {
     /** Output video orientation */
     orientation?: 'portrait' | 'landscape';
     /** Voice for TTS */
-    /** Voice for TTS */
     voice?: string;
     /** Video Title */
     title?: string;
+    /** Show Text */
+    showText?: boolean;
+    /** Default Video Fallback */
+    defaultVideo?: string;
 }
 
 // console.log('\n🎬 [VIDEO-GEN] Module loaded');
@@ -38,7 +41,7 @@ export async function generateVideo(
     outputDir: string = './output',
     options: GenerationOptions = {}
 ): Promise<GenerationResult> {
-    const { onProgress, orientation = 'portrait', voice, title } = options;
+    const { onProgress, orientation = 'portrait', voice, title, showText = true, defaultVideo = 'default.mp4' } = options;
     const totalStartTime = Date.now();
 
     // console.log('\n');
@@ -189,6 +192,31 @@ export async function generateVideo(
                         // console.log(`⚠️ [SCENE ${i + 1}] No visual found`);
                     }
                 }
+
+                // --- DEFAULT VIDEO FALLBACK ---
+                if (!visual) {
+                    const fallbackPathInput = path.join(process.cwd(), 'input', 'input-assests', defaultVideo);
+                    const fallbackPathVisuals = path.join(visualsDir, defaultVideo);
+                    
+                    // console.log(`⚠️ [SCENE ${i + 1}] Attempting default video fallback: ${defaultVideo}`);
+                    if (fs.existsSync(fallbackPathInput)) {
+                        if (!fs.existsSync(fallbackPathVisuals)) {
+                            fs.copyFileSync(fallbackPathInput, fallbackPathVisuals);
+                        }
+                        visual = {
+                            type: 'video',
+                            url: `local://${defaultVideo}`,
+                            width: orientation === 'landscape' ? 1920 : 1080,
+                            height: orientation === 'landscape' ? 1080 : 1920,
+                            localPath: `visuals/${defaultVideo}`,
+                        };
+                        visual.videoDuration = getVideoDuration(fallbackPathVisuals);
+                        // console.log(`✅ [SCENE ${i + 1}] Fallback successful`);
+                    } else {
+                        // console.warn(`❌ [SCENE ${i + 1}] Default video ${defaultVideo} not found in input-assests`);
+                    }
+                }
+
                 visuals[i] = visual;
             } catch (err: any) {
                 // console.error(`❌ [SCENE ${i + 1}] Error fetching visual: ${err.message}`);
@@ -266,6 +294,7 @@ export async function generateVideo(
             style: parsed.videoStyle,
             orientation,
             title,
+            showText,
         };
 
         // Ensure output directory exists

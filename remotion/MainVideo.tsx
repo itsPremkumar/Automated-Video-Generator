@@ -32,6 +32,7 @@ interface VideoData {
     scenes: Scene[];
     totalDuration: number;
     style: string;
+    showText?: boolean;
 }
 
 // Transition duration in frames
@@ -79,6 +80,7 @@ export const MainVideo: React.FC<{ sceneData: VideoData }> = ({
                         <SceneComponent
                             scene={scene}
                             durationInFrames={sceneDurationInFrames}
+                            showText={videoData.showText !== false}
                         />
                         {scene.audioPath && scene.audioPath.endsWith('.mp3') && (
                             (() => {
@@ -106,9 +108,10 @@ export const MainVideo: React.FC<{ sceneData: VideoData }> = ({
 interface SceneProps {
     scene: Scene;
     durationInFrames: number;
+    showText?: boolean;
 }
 
-const SceneComponent: React.FC<SceneProps> = ({ scene, durationInFrames }) => {
+const SceneComponent: React.FC<SceneProps> = ({ scene, durationInFrames, showText = true }) => {
     // console.log(`SceneComponent: Rendered scene ${scene.sceneNumber}`, { scene, durationInFrames });
     const frame = useCurrentFrame();
     const hasLocalVideo = scene.visual?.localPath;
@@ -297,42 +300,44 @@ const SceneComponent: React.FC<SceneProps> = ({ scene, durationInFrames }) => {
             )}
 
             {/* Text Overlay */}
-            <div
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    padding: 40,
-                }}
-            >
+            {showText && (
                 <div
                     style={{
-                        textAlign: 'center',
-                        color: '#fff',
-                        maxWidth: '85%',
-                        opacity: combinedTextOpacity,
-                        transform: `translateY(${textSlide}px)`,
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        padding: 40,
                     }}
                 >
-                    <h1
+                    <div
                         style={{
-                            fontSize: 52,
-                            fontWeight: 700,
-                            lineHeight: 1.4,
-                            textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 4px 40px rgba(0,0,0,0.5)',
-                            letterSpacing: '-0.5px',
-                            fontFamily: 'system-ui, -apple-system, sans-serif',
+                            textAlign: 'center',
+                            color: '#fff',
+                            maxWidth: '85%',
+                            opacity: combinedTextOpacity,
+                            transform: `translateY(${textSlide}px)`,
                         }}
                     >
-                        {scene.voiceoverText}
-                    </h1>
+                        <h1
+                            style={{
+                                fontSize: 52,
+                                fontWeight: 700,
+                                lineHeight: 1.4,
+                                textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 4px 40px rgba(0,0,0,0.5)',
+                                letterSpacing: '-0.5px',
+                                fontFamily: 'system-ui, -apple-system, sans-serif',
+                            }}
+                        >
+                            {scene.voiceoverText}
+                        </h1>
+                    </div>
                 </div>
-            </div>
+            )}
         </AbsoluteFill>
     );
 };
