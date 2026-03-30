@@ -4,6 +4,13 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { execSync } from 'child_process';
 import { cleanupAssets } from './lib/cleaner';
+import { logError, logInfo, logWarn, resolveProjectPath, writeProgress } from './runtime';
+
+const console = {
+    log: (...args: unknown[]) => logInfo(...args),
+    warn: (...args: unknown[]) => logWarn(...args),
+    error: (...args: unknown[]) => logError(...args),
+};
 
 console.log('\n🎥 [RENDER] Module loaded (Segmented Mode)');
 console.log(`🎥 [RENDER] Working directory: ${process.cwd()}`);
@@ -37,7 +44,7 @@ interface SceneData {
  * Segmented Video Renderer
  * Renders video scene-by-scene for memory efficiency and crash recovery
  */
-export const renderVideo = async (outputDir: string = path.join(process.cwd(), 'output')) => {
+export const renderVideo = async (outputDir: string = resolveProjectPath('output')) => {
     const totalStartTime = Date.now();
 
     console.log('\n');
@@ -82,7 +89,7 @@ export const renderVideo = async (outputDir: string = path.join(process.cwd(), '
         console.log('╚══════════════════════════════════════════╝');
 
         const bundleStart = Date.now();
-        const entryPoint = path.join(process.cwd(), 'remotion', 'index.ts');
+        const entryPoint = resolveProjectPath('remotion', 'index.ts');
 
         if (!fs.existsSync(entryPoint)) {
             throw new Error(`Entry point not found: ${entryPoint}`);
@@ -197,7 +204,7 @@ export const renderVideo = async (outputDir: string = path.join(process.cwd(), '
             try {
                 // SAFETY CHECK: Ensure visual asset exists
                 if (scene.visual && scene.visual.localPath) {
-                    const absVisualPath = path.join(process.cwd(), 'public', scene.visual.localPath);
+                    const absVisualPath = resolveProjectPath('public', scene.visual.localPath);
                     if (!fs.existsSync(absVisualPath)) {
                         console.warn(`\n   ⚠️ [WARNING] Visual asset missing: ${scene.visual.localPath}`);
                         console.warn(`   ⚠️ Switching to fallback background for this scene.`);
@@ -212,7 +219,7 @@ export const renderVideo = async (outputDir: string = path.join(process.cwd(), '
                     // The scene-data.json usually has absolute paths for audio
                     let absAudioPath = scene.audioPath;
                     if (!path.isAbsolute(absAudioPath)) {
-                        absAudioPath = path.join(process.cwd(), 'public', scene.audioPath);
+                        absAudioPath = resolveProjectPath('public', scene.audioPath);
                     }
 
                     if (!fs.existsSync(absAudioPath)) {
@@ -260,7 +267,7 @@ export const renderVideo = async (outputDir: string = path.join(process.cwd(), '
                     },
                     onProgress: ({ progress }) => {
                         const percent = Math.round(progress * 100);
-                        process.stdout.write(`\r   ⏳ Progress: ${percent}%`);
+                        writeProgress(`\r   ⏳ Progress: ${percent}%`);
                     }
                 });
 
@@ -411,8 +418,8 @@ export const renderVideo = async (outputDir: string = path.join(process.cwd(), '
 };
 
 const runCleanup = async (bundleLocation?: string) => {
-    const videoDir = path.join(process.cwd(), 'public', 'videos');
-    const audioDir = path.join(process.cwd(), 'public', 'audio');
+    const videoDir = resolveProjectPath('public', 'videos');
+    const audioDir = resolveProjectPath('public', 'audio');
 
     const dirsToClean = [videoDir, audioDir];
     if (bundleLocation) {

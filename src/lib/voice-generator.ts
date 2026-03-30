@@ -2,9 +2,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import { Scene } from './script-parser';
+import { logError, logInfo, writeProgress } from '../runtime';
 
 // @ts-ignore - ffprobe-static types
 import ffprobePath from 'ffprobe-static';
+
+const console = {
+  log: (...args: unknown[]) => logInfo(...args),
+  error: (...args: unknown[]) => logError(...args),
+};
 
 /**
  * Voice configuration for Edge-TTS
@@ -161,7 +167,7 @@ export async function generateVoiceovers(
 
   for (let i = 0; i < scenes.length; i++) {
     const scene = scenes[i];
-    process.stdout.write(`\r🎤 [VOICE-GEN] Processing scene ${i + 1}/${scenes.length}...`);
+    writeProgress(`\r🎤 [VOICE-GEN] Processing scene ${i + 1}/${scenes.length}...`);
 
     try {
       const result = await generateSceneVoiceoverWithRetry(scene, outputDir, config);
@@ -228,7 +234,7 @@ async function generateSceneVoiceoverWithRetry(
 
       if (attempt < MAX_RETRIES) {
         // Log retry attempt
-        process.stdout.write(`\n   ⚠️ Scene ${scene.sceneNumber} attempt ${attempt} failed, retrying...`);
+        writeProgress(`\n   ⚠️ Scene ${scene.sceneNumber} attempt ${attempt} failed, retrying...`);
         await sleep(RETRY_DELAY_MS * attempt);  // Exponential backoff
       }
     }

@@ -45,7 +45,7 @@ If the file doesn't exist, create it. Add the following configuration:
   "mcpServers": {
     "automated-video-generator": {
       "command": "npx",
-      "args": ["tsx", "src/mcp-server.ts"],
+      "args": ["-y", "tsx", "C:\\path\\to\\Automated-Video-Generator\\src\\mcp-server.ts"],
       "cwd": "C:\\path\\to\\Automated-Video-Generator",
       "env": {
         "PEXELS_API_KEY": "your_pexels_api_key_here"
@@ -61,7 +61,7 @@ If the file doesn't exist, create it. Add the following configuration:
   "mcpServers": {
     "automated-video-generator": {
       "command": "npx",
-      "args": ["tsx", "src/mcp-server.ts"],
+      "args": ["-y", "tsx", "/path/to/Automated-Video-Generator/src/mcp-server.ts"],
       "cwd": "/path/to/Automated-Video-Generator",
       "env": {
         "PEXELS_API_KEY": "your_pexels_api_key_here"
@@ -71,7 +71,7 @@ If the file doesn't exist, create it. Add the following configuration:
 }
 ```
 
-> **Important:** Replace the `cwd` path with the actual absolute path to your cloned repository.
+> **Important:** Replace both the script path in `args` and the `cwd` value with the real absolute path to your cloned repository. The absolute script path prevents Claude Desktop from resolving `src/mcp-server.ts` relative to its own app directory.
 
 ### Step 4: Restart Claude Desktop
 
@@ -128,7 +128,7 @@ Once configured, you can have natural conversations like:
 If you use **Claude Code** (CLI), you can also add the MCP server:
 
 ```bash
-claude mcp add automated-video-generator -- npx tsx src/mcp-server.ts
+claude mcp add automated-video-generator -- npx -y tsx /absolute/path/to/Automated-Video-Generator/src/mcp-server.ts
 ```
 
 ---

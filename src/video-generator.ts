@@ -3,6 +3,12 @@ import { fetchVisualsForScene, downloadMedia, getVideoDuration } from './lib/vis
 import { generateVoiceovers, DEFAULT_VOICE_CONFIG } from './lib/voice-generator';
 import * as fs from 'fs';
 import * as path from 'path';
+import { logError, logInfo, resolveProjectPath } from './runtime';
+
+const console = {
+    log: (...args: unknown[]) => logInfo(...args),
+    error: (...args: unknown[]) => logError(...args),
+};
 
 interface GenerationResult {
     success: boolean;
@@ -38,7 +44,7 @@ interface GenerationOptions {
  */
 export async function generateVideo(
     script: string,
-    outputDir: string = './output',
+    outputDir: string = resolveProjectPath('output'),
     options: GenerationOptions = {}
 ): Promise<GenerationResult> {
     const { onProgress, orientation = 'portrait', voice, title, showText = true, defaultVideo = 'default.mp4' } = options;
@@ -103,8 +109,8 @@ export async function generateVideo(
         // console.log('╚══════════════════════════════════════════╝');
 
         const step3Start = Date.now();
-        const videoDir = path.join(process.cwd(), 'public', 'videos');
-        const visualsDir = path.join(process.cwd(), 'public', 'visuals');
+        const videoDir = resolveProjectPath('public', 'videos');
+        const visualsDir = resolveProjectPath('public', 'visuals');
         const visuals: (import('./lib/visual-fetcher').MediaAsset | null)[] = [];
 
         // Ensure directories exist
@@ -134,7 +140,7 @@ export async function generateVideo(
                 let visual: any = null;
 
                 if (scene.localAsset) {
-                    const assetsDir = path.join(process.cwd(), 'input', 'input-assests');
+                    const assetsDir = resolveProjectPath('input', 'input-assests');
                     const sourcePath = path.join(assetsDir, scene.localAsset);
                     const ext = path.extname(scene.localAsset).toLowerCase();
                     const isVideo = ['.mp4', '.mov', '.webm', '.m4v'].includes(ext);
@@ -195,7 +201,7 @@ export async function generateVideo(
 
                 // --- DEFAULT VIDEO FALLBACK ---
                 if (!visual) {
-                    const fallbackPathInput = path.join(process.cwd(), 'input', 'input-assests', defaultVideo);
+                    const fallbackPathInput = resolveProjectPath('input', 'input-assests', defaultVideo);
                     const fallbackPathVisuals = path.join(visualsDir, defaultVideo);
                     
                     // console.log(`⚠️ [SCENE ${i + 1}] Attempting default video fallback: ${defaultVideo}`);
@@ -249,7 +255,7 @@ export async function generateVideo(
 
         const step4Start = Date.now();
         onProgress?.('audio', 55, 'Generating voiceovers');
-        const audioDir = path.join(process.cwd(), 'public', 'audio');
+        const audioDir = resolveProjectPath('public', 'audio');
 
         // console.log(`🎤 [STEP 4] Audio output directory: ${audioDir}`);
 

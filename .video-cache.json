@@ -5,7 +5,8 @@
     "width": 2160,
     "height": 3840,
     "photographer": "Evgenij Mikhailov",
-    "videoDuration": 14
+    "videoDuration": 14.121667,
+    "localPath": "videos/scene_1.mp4"
   },
   "typing on computer keyboard:portrait": {
     "type": "video",
@@ -13,6 +14,31 @@
     "width": 1440,
     "height": 2560,
     "photographer": "Alena Darmel",
-    "videoDuration": 7
+    "videoDuration": 7,
+    "localPath": "videos/scene_2.mp4"
+  },
+  "neural network brain:landscape": {
+    "type": "video",
+    "url": "https://videos.pexels.com/video-files/29184317/12601884_1920_1080_30fps.mp4",
+    "width": 1920,
+    "height": 1080,
+    "photographer": "Nicola Narracci",
+    "videoDuration": 10
+  },
+  "robot helping human:landscape": {
+    "type": "video",
+    "url": "https://videos.pexels.com/video-files/6153453/6153453-uhd_4096_2160_25fps.mp4",
+    "width": 4096,
+    "height": 2160,
+    "photographer": "cottonbro studio",
+    "videoDuration": 8
+  },
+  "stars galaxy:landscape": {
+    "type": "video",
+    "url": "https://videos.pexels.com/video-files/27254149/12103118_3840_2160_24fps.mp4",
+    "width": 3840,
+    "height": 2160,
+    "photographer": "Luz Calor Som",
+    "videoDuration": 20
   }
 }

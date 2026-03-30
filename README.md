@@ -242,12 +242,14 @@ And Claude will autonomously fetch footage, generate voiceovers, render via Remo
   "mcpServers": {
     "automated-video-generator": {
       "command": "npx",
-      "args": ["tsx", "src/mcp-server.ts"],
+      "args": ["-y", "tsx", "/absolute/path/to/Automated-Video-Generator/src/mcp-server.ts"],
       "cwd": "/path/to/Automated-Video-Generator"
     }
   }
 }
 ```
+
+Use an absolute path for `src/mcp-server.ts`. Claude Desktop may launch MCP servers from outside the repo, and the absolute script path avoids module resolution issues.
 
 📖 Full setup instructions: **[CLAUDE_MCP_SETUP.md](CLAUDE_MCP_SETUP.md)**
 

@@ -1,10 +1,18 @@
 [
   {
-    "id": "normal-sample-video",
+    "id": "welcome-automation",
     "title": "Welcome to Automation",
     "orientation": "portrait",
     "voice": "en-US-JennyNeural",
-     "showText": false,
+    "showText": true,
     "script": "[Visual: futuristic city neon night] Welcome to the future of content creation. [Visual: typing on computer keyboard] With just a few lines of text, you can automate your entire channel."
+  },
+  {
+    "id": "ai-future-test",
+    "title": "The Future of Artificial Intelligence",
+    "orientation": "landscape",
+    "voice": "en-GB-RyanNeural",
+    "showText": true,
+    "script": "[Visual: neural network brain] Artificial intelligence is transforming our world at an unprecedented pace. [Visual: robot helping human] From medicine to space exploration, the possibilities are truly endless. [Visual: stars galaxy] Join us as we explore what lies ahead in the next decade."
   }
 ]

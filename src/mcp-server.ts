@@ -15,13 +15,32 @@ import { z } from 'zod';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
+import { ensureProjectRootCwd, projectRoot, resolveProjectPath } from './runtime';
 
-// Load environment variables
-dotenv.config();
+process.env.AUTOMATED_VIDEO_GENERATOR_MCP = '1';
+ensureProjectRootCwd();
+dotenv.config({ path: resolveProjectPath('.env') });
 
-// Import the core generation pipeline
-import { generateVideo } from './video-generator';
-import { renderVideo } from './render';
+type VideoPipeline = {
+    generateVideo: typeof import('./video-generator').generateVideo;
+    renderVideo: typeof import('./render').renderVideo;
+};
+
+let videoPipelinePromise: Promise<VideoPipeline> | null = null;
+
+async function loadVideoPipeline(): Promise<VideoPipeline> {
+    if (!videoPipelinePromise) {
+        videoPipelinePromise = Promise.all([
+            import('./video-generator.js'),
+            import('./render.js'),
+        ]).then(([videoGeneratorModule, renderModule]) => ({
+            generateVideo: videoGeneratorModule.generateVideo,
+            renderVideo: renderModule.renderVideo,
+        }));
+    }
+
+    return videoPipelinePromise;
+}
 
 // ══════════════════════════════════════════════════════════════════
 // MCP SERVER INITIALIZATION
@@ -55,12 +74,14 @@ server.registerTool(
     async (args: z.infer<typeof generateVideoInputSchema>) => {
         const { title, script, orientation, voice, showText, defaultVideo } = args;
         try {
+            const { generateVideo, renderVideo } = await loadVideoPipeline();
+
             // Create a sanitized output directory name
             const sanitizedTitle = title
                 .replace(/[^a-zA-Z0-9\s-_]/g, '')
                 .replace(/\s+/g, '_')
                 .substring(0, 50);
-            const outputDir = path.join(process.cwd(), 'output', sanitizedTitle);
+            const outputDir = resolveProjectPath('output', sanitizedTitle);
 
             // Ensure output directory exists
             if (!fs.existsSync(outputDir)) {
@@ -171,7 +192,7 @@ server.tool(
     'list_local_assets',
     'List all local media files available in the input/input-assests/ directory that can be referenced in scripts using [Visual: filename] tags.',
     async () => {
-        const assetsDir = path.join(process.cwd(), 'input', 'input-assests');
+        const assetsDir = resolveProjectPath('input', 'input-assests');
         if (!fs.existsSync(assetsDir)) {
             return {
                 content: [
@@ -224,7 +245,7 @@ server.tool(
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    process.stderr.write('🎬 [MCP] Automated Video Generator server is running.\n');
+    process.stderr.write(`🎬 [MCP] Automated Video Generator server is running from ${projectRoot}.\n`);
 }
 
 main().catch((error) => {

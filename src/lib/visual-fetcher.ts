@@ -3,12 +3,17 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { config } from 'dotenv';
 import { execSync } from 'child_process';
+import { logInfo, resolveProjectPath } from '../runtime';
 
 // @ts-ignore - ffprobe-static types
 import ffprobePath from 'ffprobe-static';
 
 // Load environment variables from .env file
-config();
+config({ path: resolveProjectPath('.env') });
+
+const console = {
+    log: (...args: unknown[]) => logInfo(...args),
+};
 
 export interface MediaAsset {
     type: 'image' | 'video';
@@ -24,7 +29,7 @@ const PEXELS_API_KEY = process.env.PEXELS_API_KEY || '';
 const PIXABAY_API_KEY = process.env.PIXABAY_API_KEY || '';
 
 const BASE_URL = 'https://api.pexels.com/v1';
-const CACHE_FILE = path.join(process.cwd(), '.video-cache.json');
+const CACHE_FILE = resolveProjectPath('.video-cache.json');
 
 // Preferred video quality order (highest first)
 const PREFERRED_QUALITIES = ['uhd', 'hd', 'sd'];
