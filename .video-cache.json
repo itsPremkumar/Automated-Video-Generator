@@ -1,26 +1,18 @@
 {
-  "astronaut floating in space:landscape": {
+  "green_leaves.png:portrait": {
     "type": "video",
-    "url": "https://videos.pexels.com/video-files/5299577/5299577-hd_1280_720_24fps.mp4",
-    "width": 1280,
-    "height": 720,
-    "photographer": "Video Kickstarter",
-    "videoDuration": 26
+    "url": "https://videos.pexels.com/video-files/27514858/12157188_2160_3840_60fps.mp4",
+    "width": 2160,
+    "height": 3840,
+    "photographer": "Ünal Karabiber",
+    "videoDuration": 15
   },
-  "space galaxy stars:landscape": {
+  "sunny_forest.png:portrait": {
     "type": "video",
-    "url": "https://videos.pexels.com/video-files/29857700/12820534_3840_2160_25fps.mp4",
-    "width": 3840,
-    "height": 2160,
-    "photographer": "Adis Resic",
-    "videoDuration": 33
-  },
-  "futuristic rocket launch:landscape": {
-    "type": "video",
-    "url": "https://videos.pexels.com/video-files/7615675/7615675-uhd_3840_2160_30fps.mp4",
-    "width": 3840,
-    "height": 2160,
-    "photographer": "Kindel Media",
+    "url": "https://videos.pexels.com/video-files/27133356/12081853_2160_3840_25fps.mp4",
+    "width": 2160,
+    "height": 3840,
+    "photographer": "Orhan Pergel",
     "videoDuration": 9
   }
 }

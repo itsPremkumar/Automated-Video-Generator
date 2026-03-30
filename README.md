@@ -85,13 +85,49 @@ PEXELS_API_KEY=your_key_here
 ## 📖 Usage & Script Output
 
 ### 1. Batch Generation (CLI Mode)
-Create an `input/input-scripts.json` file with your video jobs:
+Create an `input/input-scripts.json` file with your video jobs. You can pass multiple objects in the array to queue multiple videos.
+
+#### 📝 Full Configuration Schema (Input Variants)
+Every job object supports the following configuration properties, allowing you to heavily customize each unique video without touching code:
+
+| Property | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | String | Yes | Unique slug for the video (used for output folder name). |
+| `title` | String | Yes | Main title text displayed in the video. |
+| `script` | String | Yes | The narrative content, including `[Visual: ...]` tags. |
+| `orientation` | String | No | Output format. Options: `landscape` (16:9) or `portrait` (9:16 Shorts/TikToks). |
+| `voice` | String | No | AI Voice ID to override the default `.env` setting. |
+
+#### 🗣️ Available AI Voices
+You have access to several high-quality neural voices natively supported by the TTS engine:
+*   **Male Voices:** `en-US-GuyNeural` (Deep, Authoritative), `en-US-ChristopherNeural` (Calm), `en-GB-RyanNeural` (British Accent), `en-IN-PrabhatNeural` (Indian Accent).
+*   **Female Voices:** `en-US-JennyNeural` (Warm, Professional), `en-US-AriaNeural` (Friendly), `en-US-SaraNeural` (Cheerful), `en-GB-SoniaNeural` (British Accent).
+
+#### 📝 Example Configurations (Different Varieties)
+You can include multiple jobs in the `input-scripts.json` array to batch-generate videos with entirely different formats. Here are common examples:
+
 ```json
 [
   {
-    "id": "video_001",
-    "title": "My First Video",
-    "script": "This is the first scene. This is the second scene."
+    "id": "youtube-shorts-marketing",
+    "title": "10x Your Productivity",
+    "orientation": "portrait",
+    "voice": "en-US-JennyNeural",
+    "script": "[Visual: highly productive office worker] Do you struggle with time management? [Visual: clock ticking fast] Stop wasting your hours. Try our new app today."
+  },
+  {
+    "id": "landscape-youtube-documentary",
+    "title": "The Deep Ocean",
+    "orientation": "landscape",
+    "voice": "en-US-ChristopherNeural",
+    "script": "[Visual: dark ocean waves] The ocean covers seventy percent of our planet. [Visual: glowing deep sea jellyfish] Yet it remains one of the most unexplored frontiers."
+  },
+  {
+    "id": "local-assets-demo",
+    "title": "My Travel Vlog",
+    "orientation": "landscape",
+    "voice": "en-US-GuyNeural",
+    "script": "[Visual: intro.mp4] Welcome to my vlog! [Visual: beach-photo.jpg] The weather today is absolutely perfect."
   }
 ]
 ```
