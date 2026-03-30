@@ -2,7 +2,7 @@ node_modules/
 dist/
 output/
 *.log
-.env
+# .env
 *.mp4
 *.mp3
 *.wav
