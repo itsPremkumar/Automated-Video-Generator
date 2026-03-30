@@ -1,6 +1,16 @@
 ---
 name: cli-operations
-description: Guide for running the  Video Generator CLI commands.
+description: Guide for running the Video Generator CLI commands.
+version: 1.0.0
+metadata:
+  requires:
+    bins:
+      - node
+      - npm
+      - ffmpeg
+      - python
+    env:
+      - PEXELS_API_KEY
 ---
 
 # Video Generator CLI Operations Skill
