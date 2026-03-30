@@ -9,8 +9,8 @@ output/
 public/visuals/
 
 # Environment Variables
-.env
-.env.*
+# .env
+# .env.*
 
 # Media and Logs
 *.mp4
