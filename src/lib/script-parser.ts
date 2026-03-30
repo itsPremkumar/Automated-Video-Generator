@@ -54,7 +54,7 @@ function parseScriptLocally(script: string): ParsedScript {
     // console.log('📝 [PARSER] Splitting script by sentences...');
 
     // Split by newlines first, then by periods ONLY if followed by space or end
-    // This prevents splitting URLs like "sproutern.com"
+    // This prevents splitting URLs like "example.com"
     const rawLines: string[] = [];
 
     // First split by double newlines (paragraphs)

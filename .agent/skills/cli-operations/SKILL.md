@@ -1,6 +1,6 @@
 ---
 name: cli-operations
-description: Guide for running the Sproutern Video Generator CLI commands.
+description: Guide for running the  Video Generator CLI commands.
 ---
 
 # Video Generator CLI Operations Skill

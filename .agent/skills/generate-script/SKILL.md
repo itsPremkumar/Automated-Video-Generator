@@ -1,6 +1,6 @@
 ---
 name: generate-script
-description: How to generate video scripts for the Sproutern Video Generator from user prompts.
+description: How to generate video scripts for the  Video Generator from user prompts.
 ---
 
 # Video Script Generation Skill

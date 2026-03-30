@@ -38,7 +38,7 @@ function sanitizeFilename(name: string): string {
 }
 
 async function main() {
-    console.log('🎬 Sproutern Video Generator CLI (Advanced Batch Mode)\n');
+    console.log('🎬 Video Generator CLI (Advanced Batch Mode)\n');
 
     const { landscape } = parseArgs();
     const envOrientation = getEnvOrientation();

@@ -19,4 +19,4 @@ When reporting a vulnerability, please provide:
 - Steps to reproduce it (if possible).
 - Potential impact.
 
-We take security seriously and will investigate and address reported vulnerabilities as soon as possible. Thank you for helping us keep Sproutern Video Generator secure!
+We take security seriously and will investigate and address reported vulnerabilities as soon as possible. Thank you for helping us keep Video Generator secure!
