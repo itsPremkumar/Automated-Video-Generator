@@ -1,9 +1,9 @@
 [
   {
-    "id": "green-leaves-demo",
-    "title": "Morning Dew",
+    "id": "normal-sample-video",
+    "title": "Welcome to Automation",
     "orientation": "portrait",
     "voice": "en-US-JennyNeural",
-    "script": "[Visual: green_leaves.png] The fresh green leaves are dripping with morning dew. [Visual: sunny_forest.png] Nature is waking up to a beautiful new day."
+    "script": "[Visual: futuristic city neon night] Welcome to the future of content creation. [Visual: typing on computer keyboard] With just a few lines of text, you can automate your entire channel."
   }
 ]
