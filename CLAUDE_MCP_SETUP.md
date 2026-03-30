@@ -1,14 +1,10 @@
-# 🤖 Claude MCP Integration Guide
+# 🤖 Claude MCP Integration Guide (v1.1.0)
 
-This guide explains how to connect your **Automated Video Generator** directly to the **Claude Desktop App** so Claude can autonomously generate videos for you through natural conversation.
+This guide explains how to connect your **Automated Video Generator** directly to the **Claude Desktop App** and **Claude Code CLI**, enabling direct filesystem access, environment management, and whitelisted command execution.
 
-## 🧠 What is MCP?
+## 🧠 New Advanced Architecture
 
-**Model Context Protocol (MCP)** is an open standard by Anthropic that connects AI assistants like Claude to external tools and local applications. Once configured, you can simply ask Claude:
-
-> *"Create a portrait marketing video about artificial intelligence using a British female voice with no subtitles"*
-
-And Claude will **autonomously** execute your video pipeline, fetch stock footage, generate voiceovers, render via Remotion, and return the path to your final `.mp4` file! 🎬
+The latest version of the MCP server expands from 5 basic tools to **16 tools**, **7 resources**, and **4 prompts**, providing a robust, autonomous interface for video creation.
 
 ---
 
@@ -19,140 +15,79 @@ And Claude will **autonomously** execute your video pipeline, fetch stock footag
 Ensure all project dependencies are installed:
 ```bash
 npm install
-pip install -r requirements.txt
 ```
 
-### Step 2: Set Up Your API Key
-
-Create a `.env` file in the project root:
-```env
-PEXELS_API_KEY=your_pexels_api_key_here
-```
-
-### Step 3: Configure Claude Desktop
+### Step 2: Configure Claude Desktop
 
 Locate your Claude Desktop configuration file:
-
 - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Linux:** `~/.config/Claude/claude_desktop_config.json`
 
-If the file doesn't exist, create it. Add the following configuration:
+Add the following (update the paths to match your project location):
 
-#### Windows Configuration:
 ```json
 {
   "mcpServers": {
     "automated-video-generator": {
       "command": "npx",
-      "args": ["-y", "tsx", "C:\\path\\to\\Automated-Video-Generator\\src\\mcp-server.ts"],
-      "cwd": "C:\\path\\to\\Automated-Video-Generator",
+      "args": ["-y", "tsx", "c:\\one\\Automated-Video-Generator\\src\\mcp-server.ts"],
+      "cwd": "c:\\one\\Automated-Video-Generator",
       "env": {
-        "PEXELS_API_KEY": "your_pexels_api_key_here"
+        "PEXELS_API_KEY": "YOUR_API_KEY_HERE"
       }
     }
   }
 }
 ```
 
-#### macOS / Linux Configuration:
-```json
-{
-  "mcpServers": {
-    "automated-video-generator": {
-      "command": "npx",
-      "args": ["-y", "tsx", "/path/to/Automated-Video-Generator/src/mcp-server.ts"],
-      "cwd": "/path/to/Automated-Video-Generator",
-      "env": {
-        "PEXELS_API_KEY": "your_pexels_api_key_here"
-      }
-    }
-  }
-}
-```
+### Step 3: Configure Claude Code CLI
 
-> **Important:** Replace both the script path in `args` and the `cwd` value with the real absolute path to your cloned repository. The absolute script path prevents Claude Desktop from resolving `src/mcp-server.ts` relative to its own app directory.
-
-### Step 4: Restart Claude Desktop
-
-Close and reopen the Claude Desktop application. You should now see a 🔨 hammer icon in the chat input, indicating MCP tools are available.
-
----
-
-## 🛠️ Available Tools
-
-Once connected, Claude has access to the following tools:
-
-### `generate_video`
-The primary tool. Generates a complete video from a text script.
-
-**Parameters:**
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `title` | String | *(required)* | Video title, used for the output filename. |
-| `script` | String | *(required)* | Narrative content with `[Visual: ...]` tags. |
-| `orientation` | String | `portrait` | `portrait` (9:16) or `landscape` (16:9). |
-| `voice` | String | `en-US-JennyNeural` | Edge-TTS voice ID. |
-| `showText` | Boolean | `true` | Show on-screen subtitles. |
-| `defaultVideo` | String | `default.mp4` | Fallback video file from `input/input-assests/`. |
-
-### `list_voices`
-Lists all available AI voice options with their styles and regions.
-
-### `list_local_assets`
-Lists all media files in your `input/input-assests/` directory that can be referenced in scripts.
-
----
-
-## 💬 Example Conversations with Claude
-
-Once configured, you can have natural conversations like:
-
-**Example 1: Quick Short**
-> You: "Make me a YouTube Short about machine learning breakthroughs"
-> Claude: *(uses generate_video tool, returns the .mp4 path)*
-
-**Example 2: Branded Content**
-> You: "Generate a landscape video titled 'Ocean Documentary' using the British male voice with no subtitles"
-> Claude: *(calls generate_video with orientation=landscape, voice=en-GB-RyanNeural, showText=false)*
-
-**Example 3: Check Assets First**
-> You: "What local videos do I have available?"
-> Claude: *(calls list_local_assets, shows your files)*
-> You: "Great, use intro.mp4 for the first scene of a new marketing video"
-
----
-
-## 🔧 Claude Code Integration
-
-If you use **Claude Code** (CLI), you can also add the MCP server:
+Run the following command in your terminal to add the MCP server to Claude Code:
 
 ```bash
-claude mcp add automated-video-generator -- npx -y tsx /absolute/path/to/Automated-Video-Generator/src/mcp-server.ts
+claude mcp add automated-video-generator -- npx -y tsx c:\one\Automated-Video-Generator\src\mcp-server.ts
 ```
+
+---
+
+## 🛠️ Available Capabilities
+
+### 📄 Resources (Direct Read-Only Context)
+Resources provide Claude with instant context without running a tool.
+- `input://scripts` — Current script list.
+- `output://videos` — List of all completed videos.
+- `config://env` — Current configuration (masked).
+- `input://format` — Documentation on script formatting.
+
+### 🔧 Tools (Active Operations)
+- **Filesystem Tools:** `write_input_script`, `read_input_script`, `delete_input_script`, `list_output_videos`, `read_output_file`, `delete_output`.
+- **Media Tools:** `upload_asset`, `delete_asset`, `list_local_assets`.
+- **Pipeline Tools:** `generate_video`, `get_video_status`, `run_pipeline_command` (generate, render, etc.).
+- **System Tools:** `read_env_config`, `update_env_config`, `get_system_info`, `health_check`.
+
+### 💬 Prompts (Workflow Templates)
+Use these by typing `/automated-video-generator.prompt-name` in the chat.
+- `create-marketing-video` — Simplified marketing video workflow.
+- `create-youtube-short` — Portrait viral video workflow.
+- `batch-generate` — Process multiple topics at once.
+- `debug-pipeline` — Diagnose and fix issues.
+
+---
+
+## 🔐 Permission Settings
+
+Claude will respect your permission choices. It is recommended to use:
+- **Allow:** Read tools and resources.
+- **Ask:** Write tools (`write_input_script`, `upload_asset`, `update_env_config`).
+- **Ask/Deny:** Destructive tools (`delete_output`, `delete_asset`).
+- **Ask:** Execution tools (`generate_video`, `run_pipeline_command`).
 
 ---
 
 ## 🐞 Troubleshooting
 
-| Issue | Solution |
-| :--- | :--- |
-| No hammer icon in Claude | Restart Claude Desktop. Check the config JSON for syntax errors. |
-| `PEXELS_API_KEY` missing | Add it to the `env` block in your config or to a `.env` file. |
-| `tsx` not found | Run `npm install` in the project directory first. |
-| Render crashes | Ensure FFmpeg is installed and in your system PATH. |
-| Python errors | Run `pip install -r requirements.txt`. |
-
----
-
-## 📋 For Plugin Submission to Anthropic
-
-If you want to submit this as an official plugin to the Claude marketplace, visit:
-
-- **Claude.ai:** [claude.ai/settings/plugins/submit](https://claude.ai/settings/plugins/submit)
-- **Anthropic Console:** [console.anthropic.com/plugins/submit](https://console.anthropic.com/plugins/submit)
-
-You will need:
-1. Your GitHub repository URL: `https://github.com/itsPremkumar/Automated-Video-Generator`
-2. The `.claude-plugin/plugin.json` manifest (already created in this project).
-3. A description of the tools exposed by your MCP server.
+If tools don't appear:
+1. Ensure `PEXELS_API_KEY` is set in your `.env` or the config `env` block.
+2. Restart Claude Desktop or run `/reload` in Claude Code.
+3. Check the CLI console for error logs from the MCP server.
+4. Run the `health_check` tool to verify all dependencies are present.

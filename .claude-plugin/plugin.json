@@ -1,7 +1,7 @@
 {
   "name": "Automated Video Generator",
-  "version": "1.0.0",
-  "description": "Transform text scripts into professional videos with AI voiceovers, stock footage, and Remotion rendering. Supports YouTube Shorts, TikTok, and landscape formats.",
+  "version": "1.1.0",
+  "description": "Transform text scripts into professional videos with AI voiceovers, stock footage, and Remotion rendering. Advanced features include direct filesystem access, environment management, and whitelisted command execution.",
   "icon": "video",
   "author": "Premkumar M (@itsPremkumar)",
   "repository": "https://github.com/itsPremkumar/Automated-Video-Generator",
@@ -19,21 +19,41 @@
     ],
     "mcp": {
       "command": "npx",
-      "args": ["tsx", "src/mcp-server.ts"],
-      "env": ["PEXELS_API_KEY"],
+      "args": ["-y", "tsx", "src/mcp-server.ts"],
+      "env": ["PEXELS_API_KEY", "PIXABAY_API_KEY", "VIDEO_ORIENTATION", "VIDEO_VOICE"],
       "tools": [
-        {
-          "name": "generate_video",
-          "description": "Generate a professional video from a text script with AI voiceovers and stock footage."
-        },
-        {
-          "name": "list_voices",
-          "description": "List all available AI voice options for TTS."
-        },
-        {
-          "name": "list_local_assets",
-          "description": "List media files available in the local assets directory."
-        }
+        { "name": "generate_video", "description": "Generate a professional video from a text script." },
+        { "name": "get_video_status", "description": "Check the status of a video generation job." },
+        { "name": "list_jobs", "description": "List all recent video generation jobs." },
+        { "name": "write_input_script", "description": "Save a video script to the input directory." },
+        { "name": "read_input_script", "description": "Read available scripts from the input directory." },
+        { "name": "delete_input_script", "description": "Remove a script from the input directory." },
+        { "name": "validate_input_script", "description": "Check if a script format is valid." },
+        { "name": "list_output_videos", "description": "List all generated videos." },
+        { "name": "read_output_file", "description": "Read details or scene data from a completed video." },
+        { "name": "delete_output", "description": "Delete a generated video and its assets." },
+        { "name": "upload_asset", "description": "Upload media assets for use in videos." },
+        { "name": "delete_asset", "description": "Remove a media asset." },
+        { "name": "list_local_assets", "description": "List all uploaded media assets." },
+        { "name": "run_pipeline_command", "description": "Run pipeline commands (generate, render, etc.)" },
+        { "name": "read_env_config", "description": "View environment settings." },
+        { "name": "update_env_config", "description": "Change environment settings." },
+        { "name": "get_system_info", "description": "Check system and dependency status." },
+        { "name": "health_check", "description": "Quick system health check." }
+      ],
+      "resources": [
+        { "uri": "input://scripts", "name": "Input Scripts" },
+        { "uri": "input://format", "name": "Script Format Guide" },
+        { "uri": "output://videos", "name": "Output Videos List" },
+        { "uri": "public://assets", "name": "Public Assets" },
+        { "uri": "config://env", "name": "Environment Config" },
+        { "uri": "config://pipeline", "name": "Pipeline Config" }
+      ],
+      "prompts": [
+        { "name": "create-marketing-video", "description": "Workflow for marketing video creation." },
+        { "name": "create-youtube-short", "description": "Workflow for viral YouTube Shorts." },
+        { "name": "batch-generate", "description": "Workflow for batch video generation." },
+        { "name": "debug-pipeline", "description": "Workflow for troubleshooting." }
       ]
     }
   }
