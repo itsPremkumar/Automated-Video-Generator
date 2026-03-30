@@ -1,0 +1,19 @@
+{
+  "name": "Automated Video Generator",
+  "version": "1.0.0",
+  "description": "Powerful text-to-video pipeline using Remotion, Edge-TTS, and Pexels. Automate your YouTube Shorts, TikToks, and marketing videos.",
+  "icon": "video",
+  "author": "Premkumar M (@itsPremkumar)",
+  "components": {
+    "skills": [
+      {
+        "name": "cli-operations",
+        "path": ".agent/skills/cli-operations/SKILL.md"
+      },
+      {
+        "name": "generate-script",
+        "path": ".agent/skills/generate-script/SKILL.md"
+      }
+    ]
+  }
+}
