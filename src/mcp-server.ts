@@ -15,7 +15,7 @@ import { z } from 'zod';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
-import { ensureProjectRootCwd, projectRoot, resolveProjectPath } from './runtime';
+import { ensureProjectRootCwd, projectRoot, resolveProjectPath, jobStore } from './runtime';
 
 process.env.AUTOMATED_VIDEO_GENERATOR_MCP = '1';
 ensureProjectRootCwd();
@@ -52,108 +52,210 @@ const server = new McpServer({
 });
 
 // ══════════════════════════════════════════════════════════════════
-// TOOL: generate_video
+// TOOL: generate_video (ASYNC)
 // ══════════════════════════════════════════════════════════════════
 
 const generateVideoInputSchema = z.object({
-    title: z.string().describe('The title of the video. Used for the output filename and on-screen branding.'),
-    script: z.string().describe('The narrative script content. Use [Visual: search query] tags to direct specific visuals for each scene.'),
-    orientation: z.enum(['portrait', 'landscape']).default('portrait').describe('Video orientation. portrait=9:16, landscape=16:9.'),
-    voice: z.string().default('en-US-JennyNeural').describe('Edge-TTS voice ID.'),
-    showText: z.boolean().default(true).describe('Show on-screen subtitles/captions.'),
-    defaultVideo: z.string().default('default.mp4').describe('Fallback video filename in input/input-assests/.'),
+  title: z.string().describe('The title of the video. Used for the output filename and on-screen branding.'),
+  script: z.string().describe('The narrative script content. Use [Visual: search query] tags to direct specific visuals for each scene.'),
+  orientation: z.enum(['portrait', 'landscape']).default('portrait').describe('Video orientation. portrait=9:16, landscape=16:9.'),
+  voice: z.string().default('en-US-JennyNeural').describe('Edge-TTS voice ID.'),
+  showText: z.boolean().default(true).describe('Show on-screen subtitles/captions.'),
+  defaultVideo: z.string().default('default.mp4').describe('Fallback video filename in input/input-assests/.'),
 });
 
 server.registerTool(
-    'generate_video',
-    {
-        title: 'Generate Video',
-        description: 'Generate a professional video from a text script. The script can include [Visual: ...] tags for directing stock footage or local assets. Returns the path to the final rendered .mp4 file.',
-        inputSchema: generateVideoInputSchema as any,
-    },
-    async (args: z.infer<typeof generateVideoInputSchema>) => {
-        const { title, script, orientation, voice, showText, defaultVideo } = args;
-        try {
-            const { generateVideo, renderVideo } = await loadVideoPipeline();
+  'generate_video',
+  {
+    title: 'Generate Video',
+    description: 'Starts a background job to generate a professional video.',
+    inputSchema: generateVideoInputSchema as any,
+  },
+  async (args: any) => {
+    const { title, script, orientation, voice, showText, defaultVideo } = args;
 
-            // Create a sanitized output directory name
-            const sanitizedTitle = title
-                .replace(/[^a-zA-Z0-9\s-_]/g, '')
-                .replace(/\s+/g, '_')
-                .substring(0, 50);
-            const outputDir = resolveProjectPath('output', sanitizedTitle);
+    // Create a unique Job ID
+    const jobId = `job_${Date.now()}_${title.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10)}`;
 
-            // Ensure output directory exists
-            if (!fs.existsSync(outputDir)) {
-                fs.mkdirSync(outputDir, { recursive: true });
-            }
+    // Initialize job state
+    jobStore.set(jobId, {
+      status: 'pending',
+      progress: 0,
+      message: 'Queued for processing...',
+    });
 
-            // ── Phase 1: Generate scene data, fetch visuals, create voiceovers ──
-            const result = await generateVideo(script, outputDir, {
-                orientation,
-                voice,
-                title,
-                showText,
-                defaultVideo,
-                onProgress: (step: string, percent: number, message: string) => {
-                    process.stderr.write(`[MCP] ${step}: ${percent}% - ${message}\n`);
-                },
-            });
+    // Launch background task (DO NOT AWAIT)
+    (async () => {
+      try {
+        const { generateVideo, renderVideo } = await loadVideoPipeline();
 
-            if (!result.success) {
-                return {
-                    content: [
-                        {
-                            type: 'text' as const,
-                            text: `❌ Video generation failed: ${result.error || 'Unknown error'}`,
-                        },
-                    ],
-                };
-            }
+        // Create a sanitized output directory name
+        const sanitizedTitle = title
+          .replace(/[^a-zA-Z0-9\s-_]/g, '')
+          .replace(/\s+/g, '_')
+          .substring(0, 50);
+        const outputDir = resolveProjectPath('output', sanitizedTitle);
 
-            // ── Phase 2: Render the final video using Remotion ──
-            await renderVideo(outputDir);
-
-            // Find the final output video
-            const outputFiles = fs.readdirSync(outputDir).filter((f: string) => f.endsWith('.mp4') && !f.startsWith('segment'));
-            const finalVideo = outputFiles.length > 0
-                ? path.join(outputDir, outputFiles[0])
-                : path.join(outputDir, `${title}.mp4`);
-
-            const fileExists = fs.existsSync(finalVideo);
-            const fileSize = fileExists ? (fs.statSync(finalVideo).size / (1024 * 1024)).toFixed(2) : '0';
-
-            return {
-                content: [
-                    {
-                        type: 'text' as const,
-                        text: [
-                            `✅ Video generated successfully!`,
-                            ``,
-                            `📁 **Output Path:** \`${finalVideo}\``,
-                            `📊 **File Size:** ${fileSize} MB`,
-                            `🎬 **Scenes:** ${result.metadata?.scenes || 'N/A'}`,
-                            `⏱️ **Duration:** ${result.metadata?.duration || 'N/A'}s`,
-                            `🖼️ **Visuals Found:** ${result.metadata?.visualsFound || 'N/A'}`,
-                            `📐 **Orientation:** ${orientation}`,
-                            `🗣️ **Voice:** ${voice}`,
-                            `📝 **Subtitles:** ${showText ? 'Enabled' : 'Disabled'}`,
-                        ].join('\n'),
-                    },
-                ],
-            };
-        } catch (error: any) {
-            return {
-                content: [
-                    {
-                        type: 'text' as const,
-                        text: `❌ Error during video generation: ${error.message}\n\nStack: ${error.stack}`,
-                    },
-                ],
-            };
+        // Ensure output directory exists
+        if (!fs.existsSync(outputDir)) {
+          fs.mkdirSync(outputDir, { recursive: true });
         }
-    }
+
+        jobStore.set(jobId, { status: 'processing', progress: 5, message: 'Generating assets (Audio/Visuals)...' });
+
+        // ── Phase 1: Generate scene data, fetch visuals, create voiceovers ──
+        const result = await generateVideo(script, outputDir, {
+          orientation,
+          voice,
+          title,
+          showText,
+          defaultVideo,
+          onProgress: (step: string, percent: number, message: string) => {
+            // Map 0-100% of generation to 5-40% of overall job
+            const totalProgress = 5 + Math.round((percent / 100) * 35);
+            jobStore.set(jobId, { progress: totalProgress, message: `${step}: ${message}` });
+          },
+        });
+
+        if (!result.success) {
+          jobStore.set(jobId, { status: 'failed', error: result.error || 'Generation failed' });
+          return;
+        }
+
+        jobStore.set(jobId, { status: 'processing', progress: 41, message: 'Rendering final video (Remotion)...' });
+
+        // ── Phase 2: Render the final video using Remotion ──
+        await renderVideo(outputDir);
+
+        // Find the final output video
+        const outputFiles = fs.readdirSync(outputDir).filter((f: string) => f.endsWith('.mp4') && !f.startsWith('segment'));
+        const finalVideo = outputFiles.length > 0
+          ? path.join(outputDir, outputFiles[0])
+          : path.join(outputDir, `${title}.mp4`);
+
+        jobStore.set(jobId, {
+          status: 'completed',
+          progress: 100,
+          message: 'Video rendering complete!',
+          outputPath: finalVideo,
+          endTime: Date.now(),
+        });
+
+      } catch (error: any) {
+        jobStore.set(jobId, {
+          status: 'failed',
+          error: error.message,
+          message: 'A fatal error occurred during processing.',
+        });
+      }
+    })();
+
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: [
+            `✅ Video generation job started!`,
+            ``,
+            `🆔 **Job ID:** \`${jobId}\``,
+            `⏳ **Status:** Processing in background`,
+            ``,
+            `Please wait about 30 seconds and then use \`get_video_status(jobId: "${jobId}")\` to check progress. Video rendering can take several minutes.`,
+          ].join('\n'),
+        },
+      ],
+    };
+  }
 );
+
+// ══════════════════════════════════════════════════════════════════
+// TOOL: get_video_status
+// ══════════════════════════════════════════════════════════════════
+
+const getVideoStatusSchema = z.object({
+  jobId: z.string().describe('The ID of the video generation job to check.'),
+});
+
+server.registerTool(
+  'get_video_status',
+  {
+    title: 'Get Video Status',
+    description: 'Check the current progress and status of a video generation job.',
+    inputSchema: getVideoStatusSchema as any,
+  },
+  async (args: any) => {
+    const { jobId } = args;
+    const job = jobStore.get(jobId);
+
+    if (!job) {
+      return {
+        content: [{ type: 'text' as const, text: `❌ Job \`${jobId}\` not found.` }],
+        isError: true,
+      };
+    }
+
+    let statusEmoji = '⏳';
+    if (job.status === 'completed') statusEmoji = '✅';
+    if (job.status === 'failed') statusEmoji = '❌';
+    if (job.status === 'processing') statusEmoji = '⚙️';
+
+    const lines = [
+      `${statusEmoji} **Job Status:** ${job.status.toUpperCase()}`,
+      `📊 **Progress:** ${job.progress}%`,
+      `💬 **Message:** ${job.message}`,
+    ];
+
+    if (job.outputPath) {
+      lines.push(``, `📁 **Output Path:** \`${job.outputPath}\``);
+
+      if (fs.existsSync(job.outputPath)) {
+        const fileSize = (fs.statSync(job.outputPath).size / (1024 * 1024)).toFixed(2);
+        lines.push(`🎬 **File Size:** ${fileSize} MB`);
+      }
+    }
+
+    if (job.error) {
+      lines.push(``, `❌ **Error:** ${job.error}`);
+    }
+
+    return {
+      content: [{ type: 'text' as const, text: lines.join('\n') }],
+    };
+  }
+);
+
+// ══════════════════════════════════════════════════════════════════
+// TOOL: list_jobs
+// ══════════════════════════════════════════════════════════════════
+
+server.tool(
+  'list_jobs',
+  'List all recent video generation jobs and their current status.',
+  async () => {
+    const jobs = jobStore.all().sort((a, b) => b.startTime - a.startTime);
+
+    if (jobs.length === 0) {
+      return { content: [{ type: 'text' as const, text: 'No jobs found.' }] };
+    }
+
+    const tableRows = jobs.map(j => {
+      const status = j.status === 'completed' ? '✅' : j.status === 'failed' ? '❌' : '⏳';
+      return `| ${j.id} | ${status} ${j.status} | ${j.progress}% | ${new Date(j.startTime).toLocaleTimeString()} |`;
+    });
+
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: `## 📋 Recent Video Jobs\n\n| Job ID | Status | Progress | Started |\n| :--- | :--- | :--- | :--- |\n${tableRows.join('\n')}`,
+        },
+      ],
+    };
+  }
+);
+
+
+
 
 // ══════════════════════════════════════════════════════════════════
 // TOOL: list_voices

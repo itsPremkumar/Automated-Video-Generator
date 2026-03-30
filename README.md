@@ -181,6 +181,17 @@ To run the system as a local API server:
 npm run dev
 ```
 
+Then open:
+```text
+http://localhost:3001/
+```
+
+The local server now includes a simple end-user portal:
+- Start a render from the browser form or `POST /generate-video`
+- Track progress on `/jobs/:jobId` or `GET /api/jobs/:jobId`
+- Watch the finished video on `/videos/:videoId`
+- Download the final MP4 from `/download/:videoId`
+
 ---
 
 ## 🗃️ Project Structure
