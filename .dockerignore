@@ -1,0 +1,14 @@
+node_modules
+coverage
+output
+public/video
+public/audio
+public/images
+.git
+.github
+.vscode
+.env
+.video-cache.json
+README.md
+Dockerfile
+docker-compose.yml

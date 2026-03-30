@@ -1,0 +1,60 @@
+{
+    "name": "automated-video-generator",
+    "version": "1.0.0",
+    "description": "High-performance automated video generation from text scripts. Automated media fetching, TTS voiceovers, and Remotion rendering.",
+    "author": "Premkumar",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/itsPremkumar/Automated-Video-Generator.git"
+    },
+    "bugs": {
+        "url": "https://github.com/itsPremkumar/Automated-Video-Generator/issues"
+    },
+    "homepage": "https://github.com/itsPremkumar/Automated-Video-Generator#readme",
+    "keywords": [
+        "automated-video",
+        "text-to-video",
+        "video-generator",
+        "remotion",
+        "edge-tts",
+        "ai-video",
+        "content-creation",
+        "faceless-youtube",
+        "marketing-automation",
+        "open-source"
+    ],
+    "private": true,
+    "scripts": {
+        "dev": "tsx src/server.ts",
+        "build": "npm run generate",
+        "generate": "tsx src/cli.ts",
+        "resume": "tsx src/cli.ts --resume",
+        "segment": "tsx src/cli.ts --segment",
+        "remotion:studio": "remotion studio remotion/index.ts",
+        "remotion:render": "tsx src/render.ts",
+        "test": "node src/test-generation.js"
+    },
+    "dependencies": {
+        "@remotion/cli": "^4.0.0",
+        "@remotion/media-utils": "^4.0.410",
+        "@remotion/renderer": "^4.0.0",
+        "axios": "^1.7.9",
+        "dotenv": "^16.4.7",
+        "express": "^4.21.2",
+        "ffmpeg-static": "^5.3.0",
+        "ffprobe-static": "^3.1.0",
+        "gtts": "^0.2.1",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+        "zod": "3.22.3"
+    },
+    "devDependencies": {
+        "@types/express": "^5.0.0",
+        "@types/node": "^22.10.5",
+        "@types/react": "^19.2.13",
+        "@types/react-dom": "^19.2.3",
+        "tsx": "^4.19.2",
+        "typescript": "^5.7.3"
+    }
+}

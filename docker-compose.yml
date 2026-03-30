@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  video-generator:
+    build: .
+    volumes:
+      # Mount input scripts: Edit local files, see changes in container
+      - ./input:/app/input
+      # Mount output: Get video files on host machine
+      - ./output:/app/output
+      # Mount public assets: Cache downloads to save bandwidth/API limits
+      - ./public:/app/public
+      # Mount cache file: Persist API cache across restarts
+      - ./.video-cache.json:/app/.video-cache.json
+    env_file:
+      - .env
+    # Default command: Generate video based on input/input-scripts.json
+    command: npm run generate
+    # Use host user ID to prevent permission issues on Linux/Mac (optional but good practice)
+    # user: "${UID}:${GID}" 
