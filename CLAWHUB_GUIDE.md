@@ -46,18 +46,23 @@ metadata:
 
 ---
 
-## 🚀 3. Publishing Your Skills
+### 1. Publish Individual Skills
+To publish your individual skills (CLI and Script Generator), run the `publish` command pointing to the specific subdirectories:
 
-To publish a skill, run the `publish` command pointing to the specific subdirectory containing the `SKILL.md`.
-
-### Publish CLI Operations:
 ```bash
-clawhub publish .agent/skills/cli-operations --slug video-gen-cli --version 1.0.0
+# Publish CLI Operations Skill
+clawhub publish .agent/skills/cli-operations --slug video-gen-cli --version 1.1.3 --name "Video Generator CLI"
+
+# Publish Script Generation Skill
+clawhub publish .agent/skills/generate-script --slug video-gen-script --version 1.1.3 --name "Video Script Generator"
 ```
 
-### Publish Script Generation:
+### 2. Publish Project as a Plugin
+To publish the entire project as a native **Code Plugin** (including the MCP server support), run the `package publish` command from the root directory:
+
 ```bash
-clawhub publish .agent/skills/generate-script --slug video-gen-script --version 1.0.0
+# Replace (git rev-parse HEAD) with the actual commit SHA if (git rev-parse HEAD) fails on your shell.
+clawhub package publish "$PWD" --family code-plugin --name automated-video-generator --display-name "Automated Video Generator" --version 1.1.0 --source-repo itsPremkumar/Automated-Video-Generator --source-commit (git rev-parse HEAD)
 ```
 
 ---
