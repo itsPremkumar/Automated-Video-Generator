@@ -24,6 +24,17 @@
         "marketing-automation",
         "open-source"
     ],
+    "openclaw": {
+        "extensions": [
+            "./src/mcp-server.ts"
+        ],
+        "compat": {
+            "pluginApi": "^1.0.0"
+        },
+        "build": {
+            "openclawVersion": "^1.0.0"
+        }
+    },
     "private": true,
     "scripts": {
         "dev": "tsx src/server.ts",
