@@ -5,7 +5,11 @@
 ## 1. Install Dependencies
 
 ```bash
+# 1. Install Node dependencies
 npm install
+
+# 2. Install Python voice dependencies
+pip install -r requirements.txt
 ```
 
 ## 2. Set Up Environment

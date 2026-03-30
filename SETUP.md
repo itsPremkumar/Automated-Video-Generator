@@ -6,6 +6,7 @@ Detailed instructions for setting up the development environment.
 
 -   **OS:** Windows, macOS, or Linux
 -   **Node.js:** v18.0.0 or higher
+-   **Python:** v3.8.0 or higher (required for AI voice generation)
 -   **RAM:** 8GB minimum (16GB recommended for rendering)
 -   **Disk Space:** 1GB+ for project and dependencies
 
@@ -52,7 +53,13 @@ cd automated-video-generator
 npm install
 ```
 
-### 4. API Keys
+### 4. Install AI Voice Dependencies
+```bash
+pip install -r requirements.txt
+```
+*(This ensures `edge-tts` and related Python libraries are available)*
+
+### 5. API Keys
 1.  Go to [Pexels API](https://www.pexels.com/api/) and sign up.
 2.  Generate a new API key.
 3.  Create `.env` file in the project root.

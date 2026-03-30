@@ -231,6 +231,8 @@ Change the `VIDEO_ORIENTATION` environment variable in your `.env` file to `port
 ## 🤝 Community & Support
 We welcome contributions! Please refer to our [Contributing Guidelines](CONTRIBUTING.md) to get started.
 
+Interested in automated agents? Check out our [ClawHub Publishing Guide](CLAWHUB_GUIDE.md) to use this project with OpenClaw.
+
 <p align="center">
   Made with ❤️ by Premkumar.<br>
   Check out our <a href="CODE_OF_CONDUCT.md">Code of Conduct</a> and <a href="SECURITY.md">Security Policy</a>.
