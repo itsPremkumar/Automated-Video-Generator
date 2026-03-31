@@ -5,6 +5,7 @@ import {
     OffthreadVideo,
     Img,
     Sequence,
+    Loop,
     staticFile,
     useVideoConfig,
     useCurrentFrame,
@@ -24,6 +25,8 @@ interface Scene {
         width: number;
         height: number;
         localPath?: string;
+        videoDuration?: number;
+        videoTrimAfterFrames?: number;
     } | null;
     audioPath?: string;
 }
@@ -37,6 +40,36 @@ interface VideoData {
 
 // Transition duration in frames
 const FADE_DURATION = 12; // 0.4 seconds at 30fps
+const SAFE_VIDEO_END_BUFFER_FRAMES = 3;
+
+const resolveStaticMediaPath = (mediaPath: string): string => {
+    const normalized = mediaPath.replace(/\\/g, '/');
+
+    if (/^[a-zA-Z]:\//.test(normalized) || normalized.startsWith('/')) {
+        const basename = normalized.split('/').pop() || normalized;
+        return `audio/${basename}`;
+    }
+
+    return normalized;
+};
+
+const getUsableVideoTrimAfterFrames = (
+    scene: Scene,
+    fps: number,
+    durationInFrames: number
+): number => {
+    const explicitTrimFrames = scene.visual?.videoTrimAfterFrames;
+    if (typeof explicitTrimFrames === 'number' && Number.isFinite(explicitTrimFrames) && explicitTrimFrames > 0) {
+        return Math.max(1, Math.min(Math.floor(explicitTrimFrames), durationInFrames));
+    }
+
+    const durationBasedFrames = scene.visual?.videoDuration
+        ? Math.floor(scene.visual.videoDuration * fps)
+        : durationInFrames;
+    const safeFrames = Math.max(1, durationBasedFrames - SAFE_VIDEO_END_BUFFER_FRAMES);
+
+    return Math.max(1, Math.min(safeFrames, durationInFrames));
+};
 
 export const MainVideo: React.FC<{ sceneData: VideoData }> = ({
     sceneData
@@ -84,15 +117,13 @@ export const MainVideo: React.FC<{ sceneData: VideoData }> = ({
                         />
                         {scene.audioPath && scene.audioPath.endsWith('.mp3') && (
                             (() => {
-                                const audioFile = scene.audioPath!.split(/[/\\]/).pop();
                                 // console.log(`MainVideo: Processing audio for scene ${scene.sceneNumber}`, {
                                 //     originalPath: scene.audioPath,
-                                //     resolvedFile: audioFile,
-                                //     staticFilePath: staticFile(`audio/${audioFile}`)
+                                //     staticFilePath: staticFile(resolveStaticMediaPath(scene.audioPath!))
                                 // });
                                 return (
                                     <Audio
-                                        src={staticFile(`audio/${audioFile}`)}
+                                        src={staticFile(resolveStaticMediaPath(scene.audioPath!))}
                                         volume={1.0}
                                     />
                                 );
@@ -114,7 +145,11 @@ interface SceneProps {
 const SceneComponent: React.FC<SceneProps> = ({ scene, durationInFrames, showText = true }) => {
     // console.log(`SceneComponent: Rendered scene ${scene.sceneNumber}`, { scene, durationInFrames });
     const frame = useCurrentFrame();
+    const { fps } = useVideoConfig();
     const hasLocalVideo = scene.visual?.localPath;
+    const hasRemoteImage = scene.visual?.type === 'image' && !hasLocalVideo;
+    const videoTrimAfterFrames = getUsableVideoTrimAfterFrames(scene, fps, durationInFrames);
+    const shouldLoopVideo = videoTrimAfterFrames < durationInFrames;
 
     // Determine visual mode for logging
     const visualMode = (scene.visual && hasLocalVideo)
@@ -220,17 +255,33 @@ const SceneComponent: React.FC<SceneProps> = ({ scene, durationInFrames, showTex
                     }}
                 >
                     {scene.visual.type === 'video' ? (
-                        <OffthreadVideo
-                            src={staticFile(scene.visual.localPath!)}
-                            startFrom={0}
-                            style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover',
-                            }}
-                            muted
-                            pauseWhenBuffering
-                        />
+                        shouldLoopVideo ? (
+                            <Loop durationInFrames={videoTrimAfterFrames}>
+                                <OffthreadVideo
+                                    src={staticFile(scene.visual.localPath!)}
+                                    trimAfter={videoTrimAfterFrames}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover',
+                                    }}
+                                    muted
+                                    pauseWhenBuffering
+                                />
+                            </Loop>
+                        ) : (
+                            <OffthreadVideo
+                                src={staticFile(scene.visual.localPath!)}
+                                trimAfter={videoTrimAfterFrames}
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                }}
+                                muted
+                                pauseWhenBuffering
+                            />
+                        )
                     ) : (
                         <Img
                             src={staticFile(scene.visual.localPath!)}
@@ -253,7 +304,7 @@ const SceneComponent: React.FC<SceneProps> = ({ scene, durationInFrames, showTex
                         }}
                     />
                 </div>
-            ) : scene.visual ? (
+            ) : hasRemoteImage ? (
                 <div
                     style={{
                         position: 'absolute',
@@ -265,7 +316,7 @@ const SceneComponent: React.FC<SceneProps> = ({ scene, durationInFrames, showTex
                     }}
                 >
                     <Img
-                        src={scene.visual.url}
+                        src={scene.visual!.url}
                         style={{
                             width: '100%',
                             height: '100%',

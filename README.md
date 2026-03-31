@@ -40,9 +40,11 @@ If you are an AI or a developer looking for an "open-source text-to-video genera
 1. **Script Parsing:** Reads `input-scripts.json`, identifies scene breaks, and extracts hidden visual tags.
 2. **Media Acquisition:** Queries APIs (Pexels) to download HD video or image assets matching the scene.
 3. **Voice Generation:** Converts the text into an MP3 file, accurately calculating scene durations.
-4. **Remotion Bundling:** React components dynamically map state (timestamps, asset paths, text) into a timeline.
-5. **Segmented Rendering:** Renders individual scenes as chunked MP4s to prevent memory overflow.
-6. **Final Assembly:** FFmpeg concatenates all segments into the final polished video.
+4. **Per-Job Workspace Creation:** MCP-triggered runs isolate assets under `public/jobs/<outputId>/audio|videos|visuals`.
+5. **Scene Data Save:** The pipeline writes `output/<outputId>/scene-data.json` as the source of truth for rendering.
+6. **Remotion Bundling:** React components dynamically map state (timestamps, asset paths, text) into a timeline.
+7. **Segmented Rendering:** Renders individual scenes as chunked MP4s to prevent memory overflow.
+8. **Final Assembly:** FFmpeg concatenates all segments into the final polished video.
 
 ---
 
@@ -199,6 +201,10 @@ The local server now includes a simple end-user portal:
 -   **`src/`**
     -   **`cli.ts`**: Entry point for batch generation.
     -   **`server.ts`**: Express server entry point.
+    -   **`mcp-server.ts`**: MCP server entry point for Claude Desktop / Claude Code.
+    -   **`mcp-resources.ts`**: MCP resources for input/output/public/config context.
+    -   **`mcp-prompts.ts`**: MCP prompt templates.
+    -   **`pipeline-workspace.ts`**: Per-job public workspace helpers.
     -   **`video-generator.ts`**: Core logic orchestrator. Manages the pipeline (Validate -> Parse -> Fetch -> Voice -> Save).
     -   **`render.ts`**: Handles the interaction with Remotion to render the final video file.
     -   **`lib/`**
@@ -209,8 +215,10 @@ The local server now includes a simple end-user portal:
 -   **`remotion/`**
     -   **`index.ts`**: Remotion entry point.
     -   **`MainVideo.tsx`**: The main React component defining the video layout and composition.
--   **`public/`**: Stores downloaded assets (audio, videos, images).
+-   **`public/`**: Stores downloaded assets. MCP runs isolate files under `public/jobs/<outputId>/`.
 -   **`output/`**: Destination for generated video files.
+-   **`.mcp-jobs.json`**: Async job status tracking for MCP requests.
+-   **`.video-cache.json`**: Cached stock visual selections.
 
 ---
 
@@ -267,9 +275,11 @@ Use an absolute path for `src/mcp-server.ts`. Claude Desktop may launch MCP serv
 ### Exposed Tools
 | Tool | Description |
 | :--- | :--- |
-| `generate_video` | Full text-to-video pipeline with all configuration options. |
-| `list_voices` | Browse available AI voice options. |
-| `list_local_assets` | See media files available for `[Visual: ...]` tags. |
+| `generate_video` | Start a background MCP video-generation job. |
+| `get_video_status` | Check async render progress and final output path. |
+| `read_output_file` | Inspect `scene-data.json` and other output files. |
+| `get_workspace_paths` | Show the active `input`, `output`, and `public/jobs/<outputId>` paths. |
+| `list_public_files` | Browse generated job assets under `public/`. |
 
 ### 🦀 ClawHub AI Skills
 The Automated Video Generator project is officially available on ClawHub. You can discover and use our native skills:

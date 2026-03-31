@@ -164,6 +164,7 @@ export async function generateVoiceovers(
   let successCount = 0;
   let failCount = 0;
   const failedScenes: number[] = [];
+  let silentCount = 0;
 
   for (let i = 0; i < scenes.length; i++) {
     const scene = scenes[i];
@@ -175,6 +176,8 @@ export async function generateVoiceovers(
 
       if (result.path.endsWith('.mp3')) {
         successCount++;
+      } else if (!scene.voiceoverText.trim()) {
+        silentCount++;
       } else {
         failCount++;
         failedScenes.push(scene.sceneNumber);
@@ -198,6 +201,9 @@ export async function generateVoiceovers(
   console.log('🎤 [VOICE-GEN] ✅ Voiceover Generation Complete');
   console.log(`🎤 [VOICE-GEN]    Total time: ${(elapsed / 1000).toFixed(1)}s`);
   console.log(`🎤 [VOICE-GEN]    Successful: ${successCount}/${scenes.length}`);
+  if (silentCount > 0) {
+    console.log(`🎤 [VOICE-GEN]    Silent scenes: ${silentCount}/${scenes.length}`);
+  }
 
   if (failCount > 0) {
     console.log(`🎤 [VOICE-GEN]    ⚠️ Failed: ${failCount}/${scenes.length} (scenes: ${failedScenes.join(', ')})`);
@@ -279,7 +285,14 @@ async function generateSceneVoiceover(
     .replace(/[<>|&^]/g, '') // Remove shell special chars
     .trim();
 
-  if (!cleanText || cleanText.length < 2) {
+  if (!cleanText) {
+    return {
+      path: '',
+      duration: Math.max(3, scene.duration || 3),
+    };
+  }
+
+  if (cleanText.length < 2) {
     throw new Error(`Scene ${scene.sceneNumber} has empty or invalid text`);
   }
 

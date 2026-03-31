@@ -25,6 +25,7 @@ interface Scene {
         height: number;
         localPath?: string;
         videoDuration?: number;
+        videoTrimAfterFrames?: number;
     } | null;
     audioPath?: string;
 }
@@ -40,6 +41,36 @@ export interface SingleSceneProps {
 
 // Transition duration in frames
 const FADE_DURATION = 12; // 0.4 seconds at 30fps
+const SAFE_VIDEO_END_BUFFER_FRAMES = 3;
+
+const resolveStaticMediaPath = (mediaPath: string): string => {
+    const normalized = mediaPath.replace(/\\/g, '/');
+
+    if (/^[a-zA-Z]:\//.test(normalized) || normalized.startsWith('/')) {
+        const basename = normalized.split('/').pop() || normalized;
+        return `audio/${basename}`;
+    }
+
+    return normalized;
+};
+
+const getUsableVideoTrimAfterFrames = (
+    scene: Scene,
+    fps: number,
+    durationInFrames: number
+): number => {
+    const explicitTrimFrames = scene.visual?.videoTrimAfterFrames;
+    if (typeof explicitTrimFrames === 'number' && Number.isFinite(explicitTrimFrames) && explicitTrimFrames > 0) {
+        return Math.max(1, Math.min(Math.floor(explicitTrimFrames), durationInFrames));
+    }
+
+    const durationBasedFrames = scene.visual?.videoDuration
+        ? Math.floor(scene.visual.videoDuration * fps)
+        : durationInFrames;
+    const safeFrames = Math.max(1, durationBasedFrames - SAFE_VIDEO_END_BUFFER_FRAMES);
+
+    return Math.max(1, Math.min(safeFrames, durationInFrames));
+};
 
 /**
  * SingleSceneVideo - Renders a single scene for segmented rendering
@@ -54,12 +85,9 @@ export const SingleSceneVideo: React.FC<SingleSceneProps> = ({
     const { fps, durationInFrames } = useVideoConfig();
     const frame = useCurrentFrame();
     const hasLocalVideo = scene.visual?.localPath;
-
-    // Calculate video asset duration in frames for looping
-    // Default to scene duration if not available (safe fallback)
-    const videoAssetDurationInFrames = scene.visual?.videoDuration
-        ? Math.round(scene.visual.videoDuration * fps)
-        : durationInFrames;
+    const hasRemoteImage = scene.visual?.type === 'image' && !hasLocalVideo;
+    const videoTrimAfterFrames = getUsableVideoTrimAfterFrames(scene, fps, durationInFrames);
+    const shouldLoopVideo = videoTrimAfterFrames < durationInFrames;
 
     // Fade in only for first scene, fade out only for last scene
     // Middle scenes get no fade (seamless concatenation)
@@ -132,10 +160,24 @@ export const SingleSceneVideo: React.FC<SingleSceneProps> = ({
                     }}
                 >
                     {scene.visual.type === 'video' ? (
-                        <Loop durationInFrames={videoAssetDurationInFrames}>
+                        shouldLoopVideo ? (
+                            <Loop durationInFrames={videoTrimAfterFrames}>
+                                <OffthreadVideo
+                                    src={staticFile(scene.visual.localPath!)}
+                                    trimAfter={videoTrimAfterFrames}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover',
+                                    }}
+                                    muted
+                                    pauseWhenBuffering
+                                />
+                            </Loop>
+                        ) : (
                             <OffthreadVideo
                                 src={staticFile(scene.visual.localPath!)}
-                                startFrom={0}
+                                trimAfter={videoTrimAfterFrames}
                                 style={{
                                     width: '100%',
                                     height: '100%',
@@ -144,7 +186,7 @@ export const SingleSceneVideo: React.FC<SingleSceneProps> = ({
                                 muted
                                 pauseWhenBuffering
                             />
-                        </Loop>
+                        )
                     ) : (
                         <Img
                             src={staticFile(scene.visual.localPath!)}
@@ -167,7 +209,7 @@ export const SingleSceneVideo: React.FC<SingleSceneProps> = ({
                         }}
                     />
                 </div>
-            ) : scene.visual ? (
+            ) : hasRemoteImage ? (
                 <div
                     style={{
                         position: 'absolute',
@@ -179,7 +221,7 @@ export const SingleSceneVideo: React.FC<SingleSceneProps> = ({
                     }}
                 >
                     <Img
-                        src={scene.visual.url}
+                        src={scene.visual!.url}
                         style={{
                             width: '100%',
                             height: '100%',
@@ -256,7 +298,7 @@ export const SingleSceneVideo: React.FC<SingleSceneProps> = ({
             {/* Audio */}
             {scene.audioPath && scene.audioPath.endsWith('.mp3') && (
                 <Audio
-                    src={staticFile(`audio/${scene.audioPath.split(/[/\\]/).pop()}`)}
+                    src={staticFile(resolveStaticMediaPath(scene.audioPath))}
                     volume={1.0}
                 />
             )}

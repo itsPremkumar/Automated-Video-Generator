@@ -1,9 +1,10 @@
 import { parseScript, validateScript } from './lib/script-parser';
-import { fetchVisualsForScene, downloadMedia, getVideoDuration } from './lib/visual-fetcher';
+import { fetchVisualsForScene, downloadMedia, getVideoMetadata, invalidateCachedVisual } from './lib/visual-fetcher';
 import { generateVoiceovers, DEFAULT_VOICE_CONFIG } from './lib/voice-generator';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logError, logInfo, resolveProjectPath } from './runtime';
+import { createPipelineWorkspace, ensurePipelineWorkspace, toPublicRelativePath } from './pipeline-workspace';
 
 const console = {
     log: (...args: unknown[]) => logInfo(...args),
@@ -34,6 +35,8 @@ interface GenerationOptions {
     showText?: boolean;
     /** Default Video Fallback */
     defaultVideo?: string;
+    /** Stable public/output identifier */
+    publicId?: string;
 }
 
 // console.log('\n🎬 [VIDEO-GEN] Module loaded');
@@ -47,8 +50,9 @@ export async function generateVideo(
     outputDir: string = resolveProjectPath('output'),
     options: GenerationOptions = {}
 ): Promise<GenerationResult> {
-    const { onProgress, orientation = 'portrait', voice, title, showText = true, defaultVideo = 'default.mp4' } = options;
+    const { onProgress, orientation = 'portrait', voice, title, showText = true, defaultVideo = 'default.mp4', publicId } = options;
     const totalStartTime = Date.now();
+    const workspace = createPipelineWorkspace(outputDir, publicId);
 
     // console.log('\n');
     // console.log('╔════════════════════════════════════════════════════════════════╗');
@@ -109,16 +113,11 @@ export async function generateVideo(
         // console.log('╚══════════════════════════════════════════╝');
 
         const step3Start = Date.now();
-        const videoDir = resolveProjectPath('public', 'videos');
-        const visualsDir = resolveProjectPath('public', 'visuals');
+        const videoDir = workspace.videosDir;
+        const visualsDir = workspace.visualsDir;
         const visuals: (import('./lib/visual-fetcher').MediaAsset | null)[] = [];
 
-        // Ensure directories exist
-        [videoDir, visualsDir].forEach(dir => {
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
-            }
-        });
+        ensurePipelineWorkspace(workspace);
 
         // console.log(`🎬 [STEP 3] Video output directory: ${videoDir}`);
         // console.log(`🎬 [STEP 3] Visuals directory: ${visualsDir}`);
@@ -162,11 +161,13 @@ export async function generateVideo(
                             url: `local://${scene.localAsset}`,
                             width: orientation === 'landscape' ? 1920 : 1080,
                             height: orientation === 'landscape' ? 1080 : 1920,
-                            localPath: `visuals/${targetFilename}`,
+                            localPath: toPublicRelativePath(targetPath),
                         };
 
                         if (isVideo) {
-                            visual.videoDuration = getVideoDuration(targetPath);
+                            const videoMetadata = getVideoMetadata(targetPath);
+                            visual.videoDuration = videoMetadata.durationSeconds;
+                            visual.videoTrimAfterFrames = videoMetadata.trimAfterFrames;
                             // console.log(`⏱️ [SCENE ${i + 1}] Local video duration: ${visual.videoDuration.toFixed(2)}s`);
                         }
                     } else {
@@ -182,15 +183,22 @@ export async function generateVideo(
                             const filename = `scene_${i + 1}.mp4`;
                             // console.log(`⬇️ [SCENE ${i + 1}] Downloading: ${filename}`);
                             const downloadResult = await downloadMedia(visual.url, videoDir, filename);
-                            visual.localPath = `videos/${filename}`;
+                            if (downloadResult.videoTrimAfterFrames && downloadResult.videoTrimAfterFrames < 5) {
+                                throw new Error(`Downloaded video clip is too short to render reliably: ${filename}`);
+                            }
+                            visual.localPath = toPublicRelativePath(downloadResult.path);
                             visual.videoDuration = downloadResult.videoDuration;
+                            visual.videoTrimAfterFrames = downloadResult.videoTrimAfterFrames;
                             // console.log(`✅ [SCENE ${i + 1}] Saved: ${filename}`);
                             if (downloadResult.videoDuration) {
                                 // console.log(`⏱️ [SCENE ${i + 1}] Video duration: ${downloadResult.videoDuration.toFixed(2)}s`);
                             }
                         } catch (err: any) {
                             // console.error(`⚠️ [SCENE ${i + 1}] Download failed: ${err.message}`);
-                            // console.log(`⚠️ [SCENE ${i + 1}] Will use URL fallback`);
+                            invalidateCachedVisual(scene.searchKeywords, orientation);
+
+                            const imageFallback = await fetchVisualsForScene(scene.searchKeywords, false, orientation);
+                            visual = imageFallback && imageFallback.type === 'image' ? imageFallback : null;
                         }
                     } else if (visual) {
                         // console.log(`🖼️ [SCENE ${i + 1}] Using image: ${visual.url}`);
@@ -214,13 +222,19 @@ export async function generateVideo(
                             url: `local://${defaultVideo}`,
                             width: orientation === 'landscape' ? 1920 : 1080,
                             height: orientation === 'landscape' ? 1080 : 1920,
-                            localPath: `visuals/${defaultVideo}`,
+                            localPath: toPublicRelativePath(fallbackPathVisuals),
                         };
-                        visual.videoDuration = getVideoDuration(fallbackPathVisuals);
+                        const videoMetadata = getVideoMetadata(fallbackPathVisuals);
+                        visual.videoDuration = videoMetadata.durationSeconds;
+                        visual.videoTrimAfterFrames = videoMetadata.trimAfterFrames;
                         // console.log(`✅ [SCENE ${i + 1}] Fallback successful`);
                     } else {
                         // console.warn(`❌ [SCENE ${i + 1}] Default video ${defaultVideo} not found in input-assests`);
                     }
+                }
+
+                if (visual?.type === 'video' && !visual.localPath) {
+                    visual = null;
                 }
 
                 visuals[i] = visual;
@@ -255,7 +269,7 @@ export async function generateVideo(
 
         const step4Start = Date.now();
         onProgress?.('audio', 55, 'Generating voiceovers');
-        const audioDir = resolveProjectPath('public', 'audio');
+        const audioDir = workspace.audioDir;
 
         // console.log(`🎤 [STEP 4] Audio output directory: ${audioDir}`);
 
@@ -290,7 +304,7 @@ export async function generateVideo(
                 ...scene,
                 duration: actualDuration, // Use actual audio duration
                 visual: visuals[index],
-                audioPath: audioResult?.path,
+                audioPath: audioResult?.path ? toPublicRelativePath(audioResult.path) : undefined,
             };
         });
 
@@ -301,6 +315,7 @@ export async function generateVideo(
             orientation,
             title,
             showText,
+            assetNamespace: workspace.publicNamespace,
         };
 
         // Ensure output directory exists

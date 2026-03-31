@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import { execSync } from 'child_process';
 import { cleanupAssets } from './lib/cleaner';
 import { logError, logInfo, logWarn, resolveProjectPath, writeProgress } from './runtime';
+import { createPipelineWorkspace } from './pipeline-workspace';
 
 const console = {
     log: (...args: unknown[]) => logInfo(...args),
@@ -27,6 +28,8 @@ interface Scene {
         width: number;
         height: number;
         localPath?: string;
+        videoDuration?: number;
+        videoTrimAfterFrames?: number;
     } | null;
     audioPath?: string;
 }
@@ -38,6 +41,7 @@ interface SceneData {
     orientation?: 'portrait' | 'landscape';
     title?: string;
     showText?: boolean;
+    assetNamespace?: string;
 }
 
 /**
@@ -54,6 +58,8 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
     console.log(`\n🎥 [RENDER] Start time: ${new Date().toISOString()}`);
 
     let bundleLocation: string | undefined;
+    let assetWorkspaceDir: string | undefined;
+    let renderCompleted = false;
     const segmentsDir = path.join(outputDir, 'segments');
 
     try {
@@ -72,6 +78,9 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
 
         const fileContent = fs.readFileSync(sceneDataPath, 'utf8');
         const sceneData: SceneData = JSON.parse(fileContent);
+        assetWorkspaceDir = sceneData.assetNamespace
+            ? resolveProjectPath('public', sceneData.assetNamespace)
+            : createPipelineWorkspace(outputDir).workspaceDir;
 
         console.log(`📋 [RENDER] Loaded ${sceneData.scenes.length} scenes`);
         console.log(`📋 [RENDER] Total duration: ${sceneData.totalDuration}s`);
@@ -298,9 +307,16 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         const safeFilename = videoTitle.replace(/[<>:"/\\|?*]/g, '').trim();
         const finalOutput = path.join(outputDir, `${safeFilename}.mp4`);
 
+        const missingSegments = segments.filter((segmentPath) => !fs.existsSync(segmentPath));
+        if (missingSegments.length > 0) {
+            throw new Error(`Missing segment files before concat: ${missingSegments.join(', ')}`);
+        }
+
         // Create FFmpeg concat list
         const concatListPath = path.join(segmentsDir, 'segments.txt');
-        const concatList = segments.map(s => `file '${path.basename(s)}'`).join('\n');
+        const concatList = segments
+            .map((segmentPath) => `file '${segmentPath.replace(/\\/g, '/')}'`)
+            .join('\n');
         fs.writeFileSync(concatListPath, concatList);
 
         console.log(`🔗 [RENDER] Concatenating ${segments.length} segments...`);
@@ -321,7 +337,6 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
 
         try {
             execSync(ffmpegCmd, {
-                cwd: segmentsDir,
                 stdio: 'pipe'
             });
         } catch (ffmpegError: any) {
@@ -331,7 +346,6 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
 
             try {
                 execSync(ffmpegReencodeCmd, {
-                    cwd: segmentsDir,
                     stdio: 'pipe'
                 });
             } catch (reencodeError: any) {
@@ -372,6 +386,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         }
 
         console.log(`🧹 [RENDER] Cleaned up ${segments.length} segment files`);
+        renderCompleted = true;
 
         // ══════════════════════════════════════════════════════════════════
         // COMPLETE
@@ -413,20 +428,24 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         throw err;
     } finally {
         // Cleanup assets regardless of success/failure
-        await runCleanup(bundleLocation);
+        await runCleanup(bundleLocation, renderCompleted ? assetWorkspaceDir : undefined);
     }
 };
 
-const runCleanup = async (bundleLocation?: string) => {
-    const videoDir = resolveProjectPath('public', 'videos');
-    const audioDir = resolveProjectPath('public', 'audio');
+const runCleanup = async (bundleLocation?: string, assetWorkspaceDir?: string) => {
+    const dirsToClean: string[] = [];
 
-    const dirsToClean = [videoDir, audioDir];
+    if (assetWorkspaceDir) {
+        dirsToClean.push(assetWorkspaceDir);
+    }
+
     if (bundleLocation) {
         dirsToClean.push(bundleLocation);
     }
 
-    await cleanupAssets(dirsToClean);
+    if (dirsToClean.length > 0) {
+        await cleanupAssets(dirsToClean);
+    }
 }
 
 

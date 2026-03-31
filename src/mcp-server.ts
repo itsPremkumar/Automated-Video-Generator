@@ -16,6 +16,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { ensureProjectRootCwd, projectRoot, resolveProjectPath, jobStore } from './runtime';
+import { sanitizeOutputId } from './pipeline-workspace';
 
 // Import tool modules
 import { readInputScripts, writeInputScript, deleteInputScript, validateScriptFormat, videoScriptSchema } from './mcp-tools-input';
@@ -233,6 +234,7 @@ server.registerTool(
 // ══════════════════════════════════════════════════════════════════
 
 const generateVideoInputSchema = z.object({
+  id: z.string().optional().describe('Optional stable output ID / folder name to use inside output/.'),
   title: z.string().describe('The title of the video. Used for the output filename and on-screen branding.'),
   script: z.string().describe('The narrative script content. Use [Visual: search query] tags to direct specific visuals for each scene.'),
   orientation: z.enum(['portrait', 'landscape']).default('portrait').describe('Video orientation. portrait=9:16, landscape=16:9.'),
@@ -249,13 +251,21 @@ server.registerTool(
     inputSchema: generateVideoInputSchema as any,
   },
   async (args: any) => {
-    const { title, script, orientation, voice, showText, defaultVideo } = args;
+    const { id, title, script, orientation, voice, showText, defaultVideo } = args;
 
     // Create a unique Job ID
     const jobId = `job_${Date.now()}_${title.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10)}`;
+    const sanitizedTitle = sanitizeOutputId(
+      title
+        .replace(/\s+/g, '_')
+        .substring(0, 50)
+    );
+    const outputId = sanitizeOutputId(id || sanitizedTitle);
 
     // Initialize job state
     jobStore.set(jobId, {
+      title,
+      publicId: outputId,
       status: 'pending',
       progress: 0,
       message: 'Queued for processing...',
@@ -265,13 +275,7 @@ server.registerTool(
     (async () => {
       try {
         const { generateVideo, renderVideo } = await loadVideoPipeline();
-
-        // Create a sanitized output directory name
-        const sanitizedTitle = title
-          .replace(/[^a-zA-Z0-9\s-_]/g, '')
-          .replace(/\s+/g, '_')
-          .substring(0, 50);
-        const outputDir = resolveProjectPath('output', sanitizedTitle);
+        const outputDir = resolveProjectPath('output', outputId);
 
         // Ensure output directory exists
         if (!fs.existsSync(outputDir)) {
@@ -287,6 +291,7 @@ server.registerTool(
           title,
           showText,
           defaultVideo,
+          publicId: outputId,
           onProgress: (step: string, percent: number, message: string) => {
             // Map 0-100% of generation to 5-40% of overall job
             const totalProgress = 5 + Math.round((percent / 100) * 35);
@@ -335,6 +340,7 @@ server.registerTool(
             `✅ Video generation job started!`,
             ``,
             `🆔 **Job ID:** \`${jobId}\``,
+            `📦 **Output ID:** \`${outputId}\``,
             `⏳ **Status:** Processing in background`,
             ``,
             `Please wait about 30 seconds and then use \`get_video_status(jobId: "${jobId}")\` to check progress. Video rendering can take several minutes.`,
@@ -372,6 +378,10 @@ server.registerTool(
       `📊 **Progress:** ${job.progress}%`,
       `💬 **Message:** ${job.message}`,
     ];
+
+    if (job.publicId) {
+      lines.push(`📦 **Output ID:** \`${job.publicId}\``);
+    }
 
     if (job.outputPath) {
       lines.push(``, `📁 **Output Path:** \`${job.outputPath}\``);
@@ -471,6 +481,85 @@ server.registerTool(
     const checks = await healthCheck();
     return {
       content: [{ type: 'text' as const, text: JSON.stringify(checks, null, 2) }],
+    };
+  }
+);
+
+server.registerTool(
+  'get_workspace_paths',
+  {
+    title: 'Get Workspace Paths',
+    description: 'Return the absolute project paths Claude should use for input, output, public, and local asset folders.',
+    inputSchema: z.object({}) as any,
+  },
+  async () => {
+    const paths = {
+      projectRoot,
+      inputDir: resolveProjectPath('input'),
+      inputScriptsFile: resolveProjectPath('input', 'input-scripts.json'),
+      inputAssetsDir: resolveProjectPath('input', 'input-assests'),
+      outputDir: resolveProjectPath('output'),
+      publicDir: resolveProjectPath('public'),
+      publicJobsDir: resolveProjectPath('public', 'jobs'),
+    };
+
+    return {
+      content: [{ type: 'text' as const, text: JSON.stringify(paths, null, 2) }],
+    };
+  }
+);
+
+server.registerTool(
+  'list_public_files',
+  {
+    title: 'List Public Files',
+    description: 'List files under the public directory or a public subdirectory such as jobs, videos, audio, or visuals.',
+    inputSchema: z.object({ subdir: z.string().optional() }) as any,
+  },
+  async ({ subdir }: any) => {
+    const normalizedSubdir = typeof subdir === 'string' ? subdir.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : '';
+    if (normalizedSubdir.includes('..')) {
+      return {
+        content: [{ type: 'text' as const, text: '❌ Error: subdir cannot contain "..".' }],
+        isError: true,
+      };
+    }
+
+    const targetDir = normalizedSubdir
+      ? resolveProjectPath('public', ...normalizedSubdir.split('/'))
+      : resolveProjectPath('public');
+
+    if (!fs.existsSync(targetDir)) {
+      return {
+        content: [{ type: 'text' as const, text: `❌ Error: Directory not found: ${targetDir}` }],
+        isError: true,
+      };
+    }
+
+    const scanDir = (dir: string, relativeDir = ''): Record<string, unknown> => {
+      const entries = fs.readdirSync(dir).sort((left, right) => left.localeCompare(right));
+      const result: Record<string, unknown> = {};
+
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry);
+        const stats = fs.statSync(fullPath);
+        const relativePath = relativeDir ? `${relativeDir}/${entry}` : entry;
+
+        if (stats.isDirectory()) {
+          result[entry] = scanDir(fullPath, relativePath);
+        } else {
+          result[entry] = {
+            relativePath,
+            sizeBytes: stats.size,
+          };
+        }
+      }
+
+      return result;
+    };
+
+    return {
+      content: [{ type: 'text' as const, text: JSON.stringify(scanDir(targetDir), null, 2) }],
     };
   }
 );

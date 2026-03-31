@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import * as path from 'path';
+import { resolveProjectPath } from '../runtime';
 
 export interface Scene {
     sceneNumber: number;
@@ -83,19 +83,28 @@ function parseScriptLocally(script: string): ParsedScript {
     // console.log(`📝 [PARSER] Valid lines after filtering (>10 chars): ${lines.length}`);
     // console.log('📝 [PARSER] Processing each line into scenes...\n');
 
-    const scenes: Scene[] = lines.map((line, index) => {
-        // console.log(`  📝 [SCENE ${index + 1}] Processing: "${line.substring(0, 50)}..."`);
+    const scenes: Scene[] = [];
+    let pendingVisualCue = '';
 
-        // CHECK FOR MANUAL VISUAL CUES: [Visual: A happy dog running]
-        let visualCue = '';
-        let cleanText = line;
-        let localAsset: string | undefined = undefined;
+    for (const line of lines) {
+        // console.log(`  📝 [SCENE ${scenes.length + 1}] Processing: "${line.substring(0, 50)}..."`);
 
-        const visualMatch = line.match(/\[Visual:?\s*(.*?)\]/i);
-        if (visualMatch) {
-            visualCue = visualMatch[1].trim();
-            // Remove ALL cues from the spoken text (global replace)
-            cleanText = line.replace(/\[Visual:?\s*.*?\]/gi, '').trim();
+        const inlineVisualMatch = line.match(/\[Visual:?\s*(.*?)\]/i);
+        let visualCue = inlineVisualMatch?.[1]?.trim() || '';
+        let cleanText = line.replace(/\[Visual:?\s*.*?\]/gi, '').trim();
+
+        if (!visualCue && pendingVisualCue) {
+            visualCue = pendingVisualCue;
+            pendingVisualCue = '';
+        }
+
+        // Support the common Claude-style format where a visual tag is on its own line
+        // and the narration appears on the following line.
+        if (!cleanText) {
+            if (visualCue) {
+                pendingVisualCue = visualCue;
+            }
+            continue;
         }
 
         // Better keyword extraction with stop words filter
@@ -109,20 +118,17 @@ function parseScriptLocally(script: string): ParsedScript {
         // Strategy: Use Visual Cue if present, otherwise use keywords
         let keywords: string[] = [];
         let visualDescription = '';
+        let localAsset: string | undefined = undefined;
 
         if (visualCue) {
-            // If user provided a cue, use it directly!
-            // We split it into keywords for the search function, but keep the full phrase for context
-            keywords = visualCue.toLowerCase().split(/\s+/);
-            visualDescription = `Visual for: ${visualCue}`; // User's exact prompt
+            keywords = visualCue.toLowerCase().split(/\s+/).filter(Boolean);
+            visualDescription = `Visual for: ${visualCue}`;
 
-            // Check if it's a local asset
-            const assetsDir = path.join(process.cwd(), 'input', 'input-assests');
-            if (fs.existsSync(path.join(assetsDir, visualCue))) {
+            if (fs.existsSync(resolveProjectPath('input', 'input-assests', visualCue))) {
                 localAsset = visualCue;
             }
         } else {
-            keywords = filteredWords.slice(0, 4); // Take top 4 keywords
+            keywords = filteredWords.slice(0, 4);
             if (keywords.length === 0) {
                 keywords.push('business', 'professional');
             }
@@ -131,19 +137,19 @@ function parseScriptLocally(script: string): ParsedScript {
 
         const duration = Math.max(3, Math.ceil(cleanText.length / 15));
 
-        // console.log(`  📝 [SCENE ${index + 1}] Keywords: [${keywords.join(', ')}]`);
-        // console.log(`  📝 [SCENE ${index + 1}] Duration: ${duration}s (based on ${cleanText.length} chars)`);
+        // console.log(`  📝 [SCENE ${scenes.length + 1}] Keywords: [${keywords.join(', ')}]`);
+        // console.log(`  📝 [SCENE ${scenes.length + 1}] Duration: ${duration}s (based on ${cleanText.length} chars)`);
         // console.log('');
 
-        return {
-            sceneNumber: index + 1,
+        scenes.push({
+            sceneNumber: scenes.length + 1,
             duration,
-            visualDescription: `Visual for: ${keywords.join(' ')}`,
+            visualDescription,
             voiceoverText: cleanText,
             searchKeywords: keywords,
             localAsset
-        };
-    });
+        });
+    }
 
     const totalDuration = scenes.reduce((acc, s) => acc + s.duration, 0);
 

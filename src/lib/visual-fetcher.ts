@@ -23,6 +23,7 @@ export interface MediaAsset {
     photographer?: string;
     localPath?: string;
     videoDuration?: number;  // Duration in seconds for video files
+    videoTrimAfterFrames?: number;
 }
 
 const PEXELS_API_KEY = process.env.PEXELS_API_KEY || '';
@@ -30,6 +31,11 @@ const PIXABAY_API_KEY = process.env.PIXABAY_API_KEY || '';
 
 const BASE_URL = 'https://api.pexels.com/v1';
 const CACHE_FILE = resolveProjectPath('.video-cache.json');
+const MAX_DOWNLOAD_BYTES = 40 * 1024 * 1024;
+const DOWNLOAD_STALL_TIMEOUT_MS = 15000;
+const TARGET_VIDEO_DURATION_SECONDS = 6;
+const DEFAULT_RENDER_FPS = 30;
+const SAFE_VIDEO_END_BUFFER_FRAMES = 3;
 
 // Preferred video quality order (highest first)
 const PREFERRED_QUALITIES = ['uhd', 'hd', 'sd'];
@@ -82,6 +88,19 @@ export function resetInMemoryCache(): void {
     }
 }
 
+export function invalidateCachedVisual(
+    keywords: string[],
+    orientation: 'portrait' | 'landscape' = 'portrait'
+): void {
+    const cacheKey = `${keywords.join(' ').toLowerCase()}:${orientation}`;
+    const cache = getCache();
+
+    if (cache[cacheKey]) {
+        delete cache[cacheKey];
+        saveCache(cache);
+    }
+}
+
 function saveCache(cache: VideoCache): void {
     try {
         const entries = Object.keys(cache).length;
@@ -99,42 +118,152 @@ function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+export interface VideoMetadata {
+    durationSeconds: number;
+    trimAfterFrames: number;
+}
+
+const parsePositiveNumber = (value: unknown): number | undefined => {
+    if (typeof value === 'number') {
+        return Number.isFinite(value) && value > 0 ? value : undefined;
+    }
+
+    if (typeof value === 'string') {
+        const parsed = parseFloat(value);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+    }
+
+    return undefined;
+};
+
+const parsePositiveInteger = (value: unknown): number | undefined => {
+    if (typeof value === 'number') {
+        return Number.isFinite(value) && value > 0 ? Math.floor(value) : undefined;
+    }
+
+    if (typeof value === 'string') {
+        const parsed = parseInt(value, 10);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+    }
+
+    return undefined;
+};
+
+const parseFrameRate = (value: unknown): number | undefined => {
+    if (typeof value !== 'string' || value.trim().length === 0) {
+        return undefined;
+    }
+
+    if (!value.includes('/')) {
+        return parsePositiveNumber(value);
+    }
+
+    const [numerator, denominator] = value.split('/');
+    const top = parseFloat(numerator);
+    const bottom = parseFloat(denominator);
+
+    if (!Number.isFinite(top) || !Number.isFinite(bottom) || bottom === 0) {
+        return undefined;
+    }
+
+    const rate = top / bottom;
+    return Number.isFinite(rate) && rate > 0 ? rate : undefined;
+};
+
+const estimateVideoDurationFromSize = (filePath: string): number | undefined => {
+    try {
+        const stats = fs.statSync(filePath);
+        const sizeMB = stats.size / (1024 * 1024);
+        return Math.max(3, Math.min(30, sizeMB * 0.5));
+    } catch {
+        return undefined;
+    }
+};
+
+const calculateSafeTrimAfterFrames = (
+    durationSeconds: number,
+    renderFps: number = DEFAULT_RENDER_FPS
+): number => {
+    const durationFrames = Math.max(1, Math.floor(durationSeconds * renderFps));
+    return Math.max(1, durationFrames - SAFE_VIDEO_END_BUFFER_FRAMES);
+};
+
+/**
+ * Get conservative video metadata for Remotion rendering.
+ * We trim a few frames from the end because some stock clips report a
+ * slightly longer duration than the actually seekable final frame.
+ */
+export function getVideoMetadata(
+    filePath: string,
+    renderFps: number = DEFAULT_RENDER_FPS
+): VideoMetadata {
+    try {
+        const ffprobeCmd = ffprobePath.path || 'ffprobe';
+        const result = execSync(
+            `"${ffprobeCmd}" -v quiet -count_frames -print_format json -show_entries format=duration:stream=codec_type,duration,avg_frame_rate,r_frame_rate,nb_frames,nb_read_frames "${filePath}"`,
+            { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+        );
+        const parsed = JSON.parse(result) as {
+            format?: { duration?: string };
+            streams?: Array<{
+                codec_type?: string;
+                duration?: string;
+                avg_frame_rate?: string;
+                r_frame_rate?: string;
+                nb_frames?: string;
+                nb_read_frames?: string;
+            }>;
+        };
+
+        const videoStream = parsed.streams?.find((stream) => stream.codec_type === 'video') ?? parsed.streams?.[0];
+        const formatDuration = parsePositiveNumber(parsed.format?.duration);
+        const streamDuration = parsePositiveNumber(videoStream?.duration);
+        const rawDuration = streamDuration ?? formatDuration;
+        const sourceFrameRate =
+            parseFrameRate(videoStream?.avg_frame_rate) ??
+            parseFrameRate(videoStream?.r_frame_rate);
+        const sourceFrameCount =
+            parsePositiveInteger(videoStream?.nb_read_frames) ??
+            parsePositiveInteger(videoStream?.nb_frames);
+
+        let measuredDuration = rawDuration;
+        if (sourceFrameCount && sourceFrameRate) {
+            const frameBasedDuration = sourceFrameCount / sourceFrameRate;
+            measuredDuration = measuredDuration
+                ? Math.min(measuredDuration, frameBasedDuration)
+                : frameBasedDuration;
+        }
+
+        if (measuredDuration) {
+            return {
+                durationSeconds: measuredDuration,
+                trimAfterFrames: calculateSafeTrimAfterFrames(measuredDuration, renderFps),
+            };
+        }
+    } catch {
+        // ffprobe not available or returned invalid metadata
+    }
+
+    const estimatedDuration = estimateVideoDurationFromSize(filePath);
+    if (estimatedDuration) {
+        return {
+            durationSeconds: estimatedDuration,
+            trimAfterFrames: calculateSafeTrimAfterFrames(estimatedDuration, renderFps),
+        };
+    }
+
+    return {
+        durationSeconds: 5,
+        trimAfterFrames: calculateSafeTrimAfterFrames(5, renderFps),
+    };
+}
+
 /**
  * Get video duration in seconds using ffprobe
  * Falls back to file size estimation if ffprobe unavailable
  */
 export function getVideoDuration(filePath: string): number {
-    // Try ffprobe-static first (bundled binary)
-    try {
-        const ffprobeCmd = ffprobePath.path || 'ffprobe';
-        const result = execSync(
-            `"${ffprobeCmd}" -v quiet -show_entries format=duration -of csv=p=0 "${filePath}"`,
-            { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
-        );
-        const duration = parseFloat(result.trim());
-        if (!isNaN(duration) && duration > 0) {
-            // console.log(`⏱️ [VIDEO-DURATION] ${path.basename(filePath)}: ${duration.toFixed(2)}s (ffprobe)`);
-            return duration;
-        }
-    } catch {
-        // ffprobe not available
-    }
-
-    // Fallback: estimate from file size
-    // Rough estimate: 1MB ≈ 1 second for HD video
-    try {
-        const stats = fs.statSync(filePath);
-        const sizeMB = stats.size / (1024 * 1024);
-        const estimatedDuration = Math.max(3, Math.min(30, sizeMB * 0.5)); // 0.5s per MB, clamp 3-30s
-        // console.log(`⏱️ [VIDEO-DURATION] ${path.basename(filePath)}: ~${estimatedDuration.toFixed(1)}s (estimated from ${sizeMB.toFixed(1)}MB)`);
-        return estimatedDuration;
-    } catch {
-        // Can't read file
-    }
-
-    // Last resort fallback: 5 seconds (conservative)
-    // console.log(`⏱️ [VIDEO-DURATION] Using fallback: 5s`);
-    return 5;
+    return getVideoMetadata(filePath).durationSeconds;
 }
 
 
@@ -170,6 +299,13 @@ function selectBestVideoFile(videoFiles: any[]): any {
     const sorted = validFiles.sort((a, b) => b.width - a.width)[0];
     // console.log(`    🎬 [QUALITY] Fallback to largest: ${sorted.width}x${sorted.height}`);
     return sorted;
+}
+
+function scoreVideoAsset(asset: MediaAsset): number {
+    const duration = asset.videoDuration || TARGET_VIDEO_DURATION_SECONDS;
+    const durationDelta = Math.abs(duration - TARGET_VIDEO_DURATION_SECONDS);
+    const pixelCount = asset.width * asset.height;
+    return (durationDelta * 1_000_000) + pixelCount;
 }
 
 /**
@@ -216,7 +352,7 @@ export async function searchVideos(
                 return [];
             }
 
-            return response.data.videos.map((video: any, idx: number) => {
+            const assets = response.data.videos.map((video: any, idx: number) => {
                 // console.log(`  🎥 [VIDEO ${idx + 1}] ID: ${video.id}, By: ${video.user.name}`);
                 // console.log(`  🎥 [VIDEO ${idx + 1}] Files: ${video.video_files.length}`);
 
@@ -231,6 +367,8 @@ export async function searchVideos(
                     videoDuration: video.duration,
                 };
             });
+
+            return assets.sort((left: MediaAsset, right: MediaAsset) => scoreVideoAsset(left) - scoreVideoAsset(right));
         } catch (error: any) {
             const elapsed = Date.now() - startTime;
             // console.error(`🔍 [PEXELS-VIDEO] ❌ Error after ${elapsed}ms: ${error.message}`);
@@ -475,6 +613,7 @@ export async function fetchVisualsForScene(
 export interface DownloadResult {
     path: string;
     videoDuration?: number;  // Duration in seconds for video files
+    videoTrimAfterFrames?: number;
 }
 
 /**
@@ -507,11 +646,14 @@ export async function downloadMedia(
             if (stats.size > 1024) { // Ignore > 1KB files
                 // Get video duration if it's a video file
                 let videoDuration: number | undefined;
+                let videoTrimAfterFrames: number | undefined;
                 if (filename.endsWith('.mp4') || filename.endsWith('.webm') || filename.endsWith('.mov')) {
-                    videoDuration = getVideoDuration(outputPath);
+                    const videoMetadata = getVideoMetadata(outputPath);
+                    videoDuration = videoMetadata.durationSeconds;
+                    videoTrimAfterFrames = videoMetadata.trimAfterFrames;
                 }
                 // console.log(`⬇️ [DOWNLOAD] File exists, skipping download: ${filename}`);
-                return { path: outputPath, videoDuration };
+                return { path: outputPath, videoDuration, videoTrimAfterFrames };
             }
         } catch (e) {
             // Check failed, proceed to download
@@ -533,25 +675,80 @@ export async function downloadMedia(
             // console.log(`⬇️ [DOWNLOAD] Content-Length: ${response.headers['content-length']} bytes`);
 
             const writer = fs.createWriteStream(outputPath);
+            let settled = false;
+            let stallTimer: NodeJS.Timeout | null = null;
 
-            response.data.pipe(writer);
+            const clearStallTimer = () => {
+                if (stallTimer) {
+                    clearTimeout(stallTimer);
+                    stallTimer = null;
+                }
+            };
+
+            const refreshStallTimer = () => {
+                clearStallTimer();
+                stallTimer = setTimeout(() => {
+                    response.data.destroy(new Error(`Download stalled for ${filename}`));
+                }, DOWNLOAD_STALL_TIMEOUT_MS);
+            };
+
+            const contentLength = Number(response.headers['content-length'] || '0');
+            if (contentLength > MAX_DOWNLOAD_BYTES) {
+                writer.destroy();
+                response.data.destroy();
+                throw new Error(`File too large to download (${contentLength} bytes): ${filename}`);
+            }
 
             return await new Promise((resolve, reject) => {
-                writer.on('finish', () => {
+                refreshStallTimer();
+                response.data.on('data', () => refreshStallTimer());
+                response.data.on('error', (err: Error) => {
+                    if (settled) {
+                        return;
+                    }
+                    settled = true;
+                    clearStallTimer();
+                    writer.destroy();
+                    reject(err);
+                });
+                response.data.pipe(writer);
+
+                const finalize = () => {
+                    if (settled) {
+                        return;
+                    }
+                    settled = true;
+                    clearStallTimer();
                     const elapsed = Date.now() - startTime;
+                    if (!fs.existsSync(outputPath)) {
+                        reject(new Error(`Downloaded file missing after write: ${outputPath}`));
+                        return;
+                    }
+
                     const stats = fs.statSync(outputPath);
                     // console.log(`⬇️ [DOWNLOAD] ✅ Complete in ${elapsed}ms`);
                     // console.log(`⬇️ [DOWNLOAD] File size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
 
                     // Get video duration if it's a video file
                     let videoDuration: number | undefined;
+                    let videoTrimAfterFrames: number | undefined;
                     if (filename.endsWith('.mp4') || filename.endsWith('.webm') || filename.endsWith('.mov')) {
-                        videoDuration = getVideoDuration(outputPath);
+                        const videoMetadata = getVideoMetadata(outputPath);
+                        videoDuration = videoMetadata.durationSeconds;
+                        videoTrimAfterFrames = videoMetadata.trimAfterFrames;
                     }
 
-                    resolve({ path: outputPath, videoDuration });
-                });
+                    resolve({ path: outputPath, videoDuration, videoTrimAfterFrames });
+                };
+
+                writer.on('finish', () => undefined);
+                writer.on('close', finalize);
                 writer.on('error', (err) => {
+                    if (settled) {
+                        return;
+                    }
+                    settled = true;
+                    clearStallTimer();
                     // console.error(`⬇️ [DOWNLOAD] ❌ Write error: ${err.message}`);
                     reject(err);
                 });
