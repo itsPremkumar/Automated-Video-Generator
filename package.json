@@ -1,7 +1,7 @@
 {
     "name": "automated-video-generator",
     "version": "1.0.0",
-    "description": "High-performance automated video generation from text scripts. Automated media fetching, TTS voiceovers, and Remotion rendering.",
+    "description": "Free and open-source self-hosted AI text-to-video generator built with Remotion, Edge-TTS, stock media fetching, batch rendering, a local web portal, and MCP integration.",
     "author": "Premkumar",
     "license": "MIT",
     "repository": {
@@ -13,15 +13,23 @@
     },
     "homepage": "https://github.com/itsPremkumar/Automated-Video-Generator#readme",
     "keywords": [
-        "automated-video",
+        "free-video-generator",
+        "open-source-video-generator",
+        "self-hosted-video-generator",
+        "automated-video-generator",
         "text-to-video",
+        "ai-video-generator",
         "video-generator",
         "remotion",
+        "remotion-video-generator",
         "edge-tts",
-        "ai-video",
-        "content-creation",
+        "youtube-shorts-generator",
+        "tiktok-video-generator",
         "faceless-youtube",
-        "marketing-automation",
+        "content-automation",
+        "marketing-video-generator",
+        "mcp-server",
+        "model-context-protocol",
         "open-source"
     ],
     "openclaw": {
@@ -44,7 +52,8 @@
         "segment": "tsx src/cli.ts --segment",
         "remotion:studio": "remotion studio remotion/index.ts",
         "remotion:render": "tsx src/render.ts",
-        "test": "node src/test-generation.js",
+        "typecheck": "tsc -p tsconfig.json --noEmit",
+        "test": "npm run typecheck",
         "mcp": "tsx src/mcp-server.ts"
     },
     "dependencies": {

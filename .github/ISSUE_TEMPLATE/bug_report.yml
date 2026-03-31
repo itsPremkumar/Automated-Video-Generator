@@ -1,0 +1,68 @@
+name: Bug report
+description: Report a reproducible problem in the video generator, portal, or MCP workflow.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve the project. Please include enough detail for someone else to reproduce the issue quickly.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the bug and the result you expected instead.
+      placeholder: The render finished, but the final MP4 was missing...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the exact commands, API calls, or UI steps.
+      placeholder: |
+        1. Run `npm run dev`
+        2. Submit a script with ...
+        3. Open `/jobs/...`
+        4. See error
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - CLI pipeline
+        - Web portal
+        - Remotion rendering
+        - Voice generation
+        - Visual fetching
+        - MCP server
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Share your OS, Node.js version, and any other relevant tooling details.
+      placeholder: Windows 11, Node.js 20, Python 3.12, FFmpeg installed via ...
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Paste terminal output, stack traces, or screenshots if available.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues first.
+          required: true
+        - label: I removed secrets, API keys, and private data from logs.
+          required: true

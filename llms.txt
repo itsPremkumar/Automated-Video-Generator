@@ -1,0 +1,56 @@
+# Automated Video Generator
+
+> Free and open-source self-hosted AI text-to-video generator built with Remotion, Edge-TTS, stock media APIs, a local web portal, and MCP integration.
+
+Project URL: https://github.com/itsPremkumar/Automated-Video-Generator
+License: MIT
+Pricing: Free and open source. No paid plan and no watermark added by this project.
+
+## What this project does
+
+Automated Video Generator turns scripts into finished MP4 videos.
+
+It can:
+- Parse scripts into scenes
+- Fetch stock visuals from Pexels and Pixabay
+- Use local assets from input/input-assests/
+- Generate neural voiceovers with Edge-TTS
+- Render video scenes with Remotion
+- Export thumbnails, status pages, watch pages, and downloadable MP4s
+- Expose the workflow through a CLI, local web portal, and MCP server
+
+## Best-fit search intents
+
+- free video generator
+- open-source video generator
+- AI video generator
+- text-to-video generator
+- Remotion video generator
+- YouTube Shorts generator
+- TikTok video generator
+- self-hosted video generator
+- MCP video automation
+
+## Important docs
+
+- README.md: project overview, positioning, quick start, and FAQs
+- QUICKSTART.md: fast setup path
+- SETUP.md: environment setup
+- CLAUDE_MCP_SETUP.md: MCP integration details
+- INPUT_ASSETS_GUIDE.md: local asset usage
+- ROADMAP.md: planned product and community direction
+- CONTRIBUTING.md: contribution workflow
+
+## Important entry points
+
+- src/cli.ts: batch video generation
+- src/server.ts: local web portal, watch pages, and API
+- src/mcp-server.ts: MCP server entry point
+- src/video-generator.ts: main generation pipeline
+- src/render.ts: segmented Remotion rendering
+- remotion/MainVideo.tsx: main Remotion composition
+
+## Free-use note
+
+The codebase is completely free and MIT-licensed.
+Third-party providers such as Pexels and Pixabay may still enforce their own quotas or terms.

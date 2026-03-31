@@ -1,0 +1,50 @@
+name: Feature request
+description: Suggest a product, DX, or growth improvement for the project.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Feature requests are welcome. Clear use cases help the project grow faster and make prioritization easier.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Explain the workflow gap, frustration, or missed opportunity.
+      placeholder: I want to generate batches of Shorts with reusable templates...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+      description: Describe the behavior or capability you want.
+      placeholder: Add support for ...
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Share workarounds or other tools you evaluated.
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Expected impact
+      options:
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and discussions first.
+          required: true
+        - label: I can help test or validate this feature if needed.
+          required: false

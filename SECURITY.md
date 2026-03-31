@@ -1,22 +1,28 @@
 # Security Policy
 
-## Supported Versions
-At this time, we only support the current `main` branch.
+## Supported versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.0.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+At the moment, only the current `main` branch is supported for security fixes.
 
-## Reporting a Vulnerability
+| Version | Supported |
+| ------- | --------- |
+| `main`  | Yes       |
 
-If you discover a potential security vulnerability in this project, please report it immediately by sending an email to . 
+## Reporting a vulnerability
 
-**Do NOT open a GitHub issue** for a security vulnerability, as this would expose the issue publicly before we have a chance to address it.
+Please do not open a public GitHub issue for a security vulnerability.
 
-When reporting a vulnerability, please provide:
-- A clear description of the vulnerability.
-- Steps to reproduce it (if possible).
-- Potential impact.
+Preferred reporting path:
 
-We take security seriously and will investigate and address reported vulnerabilities as soon as possible. Thank you for helping us keep Video Generator secure!
+1. Use GitHub private vulnerability reporting or a security advisory if it is enabled for this repository.
+2. If that is not available, contact the maintainer privately through GitHub rather than posting exploit details publicly.
+
+Please include:
+
+- A clear description of the issue
+- Steps to reproduce it, if safe to share privately
+- Affected files or endpoints
+- Expected impact
+- Any suggested remediation
+
+We will investigate and fix confirmed security issues as quickly as possible.

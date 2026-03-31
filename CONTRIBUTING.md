@@ -1,37 +1,70 @@
-# Contributing to  Video Generator
+# Contributing
 
-First off, thank you for considering contributing to the Video Generator! It's people like you that make the open-source community such an amazing place to learn, inspire, and create.
+Thanks for helping improve Automated Video Generator.
 
-## How Can I Contribute?
+This project grows faster when contributions are small, clear, and easy to review. Docs fixes, bug reports, testing, and focused code changes are all valuable.
 
-### Reporting Bugs
-If you find a bug, please create an issue with:
-- A clear title and description.
-- Steps to reproduce the bug.
-- Any relevant logs or screenshots.
+## Good ways to contribute
 
-### Suggesting Enhancements
-Have a great idea? Open an issue and describe:
-- What the enhancement is.
-- Why it would be useful.
-- How you imagine it working.
+- Fix a bug
+- Improve docs or setup instructions
+- Add tests or type-safety improvements
+- Improve the local portal UX
+- Expand examples, templates, or MCP workflows
 
-### Pull Requests
-Ready to code?
-1. Fork the repo and create your branch from `main`.
-2. If you've added code that should be tested, add tests.
-3. Ensure the test suite passes.
-4. Make sure your code follows the existing style.
-5. Issue that pull request!
+## Before you start
 
-## Pull Request Guidelines
-- We use [Prettier](https://prettier.io/) for code formatting.
-- Please keep your PRs focused. If you have several unrelated changes, submit them as separate PRs.
-- Write clear, descriptive commit messages.
+1. Read the [README](README.md).
+2. Check the [ROADMAP](ROADMAP.md).
+3. Search existing issues and pull requests to avoid duplicate work.
 
-## Community
-Join our community and help us build the best automated video generator!
-- [Code of Conduct](CODE_OF_CONDUCT.md)
-- [Security Policy](SECURITY.md)
+## Local setup
 
-Thanks again for your contribution!
+```bash
+git clone https://github.com/itsPremkumar/Automated-Video-Generator.git
+cd Automated-Video-Generator
+npm install
+pip install -r requirements.txt
+```
+
+Copy `.env.example` to `.env` and add the keys you need.
+
+## Development commands
+
+```bash
+npm run dev
+npm run generate
+npm run remotion:studio
+npm run mcp
+npm run typecheck
+```
+
+## Pull request guidelines
+
+- Keep PRs focused on one main improvement
+- Update docs when behavior changes
+- Prefer small, reviewable commits
+- Include screenshots or terminal output when the change affects UX or pipeline output
+- Run `npm run typecheck` before opening the PR
+
+## Issues
+
+Use the GitHub issue templates when possible:
+
+- Bug report for reproducible problems
+- Feature request for product or workflow ideas
+- Usage question for setup or workflow help
+
+Security issues should follow the process in [SECURITY.md](SECURITY.md).
+
+## Best first contributions
+
+- Docs clarity
+- Better error messages
+- Safer defaults
+- Test coverage
+- UI polish
+
+## Code of conduct
+
+Please be respectful and collaborative. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).

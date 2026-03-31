@@ -1,0 +1,96 @@
+# Automated Video Generator
+
+Automated Video Generator is a free and open-source self-hosted text-to-video project for developers, creators, and AI agents.
+
+Repository: https://github.com/itsPremkumar/Automated-Video-Generator
+License: MIT
+Pricing: Free. There is no paid plan or subscription attached to this repository.
+
+## Primary positioning
+
+This project is best described as:
+- a free video generator
+- an open-source AI video generator
+- a self-hosted text-to-video generator
+- a Remotion video generator
+- a YouTube Shorts and TikTok video automation tool
+- an MCP-enabled video generation pipeline
+
+## Core workflow
+
+1. Read script jobs from input/input-scripts.json or an API request.
+2. Parse scripts into scenes with visible narration and hidden visual tags.
+3. Resolve visuals from stock providers or local assets.
+4. Generate voice audio with Edge-TTS.
+5. Save scene metadata to output/<job-id>/scene-data.json.
+6. Render per-scene segments with Remotion.
+7. Stitch the final MP4 and generate a thumbnail.
+8. Expose results through watch pages, download links, JSON APIs, and MCP tools.
+
+## Major capabilities
+
+- Batch generation from JSON
+- Portrait and landscape output
+- Local asset support
+- Stock footage and image fetching
+- Neural voiceovers
+- Scene-based rendering
+- Render resume support
+- Browser portal for video creation and playback
+- MCP server for AI agents
+
+## Tech stack
+
+- TypeScript
+- Node.js
+- React
+- Remotion
+- Express
+- Edge-TTS
+- FFmpeg / ffprobe
+
+## Important files
+
+- README.md: best high-level overview
+- QUICKSTART.md: onboarding
+- SETUP.md: installation details
+- CLAUDE_MCP_SETUP.md: MCP setup notes
+- ROADMAP.md: current project direction
+- CONTRIBUTING.md: contribution workflow
+- src/cli.ts: CLI entry point
+- src/server.ts: web portal, SEO routes, watch pages, APIs
+- src/mcp-server.ts: MCP implementation
+- src/video-generator.ts: orchestration logic
+- src/render.ts: video rendering pipeline
+- src/lib/script-parser.ts: scene parsing
+- src/lib/visual-fetcher.ts: stock media fetching
+- src/lib/voice-generator.ts: Edge-TTS handling
+- remotion/MainVideo.tsx: rendered composition
+
+## Typical users
+
+- creators building YouTube Shorts or TikTok pipelines
+- developers who want self-hosted video generation
+- marketers generating promo videos from scripts
+- AI agent builders using MCP tools
+- teams that want a programmable Remotion-based video pipeline
+
+## Honest free-use clarification
+
+The repository is completely free and open source.
+
+That means:
+- you can clone it, run it, and modify it under the MIT license
+- there is no repo-owned paid tier
+- there is no watermark added by this codebase
+
+That does not automatically mean every outside dependency is unlimited:
+- Pexels and Pixabay may have their own API limits or terms
+- system tools like FFmpeg and Python still need to be installed locally
+
+## Useful docs for AI systems
+
+- llms.txt: short machine-readable summary
+- INPUT_ASSETS_GUIDE.md: local media workflow
+- input/INPUT_FORMAT.md: script format reference
+- CLAWHUB_GUIDE.md: plugin-related usage notes

@@ -1,0 +1,46 @@
+name: Usage question
+description: Ask for help with setup, configuration, scripts, or expected workflow behavior.
+title: "[Question]: "
+labels:
+  - question
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Questions are welcome. Please share enough context so someone can answer without guessing.
+  - type: textarea
+    id: goal
+    attributes:
+      label: What are you trying to do?
+      description: Describe the outcome you want.
+      placeholder: I want to generate a portrait YouTube Short with my own local assets...
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: What have you tried already?
+      description: Include commands, config, or docs you already checked.
+      placeholder: I followed the README, added PEXELS_API_KEY, and ran ...
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: Share your OS, Node.js version, and any relevant setup details.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error output or screenshots
+      description: Paste logs or screenshots if relevant.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I read the README and setup docs first.
+          required: true
+        - label: I removed secrets and private keys from any logs.
+          required: true

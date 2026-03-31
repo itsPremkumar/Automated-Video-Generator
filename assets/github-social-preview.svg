@@ -1,0 +1,25 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1280" height="640" fill="#F5E9DA"/>
+  <rect x="52" y="52" width="1176" height="536" rx="28" fill="#FFF9F2" stroke="#E8D6C1" stroke-width="4"/>
+  <rect x="92" y="96" width="226" height="44" rx="22" fill="#D8642A"/>
+  <text x="205" y="124" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF">COMPLETELY FREE</text>
+  <text x="92" y="218" font-family="Segoe UI, Arial, sans-serif" font-size="68" font-weight="800" fill="#172033">Automated Video</text>
+  <text x="92" y="292" font-family="Segoe UI, Arial, sans-serif" font-size="68" font-weight="800" fill="#172033">Generator</text>
+  <text x="92" y="356" font-family="Segoe UI, Arial, sans-serif" font-size="30" font-weight="500" fill="#516074">Open-source AI text-to-video with Remotion, Edge-TTS, stock visuals,</text>
+  <text x="92" y="398" font-family="Segoe UI, Arial, sans-serif" font-size="30" font-weight="500" fill="#516074">a local web portal, and MCP automation.</text>
+  <rect x="92" y="454" width="278" height="56" rx="28" fill="#172033"/>
+  <text x="231" y="489" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#FFFFFF">No watermark</text>
+  <rect x="388" y="454" width="346" height="56" rx="28" fill="#FFFFFF" stroke="#D7C2AB" stroke-width="2"/>
+  <text x="561" y="489" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#172033">Self-hosted and MIT licensed</text>
+  <rect x="858" y="112" width="274" height="344" rx="24" fill="#172033"/>
+  <rect x="888" y="146" width="214" height="122" rx="18" fill="#D8642A"/>
+  <text x="995" y="216" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="800" fill="#FFFFFF">MP4</text>
+  <rect x="888" y="288" width="214" height="26" rx="13" fill="#314257"/>
+  <rect x="888" y="330" width="180" height="18" rx="9" fill="#5F728C"/>
+  <rect x="888" y="360" width="144" height="18" rx="9" fill="#5F728C"/>
+  <rect x="888" y="404" width="98" height="30" rx="15" fill="#FFF9F2"/>
+  <text x="937" y="424" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#172033">Remotion</text>
+  <rect x="1000" y="404" width="102" height="30" rx="15" fill="#FFF9F2"/>
+  <text x="1051" y="424" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="16" font-weight="700" fill="#172033">Edge-TTS</text>
+  <text x="92" y="560" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="600" fill="#516074">github.com/itsPremkumar/Automated-Video-Generator</text>
+</svg>
