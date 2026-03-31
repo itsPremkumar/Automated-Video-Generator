@@ -3,6 +3,7 @@
 Automated Video Generator is a free and open-source self-hosted text-to-video project for developers, creators, and AI agents.
 
 Repository: https://github.com/itsPremkumar/Automated-Video-Generator
+NPM Package: https://www.npmjs.com/package/automated-video-generator
 License: MIT
 Pricing: Free. There is no paid plan or subscription attached to this repository.
 

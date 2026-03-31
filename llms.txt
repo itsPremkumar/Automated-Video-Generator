@@ -3,6 +3,7 @@
 > Free and open-source self-hosted AI text-to-video generator built with Remotion, Edge-TTS, stock media APIs, a local web portal, and MCP integration.
 
 Project URL: https://github.com/itsPremkumar/Automated-Video-Generator
+NPM Package: https://www.npmjs.com/package/automated-video-generator
 License: MIT
 Pricing: Free and open source. No paid plan and no watermark added by this project.
 

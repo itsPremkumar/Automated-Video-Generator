@@ -4,6 +4,12 @@
 
 ## 1. Install Dependencies
 
+### Option A: Via NPM (Easiest)
+```bash
+npm install -g automated-video-generator
+```
+
+### Option B: Via GitHub (For Development)
 ```bash
 # 1. Install Node dependencies
 npm install

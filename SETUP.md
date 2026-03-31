@@ -47,6 +47,13 @@ ffmpeg -version
 ```
 
 ### 3. Clone and Install
+
+#### Option A: Via NPM (Easiest)
+```bash
+npm install -g automated-video-generator
+```
+
+#### Option B: Via GitHub (For Development)
 ```bash
 git clone <repo_url>
 cd automated-video-generator

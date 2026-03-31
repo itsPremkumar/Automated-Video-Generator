@@ -14,7 +14,7 @@ It covers:
 The project now supports two main entry points that share the same pipeline:
 
 - CLI: `npm run generate`
-- MCP for Claude Desktop / Claude Code: `npx -y tsx src/mcp-server.ts`
+- MCP for Claude Desktop / Claude Code: `npx automated-video-generator` (or `npx -y tsx src/mcp-server.ts` for local development)
 
 Both paths ultimately use the same generation and rendering flow:
 
@@ -245,10 +245,8 @@ Open your Claude Desktop MCP config and add a server entry similar to this:
       "command": "npx",
       "args": [
         "-y",
-        "tsx",
-        "c:\\one\\Automated-Video-Generator\\src\\mcp-server.ts"
+        "automated-video-generator"
       ],
-      "cwd": "c:\\one\\Automated-Video-Generator",
       "env": {
         "PEXELS_API_KEY": "YOUR_API_KEY_HERE"
       }
@@ -267,7 +265,7 @@ Notes:
 Register the MCP server in Claude Code:
 
 ```bash
-claude mcp add automated-video-generator -- npx -y tsx c:\one\Automated-Video-Generator\src\mcp-server.ts
+claude mcp add automated-video-generator -- npx -y automated-video-generator
 ```
 
 After adding it:

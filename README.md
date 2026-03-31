@@ -15,10 +15,14 @@
   </a>
   <img src="https://img.shields.io/badge/Node.js-18%2B-2f7d32?style=for-the-badge" alt="Node.js 18+">
   <img src="https://img.shields.io/badge/Price-Free-0a7f5a?style=for-the-badge" alt="Free to use">
+  <a href="https://www.npmjs.com/package/automated-video-generator">
+    <img src="https://img.shields.io/npm/v/automated-video-generator?style=for-the-badge&color=cb0000" alt="NPM version">
+  </a>
 </div>
 
 <div align="center">
   <p><strong>Free and open-source AI video generator</strong> for turning scripts into MP4 videos with Remotion, Edge-TTS, stock footage APIs, and a local web portal.</p>
+  <p>🚀 <strong>Available on NPM:</strong> <a href="https://www.npmjs.com/package/automated-video-generator">automated-video-generator</a></p>
 </div>
 
 Automated Video Generator is a self-hosted text-to-video pipeline for developers, creators, and AI agents. Give it a script and it can fetch visuals, generate voiceovers, render scenes with Remotion, and export a ready-to-share video.
@@ -70,6 +74,22 @@ If you are searching for a free video generator, open-source AI video generator,
 - FFmpeg available on your `PATH`
 
 ### Install
+
+#### Via NPM (Recommended for MCP)
+
+You can run the MCP server directly without cloning:
+
+```bash
+npx automated-video-generator
+```
+
+Or install it globally:
+
+```bash
+npm install -g automated-video-generator
+```
+
+#### Via GitHub (Recommended for development)
 
 ```bash
 git clone https://github.com/itsPremkumar/Automated-Video-Generator.git
