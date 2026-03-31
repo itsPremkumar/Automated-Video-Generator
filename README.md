@@ -20,6 +20,26 @@
   </a>
 </div>
 
+## Connect to Claude (one command)
+
+### Claude Code
+```bash
+claude mcp add automated-video-generator -- npx automated-video-generator
+```
+
+### Claude Desktop
+Add to your `claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "automated-video-generator": {
+      "command": "npx",
+      "args": ["automated-video-generator"]
+    }
+  }
+}
+```
+
 <div align="center">
   <p><strong>Free and open-source AI video generator</strong> for turning scripts into MP4 videos with Remotion, Edge-TTS, stock footage APIs, and a local web portal.</p>
   <p>🚀 <strong>Available on NPM:</strong> <a href="https://www.npmjs.com/package/automated-video-generator">automated-video-generator</a></p>

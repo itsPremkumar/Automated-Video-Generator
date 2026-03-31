@@ -34,3 +34,4 @@ Thumbs.db
 
 # Cache
 .video-cache.json
+.mcp-jobs.json
