@@ -43,7 +43,7 @@ Add to your `claude_desktop_config.json`:
 <div align="center">
   <p><strong>Free and open-source AI video generator</strong> for turning scripts into MP4 videos with Remotion, Edge-TTS, stock footage APIs, and a local web portal.</p>
   <p>🚀 <strong>Available on NPM:</strong> <a href="https://www.npmjs.com/package/automated-video-generator">automated-video-generator</a></p>
-  <p>🦀 <strong>Listed on ClawHub:</strong> <a href="https://clawhub.ai/package/automated-video-generator">automated-video-generator</a></p>
+  <p>🦀 <strong>Listed on ClawHub:</strong> <a href="https://clawhub.ai/itspremkumar/video-gen-cli">automated-video-generator</a></p>
 </div>
 
 Automated Video Generator is a self-hosted text-to-video pipeline for developers, creators, and AI agents. Give it a script and it can fetch visuals, generate voiceovers, render scenes with Remotion, and export a ready-to-share video.
