@@ -52,6 +52,13 @@ If you are searching for a free video generator, open-source AI video generator,
 
 > This is not a fake "free trial" generator. The project itself is completely free and MIT-licensed. There is no paid plan, no subscription, and no watermark added by this codebase. Optional third-party services such as Pexels or Pixabay may still have their own quotas or terms.
 
+### 🦀 ClawHub AI Skills
+
+The Automated Video Generator project is officially available on ClawHub. You can discover and use our native skills:
+
+- **[Video Generator CLI](https://clawhub.ai/itspremkumar/video-gen-cli)**: High-performance command line tools for mass video production.
+- **[Video Script Generator](https://clawhub.ai/itspremkumar/video-gen-script)**: Agentic skill to turn storytelling prompts into video-ready JSON scripts.
+
 ## Why this repo gets attention
 
 - Free and open source under the MIT license
