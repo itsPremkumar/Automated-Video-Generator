@@ -35,6 +35,8 @@ Open `input/input-scripts.json` and add:
   {
     "id": "quickstart_video",
     "title": "Quickstart Demo",
+    "backgroundMusic": "The_Gravity_of_Dawn.mp3",
+    "musicVolume": 0.15,
     "script": "Welcome to the quickstart video. This is a fast way to test the system."
   }
 ]

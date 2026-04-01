@@ -34,6 +34,7 @@ This project is best described as:
 - Portrait and landscape output
 - Local asset support
 - Stock footage and image fetching
+- **Configurable background music and volume control**
 - Neural voiceovers
 - Scene-based rendering
 - Render resume support

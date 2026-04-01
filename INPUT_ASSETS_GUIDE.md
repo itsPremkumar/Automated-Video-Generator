@@ -60,6 +60,30 @@ You can define a `defaultVideo` property inside your job config within `input-sc
 2.  **Fallback Trigger**: If no visual is found and no API results are returned, the system looks for the file specified in `defaultVideo` inside `input/input-assests/`.
 3.  **Default Behavior**: If you do not provide a `defaultVideo` config, the system will automatically look for a file named `default.mp4` in your assets folder as a last resort.
 
+---
+
+## 🎵 Background Music
+You can add background music to your videos by placing an audio file in `input/input-assests/` and referencing it in your job configuration.
+
+### 📝 How to Configure
+Add the `backgroundMusic` and `musicVolume` properties to your job in `input/input-scripts.json`.
+
+**Example:**
+```json
+{
+  "id": "music-demo",
+  "backgroundMusic": "The_Gravity_of_Dawn.mp3",
+  "musicVolume": 0.15,
+  "script": "This video has background music."
+}
+```
+
+### ⚙️ Key Details
+1.  **Seamless Playback**: The music plays continuously across the entire video, even in Segmented Render mode.
+2.  **Volume Balancing**: We recommend a `musicVolume` between `0.1` and `0.2` to ensure the AI voice remains clear and audible.
+3.  **Looping**: If the music track is shorter than the video, it will automatically loop until the video ends.
+
 ## 🛠️ Supported File Types
 - **Images**: `.jpg`, `.jpeg`, `.png`, `.webp`
 - **Videos**: `.mp4`, `.mov`, `.webm`, `.m4v`
+- **Audio**: `.mp3`, `.wav`, `.m4a`

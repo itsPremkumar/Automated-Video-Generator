@@ -67,6 +67,7 @@ The Automated Video Generator project is officially available on ClawHub. You ca
 - Edge-TTS voiceovers with multiple neural voice options
 - Stock media fetching from Pexels and Pixabay
 - Local asset support for your own images and videos
+- **Configurable background music with volume control**
 - Batch generation for multiple videos in one run
 - Local web portal for generating, previewing, and sharing videos
 - Built-in MCP server for Claude Desktop, Claude Code, and other MCP clients
@@ -157,6 +158,8 @@ Create `input/input-scripts.json` with one or more jobs:
     "title": "3 Productivity Habits That Actually Work",
     "orientation": "portrait",
     "voice": "en-US-JennyNeural",
+    "backgroundMusic": "The_Gravity_of_Dawn.mp3",
+    "musicVolume": 0.2,
     "script": "[Visual: focused person at desk] Want better focus every day? [Visual: checklist and timer] Try these three simple habits."
   }
 ]

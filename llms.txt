@@ -15,6 +15,7 @@ It can:
 - Parse scripts into scenes
 - Fetch stock visuals from Pexels and Pixabay
 - Use local assets from input/input-assests/
+- **Support for configurable background music and volume control**
 - Generate neural voiceovers with Edge-TTS
 - Render video scenes with Remotion
 - Export thumbnails, status pages, watch pages, and downloadable MP4s

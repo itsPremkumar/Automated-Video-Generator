@@ -66,11 +66,17 @@ pip install -r requirements.txt
 ```
 *(This ensures `edge-tts` and related Python libraries are available)*
 
-### 5. API Keys
-1.  Go to [Pexels API](https://www.pexels.com/api/) and sign up.
-2.  Generate a new API key.
-3.  Create `.env` file in the project root.
-4.  Paste the key: `PEXELS_API_KEY=your_key_here`
+### 5. API Keys and Assets
+
+1.  **API Keys**:
+    - Go to [Pexels API](https://www.pexels.com/api/) and sign up.
+    - Generate a new API key.
+    - Create a `.env` file in the project root.
+    - Paste the key: `PEXELS_API_KEY=your_key_here`
+
+2.  **Background Music (Optional)**:
+    - Place your `.mp3` or `.wav` files in `input/input-assests/`.
+    - Reference these filenames in your `input-scripts.json` jobs using the `backgroundMusic` property.
 
 ## Verification
 
