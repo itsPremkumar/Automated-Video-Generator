@@ -37,6 +37,9 @@ interface GenerationOptions {
     defaultVideo?: string;
     /** Stable public/output identifier */
     publicId?: string;
+    /** Background Music */
+    backgroundMusic?: string;
+    musicVolume?: number;
 }
 
 // console.log('\n🎬 [VIDEO-GEN] Module loaded');
@@ -50,7 +53,7 @@ export async function generateVideo(
     outputDir: string = resolveProjectPath('output'),
     options: GenerationOptions = {}
 ): Promise<GenerationResult> {
-    const { onProgress, orientation = 'portrait', voice, title, showText = true, defaultVideo = 'default.mp4', publicId } = options;
+    const { onProgress, orientation = 'portrait', voice, title, showText = true, defaultVideo = 'default.mp4', publicId, backgroundMusic, musicVolume } = options;
     const totalStartTime = Date.now();
     const workspace = createPipelineWorkspace(outputDir, publicId);
 
@@ -280,6 +283,22 @@ export async function generateVideo(
 
         const audioFiles = await generateVoiceovers(parsed.scenes, audioDir, voiceConfig);
 
+        // ══════════════════════════════════════════════════════════════════
+        // STEP 4.5: HANDLE BACKGROUND MUSIC
+        // ══════════════════════════════════════════════════════════════════
+        let resolvedMusicPath: string | undefined = undefined;
+        if (backgroundMusic) {
+            const musicInputPath = resolveProjectPath('input', 'music', backgroundMusic);
+            if (fs.existsSync(musicInputPath)) {
+                // console.log(`🎵 [STEP 4.5] Found background music: ${backgroundMusic}`);
+                const targetPath = path.join(audioDir, backgroundMusic);
+                fs.copyFileSync(musicInputPath, targetPath);
+                resolvedMusicPath = toPublicRelativePath(targetPath);
+            } else {
+                // console.log(`⚠️ [STEP 4.5] Background music file NOT FOUND: ${musicInputPath}`);
+            }
+        }
+
         const step4Time = Date.now() - step4Start;
         // console.log(`✅ [STEP 4] Generated ${audioFiles.size} voice tracks in ${step4Time}ms\n`);
 
@@ -315,6 +334,8 @@ export async function generateVideo(
             orientation,
             title,
             showText,
+            backgroundMusic: resolvedMusicPath,
+            musicVolume: typeof musicVolume === 'number' ? musicVolume : undefined,
             assetNamespace: workspace.publicNamespace,
         };
 

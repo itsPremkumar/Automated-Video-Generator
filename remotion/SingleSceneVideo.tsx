@@ -36,6 +36,9 @@ export interface SingleSceneProps {
     isFirstScene: boolean;
     isLastScene: boolean;
     showText?: boolean;
+    backgroundMusic?: string;
+    musicVolume?: number;
+    globalStartFrame?: number;
     [key: string]: unknown;  // Allow additional props for Remotion compatibility
 }
 
@@ -81,6 +84,9 @@ export const SingleSceneVideo: React.FC<SingleSceneProps> = ({
     isFirstScene,
     isLastScene,
     showText = true,
+    backgroundMusic,
+    musicVolume,
+    globalStartFrame = 0,
 }) => {
     const { fps, durationInFrames } = useVideoConfig();
     const frame = useCurrentFrame();
@@ -295,11 +301,21 @@ export const SingleSceneVideo: React.FC<SingleSceneProps> = ({
                 </div>
             )}
 
-            {/* Audio */}
+            {/* Voiceover Audio */}
             {scene.audioPath && scene.audioPath.endsWith('.mp3') && (
                 <Audio
                     src={staticFile(resolveStaticMediaPath(scene.audioPath))}
                     volume={1.0}
+                />
+            )}
+
+            {/* Global Background Music - Offset by globalStartFrame for continuity */}
+            {backgroundMusic && (
+                <Audio
+                    src={staticFile(backgroundMusic)}
+                    volume={typeof musicVolume === 'number' ? musicVolume : 0.15}
+                    startFrom={globalStartFrame}
+                    loop={true}
                 />
             )}
         </AbsoluteFill>

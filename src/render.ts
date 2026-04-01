@@ -41,6 +41,8 @@ interface SceneData {
     orientation?: 'portrait' | 'landscape';
     title?: string;
     showText?: boolean;
+    backgroundMusic?: string;
+    musicVolume?: number;
     assetNamespace?: string;
 }
 
@@ -150,6 +152,9 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                     isFirstScene: true,
                     isLastScene: false,
                     showText: sceneData.showText !== false,
+                    backgroundMusic: sceneData.backgroundMusic,
+                    musicVolume: sceneData.musicVolume,
+                    globalStartFrame: 0,
                 },
             });
 
@@ -167,6 +172,9 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                     isFirstScene: true,
                     isLastScene: false,
                     showText: sceneData.showText !== false,
+                    backgroundMusic: sceneData.backgroundMusic,
+                    musicVolume: sceneData.musicVolume,
+                    globalStartFrame: 0,
                 },
             });
 
@@ -185,11 +193,14 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         const segments: string[] = [];
         let renderedCount = 0;
         let skippedCount = 0;
+        let cumulativeFrames = 0;
 
         for (let i = 0; i < sceneData.scenes.length; i++) {
             const scene = sceneData.scenes[i];
             const segmentFilename = `segment_${String(i + 1).padStart(3, '0')}.mp4`;
             const segmentPath = path.join(segmentsDir, segmentFilename);
+            const sceneDurationFrames = Math.round(scene.duration * fps);
+            const globalStartFrame = cumulativeFrames;
 
             // RESUME CAPABILITY: Skip if segment already exists
             if (fs.existsSync(segmentPath)) {
@@ -197,6 +208,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                 if (stats.size > 10000) {  // At least 10KB
                     console.log(`⏭️ Scene ${i + 1}/${sceneData.scenes.length} - Already rendered, skipping`);
                     segments.push(segmentPath);
+                    cumulativeFrames += sceneDurationFrames;
                     skippedCount++;
                     continue;
                 }
@@ -205,7 +217,6 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
             const sceneStart = Date.now();
             const isFirstScene = i === 0;
             const isLastScene = i === sceneData.scenes.length - 1;
-            const sceneDurationFrames = Math.round(scene.duration * fps);
 
             console.log(`\n🎬 Scene ${i + 1}/${sceneData.scenes.length}: "${scene.voiceoverText.substring(0, 40)}..."`);
             console.log(`   Duration: ${scene.duration}s (${sceneDurationFrames} frames)`);
@@ -248,6 +259,9 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                         isFirstScene,
                         isLastScene,
                         showText: sceneData.showText !== false,
+                        backgroundMusic: sceneData.backgroundMusic,
+                        musicVolume: sceneData.musicVolume,
+                        globalStartFrame,
                     },
                 });
 
@@ -267,6 +281,9 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                         isFirstScene,
                         isLastScene,
                         showText: sceneData.showText !== false,
+                        backgroundMusic: sceneData.backgroundMusic,
+                        musicVolume: sceneData.musicVolume,
+                        globalStartFrame,
                     },
                     crf: 18,
                     timeoutInMilliseconds: 300000,  // 5 min per scene max
@@ -285,6 +302,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                 console.log(`\n   ✅ Saved: ${segmentFilename} (${(stats.size / 1024 / 1024).toFixed(2)} MB) in ${(sceneTime / 1000).toFixed(1)}s`);
 
                 segments.push(segmentPath);
+                cumulativeFrames += sceneDurationFrames;
                 renderedCount++;
 
             } catch (sceneError: any) {

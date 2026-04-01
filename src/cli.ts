@@ -17,13 +17,23 @@ interface VideoJob {
     voice?: string;
     showText?: boolean;
     defaultVideo?: string;
+    backgroundMusic?: string;
+    musicVolume?: number;
 }
 
 function parseArgs() {
     const args = process.argv.slice(2);
     const landscape = args.includes('--landscape');
+    
+    // Find --music flag and its value
+    const musicIdx = args.indexOf('--music');
+    const music = (musicIdx !== -1 && args[musicIdx + 1] && !args[musicIdx + 1].startsWith('--')) 
+        ? args[musicIdx + 1] 
+        : undefined;
+
     return {
-        landscape
+        landscape,
+        music
     };
 }
 
@@ -42,10 +52,11 @@ function sanitizeFilename(name: string): string {
 async function main() {
     console.log('🎬 Video Generator CLI (Advanced Batch Mode)\n');
 
-    const { landscape } = parseArgs();
+    const { landscape, music } = parseArgs();
     const envOrientation = getEnvOrientation();
     // CLI flag overrides env var
     const globalOrientation = landscape ? 'landscape' : envOrientation;
+    const globalMusic = music;
 
     // console.log(`🎬 Orientation: ${globalOrientation.toUpperCase()}`);
 
@@ -145,7 +156,9 @@ async function main() {
                 voice: job.voice,
                 title: job.title,
                 showText: job.showText !== false,
-                defaultVideo: job.defaultVideo
+                defaultVideo: job.defaultVideo,
+                backgroundMusic: job.backgroundMusic || globalMusic,
+                musicVolume: job.musicVolume
             });
 
             if (result.success) {

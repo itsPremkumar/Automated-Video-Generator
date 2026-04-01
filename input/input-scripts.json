@@ -4,6 +4,8 @@
     "title": "AI Director Showcase (Dynamic Visuals)7686",
     "script": "The dawn breaks over a sleeping metropolis. While millions dream, a silent revolution occurs. [Visual: fast internet fiber optic cables glowing] Data flows like water, connecting continents in milliseconds. This is the pulse of the future.",
     "orientation": "portrait",
-    "voice": "en-US-ChristopherNeural"
+    "voice": "en-US-ChristopherNeural",
+    "backgroundMusic": "The_Gravity_of_Dawn.mp3",
+    "musicVolume": 0.2
   }
 ]

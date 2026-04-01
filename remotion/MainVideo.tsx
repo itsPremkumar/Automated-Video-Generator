@@ -36,6 +36,8 @@ interface VideoData {
     totalDuration: number;
     style: string;
     showText?: boolean;
+    backgroundMusic?: string;
+    musicVolume?: number;
 }
 
 // Transition duration in frames
@@ -92,12 +94,19 @@ export const MainVideo: React.FC<{ sceneData: VideoData }> = ({
 
     return (
         <AbsoluteFill style={{ backgroundColor: '#000' }}>
+            {videoData.backgroundMusic && (
+                <Audio
+                    src={staticFile(videoData.backgroundMusic)}
+                    volume={typeof videoData.musicVolume === 'number' ? videoData.musicVolume : 0.15}
+                    loop={true}
+                />
+            )}
             {videoData.scenes.map((scene, index) => {
                 const sceneDurationInFrames = Math.round(scene.duration * fps);
                 const sequenceStart = currentFrame;
                 currentFrame += sceneDurationInFrames;
 
-                // console.log(`MainVideo: Mapping scene ${index}`, {
+                // console.log(`MainVideo: Processing scene ${scene.sceneNumber}`, {
                 //     sceneNumber: scene.sceneNumber,
                 //     sequenceStart,
                 //     durationInFrames: sceneDurationInFrames,
