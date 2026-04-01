@@ -32,6 +32,9 @@ Thumbs.db
 *.sln
 *.sw?
 
-# Cache
+# Cache and Temp
 .video-cache.json
 .mcp-jobs.json
+*.tmp
+public/audio/
+public/visuals/
