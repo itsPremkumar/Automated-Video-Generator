@@ -37,10 +37,10 @@ It can:
 
 - README.md: project overview, positioning, quick start, and FAQs
 - QUICKSTART.md: fast setup path
-- SETUP.md: environment setup
-- CLAUDE_MCP_SETUP.md: MCP integration details
-- INPUT_ASSETS_GUIDE.md: local asset usage
-- ROADMAP.md: planned product and community direction
+- docs/SETUP.md: environment setup
+- docs/CLAUDE_MCP_SETUP.md: MCP integration details
+- docs/INPUT_ASSETS_GUIDE.md: local asset usage
+- docs/ROADMAP.md: planned product and community direction
 - CONTRIBUTING.md: contribution workflow
 
 ## Important entry points

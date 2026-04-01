@@ -55,9 +55,9 @@ This project is best described as:
 
 - README.md: best high-level overview
 - QUICKSTART.md: onboarding
-- SETUP.md: installation details
-- CLAUDE_MCP_SETUP.md: MCP setup notes
-- ROADMAP.md: current project direction
+- docs/SETUP.md: installation details
+- docs/CLAUDE_MCP_SETUP.md: MCP setup notes
+- docs/ROADMAP.md: current project direction
 - CONTRIBUTING.md: contribution workflow
 - src/cli.ts: CLI entry point
 - src/server.ts: web portal, SEO routes, watch pages, APIs
@@ -93,6 +93,6 @@ That does not automatically mean every outside dependency is unlimited:
 ## Useful docs for AI systems
 
 - llms.txt: short machine-readable summary
-- INPUT_ASSETS_GUIDE.md: local media workflow
+- docs/INPUT_ASSETS_GUIDE.md: local media workflow
 - input/INPUT_FORMAT.md: script format reference
-- CLAWHUB_GUIDE.md: plugin-related usage notes
+- docs/CLAWHUB_GUIDE.md: plugin-related usage notes

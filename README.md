@@ -306,18 +306,18 @@ These files make the project easier for AI tools and answer engines to understan
 - [`llms.txt`](./llms.txt)
 - [`llms-full.txt`](./llms-full.txt)
 - [`QUICKSTART.md`](./QUICKSTART.md)
-- [`SETUP.md`](./SETUP.md)
-- [`CLAUDE_MCP_SETUP.md`](./CLAUDE_MCP_SETUP.md)
+- [`SETUP.md`](./docs/SETUP.md)
+- [`CLAUDE_MCP_SETUP.md`](./docs/CLAUDE_MCP_SETUP.md)
 
 ## Roadmap and contributing
 
-- [`ROADMAP.md`](./ROADMAP.md)
+- [`ROADMAP.md`](./docs/ROADMAP.md)
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md)
 - [`SECURITY.md`](./SECURITY.md)
 
 ## Growth assets
 
-- [`REPOSITORY_GROWTH_CHECKLIST.md`](./REPOSITORY_GROWTH_CHECKLIST.md)
+- [`REPOSITORY_GROWTH_CHECKLIST.md`](./docs/REPOSITORY_GROWTH_CHECKLIST.md)
 - [`assets/github-social-preview.svg`](./assets/github-social-preview.svg)
 
 ## Suggested GitHub topics
