@@ -52,6 +52,14 @@ If you are searching for a free video generator, open-source AI video generator,
 
 > This is not a fake "free trial" generator. The project itself is completely free and MIT-licensed. There is no paid plan, no subscription, and no watermark added by this codebase. Optional third-party services such as Pexels or Pixabay may still have their own quotas or terms.
 
+## 🧊 The "Vibe Video" Philosophy
+
+Inspired by the **Vibe Coding** movement, this project shifts you from a "manual editor" to a **Creative Director**. 
+
+- **High-Level Intent**: Describe your story and the "vibe" you want.
+- **Automated Performance**: The AI handles media fetching, voice synthesis, and frame-perfect audio-visual synchronization.
+- **No Syntax, Just Story**: Stop worrying about keyframes and timelines. If you can describe it, you can generate it.
+
 ### 🦀 ClawHub AI Skills
 
 The Automated Video Generator project is officially available on ClawHub. You can discover and use our native skills:
