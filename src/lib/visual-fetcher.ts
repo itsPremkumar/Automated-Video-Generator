@@ -27,7 +27,12 @@ export interface MediaAsset {
 }
 
 const PEXELS_API_KEY = process.env.PEXELS_API_KEY || '';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const PIXABAY_API_KEY = process.env.PIXABAY_API_KEY || '';
+const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-flash';
+const GEMINI_TIMEOUT_MS = Math.max(5000, Number.parseInt(process.env.GEMINI_TIMEOUT_MS || '30000', 10) || 30000);
+const GEMINI_MAX_RETRIES = Math.max(1, Number.parseInt(process.env.GEMINI_MAX_RETRIES || '3', 10) || 3);
+const GEMINI_MAX_CONCURRENCY = Math.max(1, Number.parseInt(process.env.GEMINI_MAX_CONCURRENCY || '2', 10) || 2);
 
 const BASE_URL = 'https://api.pexels.com/v1';
 const CACHE_FILE = resolveProjectPath('.video-cache.json');
@@ -35,7 +40,7 @@ const MAX_DOWNLOAD_BYTES = 40 * 1024 * 1024;
 const DOWNLOAD_STALL_TIMEOUT_MS = 15000;
 const TARGET_VIDEO_DURATION_SECONDS = 6;
 const DEFAULT_RENDER_FPS = 30;
-const SAFE_VIDEO_END_BUFFER_FRAMES = 3;
+const SAFE_VIDEO_END_BUFFER_FRAMES = 15;
 
 // Preferred video quality order (highest first)
 const PREFERRED_QUALITIES = ['uhd', 'hd', 'sd'];
@@ -301,11 +306,182 @@ function selectBestVideoFile(videoFiles: any[]): any {
     return sorted;
 }
 
-function scoreVideoAsset(asset: MediaAsset): number {
-    const duration = asset.videoDuration || TARGET_VIDEO_DURATION_SECONDS;
-    const durationDelta = Math.abs(duration - TARGET_VIDEO_DURATION_SECONDS);
-    const pixelCount = asset.width * asset.height;
-    return (durationDelta * 1_000_000) + pixelCount;
+function sortVideoAssets(assets: MediaAsset[]): MediaAsset[] {
+    return assets.sort((left: MediaAsset, right: MediaAsset) => {
+        const leftDur = left.videoDuration || TARGET_VIDEO_DURATION_SECONDS;
+        const rightDur = right.videoDuration || TARGET_VIDEO_DURATION_SECONDS;
+        const leftDelta = Math.abs(leftDur - TARGET_VIDEO_DURATION_SECONDS);
+        const rightDelta = Math.abs(rightDur - TARGET_VIDEO_DURATION_SECONDS);
+
+        if (leftDelta !== rightDelta) {
+            return leftDelta - rightDelta;
+        }
+
+        const leftPixels = left.width * left.height;
+        const rightPixels = right.width * right.height;
+        return rightPixels - leftPixels;
+    });
+}
+
+let activeGeminiRequests = 0;
+const geminiWaitQueue: Array<() => void> = [];
+
+async function withGeminiSlot<T>(task: () => Promise<T>): Promise<T> {
+    if (activeGeminiRequests >= GEMINI_MAX_CONCURRENCY) {
+        await new Promise<void>((resolve) => geminiWaitQueue.push(resolve));
+    }
+
+    activeGeminiRequests += 1;
+    try {
+        return await task();
+    } finally {
+        activeGeminiRequests = Math.max(0, activeGeminiRequests - 1);
+        geminiWaitQueue.shift()?.();
+    }
+}
+
+function normalizeKeywordList(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    const uniqueKeywords = new Set<string>();
+
+    for (const item of value) {
+        if (typeof item !== 'string') {
+            continue;
+        }
+
+        const normalized = item.trim().replace(/\s+/g, ' ');
+        if (normalized) {
+            uniqueKeywords.add(normalized);
+        }
+    }
+
+    return Array.from(uniqueKeywords).slice(0, 3);
+}
+
+function parseGeminiKeywordResponse(responseText: string): string[] {
+    const cleaned = responseText
+        .replace(/```json/gi, '')
+        .replace(/```/g, '')
+        .trim();
+
+    if (!cleaned) {
+        return [];
+    }
+
+    try {
+        return normalizeKeywordList(JSON.parse(cleaned));
+    } catch {
+        const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+        if (!arrayMatch) {
+            return [];
+        }
+
+        try {
+            return normalizeKeywordList(JSON.parse(arrayMatch[0]));
+        } catch {
+            return [];
+        }
+    }
+}
+
+function shouldRetryGeminiRequest(error: unknown): boolean {
+    if (!axios.isAxiosError(error)) {
+        return false;
+    }
+
+    if (error.code === 'ECONNABORTED') {
+        return true;
+    }
+
+    const status = error.response?.status;
+    if (!status) {
+        return true;
+    }
+
+    return status === 429 || status >= 500;
+}
+
+function formatGeminiError(error: unknown): string {
+    if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        if (status) {
+            return `${error.message} (HTTP ${status})`;
+        }
+
+        if (error.code) {
+            return `${error.message} (${error.code})`;
+        }
+
+        return error.message;
+    }
+
+    if (error instanceof Error) {
+        return error.message;
+    }
+
+    return String(error);
+}
+
+async function optimizeKeywordsWithGeminiInternal(
+    sceneText: string,
+    defaultKeywords: string[]
+): Promise<string[]> {
+    const prompt = `You are an expert AI video director.
+I have this voiceover text for a video scene: "${sceneText}"
+
+Return a JSON array of up to 3 highly optimized, cinematic search queries (strings) to find the best matching B-roll footage on Pexels or Pixabay.
+The queries should be concise but descriptive (e.g. "cinematic dark moody rain window", "aerial drone city sunset").
+Only return the JSON array, no other text or formatting. DO NOT wrap with \`\`\`json.`;
+
+    for (let attempt = 1; attempt <= GEMINI_MAX_RETRIES; attempt++) {
+        try {
+            const response = await withGeminiSlot(() =>
+                axios.post(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+                    {
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: {
+                            temperature: 0.7,
+                            responseMimeType: 'application/json',
+                        },
+                    },
+                    {
+                        timeout: GEMINI_TIMEOUT_MS,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    }
+                )
+            );
+
+            const responseText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            const optimizedKeywords = parseGeminiKeywordResponse(responseText);
+
+            if (optimizedKeywords.length > 0) {
+                console.log(`\n[AI-DIRECTOR] Optimized keywords for scene: "${sceneText.substring(0, 50)}..."`);
+                console.log(`[AI-DIRECTOR] Generated queries:`, optimizedKeywords);
+                return optimizedKeywords;
+            }
+
+            console.log('[AI-DIRECTOR] Gemini returned no usable keyword array, using default query');
+            return defaultKeywords;
+        } catch (error) {
+            const shouldRetry = attempt < GEMINI_MAX_RETRIES && shouldRetryGeminiRequest(error);
+            if (shouldRetry) {
+                const retryDelay = attempt * 1500;
+                console.log(`[AI-DIRECTOR] Retry ${attempt}/${GEMINI_MAX_RETRIES - 1} after ${retryDelay}ms: ${formatGeminiError(error)}`);
+                await sleep(retryDelay);
+                continue;
+            }
+
+            console.log(`[AI-DIRECTOR] Error optimizing keywords: ${formatGeminiError(error)}`);
+        }
+    }
+
+    return defaultKeywords;
 }
 
 /**
@@ -313,9 +489,9 @@ function scoreVideoAsset(asset: MediaAsset): number {
  */
 export async function searchVideos(
     query: string,
-    perPage: number = 1,
+    perPage: number = 15,
     retries: number = 3,
-    orientation: 'portrait' | 'landscape' = 'portrait'
+    orientation: 'portrait' | 'landscape' | 'none' = 'portrait'
 ): Promise<MediaAsset[]> {
     // console.log(`\n🔍 [PEXELS-VIDEO] Searching videos for: "${query}"`);
     // console.log(`🔍 [PEXELS-VIDEO] Per page: ${perPage}, Max retries: ${retries}`);
@@ -337,7 +513,7 @@ export async function searchVideos(
                 params: {
                     query,
                     per_page: perPage,
-                    orientation,
+                    ...(orientation !== 'none' ? { orientation } : {}),
                 },
                 timeout: 10000,
             });
@@ -368,7 +544,7 @@ export async function searchVideos(
                 };
             });
 
-            return assets.sort((left: MediaAsset, right: MediaAsset) => scoreVideoAsset(left) - scoreVideoAsset(right));
+            return sortVideoAssets(assets);
         } catch (error: any) {
             const elapsed = Date.now() - startTime;
             // console.error(`🔍 [PEXELS-VIDEO] ❌ Error after ${elapsed}ms: ${error.message}`);
@@ -474,9 +650,9 @@ export async function searchImages(
  */
 export async function searchPixabayVideos(
     query: string,
-    perPage: number = 3,
+    perPage: number = 15,
     retries: number = 3,
-    orientation: 'portrait' | 'landscape' = 'portrait'
+    orientation: 'portrait' | 'landscape' | 'none' = 'portrait'
 ): Promise<MediaAsset[]> {
     // console.log(`\n🔍 [PIXABAY-VIDEO] Searching videos for: "${query}"`);
 
@@ -485,7 +661,7 @@ export async function searchPixabayVideos(
         return [];
     }
 
-    const pixabayOrientation = orientation === 'landscape' ? 'horizontal' : 'vertical';
+    const pixabayOrientation = orientation === 'landscape' ? 'horizontal' : (orientation === 'portrait' ? 'vertical' : '');
 
     for (let attempt = 1; attempt <= retries; attempt++) {
         // console.log(`🔍 [PIXABAY-VIDEO] Attempt ${attempt}/${retries}...`);
@@ -497,7 +673,7 @@ export async function searchPixabayVideos(
                     key: PIXABAY_API_KEY,
                     q: query,
                     video_type: 'film',
-                    orientation: pixabayOrientation,
+                    ...(pixabayOrientation ? { orientation: pixabayOrientation } : {}),
                     per_page: perPage,
                     min_width: 1280 // Prefer HD+
                 },
@@ -512,7 +688,7 @@ export async function searchPixabayVideos(
                 return [];
             }
 
-            return response.data.hits.map((hit: any) => {
+            const assets = response.data.hits.map((hit: any) => {
                 // Pixabay returns 'videos' object with sizes
                 const sizes = hit.videos;
                 // Prefer Large > Medium > Small
@@ -527,6 +703,7 @@ export async function searchPixabayVideos(
                     videoDuration: hit.duration
                 };
             });
+            return sortVideoAssets(assets);
         } catch (error: any) {
             // console.error(`🔍 [PIXABAY-VIDEO] ❌ Error: ${error.message}`);
             if (attempt < retries) {
@@ -540,15 +717,81 @@ export async function searchPixabayVideos(
 }
 
 /**
+ * Use Gemini AI to optimize search keywords based on scene text.
+ * Falls back to default keywords if API key is missing or on error.
+ */
+export async function optimizeKeywordsWithGemini(
+    sceneText: string,
+    defaultKeywords: string[]
+): Promise<string[]> {
+    if (!GEMINI_API_KEY) {
+        return defaultKeywords;
+    }
+
+    return optimizeKeywordsWithGeminiInternal(sceneText, defaultKeywords);
+
+    try {
+        const prompt = `You are an expert AI video director.
+I have this voiceover text for a video scene: "${sceneText}"
+
+Return a JSON array of up to 3 highly optimized, cinematic search queries (strings) to find the best matching B-roll footage on Pexels or Pixabay.
+The queries should be concise but descriptive (e.g. "cinematic dark moody rain window", "aerial drone city sunset").
+Only return the JSON array, no other text or formatting. DO NOT wrap with \`\`\`json.`;
+
+        const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+            {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7 }
+            },
+            { timeout: 10000 }
+        );
+
+        let responseText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (!responseText) return defaultKeywords;
+
+        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        const optimizedKeywords = JSON.parse(responseText);
+        if (Array.isArray(optimizedKeywords) && optimizedKeywords.length > 0) {
+            console.log(`\n🧠 [AI-DIRECTOR] Optimized keywords for scene: "${sceneText.substring(0, 50)}..."`);
+            console.log(`🧠 [AI-DIRECTOR] Generated queries:`, optimizedKeywords);
+            return optimizedKeywords;
+        }
+    } catch (error: any) {
+        console.log(`🧠 [AI-DIRECTOR] ❌ Error optimizing keywords: ${error.message}`);
+    }
+    return defaultKeywords;
+}
+
+/**
  * Fetch visuals for a scene based on keywords (with caching)
  */
 export async function fetchVisualsForScene(
     keywords: string[],
     preferVideo: boolean = true,
-    orientation: 'portrait' | 'landscape' = 'portrait'
+    orientation: 'portrait' | 'landscape' | 'none' = 'portrait',
+    sceneText?: string
 ): Promise<MediaAsset | null> {
     const query = keywords.join(' ');
     const cacheKey = `${query.toLowerCase()}:${orientation}`;
+    const cache = getCache();
+
+    // Skip Gemini and provider calls entirely when we already have a cached result.
+    if (cache[cacheKey]) {
+        // console.log(`ðŸŽ¨ [FETCH] âœ… CACHE HIT! Using cached ${cache[cacheKey].type}`);
+        // console.log(`ðŸŽ¨ [FETCH] URL: ${cache[cacheKey].url}`);
+        return cache[cacheKey];
+    }
+
+    if (sceneText && preferVideo) {
+        console.log('\n🧠 ════════════════════════════════════════════════');
+        console.log(`🧠 [FETCH] Original query: "${query}"`);
+    }
+
+    const queriesToTry = sceneText && preferVideo
+        ? await optimizeKeywordsWithGemini(sceneText, [query]) 
+        : [query];
 
     // console.log('\n🎨 ════════════════════════════════════════════════');
     // console.log(`🎨 [FETCH] Fetching visuals for keywords: [${keywords.join(', ')}]`);
@@ -556,7 +799,6 @@ export async function fetchVisualsForScene(
     // console.log(`🎨 [FETCH] Prefer video: ${preferVideo}`);
 
     // Check cache first
-    const cache = getCache();
     if (cache[cacheKey]) {
         // console.log(`🎨 [FETCH] ✅ CACHE HIT! Using cached ${cache[cacheKey].type}`);
         // console.log(`🎨 [FETCH] URL: ${cache[cacheKey].url}`);
@@ -566,31 +808,35 @@ export async function fetchVisualsForScene(
 
     try {
         if (preferVideo) {
-            // console.log(`🎨 [FETCH] Trying video search first...`);
-            const videos = await searchVideos(query, 1, 3, orientation);
-            if (videos.length > 0) {
-                // console.log(`🎨 [FETCH] ✅ Found video: ${videos[0].url}`);
-                // console.log(`🎨 [FETCH] Resolution: ${videos[0].width}x${videos[0].height}`);
-                cache[cacheKey] = videos[0];
-                saveCache(cache);
-                return videos[0];
-            }
-            // console.log(`🎨 [FETCH] No videos found on Pexels, trying Pixabay...`);
+            for (const q of queriesToTry) {
+                console.log(`🎨 [FETCH] 🎬 Trying query: "${q}"...`);
+                const orientationsToTry: ('portrait' | 'landscape' | 'none')[] = 
+                    orientation !== 'none' ? [orientation, 'none'] : ['none'];
 
-            // Fallback to Pixabay
-            const pixabayVideos = await searchPixabayVideos(query, 3, 3, orientation);
-            if (pixabayVideos.length > 0) {
-                // console.log(`🎨 [FETCH] ✅ Found Pixabay video: ${pixabayVideos[0].url}`);
-                cache[cacheKey] = pixabayVideos[0];
-                saveCache(cache);
-                return pixabayVideos[0];
-            }
+                for (const orient of orientationsToTry) {
+                    console.log(`🎨 [FETCH] 📐 Search Orientation: ${orient}`);
+                    const videos = await searchVideos(q, 15, 2, orient);
+                    if (videos.length > 0) {
+                        console.log(`🎨 [FETCH] ✅ Found video on Pexels: ${videos[0].url} (${videos[0].width}x${videos[0].height}, ${videos[0].videoDuration}s)`);
+                        cache[cacheKey] = videos[0];
+                        saveCache(cache);
+                        return videos[0];
+                    }
 
-            // console.log(`🎨 [FETCH] No videos found on Pixabay either, trying images...`);
+                    const pixabayVideos = await searchPixabayVideos(q, 15, 2, orient);
+                    if (pixabayVideos.length > 0) {
+                        console.log(`🎨 [FETCH] ✅ Found video on Pixabay: ${pixabayVideos[0].url} (${pixabayVideos[0].width}x${pixabayVideos[0].height}, ${pixabayVideos[0].videoDuration}s)`);
+                        cache[cacheKey] = pixabayVideos[0];
+                        saveCache(cache);
+                        return pixabayVideos[0];
+                    }
+                    console.log(`🎨 [FETCH] ⚠️ No video for "${q}" at orientation "${orient}"`);
+                }
+            }
         }
 
         // Fallback to images
-        const images = await searchImages(query, 1, 3, orientation);
+        const images = await searchImages(query, 1, 3, orientation === 'none' ? 'portrait' : orientation);
         if (images.length > 0) {
             // console.log(`🎨 [FETCH] ✅ Found image: ${images[0].url}`);
             cache[cacheKey] = images[0];
@@ -643,7 +889,7 @@ export async function downloadMedia(
     if (fs.existsSync(outputPath)) {
         try {
             const stats = fs.statSync(outputPath);
-            if (stats.size > 1024) { // Ignore > 1KB files
+            if (stats.size > 100 * 1024) { // Ignore > 100KB files
                 // Get video duration if it's a video file
                 let videoDuration: number | undefined;
                 let videoTrimAfterFrames: number | undefined;
@@ -674,7 +920,9 @@ export async function downloadMedia(
             // console.log(`⬇️ [DOWNLOAD] Content-Type: ${response.headers['content-type']}`);
             // console.log(`⬇️ [DOWNLOAD] Content-Length: ${response.headers['content-length']} bytes`);
 
-            const writer = fs.createWriteStream(outputPath);
+            const tmpPath = `${outputPath}.tmp`;
+            if (fs.existsSync(tmpPath)) try { fs.unlinkSync(tmpPath); } catch (e) {}
+            const writer = fs.createWriteStream(tmpPath);
             let settled = false;
             let stallTimer: NodeJS.Timeout | null = null;
 
@@ -709,6 +957,7 @@ export async function downloadMedia(
                     settled = true;
                     clearStallTimer();
                     writer.destroy();
+                    try { fs.unlinkSync(tmpPath); } catch (e) {}
                     reject(err);
                 });
                 response.data.pipe(writer);
@@ -720,6 +969,12 @@ export async function downloadMedia(
                     settled = true;
                     clearStallTimer();
                     const elapsed = Date.now() - startTime;
+                    
+                    if (fs.existsSync(tmpPath)) {
+                        try { fs.renameSync(tmpPath, outputPath); } 
+                        catch (e: any) { reject(new Error(`Failed to save: ${e.message}`)); return; }
+                    }
+
                     if (!fs.existsSync(outputPath)) {
                         reject(new Error(`Downloaded file missing after write: ${outputPath}`));
                         return;
@@ -749,6 +1004,7 @@ export async function downloadMedia(
                     }
                     settled = true;
                     clearStallTimer();
+                    try { fs.unlinkSync(tmpPath); } catch (e) {}
                     // console.error(`⬇️ [DOWNLOAD] ❌ Write error: ${err.message}`);
                     reject(err);
                 });

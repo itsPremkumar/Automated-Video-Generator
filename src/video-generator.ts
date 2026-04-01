@@ -176,7 +176,7 @@ export async function generateVideo(
                 }
 
                 if (!visual) {
-                    visual = await fetchVisualsForScene(scene.searchKeywords, true, orientation);
+                    visual = await fetchVisualsForScene(scene.searchKeywords, true, orientation, scene.voiceoverText);
 
                     if (visual && visual.type === 'video') {
                         try {
@@ -197,7 +197,7 @@ export async function generateVideo(
                             // console.error(`⚠️ [SCENE ${i + 1}] Download failed: ${err.message}`);
                             invalidateCachedVisual(scene.searchKeywords, orientation);
 
-                            const imageFallback = await fetchVisualsForScene(scene.searchKeywords, false, orientation);
+                            const imageFallback = await fetchVisualsForScene(scene.searchKeywords, false, orientation, scene.voiceoverText);
                             visual = imageFallback && imageFallback.type === 'image' ? imageFallback : null;
                         }
                     } else if (visual) {

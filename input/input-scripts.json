@@ -1,74 +1,9 @@
 [
   {
-    "id": "test-11-no-text-noir",
-    "title": "Cinematic Noir (No Subtitles)",
-    "script": "The city never sleeps. [Visual: dark rain neon city night] Rain washes the streets, but the neon glow remains... haunting... and beautiful.",
-    "orientation": "landscape",
-    "voice": "en-US-ChristopherNeural",
-    "showText": false
-  },
-  {
-    "id": "test-12-tech-help-india",
-    "title": "Technical Support (Indian English)",
-    "script": "If your application is not connecting to the database, please check your environment variables. Ensure that the PORT and the DATABASE_URL are set correctly in your dot env file.",
-    "orientation": "landscape",
-    "voice": "en-IN-PrabhatNeural"
-  },
-  {
-    "id": "test-13-urgent-news",
-    "title": "Breaking News (Fast Pacing)",
-    "script": "Breaking news! A major breakthrough in quantum computing has just been announced in Silicon Valley. Researchers claim they have surpassed the quantum supremacy threshold by ten times!",
+    "id": "test-21-ai-director-showcase7687",
+    "title": "AI Director Showcase (Dynamic Visuals)7686",
+    "script": "The dawn breaks over a sleeping metropolis. While millions dream, a silent revolution occurs. [Visual: fast internet fiber optic cables glowing] Data flows like water, connecting continents in milliseconds. This is the pulse of the future.",
     "orientation": "portrait",
-    "voice": "en-US-AriaNeural"
-  },
-  {
-    "id": "test-14-fallback-forest",
-    "title": "Custom Fallback Test",
-    "script": "This script uses very abstract words that might be hard to visualize. The feeling of existence is fundamental to our perspective of the universe as a conscious entity.",
-    "orientation": "portrait",
-    "voice": "en-US-JennyNeural",
-    "defaultVideo": "sunny_forest.png"
-  },
-  {
-    "id": "test-15-british-corporate",
-    "title": "British Corporate Overview",
-    "script": "Our quarterly results show a significant uptick in global engagement. We are committed to delivering excellence through innovation and sustainable business practices in the UK and beyond.",
-    "orientation": "landscape",
-    "voice": "en-GB-SoniaNeural"
-  },
-  {
-    "id": "test-16-slow-meditation",
-    "title": "Extreme Slow Pacing",
-    "script": "Relax... [Visual: beach waves slow] Allow your mind to clear. ... Focus only on your breath. ... In. ... And out. ... You are at peace.",
-    "orientation": "landscape",
-    "voice": "en-US-JennyNeural"
-  },
-  {
-    "id": "test-17-gaming-trailer",
-    "title": "Gaming Action (British Male)",
-    "script": "Gear up! The battlefield is changing! [Visual: explosion fire smoke] Do you have what it takes to survive the night? Join the fight today. Victory is yours for the taking!",
-    "orientation": "landscape",
-    "voice": "en-GB-RyanNeural"
-  },
-  {
-    "id": "test-18-upbeat-lifestyle",
-    "title": "Energetic Vlog (High Energy)",
-    "script": "You won't believe what happened today! I finally hit my goal! Hard work pays off, guys. Never give up on your dreams, and keep pushing forward every single day!",
-    "orientation": "portrait",
-    "voice": "en-US-SaraNeural"
-  },
-  {
-    "id": "test-19-deep-history",
-    "title": "Historical Narration (Deep Voice)",
-    "script": "Centuries ago, these ruins were the heart of a vast empire. [Visual: ancient temple ruins] Today, they stand as a silent testament to the rise and fall of civilizations.",
-    "orientation": "landscape",
-    "voice": "en-US-GuyNeural"
-  },
-  {
-    "id": "test-20-mixed-ultimate",
-    "title": "The Ultimate Combination Test",
-    "script": "Feature one: Local assets. [Visual: green_leaves.png] Feature two: Targeted stock. [Visual: high tech laboratory white] Feature three: No subtitles for this scene. [Visual: space nebula cosmic]",
-    "orientation": "portrait",
-    "voice": "en-US-JennyNeural"
+    "voice": "en-US-ChristopherNeural"
   }
 ]
