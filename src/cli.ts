@@ -19,7 +19,9 @@ interface VideoJob {
     defaultVideo?: string;
     backgroundMusic?: string;
     musicVolume?: number;
+    language?: string;
 }
+
 
 function parseArgs() {
     const args = process.argv.slice(2);
@@ -154,12 +156,14 @@ async function main() {
             const result = await generateVideo(job.script, jobOutputDir, {
                 orientation: jobOrientation as 'portrait' | 'landscape',
                 voice: job.voice,
+                language: job.language,
                 title: job.title,
                 showText: job.showText !== false,
                 defaultVideo: job.defaultVideo,
                 backgroundMusic: job.backgroundMusic || globalMusic,
                 musicVolume: job.musicVolume
             });
+
 
             if (result.success) {
                 // console.log(`   ✅ Generation Successful for "${job.title}"`);

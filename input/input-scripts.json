@@ -1,11 +1,9 @@
 [
   {
-    "id": "test-21-ai-director-showcase7687",
-    "title": "AI Director Showcase (Dynamic Visuals)7686",
-    "script": "The dawn breaks over a sleeping metropolis. While millions dream, a silent revolution occurs. [Visual: fast internet fiber optic cables glowing] Data flows like water, connecting continents in milliseconds. This is the pulse of the future.",
-    "orientation": "portrait",
-    "voice": "en-US-ChristopherNeural",
-    "backgroundMusic": "The_Gravity_of_Dawn.mp3",
-    "musicVolume": 0.2
+    "id": "tamil-ai-showcase",
+    "title": "AI in Tamil",
+    "language": "tamil",
+    "script": "வணக்கம்! செயற்கை நுண்ணறிவு தொழில்நுட்பம் உலகையே மாற்றிக்கொண்டிருக்கிறது. இது ஒரு புதிய புரட்சி.",
+    "orientation": "portrait"
   }
 ]

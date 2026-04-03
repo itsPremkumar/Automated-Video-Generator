@@ -1,6 +1,6 @@
 import { parseScript, validateScript } from './lib/script-parser';
 import { fetchVisualsForScene, downloadMedia, getVideoMetadata, invalidateCachedVisual } from './lib/visual-fetcher';
-import { generateVoiceovers, DEFAULT_VOICE_CONFIG } from './lib/voice-generator';
+import { generateVoiceovers, DEFAULT_VOICE_CONFIG, LANGUAGE_DEFAULTS } from './lib/voice-generator';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logError, logInfo, resolveProjectPath } from './runtime';
@@ -40,7 +40,10 @@ interface GenerationOptions {
     /** Background Music */
     backgroundMusic?: string;
     musicVolume?: number;
+    /** Language key for default voice mapping */
+    language?: string;
 }
+
 
 // console.log('\n🎬 [VIDEO-GEN] Module loaded');
 // console.log(`🎬 [VIDEO-GEN] Working directory: ${process.cwd()}`);
@@ -53,9 +56,20 @@ export async function generateVideo(
     outputDir: string = resolveProjectPath('output'),
     options: GenerationOptions = {}
 ): Promise<GenerationResult> {
-    const { onProgress, orientation = 'portrait', voice, title, showText = true, defaultVideo = 'default.mp4', publicId, backgroundMusic, musicVolume } = options;
+    const { onProgress, orientation = 'portrait', title, showText = true, defaultVideo = 'default.mp4', publicId, backgroundMusic, musicVolume, language } = options;
+    
+    // Resolve voice: 1. explicit voice, 2. default for language, 3. global default
+    let voice = options.voice;
+    if (!voice && language) {
+        voice = LANGUAGE_DEFAULTS[language.toLowerCase()];
+    }
+    if (!voice) {
+        voice = DEFAULT_VOICE_CONFIG.voice;
+    }
+
     const totalStartTime = Date.now();
     const workspace = createPipelineWorkspace(outputDir, publicId);
+
 
     // console.log('\n');
     // console.log('╔════════════════════════════════════════════════════════════════╗');

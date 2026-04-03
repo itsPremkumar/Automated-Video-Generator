@@ -71,8 +71,10 @@ The Automated Video Generator project is officially available on ClawHub. You ca
 
 - Free and open source under the MIT license
 - Self-hosted video generation you control locally
-- Text-to-video pipeline with Remotion and React
-- Edge-TTS voiceovers with multiple neural voice options
+-   Text-to-video pipeline with Remotion and React
+-   **Multi-language support including Tamil, Hindi, Spanish, French, and German**
+-   Edge-TTS voiceovers with multiple neural voice options
+
 - Stock media fetching from Pexels and Pixabay
 - Local asset support for your own images and videos
 - **Configurable background music with volume control**
@@ -165,12 +167,11 @@ Create `input/input-scripts.json` with one or more jobs:
     "id": "youtube-shorts-demo",
     "title": "3 Productivity Habits That Actually Work",
     "orientation": "portrait",
-    "voice": "en-US-JennyNeural",
-    "backgroundMusic": "The_Gravity_of_Dawn.mp3",
-    "musicVolume": 0.2,
-    "script": "[Visual: focused person at desk] Want better focus every day? [Visual: checklist and timer] Try these three simple habits."
+    "language": "tamil",
+    "script": "வணக்கம்! செயற்கை நுண்ணறிவு தொழில்நுட்பம் உலகையே மாற்றிக்கொண்டிருக்கிறது."
   }
 ]
+
 ```
 
 Run the pipeline:

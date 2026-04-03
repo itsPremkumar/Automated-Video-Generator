@@ -5,7 +5,9 @@ import { config } from 'dotenv';
 import { generateVideo } from './video-generator';
 import { renderVideo } from './render';
 import { ensureProjectRootCwd, jobStore, resolveProjectPath } from './runtime';
+import { AVAILABLE_VOICES } from './lib/voice-generator';
 import type { JobStatus } from './runtime';
+
 
 ensureProjectRootCwd();
 config({ path: resolveProjectPath('.env') });
@@ -452,9 +454,21 @@ function homePage(req: Request, videos: VideoRecord[]): string {
         ? musicFiles.map((file) => `<option value="${escapeHtml(file)}">${escapeHtml(file)}</option>`).join('')
         : '<option value="">No music found in input/music</option>';
 
+    const voiceOptions = Object.entries(AVAILABLE_VOICES).map(([lang, voices]) => {
+        const langName = lang.charAt(0).toUpperCase() + lang.slice(1);
+        const maleOptions = voices.male.map(v => `<option value="${v}">${v} (Male)</option>`).join('');
+        const femaleOptions = voices.female.map(v => `<option value="${v}">${v} (Female)</option>`).join('');
+        return `<optgroup label="${langName}">${femaleOptions}${maleOptions}</optgroup>`;
+    }).join('');
+
+    const languageOptions = Object.keys(AVAILABLE_VOICES).map(lang => {
+        const langName = lang.charAt(0).toUpperCase() + lang.slice(1);
+        return `<option value="${lang}">${langName}</option>`;
+    }).join('');
+
     return html(
         `Free Automated Video Generator | Open-Source Remotion Text-to-Video Tool`,
-        `<section class="hero"><h1>${PROJECT_NAME}</h1><p>Free and open-source AI text-to-video generator for creating YouTube Shorts, TikTok videos, explainers, and marketing content with Remotion, Edge-TTS, and stock media APIs.</p><p class="muted">Start a render, share the status page, then send the final watch or download link to the end user.</p><div class="row"><a class="button" href="${PROJECT_REPOSITORY_URL}" target="_blank" rel="noreferrer">Star on GitHub</a><a class="button secondary" href="/llms.txt">Read AI summary</a></div></section><section class="note"><h2>Completely free and open source</h2><p>This project is MIT-licensed and free to use. There is no repo-owned paid tier and no watermark added by this codebase. If you use optional third-party providers such as Pexels or Pixabay, their own limits still apply.</p></section><section><h2>Why creators use it</h2><div class="grid cards"><div class="card"><div class="card-body"><h3>YouTube Shorts and TikTok</h3><p class="muted">Generate portrait videos from scripts with narration, stock visuals, and local assets.</p></div></div><div class="card"><div class="card-body"><h3>Self-hosted pipeline</h3><p class="muted">Run locally with your own APIs, assets, and workflow control instead of relying on closed platforms.</p></div></div><div class="card"><div class="card-body"><h3>MCP-ready automation</h3><p class="muted">Let Claude Desktop, Claude Code, or other MCP clients generate and manage videos through tools.</p></div></div></div></section><section><h2>Create a video</h2><form id="generate-form" class="form"><input id="title" placeholder="Video title" maxlength="${MAX_TITLE_LENGTH}" required><textarea id="script" placeholder="[Visual: futuristic robotics lab] AI is changing how people and robots work together." required></textarea><div class="grid cards"><select id="orientation"><option value="portrait">Portrait (9:16)</option><option value="landscape">Landscape (16:9)</option></select><select id="voice"><option value="en-US-JennyNeural">Jenny Neural</option><option value="en-US-AriaNeural">Aria Neural</option><option value="en-US-GuyNeural">Guy Neural</option><option value="en-US-ChristopherNeural">Christopher Neural</option></select></div><div class="grid cards"><select id="backgroundMusic"><option value="">No Background Music</option>${musicOptions}</select><input id="defaultVideo" value="${DEFAULT_FALLBACK_VIDEO}" placeholder="Fallback asset"></div><div class="grid cards"><label class="row" style="padding-top:12px"><input id="showText" type="checkbox" checked style="width:auto"> Show subtitles</label></div><div class="row"><button type="submit">Generate Video</button><span class="muted">You will be redirected to a live job page.</span></div></form><div id="form-status" class="status" hidden></div></section><section><h2>Completed videos</h2><div class="grid cards">${cards}</div></section>`,
+        `<section class="hero"><h1>${PROJECT_NAME}</h1><p>Free and open-source AI text-to-video generator for creating YouTube Shorts, TikTok videos, explainers, and marketing content with Remotion, Edge-TTS, and stock media APIs.</p><p class="muted">Start a render, share the status page, then send the final watch or download link to the end user.</p><div class="row"><a class="button" href="${PROJECT_REPOSITORY_URL}" target="_blank" rel="noreferrer">Star on GitHub</a><a class="button secondary" href="/llms.txt">Read AI summary</a></div></section><section class="note"><h2>Completely free and open source</h2><p>This project is MIT-licensed and free to use. There is no repo-owned paid tier and no watermark added by this codebase. If you use optional third-party providers such as Pexels or Pixabay, their own limits still apply.</p></section><section><h2>Why creators use it</h2><div class="grid cards"><div class="card"><div class="card-body"><h3>YouTube Shorts and TikTok</h3><p class="muted">Generate portrait videos from scripts with narration, stock visuals, and local assets.</p></div></div><div class="card"><div class="card-body"><h3>Self-hosted pipeline</h3><p class="muted">Run locally with your own APIs, assets, and workflow control instead of relying on closed platforms.</p></div></div><div class="card"><div class="card-body"><h3>MCP-ready automation</h3><p class="muted">Let Claude Desktop, Claude Code, or other MCP clients generate and manage videos through tools.</p></div></div></div></section><section><h2>Create a video</h2><form id="generate-form" class="form"><input id="title" placeholder="Video title" maxlength="${MAX_TITLE_LENGTH}" required><textarea id="script" placeholder="[Visual: futuristic robotics lab] AI is changing how people and robots work together." required></textarea><div class="grid cards"><select id="orientation"><option value="portrait">Portrait (9:16)</option><option value="landscape">Landscape (16:9)</option></select><select id="language"><option value="">Select Language (Default: English)</option>${languageOptions}</select><select id="voice"><option value="">Select Voice (Optional Override)</option>${voiceOptions}</select></div><div class="grid cards"><select id="backgroundMusic"><option value="">No Background Music</option>${musicOptions}</select><input id="defaultVideo" value="${DEFAULT_FALLBACK_VIDEO}" placeholder="Fallback asset"></div><div class="grid cards"><label class="row" style="padding-top:12px"><input id="showText" type="checkbox" checked style="width:auto"> Show subtitles</label></div><div class="row"><button type="submit">Generate Video</button><span class="muted">You will be redirected to a live job page.</span></div></form><div id="form-status" class="status" hidden></div></section><section><h2>Completed videos</h2><div class="grid cards">${cards}</div></section>`,
         {
             canonical: absoluteUrl(req, '/'),
             description: DEFAULT_SITE_DESCRIPTION,
@@ -490,7 +504,7 @@ function homePage(req: Request, videos: VideoRecord[]): string {
             keywords: DEFAULT_SITE_KEYWORDS,
             ogType: 'website',
         },
-        `const form=document.getElementById('generate-form');const status=document.getElementById('form-status');form.addEventListener('submit',async(e)=>{e.preventDefault();status.hidden=false;status.textContent='Starting render...';const payload={title:document.getElementById('title').value,script:document.getElementById('script').value,orientation:document.getElementById('orientation').value,voice:document.getElementById('voice').value,backgroundMusic:document.getElementById('backgroundMusic').value,defaultVideo:document.getElementById('defaultVideo').value,showText:document.getElementById('showText').checked};try{const res=await fetch('/generate-video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const json=await res.json();if(!res.ok||!json.success)throw new Error(json.error||'Unable to start render.');window.location.href=json.data.statusPageUrl;}catch(err){status.textContent=err instanceof Error?err.message:'Unable to start render.';}});`,
+        `const form=document.getElementById('generate-form');const status=document.getElementById('form-status');form.addEventListener('submit',async(e)=>{e.preventDefault();status.hidden=false;status.textContent='Starting render...';const payload={title:document.getElementById('title').value,script:document.getElementById('script').value,orientation:document.getElementById('orientation').value,language:document.getElementById('language').value,voice:document.getElementById('voice').value || undefined,backgroundMusic:document.getElementById('backgroundMusic').value,defaultVideo:document.getElementById('defaultVideo').value,showText:document.getElementById('showText').checked};try{const res=await fetch('/generate-video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const json=await res.json();if(!res.ok||!json.success)throw new Error(json.error||'Unable to start render.');window.location.href=json.data.statusPageUrl;}catch(err){status.textContent=err instanceof Error?err.message:'Unable to start render.';}});`,
     );
 }
 
@@ -570,8 +584,10 @@ async function startJob(req: Request, res: Response) {
     const title = normalizeTitle(req.body?.title);
     const script = normalizeString(req.body?.script, '').trim();
     const orientation = normalizeOrientation(req.body?.orientation);
-    const voice = normalizeString(req.body?.voice, DEFAULT_VOICE);
+    const language = normalizeString(req.body?.language, '');
+    const voice = normalizeString(req.body?.voice, '');
     const showText = normalizeBoolean(req.body?.showText, true);
+
     const backgroundMusic = normalizeString(req.body?.backgroundMusic, '');
     const defaultVideo = normalizeString(req.body?.defaultVideo, DEFAULT_FALLBACK_VIDEO);
     const publicId = `${sanitizeFolderTitle(title) || 'video'}_${Date.now()}`;
@@ -595,8 +611,10 @@ async function startJob(req: Request, res: Response) {
             const result = await generateVideo(script, outputDir, {
                 title,
                 orientation,
-                voice,
+                language,
+                voice: voice || undefined,
                 showText,
+
                 defaultVideo,
                 backgroundMusic,
                 onProgress: (step: string, percent: number, message: string) => {
