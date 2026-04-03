@@ -13,6 +13,18 @@ const console = {
 };
 
 /**
+ * Metadata for an Edge-TTS voice
+ */
+export interface VoiceMetadata {
+  name: string;
+  gender: 'Male' | 'Female';
+  language: string;
+  category?: string;
+  tags?: string[];
+}
+
+
+/**
  * Voice configuration for Edge-TTS
  */
 export interface VoiceConfig {
@@ -73,23 +85,58 @@ export const AVAILABLE_VOICES: Record<string, { male: string[], female: string[]
     male: ['ta-IN-ValluvarNeural'],
     female: ['ta-IN-PallaviNeural'],
   },
-  hindi: {
-    male: ['hi-IN-MadhurNeural'],
-    female: ['hi-IN-SwararaNeural'],
-  },
-  spanish: {
-    male: ['es-ES-AlvaroNeural'],
-    female: ['es-ES-ElviraNeural'],
-  },
-  french: {
-    male: ['fr-FR-HenriNeural'],
-    female: ['fr-FR-DeniseNeural'],
-  },
-  german: {
-    male: ['de-DE-ConradNeural'],
-    female: ['de-DE-KatjaNeural'],
-  },
 };
+
+// Internal cache for dynamic voices
+let cachedVoices: Record<string, VoiceMetadata[]> | null = null;
+
+/**
+ * Fetch and parse all available voices from Edge-TTS CLI
+ */
+export function getDynamicVoices(): Record<string, VoiceMetadata[]> {
+  if (cachedVoices) return cachedVoices;
+
+  try {
+    const output = execSync(`"${EDGE_TTS_PATH}" --list-voices`, { encoding: 'utf-8', stdio: 'pipe' });
+    const lines = output.split('\n');
+    const voicesByLang: Record<string, VoiceMetadata[]> = {};
+
+    for (const line of lines) {
+      // Format: Name Gender Category Tags
+      // Example: af-ZA-AdriNeural                  Female    General                Friendly, Positive
+      const match = line.match(/^(\S+)\s+(Male|Female)\s+(\S+)\s*(.*)?$/);
+      if (match) {
+        const [_, name, gender, category, tags] = match;
+        const locale = name.split('-').slice(0, 2).join('-'); // e.g., 'en-US'
+        
+        if (!voicesByLang[locale]) {
+          voicesByLang[locale] = [];
+        }
+
+        voicesByLang[locale].push({
+          name,
+          gender: gender as 'Male' | 'Female',
+          language: locale,
+          category,
+          tags: tags ? tags.split(',').map(t => t.trim()) : []
+        });
+      }
+    }
+
+    cachedVoices = voicesByLang;
+    return voicesByLang;
+  } catch (error: any) {
+    console.error(`❌ [VOICE-GEN] Failed to fetch dynamic voices: ${error.message}`);
+    // Fallback to minimal hardcoded list if dynamic fetch fails
+    return {
+      'en-US': [
+        { name: 'en-US-JennyNeural', gender: 'Female', language: 'en-US' },
+        { name: 'en-US-GuyNeural', gender: 'Male', language: 'en-US' }
+      ]
+    };
+  }
+}
+
 
 // Default voice mapping for specific language keys
 export const LANGUAGE_DEFAULTS: Record<string, string> = {

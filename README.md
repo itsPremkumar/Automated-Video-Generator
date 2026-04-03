@@ -69,8 +69,7 @@ The Automated Video Generator project is officially available on ClawHub. You ca
 
 ## Why this repo gets attention
 
-- Free and open source under the MIT license
-- Self-hosted video generation you control locally
+-   **Worldwide support for 400+ voices across all major languages with a searchable interface**
 -   Text-to-video pipeline with Remotion and React
 -   **Multi-language support including Tamil, Hindi, Spanish, French, and German**
 -   Edge-TTS voiceovers with multiple neural voice options

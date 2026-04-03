@@ -34,7 +34,8 @@ The file must be a valid JSON array. Each item in the array is a "job" that prod
 | **`script`** | `string` | **Yes** | The full text content for the video voiceover. <br>• **Min Length**: 10 characters. <br>• **Max Length**: ~5000 characters suggested. <br>• **Parsing**: The script is analyzed to generate scenes, find relevant stock footage, and creating subtitles. |
 | **`orientation`** | `string` | No | The aspect ratio of the final video. <br>• **Options**: <br> &nbsp;&nbsp; `portrait` (9:16) - Best for Shorts/Reels/TikTok. <br> &nbsp;&nbsp; `landscape` (16:9) - Best for YouTube/TV. <br>• **Default**: Falls back to the global CLI flag (`--landscape`) or the `VIDEO_ORIENTATION` environment variable. |
 | **`voice`** | `string` | No | The specific voice to use for this video's narration. <br>• **See below** for the full list of available voices. <br>• **Default**: Falls back to `VIDEO_VOICE` (.env) or `en-US-GuyNeural`. |
-| **`language`** | `string` | No | The language of the script. <br>• **Options**: `english`, `tamil`, `hindi`, `spanish`, `french`, `german`. <br>• **Usage**: Automatically selects a high-quality default voice for that language. |
+| **`language`** | `string` | No | The language of the script. <br>• **Options**: `english`, `tamil`, `hindi`, `spanish`, `french`, `german`, and **100+ more**. <br>• **Usage**: Automatically selects a high-quality default voice for that language. |
+
 | **`backgroundMusic`** | `string` | No | The filename of an audio file to use as background music. <br>• **Source**: Must be located in `input/input-assests/`. <br>• **Format**: `.mp3`, `.wav`, or `.m4a`. <br>• **Behavior**: Loops automatically for the duration of the video. |
 | **`musicVolume`** | `number` | No | The volume level for the background music. <br>• **Range**: `0.0` (silent) to `1.0` (max). <br>• **Recommended**: `0.1` to `0.2` to keep the voiceover clear. <br>• **Default**: `0.15`. |
 
