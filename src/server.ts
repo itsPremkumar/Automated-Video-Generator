@@ -1,6 +1,7 @@
 import express, { NextFunction, Request, Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
+import { exec } from 'child_process';
 import { config, parse } from 'dotenv';
 import { generateVideo } from './video-generator';
 import { renderVideo } from './render';
@@ -294,20 +295,28 @@ function readDescription(folder: string): string | null {
 function getVideo(publicId: string, req: Request): VideoRecord | null {
     const folder = outputFolder(publicId);
     if (!folder) {
+        console.log(`[SERVER] ERROR: Output folder not found for publicId: ${publicId}`);
         return null;
     }
 
     const videoFilename = findVideoFile(folder);
     if (!videoFilename) {
+        console.log(`[SERVER] ERROR: No video file found in folder: ${folder}`);
         return null;
     }
 
     const videoPath = path.join(folder, videoFilename);
     const stats = fs.statSync(videoPath);
+    
+    if (stats.size === 0) {
+        console.log(`[SERVER] ERROR: Video file is empty (0 bytes): ${videoPath}`);
+        return null;
+    }
+
     const thumbnailPath = path.join(folder, 'thumbnail.jpg');
     const scene = readSceneData(folder);
 
-    return {
+    const record: VideoRecord = {
         id: publicId,
         title: path.basename(videoFilename, path.extname(videoFilename)).replace(/_/g, ' '),
         createdAt: new Date(stats.mtimeMs).toISOString(),
@@ -323,6 +332,8 @@ function getVideo(publicId: string, req: Request): VideoRecord | null {
         videoUrl: absoluteUrl(req, `/files/${encodeURIComponent(publicId)}/video`),
         thumbnailUrl: fs.existsSync(thumbnailPath) ? absoluteUrl(req, `/files/${encodeURIComponent(publicId)}/thumbnail`) : null,
     };
+
+    return record;
 }
 
 function listMusicFiles(): string[] {
@@ -607,6 +618,32 @@ textarea{min-height:250px;resize:vertical}
 .info-row{padding:12px 0;border-bottom:1px solid #eee0cf}
 .info-row:last-child{border-bottom:0}
 .footer-note{font-size:14px}
+.browser-modal{position:fixed;inset:0;background:rgba(23,32,51,.8);backdrop-filter:blur(8px);z-index:1000;display:grid;place-items:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s ease}
+.browser-modal.open{opacity:1;pointer-events:auto}
+.browser-content{background:var(--cream);width:100%;max-width:1000px;height:85vh;border-radius:var(--radius-xl);display:grid;grid-template-columns:250px 1fr;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.4);border:1px solid var(--line)}
+.browser-sidebar{background:var(--surface-soft);border-right:1px solid var(--line);padding:20px 0;display:flex;flex-direction:column;gap:16px;overflow-y:auto}
+.sidebar-section{padding:0 20px}
+.sidebar-title{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;transition:background .16s ease}
+.sidebar-item:hover{background:#fff3e4}
+.sidebar-item.active{background:var(--brand);color:#fff}
+.browser-main{display:flex;flex-direction:column;overflow:hidden}
+.browser-header{padding:22px;border-bottom:1px solid var(--line);background:var(--surface);display:flex;justify-content:space-between;align-items:center}
+.browser-path-wrapper{display:flex;align-items:center;padding:12px 20px;background:var(--surface-soft);border-bottom:1px solid var(--line)}
+.browser-path{font-family:monospace;font-size:13px;padding:8px 12px;background:#fff;border-radius:8px;border:1px solid var(--line);flex:1}
+.browser-list{flex:1;overflow-y:auto;padding:12px}
+.browser-item{display:grid;grid-template-columns:32px 1fr 100px;align-items:center;padding:10px 14px;border-radius:12px;cursor:pointer;transition:background .16s ease}
+.browser-item:hover{background:#fff3e4}
+.browser-icon{font-size:18px}
+.browser-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.browser-size{font-size:12px;color:var(--muted);text-align:right}
+.browser-footer{padding:18px;border-top:1px solid var(--line);background:var(--surface-soft);display:flex;justify-content:flex-end;gap:12px}
+@media(max-width:800px){.browser-content{grid-template-columns:1fr}.browser-sidebar{display:none}}
+.asset-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;margin-top:10px}
+.asset-item{padding:8px;border:1px solid var(--line);border-radius:14px;background:#fff;position:relative;text-align:center}
+.asset-item .tag-copy{font-size:11px;font-family:monospace;background:#f5efe7;padding:4px;border-radius:4px;display:block;margin-top:4px;cursor:pointer}
+.asset-item .tag-copy:hover{background:#efdfcf}
+.browser-item.disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:980px){.hero-grid,.layout-split,.watch-grid{grid-template-columns:1fr}main{padding:24px 16px 48px}}
 @media(max-width:640px){body{font-size:15px}.hero-surface,.panel{padding:18px;border-radius:22px}h1{font-size:2.15rem}.small-card{grid-template-columns:1fr}.script-toolbar,.panel-head,.info-row{align-items:flex-start}}
 </style></head><body><main>${body}</main>${script ? `<script>${script}</script>` : ''}</body></html>`;
@@ -648,8 +685,43 @@ function homePage(req: Request, videos: VideoRecord[]): string {
     const totalVoicePresets = Object.values(AVAILABLE_VOICES).reduce((count, group) => count + group.male.length + group.female.length, 0);
 
     return html(
-        `Free Automated Video Generator | Open-Source Remotion Text-to-Video Tool`,
-        `<section class="hero-surface"><div class="hero-grid"><div class="stack"><span class="eyebrow">Local AI Video Studio</span><div><h1>Create videos from a script, not from folders</h1><p class="lead">Paste your idea, shape the voice and layout, then let the portal handle stock visuals, narration, subtitles, rendering, and delivery in one place.</p><p class="muted">This screen is designed for normal users. No need to manually edit the input or output folders during everyday use.</p></div><div class="toolbar"><a class="button" href="#workspace">Open the workspace</a><a class="button secondary" href="${PROJECT_REPOSITORY_URL}" target="_blank" rel="noreferrer">View on GitHub</a><a class="button ghost" href="/llms.txt">Read AI summary</a></div><div class="metric-grid"><div class="metric-card"><strong>${videos.length}</strong><span class="muted">videos created in this portal</span></div><div class="metric-card"><strong>${totalVoicePresets}+</strong><span class="muted">voice presets available before dynamic loading</span></div><div class="metric-card"><strong>3 steps</strong><span class="muted">setup, create, watch or download</span></div></div></div><div class="highlight-box stack"><span class="eyebrow">Simple Flow</span><h2>What users do here</h2><div class="row">${setupSummary}</div><ol class="checklist"><li>Save the API keys once for this computer.</li><li>Paste or edit the script in the workspace below.</li><li>Choose voice, layout, music, and subtitle options.</li><li>Start the render and wait on the live status page.</li><li>Watch or download the MP4 from the final delivery page.</li></ol></div></div></section><section class="layout-split"><div class="panel tint stack"><div><span class="eyebrow">One-Time Setup</span><h2>Prepare this device once</h2><p class="muted">Most users only need a Pexels API key. Save it here and the browser portal becomes the main way to use the project.</p></div><div class="row">${setupSummary}</div><div id="setup-readiness" class="status-board"></div></div><div class="panel"><form id="setup-form" class="form"><div class="field-grid two-up"><div class="field"><label for="setup-pexels">Pexels API key</label><input id="setup-pexels" type="password" placeholder="Recommended for stock video search"><p class="field-help">Best source for usable portrait and landscape stock footage.</p></div><div class="field"><label for="setup-pixabay">Pixabay API key</label><input id="setup-pixabay" type="password" placeholder="Optional backup provider"><p class="field-help">Optional secondary image and video source.</p></div><div class="field"><label for="setup-gemini">Gemini API key</label><input id="setup-gemini" type="password" placeholder="Optional AI helper"><p class="field-help">Only needed if your workflows use Gemini-powered helpers.</p></div><div class="field"><label for="setup-public-base-url">Public base URL</label><input id="setup-public-base-url" placeholder="Optional when you deploy beyond localhost"><p class="field-help">Leave empty for local-only use.</p></div></div><div class="toolbar"><button type="submit">Save Setup</button><span class="muted">Launcher users can open this page from <strong>Start-Automated-Video-Generator.bat</strong>.</span></div></form><div id="setup-feedback" class="status" hidden></div></div></section><section id="workspace" class="layout-split"><div class="stack"><form id="generate-form" class="form"><div class="panel form-panel"><div class="panel-head"><div><span class="eyebrow">Step 1</span><h2>Write the story and visual instructions</h2><p class="muted">Use plain sentences. Add <strong>[Visual: ...]</strong> when you want to guide the stock footage for a scene.</p></div><button type="button" id="fill-sample" class="secondary">Use Sample Script</button></div><div class="field"><label for="title">Video title</label><input id="title" placeholder="How AI Is Changing Everyday Life" maxlength="${MAX_TITLE_LENGTH}" required><p class="field-help">This title is used on the output page and for the final video filename.</p></div><div class="field"><label for="script">Input script</label><div class="script-shell"><div class="script-toolbar"><span class="muted">Editable input area for the full spoken script</span><div id="script-metrics" class="row"><span class="helper-badge">0 words</span><span class="helper-badge">0 sec est.</span></div></div><textarea id="script" placeholder="[Visual: futuristic robotics lab] AI is changing how people and robots work together.&#10;&#10;[Visual: doctor reviewing an AI dashboard] In healthcare, it helps spot patterns faster and supports earlier decisions." required></textarea><div class="script-guide"><strong>Good script format</strong><p class="muted">Short paragraphs and clear scene cues work best. One idea per line makes subtitles cleaner and helps the generator find stronger visuals.</p></div></div></div></div><div class="panel form-panel"><div><span class="eyebrow">Step 2</span><h2>Choose voice and video layout</h2><p class="muted">You can let the app detect the language automatically or lock the language and voice yourself.</p></div><div class="field-grid two-up"><div class="field"><label for="orientation">Output orientation</label><select id="orientation"><option value="portrait">Portrait (9:16)</option><option value="landscape">Landscape (16:9)</option></select><p class="field-help">Portrait is best for Shorts, Reels, and TikTok. Landscape is better for YouTube and presentations.</p></div><div class="field"><label for="language">Language</label><select id="language"><option value="">Detect language automatically</option>${languageOptions}</select><p class="field-help">Pick a language when you want more predictable voice selection.</p></div><div class="field"><label for="voice-search">Search voice</label><input type="text" id="voice-search" class="voice-search" placeholder="Search voices by name, language, or gender"><p id="voice-hint" class="field-help">The full voice list loads from Edge-TTS when available.</p></div><div class="field"><label for="voice">Voice override</label><select id="voice"><option value="">Select Voice (Optional Override)</option>${voiceOptions}</select><p class="field-help">Leave this empty if you want the app to choose a matching voice automatically.</p></div></div></div><div class="panel form-panel"><div><span class="eyebrow">Step 3</span><h2>Finish the output settings</h2><p class="muted">These options shape the final MP4 and help the generator recover cleanly when a stock video cannot be downloaded.</p></div><div class="field-grid two-up"><div class="field"><label for="backgroundMusic">Background music</label><select id="backgroundMusic"><option value="">No background music</option>${musicOptions}</select><p class="field-help">Music files come from <strong>input/music</strong>. Users can choose one here without browsing folders.</p></div><div class="field"><label for="defaultVideo">Fallback video asset</label><input id="defaultVideo" value="${escapeHtml(DEFAULT_FALLBACK_VIDEO)}" placeholder="Fallback asset"><p class="field-help">Used if stock video cannot be fetched for a scene. Keep a known-good local clip here.</p></div></div><label class="toggle-row" for="showText"><input id="showText" type="checkbox" checked> <div><strong>Show subtitles</strong><p class="field-help">Keep this on for Shorts-style videos where readable captions matter.</p></div></label><div id="form-status" class="status" hidden></div><div class="toolbar"><button type="submit">Generate Video</button><span class="muted">After clicking generate, this page sends you to a live render status screen automatically.</span></div></div></form></div><div class="stack"><div class="panel soft"><span class="eyebrow">Editing Tips</span><h2>Make changes without confusion</h2><ul class="compact-list"><li>Use one clear idea per sentence so voiceover and subtitles stay readable.</li><li>Add scene hints like <strong>[Visual: busy modern factory]</strong> when you want stronger video search results.</li><li>Choose portrait for social shorts and landscape for traditional videos.</li><li>If a voice feels wrong, keep the same script and only change the voice override.</li><li>Fallback video is safer than image fallback when a stock clip fails to download.</li></ul></div><div class="panel"><span class="eyebrow">Latest Outputs</span><h2>Recent finished videos</h2><p class="muted">Users can return here anytime and open the delivery page again.</p><div class="recent-grid">${recentCards}</div></div></div></section><section id="recent-videos" class="panel"><div class="panel-head"><div><span class="eyebrow">Library</span><h2>Completed videos</h2><p class="muted">Each card opens a dedicated watch page with the final player and MP4 download button.</p></div><a class="button secondary" href="#workspace">Create another video</a></div><div class="cards">${cards}</div></section>`,
+                `Free Automated Video Generator | Open-Source Remotion Text-to-Video Tool`,
+        `<section class="hero-surface"><div class="hero-grid"><div class="stack"><span class="eyebrow">Local AI Video Studio</span><div><h1>Create videos from a script, not from folders</h1><p class="lead">Paste your idea, shape the voice and layout, then let the portal handle stock visuals, narration, subtitles, rendering, and delivery in one place.</p><p class="muted">This screen is designed for normal users. No need to manually edit the input or output folders during everyday use.</p></div><div class="toolbar"><a class="button" href="#workspace">Open the workspace</a><a class="button secondary" href="${PROJECT_REPOSITORY_URL}" target="_blank" rel="noreferrer">View on GitHub</a><a class="button ghost" href="/llms.txt">Read AI summary</a></div><div class="metric-grid"><div class="metric-card"><strong>${videos.length}</strong><span class="muted">videos created in this portal</span></div><div class="metric-card"><strong>${totalVoicePresets}+</strong><span class="muted">voice presets available before dynamic loading</span></div><div class="metric-card"><strong>3 steps</strong><span class="muted">setup, create, watch or download</span></div></div></div><div class="highlight-box stack"><span class="eyebrow">Simple Flow</span><h2>What users do here</h2><div class="row">${setupSummary}</div><ol class="checklist"><li>Save the API keys once for this computer.</li><li>Paste or edit the script in the workspace below.</li><li>Choose voice, layout, music, and subtitle options.</li><li>Start the render and wait on the live status page.</li><li>Watch or download the MP4 from the final delivery page.</li></ol></div></div></section><section class="layout-split"><div class="panel tint stack"><div><span class="eyebrow">One-Time Setup</span><h2>Prepare this device once</h2><p class="muted">Most users only need a Pexels API key. Save it here and the browser portal becomes the main way to use the project.</p></div><div class="row">${setupSummary}</div><div id="setup-readiness" class="status-board"></div></div><div class="panel"><form id="setup-form" class="form"><div class="field-grid two-up"><div class="field"><label for="setup-pexels">Pexels API key</label><input id="setup-pexels" type="password" placeholder="Recommended for stock video search"><p class="field-help">Best source for usable portrait and landscape stock footage.</p></div><div class="field"><label for="setup-pixabay">Pixabay API key</label><input id="setup-pixabay" type="password" placeholder="Optional backup provider"><p class="field-help">Optional secondary image and video source.</p></div><div class="field"><label for="setup-gemini">Gemini API key</label><input id="setup-gemini" type="password" placeholder="Optional AI helper"><p class="field-help">Only needed if your workflows use Gemini-powered helpers.</p></div><div class="field"><label for="setup-public-base-url">Public base URL</label><input id="setup-public-base-url" placeholder="Optional when you deploy beyond localhost"><p class="field-help">Leave empty for local-only use.</p></div></div><div class="toolbar"><button type="submit">Save Setup</button><span class="muted">Launcher users can open this page from <strong>Start-Automated-Video-Generator.bat</strong>.</span></div></form><div id="setup-feedback" class="status" hidden></div></div></section><section id="workspace" class="layout-split"><div class="stack"><form id="generate-form" class="form"><div class="panel form-panel"><div class="panel-head"><div><span class="eyebrow">Step 1</span><h2>Write the story and visual instructions</h2><p class="muted">Use plain sentences. Add <strong>[Visual: ...]</strong> when you want to guide the stock footage for a scene.</p></div><button type="button" id="fill-sample" class="secondary">Use Sample Script</button></div><div class="field"><label for="title">Video title</label><input id="title" placeholder="How AI Is Changing Everyday Life" maxlength="${MAX_TITLE_LENGTH}" required><p class="field-help">This title is used on the output page and for the final video filename.</p></div><div class="field"><label for="script">Input script</label><div class="script-shell"><div class="script-toolbar"><span class="muted">Editable input area for the full spoken script</span><div id="script-metrics" class="row"><span class="helper-badge">0 words</span><span class="helper-badge">0 sec est.</span></div></div><textarea id="script" placeholder="[Visual: futuristic robotics lab] AI is changing how people and robots work together.&#10;&#10;[Visual: doctor reviewing an AI dashboard] In healthcare, it helps spot patterns faster and supports earlier decisions." required></textarea><div class="script-guide"><strong>Good script format</strong><p class="muted">Short paragraphs and clear scene cues work best. One idea per line makes subtitles cleaner and helps the generator find stronger visuals.</p></div></div></div></div><div class="panel form-panel"><div><span class="eyebrow">Step 2</span><h2>Choose voice and video layout</h2><p class="muted">You can let the app detect the language automatically or lock the language and voice yourself.</p></div><div class="field-grid two-up"><div class="field"><label for="orientation">Output orientation</label><select id="orientation"><option value="portrait">Portrait (9:16)</option><option value="landscape">Landscape (16:9)</option></select><p class="field-help">Portrait is best for Shorts, Reels, and TikTok. Landscape is better for YouTube and presentations.</p></div><div class="field"><label for="language">Language</label><select id="language"><option value="">Detect language automatically</option>${languageOptions}</select><p class="field-help">Pick a language when you want more predictable voice selection.</p></div><div class="field"><label for="voice-search">Search voice</label><input type="text" id="voice-search" class="voice-search" placeholder="Search voices by name, language, or gender"><p id="voice-hint" class="field-help">The full voice list loads from Edge-TTS when available.</p></div><div class="field"><label for="voice">Voice override</label><select id="voice"><option value="">Select Voice (Optional Override)</option>${voiceOptions}</select><p class="field-help">Leave this empty if you want the app to choose a matching voice automatically.</p></div></div></div><div class="panel form-panel"><div><span class="eyebrow">Step 3</span><h2>Finish the output settings</h2><p class="muted">These options shape the final MP4 and help the generator recover cleanly when a stock video cannot be downloaded.</p></div><div class="field-grid two-up"><div class="field"><label for="backgroundMusic">Background music</label><div class="row" style="flex-wrap:nowrap"><select id="backgroundMusic"><option value="">No background music</option>${musicOptions}</select><button type="button" class="secondary" onclick="openSystemBrowser('music')">Browse</button></div><p class="field-help">Choose from <strong>input/music</strong> or click Browse to pick from your computer.</p></div><div class="field"><label for="defaultVideo">Fallback video asset</label><input id="defaultVideo" value="${escapeHtml(DEFAULT_FALLBACK_VIDEO)}" placeholder="Fallback asset"><p class="field-help">Used if stock video cannot be fetched for a scene. Keep a known-good local clip here.</p></div></div><div class="stack" style="margin-top:10px"><strong>Local Media Assets</strong><p class="muted small">Quickly add images or videos from your computer and use them in the script.</p><div class="toolbar"><button type="button" class="secondary" onclick="openSystemBrowser('media')">Add Local Media File</button></div><div id="asset-gallery" class="asset-gallery"></div></div><label class="toggle-row" for="showText" style="margin-top:16px"><input id="showText" type="checkbox" checked> <div><strong>Show subtitles</strong><p class="field-help">Keep this on for Shorts-style videos where readable captions matter.</p></div></label><div id="form-status" class="status" hidden></div><div class="toolbar"><button type="submit">Generate Video</button><span class="muted">After clicking generate, this page sends you to a live render status screen automatically.</span></div></div></form></div><div class="stack"><div class="panel soft"><span class="eyebrow">Editing Tips</span><h2>Make changes without confusion</h2><ul class="compact-list"><li>Use one clear idea per sentence so voiceover and subtitles stay readable.</li><li>Add scene hints like <strong>[Visual: busy modern factory]</strong> when you want stronger video search results.</li><li>Choose portrait for social shorts and landscape for traditional videos.</li><li>If a voice feels wrong, keep the same script and only change the voice override.</li><li>Fallback video is safer than image fallback when a stock clip fails to download.</li></ul></div><div class="panel"><span class="eyebrow">Latest Outputs</span><h2>Recent finished videos</h2><p class="muted">Users can return here anytime and open the delivery page again.</p><div class="recent-grid">${recentCards}</div></div></div></section><section id="recent-videos" class="panel"><div class="panel-head"><div><span class="eyebrow">Library</span><h2>Completed videos</h2><p class="muted">Each card opens a dedicated watch page with the final player and MP4 download button.</p></div><a class="button secondary" href="#workspace">Create another video</a></div><div class="cards">${cards}</div></section>
+        <div id="browser-modal" class="browser-modal">
+            <div class="browser-content">
+                <div class="browser-sidebar">
+                    <div class="sidebar-section">
+                        <div class="sidebar-title">Quick Access</div>
+                        <div id="quick-access-list" class="stack" style="gap:4px">
+                            <!-- JS populated -->
+                        </div>
+                    </div>
+                    <div class="sidebar-section">
+                        <div class="sidebar-title">Drives / This PC</div>
+                        <div id="drives-list" class="stack" style="gap:4px">
+                            <!-- JS populated -->
+                        </div>
+                    </div>
+                </div>
+                <div class="browser-main">
+                    <div class="browser-header">
+                        <h3 id="browser-title">Select File</h3>
+                        <div class="row">
+                            <button type="button" class="ghost" onclick="loadPath(currentParentPath)" title="Go up one level">⤴ Up</button>
+                            <button type="button" class="secondary" onclick="closeSystemBrowser()">✕</button>
+                        </div>
+                    </div>
+                    <div class="browser-path-wrapper">
+                        <input id="browser-path" class="browser-path" placeholder="Path\To\Folder..." title="Type path and press Enter">
+                        <button type="button" class="secondary" onclick="loadPath(document.getElementById('browser-path').value)" style="padding:6px 12px;margin-left:8px">Go</button>
+                    </div>
+                    <div id="browser-list" class="browser-list"></div>
+                    <div class="browser-footer">
+                        <button type="button" class="secondary" onclick="closeSystemBrowser()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>`,
         {
             canonical: absoluteUrl(req, '/'),
             description: DEFAULT_SITE_DESCRIPTION,
@@ -855,7 +927,141 @@ form.addEventListener('submit',async(e)=>{
 });
 updateScriptMetrics();
 loadSetupStatus();
-loadAllVoices();`,
+loadAllVoices();
+
+const browserModal = document.getElementById('browser-modal');
+const browserPath = document.getElementById('browser-path');
+const browserList = document.getElementById('browser-list');
+const assetGallery = document.getElementById('asset-gallery');
+const musicSelect = document.getElementById('backgroundMusic');
+const quickAccessList = document.getElementById('quick-access-list');
+const drivesList = document.getElementById('drives-list');
+let currentBrowserType = 'media';
+let currentParentPath = '';
+
+window.openSystemBrowser = (type) => {
+    currentBrowserType = type;
+    browserModal.classList.add('open');
+    loadSidebar();
+    loadPath();
+};
+window.closeSystemBrowser = () => browserModal.classList.remove('open');
+
+browserPath.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') loadPath(e.target.value);
+});
+
+async function loadSidebar() {
+    try {
+        // Load Home Folders
+        const homeRes = await fetch('/api/fs/home');
+        const homeJson = await homeRes.json();
+        if (homeJson.success) {
+            const h = homeJson.data;
+            const items = [
+                { name: 'Home', path: h.home, icon: '🏠' },
+                { name: 'Desktop', path: h.desktop, icon: '🖥️' },
+                { name: 'Downloads', path: h.downloads, icon: '⬇️' },
+                { name: 'Videos', path: h.videos, icon: '🎬' },
+                { name: 'Pictures', path: h.pictures, icon: '🖼️' }
+            ];
+            quickAccessList.innerHTML = items.map(i => \`<div class="sidebar-item" onclick="loadPath('\${i.path.replace(/\\\\/g, '\\\\\\\\')}')"><span>\${i.icon}</span> \${i.name}</div>\`).join('');
+        }
+
+        // Load Drives
+        const drivesRes = await fetch('/api/fs/drives');
+        const drivesJson = await drivesRes.json();
+        if (drivesJson.success) {
+            drivesList.innerHTML = drivesJson.data.map(d => \`<div class="sidebar-item" onclick="loadPath('\${d}\\\\\\\\')"><span>💽</span> \${d} Drive</div>\`).join('');
+        }
+    } catch (e) {
+        console.error('Sidebar load failed', e);
+    }
+}
+
+async function loadPath(path = '') {
+    browserList.innerHTML = '<div class="muted" style="padding:20px">Loading...</div>';
+    try {
+        const res = await fetch('/api/fs/ls?path=' + encodeURIComponent(path));
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error);
+        
+        const data = json.data;
+        browserPath.value = data.currentPath;
+        currentParentPath = data.parentPath;
+        browserList.innerHTML = '';
+        
+        if (data.items.length === 0) {
+            browserList.innerHTML = '<div class="empty-state" style="margin:20px"><p class="muted">This folder is empty.</p></div>';
+            return;
+        }
+
+        data.items.forEach(item => {
+            const div = document.createElement('div');
+            const isSelectable = currentBrowserType === 'music' ? item.ext === '.mp3' : ['.mp4', '.mov', '.jpg', '.png', '.jpeg'].includes(item.ext);
+            
+            div.className = 'browser-item' + (!item.isDir && !isSelectable ? ' disabled' : '');
+            div.innerHTML = \`
+                <span class="browser-icon">\${item.isDir ? '📁' : (item.ext === '.mp4' || item.ext === '.mov' ? '🎬' : '🖼️')}</span> 
+                <span class="browser-name">\${item.name}</span>
+                <span class="browser-size">\${item.isDir ? '' : 'File'}</span>
+            \`;
+            
+            if (item.isDir) {
+                div.onclick = () => loadPath(item.path);
+            } else if (isSelectable) {
+                div.onclick = () => pickFile(item.path);
+            }
+            browserList.appendChild(div);
+        });
+    } catch (e) {
+        browserList.innerHTML = '<div class="status" style="margin:20px"><strong>Error:</strong> ' + e.message + '</div>';
+    }
+}
+
+async function pickFile(path) {
+    try {
+        const res = await fetch('/api/fs/pick', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({sourcePath: path, type: currentBrowserType})
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error);
+        
+        if (currentBrowserType === 'music') {
+            const opt = document.createElement('option');
+            opt.value = json.data.filename;
+            opt.textContent = json.data.filename;
+            musicSelect.appendChild(opt);
+            musicSelect.value = json.data.filename;
+        } else {
+            addAssetToGallery(json.data);
+        }
+        closeSystemBrowser();
+    } catch (e) {
+        alert('Pick failed: ' + e.message);
+    }
+}
+
+function addAssetToGallery(data) {
+    const div = document.createElement('div');
+    div.className = 'asset-item';
+    div.innerHTML = \`
+        <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\${data.filename}</div>
+        <div class="tag-copy" title="Click to insert into script">\${data.tag}</div>
+    \`;
+    div.querySelector('.tag-copy').onclick = () => {
+        const script = document.getElementById('script');
+        const pos = script.selectionStart;
+        const text = script.value;
+        script.value = text.slice(0, pos) + data.tag + text.slice(pos);
+        updateScriptMetrics();
+        script.focus();
+    };
+    assetGallery.appendChild(div);
+}
+`,
     );
 }
 
@@ -1180,6 +1386,129 @@ app.get('/api/voices', (req: Request, res: Response) => {
     }
 });
 
+/**
+ * FILE SYSTEM API: List files and directories
+ */
+app.get('/api/fs/ls', (req: Request, res: Response) => {
+    const queryPath = String(req.query.path || process.cwd());
+    try {
+        if (!fs.existsSync(queryPath)) {
+            res.status(404).json({ success: false, error: 'Path not found' });
+            return;
+        }
+
+        const stats = fs.statSync(queryPath);
+        if (!stats.isDirectory()) {
+            res.status(400).json({ success: false, error: 'Not a directory' });
+            return;
+        }
+
+        const items = fs.readdirSync(queryPath, { withFileTypes: true })
+            .map(item => ({
+                name: item.name,
+                isDir: item.isDirectory(),
+                path: path.join(queryPath, item.name),
+                ext: path.extname(item.name).toLowerCase()
+            }))
+            .sort((a, b) => {
+                if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
+                return a.name.localeCompare(b.name);
+            });
+
+        res.json({
+            success: true,
+            data: {
+                currentPath: queryPath,
+                parentPath: path.dirname(queryPath),
+                items
+            }
+        });
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * FILE SYSTEM API: Pick a file and copy it to the project's input assets
+ */
+app.post('/api/fs/pick', (req: Request, res: Response) => {
+    const { sourcePath, type } = req.body;
+    if (!sourcePath || !fs.existsSync(sourcePath)) {
+        res.status(400).json({ success: false, error: 'Invalid source path' });
+        return;
+    }
+
+    try {
+        const filename = path.basename(sourcePath);
+        const targetDir = type === 'music' 
+            ? resolveProjectPath('input', 'music') 
+            : resolveProjectPath('input', 'input-assests');
+        
+        if (!fs.existsSync(targetDir)) {
+            fs.mkdirSync(targetDir, { recursive: true });
+        }
+
+        const targetPath = path.join(targetDir, filename);
+        fs.copyFileSync(sourcePath, targetPath);
+
+        res.json({ 
+            success: true, 
+            data: { 
+                filename, 
+                targetPath,
+                tag: type === 'music' ? filename : `[Visual: ${filename}]`
+            } 
+        });
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * FILE SYSTEM API: List available logical drives (Windows focused)
+ */
+app.get('/api/fs/drives', (req: Request, res: Response) => {
+    if (process.platform !== 'win32') {
+        res.json({ success: true, data: ['/'] });
+        return;
+    }
+
+    const { exec } = require('child_process');
+    exec('powershell "get-psdrive -psprovider filesystem | select -expand name"', (err: any, stdout: string) => {
+        if (err) {
+            // Fallback: try A-Z if powershell fails
+            const drives = [];
+            for (let i = 65; i <= 90; i++) {
+                const drive = String.fromCharCode(i) + ':';
+                if (fs.existsSync(drive + '\\')) drives.push(drive);
+            }
+            res.json({ success: true, data: drives });
+            return;
+        }
+
+        const drives = stdout.split(/\r?\n/).map(s => s.trim()).filter(s => s.length === 1).map(s => s + ':');
+        res.json({ success: true, data: drives });
+    });
+});
+
+/**
+ * FILE SYSTEM API: Get common system shortcuts
+ */
+app.get('/api/fs/home', (req: Request, res: Response) => {
+    const home = process.env.USERPROFILE || process.env.HOME || process.cwd();
+    res.json({
+        success: true,
+        data: {
+            home,
+            desktop: path.join(home, 'Desktop'),
+            documents: path.join(home, 'Documents'),
+            downloads: path.join(home, 'Downloads'),
+            pictures: path.join(home, 'Pictures'),
+            videos: path.join(home, 'Videos')
+        }
+    });
+});
+
 app.get('/api/setup/status', (req: Request, res: Response) => {
     res.json({ success: true, data: setupStatus() });
 });
@@ -1284,5 +1613,10 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Video Generator portal running on http://localhost:${PORT}`);
+    const url = `http://localhost:${PORT}`;
+    console.log(`Video Generator portal running on ${url}`);
+    
+    // Automatically open the browser
+    const start = process.platform === 'win32' ? 'start' : process.platform === 'darwin' ? 'open' : 'xdg-open';
+    exec(`${start} ${url}`);
 });
