@@ -26,9 +26,6 @@ export interface MediaAsset {
     videoTrimAfterFrames?: number;
 }
 
-const PEXELS_API_KEY = process.env.PEXELS_API_KEY || '';
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const PIXABAY_API_KEY = process.env.PIXABAY_API_KEY || '';
 const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-flash';
 const GEMINI_TIMEOUT_MS = Math.max(5000, Number.parseInt(process.env.GEMINI_TIMEOUT_MS || '30000', 10) || 30000);
 const GEMINI_MAX_RETRIES = Math.max(1, Number.parseInt(process.env.GEMINI_MAX_RETRIES || '3', 10) || 3);
@@ -492,7 +489,7 @@ Only return the JSON array, no other text or formatting. DO NOT wrap with \`\`\`
         try {
             const response = await withGeminiSlot(() =>
                 axios.post(
-                    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+                    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${getGeminiApiKey()}`,
                     {
                         contents: [{ parts: [{ text: prompt }] }],
                         generationConfig: {
@@ -548,7 +545,8 @@ export async function searchVideos(
     // console.log(`\n🔍 [PEXELS-VIDEO] Searching videos for: "${query}"`);
     // console.log(`🔍 [PEXELS-VIDEO] Per page: ${perPage}, Max retries: ${retries}`);
 
-    if (!PEXELS_API_KEY) {
+    const pexelsApiKey = getPexelsApiKey();
+    if (!pexelsApiKey) {
         // console.warn('🔍 [PEXELS-VIDEO] ❌ No API key - returning empty result');
         return [];
     }
@@ -560,7 +558,7 @@ export async function searchVideos(
         try {
             const response = await axios.get(`https://api.pexels.com/videos/search`, {
                 headers: {
-                    Authorization: PEXELS_API_KEY,
+                    Authorization: pexelsApiKey,
                 },
                 params: {
                     query,
@@ -631,7 +629,8 @@ export async function searchImages(
     // console.log(`\n🔍 [PEXELS-IMAGE] Searching images for: "${query}"`);
     // console.log(`🔍 [PEXELS-IMAGE] Per page: ${perPage}, Max retries: ${retries}`);
 
-    if (!PEXELS_API_KEY) {
+    const pexelsApiKey = getPexelsApiKey();
+    if (!pexelsApiKey) {
         // console.warn('🔍 [PEXELS-IMAGE] ❌ No API key - returning empty result');
         return [];
     }
@@ -643,7 +642,7 @@ export async function searchImages(
         try {
             const response = await axios.get(`${BASE_URL}/search`, {
                 headers: {
-                    Authorization: PEXELS_API_KEY,
+                    Authorization: pexelsApiKey,
                 },
                 params: {
                     query,
@@ -708,7 +707,8 @@ export async function searchPixabayVideos(
 ): Promise<MediaAsset[]> {
     // console.log(`\n🔍 [PIXABAY-VIDEO] Searching videos for: "${query}"`);
 
-    if (!PIXABAY_API_KEY) {
+    const pixabayApiKey = getPixabayApiKey();
+    if (!pixabayApiKey) {
         // console.warn('🔍 [PIXABAY-VIDEO] ❌ No API key - skipping');
         return [];
     }
@@ -722,7 +722,7 @@ export async function searchPixabayVideos(
         try {
             const response = await axios.get(`https://pixabay.com/api/videos/`, {
                 params: {
-                    key: PIXABAY_API_KEY,
+                    key: pixabayApiKey,
                     q: query,
                     video_type: 'film',
                     ...(pixabayOrientation ? { orientation: pixabayOrientation } : {}),
@@ -776,7 +776,8 @@ export async function optimizeKeywordsWithGemini(
     sceneText: string,
     defaultKeywords: string[]
 ): Promise<string[]> {
-    if (!GEMINI_API_KEY) {
+    const geminiApiKey = getGeminiApiKey();
+    if (!geminiApiKey) {
         return defaultKeywords;
     }
 
@@ -791,7 +792,7 @@ The queries should be concise but descriptive (e.g. "cinematic dark moody rain w
 Only return the JSON array, no other text or formatting. DO NOT wrap with \`\`\`json.`;
 
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
             {
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: { temperature: 0.7 }
@@ -1098,3 +1099,6 @@ export async function downloadMedia(
 
 
 
+const getPexelsApiKey = () => process.env.PEXELS_API_KEY || '';
+const getGeminiApiKey = () => process.env.GEMINI_API_KEY || '';
+const getPixabayApiKey = () => process.env.PIXABAY_API_KEY || '';

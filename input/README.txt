@@ -1,36 +1,17 @@
-INPUT FORMAT & GUIDELINES
-=========================
+INPUT FOLDER NOTES
+==================
 
-1. JSON FORMAT
---------------
-Modiy 'input-scripts.json' to add your videos.
+Most end users do not need this folder anymore.
 
-[
-  {
-    "id": "video_unique_id",
-    "title": "Video Title",
-    "script": "Your full script text here..."
-  }
-]
+Recommended flow:
+1. Start the app with `Start-Automated-Video-Generator.bat`
+2. Open the browser portal
+3. Paste the script there
+4. Wait on the live job page
+5. Download the final MP4 from the watch page
 
-2. SCRIPT LENGTH GUIDE
-----------------------
-Estimate your video duration based on script word count:
+Use `input/input-scripts.json` only when you want batch jobs or developer-style runs with:
 
-- 1 Minute Video:  ~135-140 words
-- 5 Minute Video:  ~700 words
-- 10 Minute Video: ~1,400 words
+`npm run generate`
 
-(Based on standard TTS speaking rate of ~136 words/min)
-
-3. MANUAL VISUAL CUES (DIRECTOR MODE) 🎨
----------------------------------------
-You can specify exactly what video to find using [Visual: ...] tags.
-The text inside the brackets is used for searching but NOT spoken.
-
-Format: [Visual: Search Keywords] Spoken text.
-
-Example:
-"[Visual: Sad lonely girl] She felt alone."
--> System searches for "Sad lonely girl"
--> Voiceover reads "She felt alone."
+You can still use `[Visual: ...]` tags in scripts to guide stock footage searches or reference local files from `input/input-assests/`.

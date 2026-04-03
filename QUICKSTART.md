@@ -1,53 +1,29 @@
-# ⚡ Quickstart Guide for Automated Video Generator
+# Quickstart Guide for Automated Video Generator
 
-[Automated Video Generator](https://github.com/itsPremkumar/Automated-Video-Generator) is designed for speed. Get your first automated text-to-video rendered in under 5 minutes.
+[Automated Video Generator](https://github.com/itsPremkumar/Automated-Video-Generator) now supports a browser-first workflow for normal users.
 
-## 1. Install Dependencies
+## Windows end-user flow
 
-### Option A: Via NPM (Easiest)
+1. Double-click `Start-Automated-Video-Generator.bat`
+2. Wait for the local browser portal to open
+3. Save your `PEXELS_API_KEY` in the setup section
+4. Click `Use Sample Script` or paste your own script
+5. Click `Generate Video`
+6. Wait on the live progress page
+7. Open the watch page or download the MP4
+
+## Developer flow
+
 ```bash
-npm install -g automated-video-generator
-```
-
-### Option B: Via GitHub (For Development)
-```bash
-# 1. Install Node dependencies
 npm install
-
-# 2. Install Python voice dependencies
 pip install -r requirements.txt
+npm run dev
 ```
 
-## 2. Set Up Environment
+Then open:
 
-Create a `.env` file and add your Pexels API key:
-
-```env
-PEXELS_API_KEY=your_key_here
+```text
+http://localhost:3001/
 ```
 
-## 3. Create a Script
-
-Open `input/input-scripts.json` and add:
-
-```json
-[
-  {
-    "id": "quickstart_video",
-    "title": "Quickstart Demo",
-    "backgroundMusic": "The_Gravity_of_Dawn.mp3",
-    "musicVolume": 0.15,
-    "script": "Welcome to the quickstart video. This is a fast way to test the system."
-  }
-]
-```
-
-## 4. Generate Video
-
-```bash
-npm run generate
-```
-
-## 5. View Result
-
-Find your video at: `output/quickstart_video/out.mp4`
+You can still use `input/input-scripts.json` with `npm run generate` for batch jobs, but the browser portal is now the easiest path for common users.

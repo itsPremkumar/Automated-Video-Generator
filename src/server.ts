@@ -1,11 +1,11 @@
 import express, { NextFunction, Request, Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
-import { config } from 'dotenv';
+import { config, parse } from 'dotenv';
 import { generateVideo } from './video-generator';
 import { renderVideo } from './render';
 import { ensureProjectRootCwd, jobStore, resolveProjectPath } from './runtime';
-import { AVAILABLE_VOICES, getDynamicVoices, VoiceMetadata } from './lib/voice-generator';
+import { AVAILABLE_VOICES, getDynamicVoices, validateEdgeTTS, VoiceMetadata } from './lib/voice-generator';
 import type { JobStatus } from './runtime';
 
 
@@ -18,6 +18,7 @@ app.set('trust proxy', true);
 
 const PORT = Number(process.env.PORT || 3001);
 const OUTPUT_ROOT = resolveProjectPath('output');
+const ENV_FILE = resolveProjectPath('.env');
 const DEFAULT_TITLE = 'Generated Video';
 const DEFAULT_VOICE = 'en-US-JennyNeural';
 const DEFAULT_FALLBACK_VIDEO = 'default.mp4';
@@ -28,6 +29,29 @@ const PROJECT_LICENSE_URL = 'https://opensource.org/licenses/MIT';
 const DEFAULT_SITE_DESCRIPTION = 'Free and open-source AI text-to-video generator built with Remotion, Edge-TTS, stock footage APIs, and a local web portal for YouTube Shorts, TikTok videos, explainers, and marketing content.';
 const DEFAULT_SITE_KEYWORDS = 'free video generator, open-source video generator, ai video generator, text to video, remotion video generator, self-hosted video generator, youtube shorts generator, tiktok video generator, mcp video automation';
 const BRAND_COLOR = '#d8642a';
+const DEMO_SCRIPT = `[Visual: sunrise city skyline drone]
+Artificial intelligence is no longer a distant idea. It already helps cities, schools, hospitals, and businesses work faster and smarter.
+
+[Visual: software engineer coding on laptop]
+Behind the scenes, machine learning systems organize huge amounts of information, detect patterns, and turn messy data into useful decisions.
+
+[Visual: doctor reviewing digital health monitor]
+In healthcare, AI can support doctors by highlighting unusual scans, tracking patient risk, and reducing the time needed to review critical cases.
+
+[Visual: teacher using tablet in classroom]
+In education, adaptive tools can help teachers explain difficult topics, personalize lessons, and give students more confidence as they learn step by step.
+
+[Visual: warehouse robots moving packages]
+Inside factories and warehouses, intelligent software coordinates robots, predicts maintenance, and keeps products moving smoothly from one station to the next.
+
+[Visual: cybersecurity analyst monitoring screens]
+Security teams also use AI to detect unusual behavior, respond to threats faster, and monitor systems that would be impossible to review manually all day.
+
+[Visual: diverse team discussing ethics in office]
+The next challenge is not only building more powerful systems, but using them responsibly, transparently, and in ways that genuinely improve human life.`;
+
+const EDITABLE_ENV_KEYS = ['PEXELS_API_KEY', 'PIXABAY_API_KEY', 'GEMINI_API_KEY', 'PUBLIC_BASE_URL'] as const;
+type EditableEnvKey = typeof EDITABLE_ENV_KEYS[number];
 
 type Orientation = 'portrait' | 'landscape';
 
@@ -129,6 +153,71 @@ function normalizeOrientation(value: unknown): Orientation {
 
 function normalizeBoolean(value: unknown, fallback: boolean): boolean {
     return typeof value === 'boolean' ? value : fallback;
+}
+
+function readEnvValues(): Record<string, string> {
+    if (!fs.existsSync(ENV_FILE)) {
+        return {};
+    }
+
+    try {
+        return parse(fs.readFileSync(ENV_FILE, 'utf8'));
+    } catch {
+        return {};
+    }
+}
+
+function normalizeEnvValue(value: unknown): string {
+    return typeof value === 'string' ? value.trim().replace(/\r?\n/g, ' ') : '';
+}
+
+function setEnvFileValue(contents: string, key: EditableEnvKey, value: string): string {
+    const normalizedLine = `${key}=${value}`;
+    const matcher = new RegExp(`^\\s*#?\\s*${key}=.*$`, 'm');
+
+    if (matcher.test(contents)) {
+        return contents.replace(matcher, () => normalizedLine);
+    }
+
+    const suffix = contents.trimEnd().length > 0 ? '\n' : '';
+    return `${contents.trimEnd()}${suffix}${normalizedLine}\n`;
+}
+
+function updateEnvValues(updates: Partial<Record<EditableEnvKey, string>>): void {
+    let contents = fs.existsSync(ENV_FILE)
+        ? fs.readFileSync(ENV_FILE, 'utf8')
+        : (fs.existsSync(resolveProjectPath('.env.example')) ? fs.readFileSync(resolveProjectPath('.env.example'), 'utf8') : '');
+
+    for (const key of EDITABLE_ENV_KEYS) {
+        if (!(key in updates)) {
+            continue;
+        }
+
+        const value = normalizeEnvValue(updates[key]);
+        contents = setEnvFileValue(contents, key, value);
+        process.env[key] = value;
+    }
+
+    fs.writeFileSync(ENV_FILE, contents);
+}
+
+function setupStatus() {
+    const envValues = readEnvValues();
+    const hasPexelsKey = Boolean(envValues.PEXELS_API_KEY?.trim());
+    const hasPixabayKey = Boolean(envValues.PIXABAY_API_KEY?.trim());
+    const hasGeminiKey = Boolean(envValues.GEMINI_API_KEY?.trim());
+    const hasPublicBaseUrl = Boolean(envValues.PUBLIC_BASE_URL?.trim());
+    const edgeTtsReady = validateEdgeTTS();
+
+    return {
+        envFileExists: fs.existsSync(ENV_FILE),
+        hasPexelsKey,
+        hasPixabayKey,
+        hasGeminiKey,
+        hasPublicBaseUrl,
+        edgeTtsReady,
+        readyForGeneration: hasPexelsKey && edgeTtsReady,
+    };
 }
 
 function sanitizeFolderTitle(value: string): string {
@@ -441,7 +530,86 @@ function html(title: string, body: string, options: HtmlOptions = {}, script = '
     const jsonLd = serializeJsonLd(options.jsonLd);
 
     return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)}</title><meta name="description" content="${escapeHtml(description)}"><meta name="keywords" content="${escapeHtml(keywords)}"><meta name="robots" content="${escapeHtml(robots)}"><meta name="theme-color" content="${BRAND_COLOR}"><meta name="generator" content="${PROJECT_NAME}"><meta property="og:site_name" content="${PROJECT_NAME}"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:type" content="${escapeHtml(ogType)}">${ogUrl}${imageMeta}<meta name="twitter:card" content="${twitterCard}"><meta name="twitter:title" content="${escapeHtml(title)}"><meta name="twitter:description" content="${escapeHtml(description)}"><link rel="alternate" type="text/plain" href="/llms.txt" title="LLMs summary">${canonical}${jsonLd}<style>
-body{margin:0;font:16px/1.5 "Segoe UI",sans-serif;background:#f6efe5;color:#1b2333}main{max-width:960px;margin:0 auto;padding:24px}section{background:#fff;border:1px solid #e6dccd;border-radius:18px;padding:24px;margin-bottom:20px;box-shadow:0 12px 30px rgba(0,0,0,.05)}h1,h2,h3{margin:0 0 12px}p{margin:0 0 10px}.muted{color:#5d6572}.grid{display:grid;gap:16px}.cards{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}.card{display:block;text-decoration:none;color:inherit;border:1px solid #eadfce;border-radius:16px;overflow:hidden;background:#fff}.thumb{aspect-ratio:9/16;background:#e9edf3 center/cover no-repeat}.card-body{padding:14px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.pill{padding:6px 10px;border-radius:999px;background:#eef3f8;font-size:12px}.button,button{border:0;border-radius:999px;padding:12px 18px;background:${BRAND_COLOR};color:#fff;font:inherit;font-weight:700;cursor:pointer;text-decoration:none}a.secondary{background:#edf1f5;color:#1b2333}input,textarea,select{width:100%;padding:12px 14px;border:1px solid #d8dce2;border-radius:12px;font:inherit}textarea{min-height:180px;resize:vertical}.form{display:grid;gap:14px}.voice-container{display:grid;gap:8px}.voice-search{font-size:14px;padding:8px 12px;margin-bottom:4px;border-color:#e6dccd;background:#fffaf6}.video{width:100%;border-radius:16px;background:#000}.bar{height:14px;background:#edf1f5;border-radius:999px;overflow:hidden}.bar>div{height:100%;width:0;background:${BRAND_COLOR};transition:width .2s}.status{padding:14px;border-radius:14px;background:#fff5ee;border:1px solid #f1d2bf}.meta{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}.hero{display:grid;gap:14px}.note{background:#fff8f2;border-color:#f2d7c4}.footer-note{font-size:14px}ul{margin:0;padding-left:20px}@media(max-width:640px){main{padding:14px}section{padding:18px}}</style></head><body><main>${body}</main>${script ? `<script>${script}</script>` : ''}</body></html>`;
+:root{--shell:#f4ead9;--cream:#fff9ef;--surface:#fffdf8;--surface-soft:#fff7ec;--line:#e6d6be;--line-strong:#d9c3a8;--ink:#172033;--muted:#5c6677;--brand:${BRAND_COLOR};--brand-strong:#cf6b36;--accent:#1f3a56;--success:#2f7d5d;--shadow:0 24px 60px rgba(31,22,10,.08);--radius-xl:28px;--radius-lg:22px;--radius-md:16px}
+*{box-sizing:border-box}
+html{background:linear-gradient(180deg,#f8efe2 0%,#f5ebde 100%)}
+body{margin:0;font:16px/1.6 "Aptos","Trebuchet MS","Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at top left,rgba(212,125,55,.16),transparent 28%),radial-gradient(circle at top right,rgba(23,58,86,.12),transparent 28%),linear-gradient(180deg,#f8efe2 0%,#f3eadf 40%,#f8f5ef 100%);min-height:100vh}
+body::before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.12) 1px,transparent 1px);background-size:64px 64px;opacity:.16;pointer-events:none}
+main{max-width:1180px;margin:0 auto;padding:32px 20px 56px;position:relative}
+section{margin-bottom:22px}
+a{color:inherit}
+h1,h2,h3{margin:0 0 10px;font-family:"Georgia","Times New Roman",serif;letter-spacing:-.02em;line-height:1.08}
+h1{font-size:clamp(2.4rem,4vw,4.35rem)}
+h2{font-size:clamp(1.6rem,2.8vw,2.35rem)}
+h3{font-size:1.18rem}
+p{margin:0 0 10px}
+.hero-surface,.panel{background:rgba(255,251,244,.9);backdrop-filter:blur(10px);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:var(--radius-xl)}
+.hero-surface{padding:28px}
+.panel{padding:22px}
+.panel.soft{background:rgba(255,247,236,.94)}
+.panel.tint{background:linear-gradient(135deg,rgba(255,248,238,.98),rgba(243,235,225,.95))}
+.hero-grid,.layout-split,.watch-grid,.cards,.metric-grid,.field-grid,.status-board,.feature-list,.recent-grid{display:grid;gap:14px}
+.hero-grid{grid-template-columns:minmax(0,1.45fr) minmax(320px,.95fr);align-items:start}
+.layout-split{grid-template-columns:minmax(0,1.35fr) minmax(300px,.9fr)}
+.watch-grid{grid-template-columns:minmax(0,1.5fr) minmax(320px,.8fr);align-items:start}
+.cards{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.metric-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.feature-list{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.field-grid.two-up{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.status-board{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.stack,.form,.form-panel,.field,.script-shell,.progress-shell,.timeline,.info-list{display:grid;gap:16px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:#fff3e4;border:1px solid #f1d2b7;color:#9a4716;text-transform:uppercase;letter-spacing:.08em;font-size:12px;font-weight:700}
+.lead{font-size:1.08rem;max-width:58ch;color:#314157}
+.lead.small{font-size:1rem}
+.muted{color:var(--muted)}
+.toolbar,.row,.script-toolbar,.panel-head,.toggle-row,.info-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.panel-head,.script-toolbar,.info-row{justify-content:space-between}
+.button,button{appearance:none;border:0;border-radius:999px;padding:12px 18px;background:linear-gradient(135deg,var(--brand),var(--brand-strong));color:#fff;font:inherit;font-weight:700;cursor:pointer;text-decoration:none;box-shadow:0 10px 24px rgba(202,106,43,.24);transition:transform .16s ease,box-shadow .16s ease}
+.button:hover,button:hover{transform:translateY(-1px);box-shadow:0 14px 30px rgba(202,106,43,.28)}
+.button.secondary,button.secondary,a.secondary{background:#edf2f7;color:var(--ink);box-shadow:none}
+.button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line-strong);box-shadow:none}
+.status-chip,.pill,.helper-badge{display:inline-flex;align-items:center;padding:7px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:12px;font-weight:700;color:#324156}
+.helper-badge{padding:6px 10px;background:#f5efe7;border-color:#eadac3;color:#5d6572}
+.status-chip.ok{border-color:#c8e3d4;background:#eef9f2;color:#1d684b}
+.status-chip.warn{border-color:#f3d4be;background:#fff2e7;color:#9a4716}
+.metric-card,.status-card,.highlight-box{padding:18px;border-radius:20px;border:1px solid var(--line);background:linear-gradient(180deg,#fffdf8,#fff5e9)}
+.metric-card strong,.status-card strong{display:block;margin-bottom:4px;font-size:1.45rem;font-family:"Georgia","Times New Roman",serif}
+.card{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:22px;overflow:hidden;background:rgba(255,253,248,.92);box-shadow:0 12px 32px rgba(34,23,11,.06)}
+.thumb{aspect-ratio:9/16;background:#e9edf3 center/cover no-repeat}
+.card-body{padding:16px}
+.card-body h3{margin-bottom:6px}
+.small-card{display:grid;grid-template-columns:110px 1fr;gap:14px;padding:12px;border:1px solid var(--line);border-radius:20px;background:#fff}
+.small-thumb{aspect-ratio:9/16;border-radius:14px;background:#edf1f5 center/cover no-repeat}
+.field label{font-weight:700;color:#223048}
+.field-help{font-size:14px;color:var(--muted);margin:0}
+input,textarea,select{width:100%;padding:13px 15px;border:1px solid #d8ccb9;border-radius:16px;font:inherit;background:#fffdf9;color:var(--ink);box-shadow:inset 0 1px 2px rgba(0,0,0,.02)}
+input:focus,textarea:focus,select:focus{outline:none;border-color:#cf7a46;box-shadow:0 0 0 4px rgba(207,122,70,.12)}
+textarea{min-height:250px;resize:vertical}
+.script-guide{display:grid;gap:10px;padding:16px;border-radius:18px;background:#fff7ee;border:1px dashed #e9c9ac}
+.voice-search{font-size:14px;padding:10px 12px;border-color:#e1d2bc;background:#fffaf5}
+.toggle-row{padding:14px 16px;border-radius:18px;background:#fff8ef;border:1px solid var(--line)}
+.toggle-row input{width:auto}
+.status{padding:14px 16px;border-radius:16px;background:#fff4eb;border:1px solid #efcfb8}
+.status.success{background:#eef9f2;border-color:#c8e3d4}
+.empty-state{padding:20px;border-radius:20px;background:#fff9f1;border:1px dashed #e4ccb0}
+.compact-list,.checklist{margin:0;padding-left:18px;color:#354459}
+.compact-list li,.checklist li{margin:0 0 8px}
+.bar{height:16px;background:#eadfce;border-radius:999px;overflow:hidden}
+.bar>div{height:100%;width:0;background:linear-gradient(90deg,var(--brand),#f09a62);border-radius:inherit;transition:width .25s ease}
+.timeline-step{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:18px;background:#fff;border:1px solid var(--line);transition:border-color .2s ease,transform .2s ease,box-shadow .2s ease}
+.timeline-step span{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#edf2f7;font-weight:800;color:#516074;flex:0 0 auto}
+.timeline-step.active{border-color:#efbb96;background:#fff7ef;transform:translateX(4px);box-shadow:0 10px 24px rgba(202,106,43,.12)}
+.timeline-step.active span{background:var(--brand);color:#fff}
+.timeline-step.done{border-color:#c8e3d4;background:#eef9f2}
+.timeline-step.done span{background:var(--success);color:#fff}
+.video-stage{padding:18px;border-radius:26px;background:linear-gradient(180deg,#1c2638,#0c1220);box-shadow:0 24px 55px rgba(15,20,31,.26)}
+.video{width:100%;display:block;border:0;border-radius:18px;background:#000}
+.info-row{padding:12px 0;border-bottom:1px solid #eee0cf}
+.info-row:last-child{border-bottom:0}
+.footer-note{font-size:14px}
+@media(max-width:980px){.hero-grid,.layout-split,.watch-grid{grid-template-columns:1fr}main{padding:24px 16px 48px}}
+@media(max-width:640px){body{font-size:15px}.hero-surface,.panel{padding:18px;border-radius:22px}h1{font-size:2.15rem}.small-card{grid-template-columns:1fr}.script-toolbar,.panel-head,.info-row{align-items:flex-start}}
+</style></head><body><main>${body}</main>${script ? `<script>${script}</script>` : ''}</body></html>`;
 
 }
 
@@ -449,7 +617,10 @@ function homePage(req: Request, videos: VideoRecord[]): string {
     const defaultOgImage = absoluteUrl(req, '/og-image.svg');
     const cards = videos.length > 0
         ? videos.map((video) => `<a class="card" href="${video.watchUrl}"><div class="thumb"${video.thumbnailUrl ? ` style="background-image:url('${video.thumbnailUrl}')"` : ''}></div><div class="card-body"><h3>${escapeHtml(video.title)}</h3><p class="muted">${escapeHtml(video.orientation)} - ${video.fileSizeMB} MB</p><div class="row">${video.durationSeconds ? `<span class="pill">${Math.round(video.durationSeconds)} sec</span>` : ''}<span class="pill">${escapeHtml(new Date(video.createdAt).toLocaleString())}</span></div></div></a>`).join('')
-        : '<p class="muted">No completed videos yet. Start one below and it will appear here automatically.</p>';
+        : '<div class="empty-state"><h3>No completed videos yet</h3><p class="muted">Your finished videos will appear here automatically after the first render.</p></div>';
+    const recentCards = videos.length > 0
+        ? videos.slice(0, 3).map((video) => `<a class="small-card" href="${video.watchUrl}"><div class="small-thumb"${video.thumbnailUrl ? ` style="background-image:url('${video.thumbnailUrl}')"` : ''}></div><div><h3>${escapeHtml(video.title)}</h3><p class="muted">${escapeHtml(video.orientation)} - ${video.fileSizeMB} MB</p><div class="row">${video.durationSeconds ? `<span class="pill">${Math.round(video.durationSeconds)} sec</span>` : ''}<span class="pill">${escapeHtml(new Date(video.createdAt).toLocaleDateString())}</span></div></div></a>`).join('')
+        : '<div class="empty-state"><p class="muted">Start with a sample script and the first finished MP4 will show up here.</p></div>';
 
     const musicFiles = listMusicFiles();
     const musicOptions = musicFiles.length > 0
@@ -468,9 +639,17 @@ function homePage(req: Request, videos: VideoRecord[]): string {
         return `<option value="${lang}">${langName}</option>`;
     }).join('');
 
+    const setup = setupStatus();
+    const setupSummary = [
+        `<span class="status-chip ${setup.hasPexelsKey ? 'ok' : 'warn'}">Pexels key: ${setup.hasPexelsKey ? 'Saved' : 'Missing'}</span>`,
+        `<span class="status-chip ${setup.edgeTtsReady ? 'ok' : 'warn'}">Voice engine: ${setup.edgeTtsReady ? 'Ready' : 'Not ready'}</span>`,
+        `<span class="status-chip ok">Portal workflow: Browser first</span>`,
+    ].join('');
+    const totalVoicePresets = Object.values(AVAILABLE_VOICES).reduce((count, group) => count + group.male.length + group.female.length, 0);
+
     return html(
         `Free Automated Video Generator | Open-Source Remotion Text-to-Video Tool`,
-        `<section class="hero"><h1>${PROJECT_NAME}</h1><p>Free and open-source AI text-to-video generator for creating YouTube Shorts, TikTok videos, explainers, and marketing content with Remotion, Edge-TTS, stock media APIs, and a local web portal.</p><p class="muted">Start a render, share the status page, then send the final watch or download link to the end user.</p><div class="row"><a class="button" href="${PROJECT_REPOSITORY_URL}" target="_blank" rel="noreferrer">Star on GitHub</a><a class="button secondary" href="/llms.txt">Read AI summary</a></div></section><section class="note"><h2>Completely free and open source</h2><p>This project is MIT-licensed and free to use. There is no repo-owned paid tier and no watermark added by this codebase. If you use optional third-party providers such as Pexels or Pixabay, their own limits still apply.</p></section><section><h2>Why creators use it</h2><div class="grid cards"><div class="card"><div class="card-body"><h3>YouTube Shorts and TikTok</h3><p class="muted">Generate portrait videos from scripts with narration, stock visuals, and local assets.</p></div></div><div class="card"><div class="card-body"><h3>Self-hosted pipeline</h3><p class="muted">Run locally with your own APIs, assets, and workflow control instead of relying on closed platforms.</p></div></div><div class="card"><div class="card-body"><h3>MCP-ready automation</h3><p class="muted">Let Claude Desktop, Claude Code, or other MCP clients generate and manage videos through tools.</p></div></div></div></section><section><h2>Create a video</h2><form id="generate-form" class="form"><input id="title" placeholder="Video title" maxlength="${MAX_TITLE_LENGTH}" required><textarea id="script" placeholder="[Visual: futuristic robotics lab] AI is changing how people and robots work together." required></textarea><div class="grid cards"><select id="orientation"><option value="portrait">Portrait (9:16)</option><option value="landscape">Landscape (16:9)</option></select><select id="language"><option value="">Detect Language</option>${languageOptions}</select><div class="voice-container"><input type="text" id="voice-search" class="voice-search" placeholder="Search 400+ worldwide voices..."><select id="voice"><option value="">Select Voice (Optional Override)</option>${voiceOptions}</select></div></div><div class="grid cards"><select id="backgroundMusic"><option value="">No Background Music</option>${musicOptions}</select><input id="defaultVideo" value="${DEFAULT_FALLBACK_VIDEO}" placeholder="Fallback asset"></div><div class="grid cards"><label class="row" style="padding-top:12px"><input id="showText" type="checkbox" checked style="width:auto"> Show subtitles</label></div><div class="row"><button type="submit">Generate Video</button><span class="muted">You will be redirected to a live job page.</span></div></form><div id="form-status" class="status" hidden></div></section><section><h2>Completed videos</h2><div class="grid cards">${cards}</div></section>`,
+        `<section class="hero-surface"><div class="hero-grid"><div class="stack"><span class="eyebrow">Local AI Video Studio</span><div><h1>Create videos from a script, not from folders</h1><p class="lead">Paste your idea, shape the voice and layout, then let the portal handle stock visuals, narration, subtitles, rendering, and delivery in one place.</p><p class="muted">This screen is designed for normal users. No need to manually edit the input or output folders during everyday use.</p></div><div class="toolbar"><a class="button" href="#workspace">Open the workspace</a><a class="button secondary" href="${PROJECT_REPOSITORY_URL}" target="_blank" rel="noreferrer">View on GitHub</a><a class="button ghost" href="/llms.txt">Read AI summary</a></div><div class="metric-grid"><div class="metric-card"><strong>${videos.length}</strong><span class="muted">videos created in this portal</span></div><div class="metric-card"><strong>${totalVoicePresets}+</strong><span class="muted">voice presets available before dynamic loading</span></div><div class="metric-card"><strong>3 steps</strong><span class="muted">setup, create, watch or download</span></div></div></div><div class="highlight-box stack"><span class="eyebrow">Simple Flow</span><h2>What users do here</h2><div class="row">${setupSummary}</div><ol class="checklist"><li>Save the API keys once for this computer.</li><li>Paste or edit the script in the workspace below.</li><li>Choose voice, layout, music, and subtitle options.</li><li>Start the render and wait on the live status page.</li><li>Watch or download the MP4 from the final delivery page.</li></ol></div></div></section><section class="layout-split"><div class="panel tint stack"><div><span class="eyebrow">One-Time Setup</span><h2>Prepare this device once</h2><p class="muted">Most users only need a Pexels API key. Save it here and the browser portal becomes the main way to use the project.</p></div><div class="row">${setupSummary}</div><div id="setup-readiness" class="status-board"></div></div><div class="panel"><form id="setup-form" class="form"><div class="field-grid two-up"><div class="field"><label for="setup-pexels">Pexels API key</label><input id="setup-pexels" type="password" placeholder="Recommended for stock video search"><p class="field-help">Best source for usable portrait and landscape stock footage.</p></div><div class="field"><label for="setup-pixabay">Pixabay API key</label><input id="setup-pixabay" type="password" placeholder="Optional backup provider"><p class="field-help">Optional secondary image and video source.</p></div><div class="field"><label for="setup-gemini">Gemini API key</label><input id="setup-gemini" type="password" placeholder="Optional AI helper"><p class="field-help">Only needed if your workflows use Gemini-powered helpers.</p></div><div class="field"><label for="setup-public-base-url">Public base URL</label><input id="setup-public-base-url" placeholder="Optional when you deploy beyond localhost"><p class="field-help">Leave empty for local-only use.</p></div></div><div class="toolbar"><button type="submit">Save Setup</button><span class="muted">Launcher users can open this page from <strong>Start-Automated-Video-Generator.bat</strong>.</span></div></form><div id="setup-feedback" class="status" hidden></div></div></section><section id="workspace" class="layout-split"><div class="stack"><form id="generate-form" class="form"><div class="panel form-panel"><div class="panel-head"><div><span class="eyebrow">Step 1</span><h2>Write the story and visual instructions</h2><p class="muted">Use plain sentences. Add <strong>[Visual: ...]</strong> when you want to guide the stock footage for a scene.</p></div><button type="button" id="fill-sample" class="secondary">Use Sample Script</button></div><div class="field"><label for="title">Video title</label><input id="title" placeholder="How AI Is Changing Everyday Life" maxlength="${MAX_TITLE_LENGTH}" required><p class="field-help">This title is used on the output page and for the final video filename.</p></div><div class="field"><label for="script">Input script</label><div class="script-shell"><div class="script-toolbar"><span class="muted">Editable input area for the full spoken script</span><div id="script-metrics" class="row"><span class="helper-badge">0 words</span><span class="helper-badge">0 sec est.</span></div></div><textarea id="script" placeholder="[Visual: futuristic robotics lab] AI is changing how people and robots work together.&#10;&#10;[Visual: doctor reviewing an AI dashboard] In healthcare, it helps spot patterns faster and supports earlier decisions." required></textarea><div class="script-guide"><strong>Good script format</strong><p class="muted">Short paragraphs and clear scene cues work best. One idea per line makes subtitles cleaner and helps the generator find stronger visuals.</p></div></div></div></div><div class="panel form-panel"><div><span class="eyebrow">Step 2</span><h2>Choose voice and video layout</h2><p class="muted">You can let the app detect the language automatically or lock the language and voice yourself.</p></div><div class="field-grid two-up"><div class="field"><label for="orientation">Output orientation</label><select id="orientation"><option value="portrait">Portrait (9:16)</option><option value="landscape">Landscape (16:9)</option></select><p class="field-help">Portrait is best for Shorts, Reels, and TikTok. Landscape is better for YouTube and presentations.</p></div><div class="field"><label for="language">Language</label><select id="language"><option value="">Detect language automatically</option>${languageOptions}</select><p class="field-help">Pick a language when you want more predictable voice selection.</p></div><div class="field"><label for="voice-search">Search voice</label><input type="text" id="voice-search" class="voice-search" placeholder="Search voices by name, language, or gender"><p id="voice-hint" class="field-help">The full voice list loads from Edge-TTS when available.</p></div><div class="field"><label for="voice">Voice override</label><select id="voice"><option value="">Select Voice (Optional Override)</option>${voiceOptions}</select><p class="field-help">Leave this empty if you want the app to choose a matching voice automatically.</p></div></div></div><div class="panel form-panel"><div><span class="eyebrow">Step 3</span><h2>Finish the output settings</h2><p class="muted">These options shape the final MP4 and help the generator recover cleanly when a stock video cannot be downloaded.</p></div><div class="field-grid two-up"><div class="field"><label for="backgroundMusic">Background music</label><select id="backgroundMusic"><option value="">No background music</option>${musicOptions}</select><p class="field-help">Music files come from <strong>input/music</strong>. Users can choose one here without browsing folders.</p></div><div class="field"><label for="defaultVideo">Fallback video asset</label><input id="defaultVideo" value="${escapeHtml(DEFAULT_FALLBACK_VIDEO)}" placeholder="Fallback asset"><p class="field-help">Used if stock video cannot be fetched for a scene. Keep a known-good local clip here.</p></div></div><label class="toggle-row" for="showText"><input id="showText" type="checkbox" checked> <div><strong>Show subtitles</strong><p class="field-help">Keep this on for Shorts-style videos where readable captions matter.</p></div></label><div id="form-status" class="status" hidden></div><div class="toolbar"><button type="submit">Generate Video</button><span class="muted">After clicking generate, this page sends you to a live render status screen automatically.</span></div></div></form></div><div class="stack"><div class="panel soft"><span class="eyebrow">Editing Tips</span><h2>Make changes without confusion</h2><ul class="compact-list"><li>Use one clear idea per sentence so voiceover and subtitles stay readable.</li><li>Add scene hints like <strong>[Visual: busy modern factory]</strong> when you want stronger video search results.</li><li>Choose portrait for social shorts and landscape for traditional videos.</li><li>If a voice feels wrong, keep the same script and only change the voice override.</li><li>Fallback video is safer than image fallback when a stock clip fails to download.</li></ul></div><div class="panel"><span class="eyebrow">Latest Outputs</span><h2>Recent finished videos</h2><p class="muted">Users can return here anytime and open the delivery page again.</p><div class="recent-grid">${recentCards}</div></div></div></section><section id="recent-videos" class="panel"><div class="panel-head"><div><span class="eyebrow">Library</span><h2>Completed videos</h2><p class="muted">Each card opens a dedicated watch page with the final player and MP4 download button.</p></div><a class="button secondary" href="#workspace">Create another video</a></div><div class="cards">${cards}</div></section>`,
         {
             canonical: absoluteUrl(req, '/'),
             description: DEFAULT_SITE_DESCRIPTION,
@@ -506,21 +685,250 @@ function homePage(req: Request, videos: VideoRecord[]): string {
             keywords: DEFAULT_SITE_KEYWORDS,
             ogType: 'website',
         },
-        `const form=document.getElementById('generate-form');const status=document.getElementById('form-status');const voiceSelect=document.getElementById('voice');const voiceSearch=document.getElementById('voice-search');const langSelect=document.getElementById('language');let allVoices={};async function loadAllVoices(){try{const res=await fetch('/api/voices');const json=await res.json();if(json.success){allVoices=json.data;Object.keys(allVoices).sort().forEach(lang=>{const opt=document.createElement('option');opt.value=lang;opt.textContent=lang;if(![...langSelect.options].some(o=>o.value===lang))langSelect.appendChild(opt);});}}catch(e){console.error('Failed to load voices',e);}}loadAllVoices();function renderVoices(filter=''){voiceSelect.innerHTML='<option value="">Select Voice (Optional Override)</option>';const query=filter.toLowerCase();Object.entries(allVoices).forEach(([lang,voices])=>{const filtered=voices.filter(v=>v.name.toLowerCase().includes(query)||lang.toLowerCase().includes(query)||v.gender.toLowerCase().includes(query));if(filtered.length>0){const group=document.createElement('optgroup');group.label=lang;filtered.forEach(v=>{const opt=document.createElement('option');opt.value=v.name;opt.textContent=\`\${v.name} (\${v.gender})\`;voiceSelect.appendChild(opt);});voiceSelect.appendChild(group);}});}voiceSearch.addEventListener('input',e=>renderVoices(e.target.value));form.addEventListener('submit',async(e)=>{e.preventDefault();status.hidden=false;status.textContent='Starting render...';const payload={title:document.getElementById('title').value,script:document.getElementById('script').value,orientation:document.getElementById('orientation').value,language:document.getElementById('language').value,voice:document.getElementById('voice').value || undefined,backgroundMusic:document.getElementById('backgroundMusic').value,defaultVideo:document.getElementById('defaultVideo').value,showText:document.getElementById('showText').checked};try{const res=await fetch('/generate-video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const json=await res.json();if(!res.ok||!json.success)throw new Error(json.error||'Unable to start render.');window.location.href=json.data.statusPageUrl;}catch(err){status.textContent=err instanceof Error?err.message:'Unable to start render.';}});`,
+        `const sampleScript=${JSON.stringify(DEMO_SCRIPT)};
+const form=document.getElementById('generate-form');
+const status=document.getElementById('form-status');
+const setupForm=document.getElementById('setup-form');
+const setupFeedback=document.getElementById('setup-feedback');
+const setupReadiness=document.getElementById('setup-readiness');
+const fillSample=document.getElementById('fill-sample');
+const voiceSelect=document.getElementById('voice');
+const voiceSearch=document.getElementById('voice-search');
+const voiceHint=document.getElementById('voice-hint');
+const langSelect=document.getElementById('language');
+const scriptField=document.getElementById('script');
+const titleField=document.getElementById('title');
+const scriptMetrics=document.getElementById('script-metrics');
+let allVoices={};
+function setMessage(element,text,isSuccess){
+    element.hidden=false;
+    element.textContent=text;
+    element.classList.toggle('success',Boolean(isSuccess));
+}
+function estimateWordCount(text){
+    return text.trim()?text.trim().split(/\\s+/).filter(Boolean).length:0;
+}
+function estimateSceneCount(text){
+    const visualCount=(text.match(/\\[visual:/ig)||[]).length;
+    const paragraphCount=text.split(/\\n+/).map((line)=>line.trim()).filter(Boolean).length;
+    return Math.max(visualCount,Math.min(Math.max(paragraphCount,1),12));
+}
+function estimateDurationSeconds(text){
+    const words=estimateWordCount(text);
+    return words===0?0:Math.max(5,Math.round(words/2.6));
+}
+function updateScriptMetrics(){
+    const text=scriptField.value||'';
+    const words=estimateWordCount(text);
+    const scenes=estimateSceneCount(text);
+    const seconds=estimateDurationSeconds(text);
+    scriptMetrics.innerHTML=[
+        '<span class="helper-badge">'+words+' words</span>',
+        '<span class="helper-badge">'+scenes+' scenes est.</span>',
+        '<span class="helper-badge">'+seconds+' sec est.</span>'
+    ].join('');
+}
+function renderSetupStatus(data){
+    const items=[
+        ['Pexels API',data.hasPexelsKey,'Needed for the strongest video search'],
+        ['Voice engine',data.edgeTtsReady,'Needed for narration'],
+        ['Ready to render',data.readyForGeneration,'Main requirements satisfied'],
+        ['Public URL',data.hasPublicBaseUrl,'Optional for sharing beyond localhost']
+    ];
+    setupReadiness.innerHTML=items.map(([label,ok,help])=>'<div class="status-card"><strong>'+label+'</strong><p class="muted">'+(ok?'Ready':'Not set')+'</p><p class="field-help">'+help+'</p></div>').join('');
+}
+async function loadSetupStatus(){
+    try{
+        const res=await fetch('/api/setup/status',{cache:'no-store'});
+        const json=await res.json();
+        if(json.success){
+            renderSetupStatus(json.data);
+        }
+    }catch(e){
+        console.error('Failed to load setup status',e);
+    }
+}
+function renderVoices(filter=''){
+    if(!Object.keys(allVoices).length){
+        voiceHint.textContent='Using the built-in voice list. Dynamic voices were not loaded yet.';
+        return;
+    }
+    voiceSelect.innerHTML='<option value="">Select Voice (Optional Override)</option>';
+    const query=filter.toLowerCase().trim();
+    let results=0;
+    Object.entries(allVoices).forEach(([lang,voices])=>{
+        const filtered=voices.filter((v)=>v.name.toLowerCase().includes(query)||lang.toLowerCase().includes(query)||v.gender.toLowerCase().includes(query));
+        if(filtered.length>0){
+            const group=document.createElement('optgroup');
+            group.label=lang;
+            filtered.forEach((v)=>{
+                const opt=document.createElement('option');
+                opt.value=v.name;
+                opt.textContent=\`\${v.name} (\${v.gender})\`;
+                group.appendChild(opt);
+            });
+            voiceSelect.appendChild(group);
+            results+=filtered.length;
+        }
+    });
+    voiceHint.textContent=results>0?results+' voices match your search.':'No voices match that search yet.';
+}
+async function loadAllVoices(){
+    try{
+        const res=await fetch('/api/voices');
+        const json=await res.json();
+        if(json.success){
+            allVoices=json.data;
+            Object.keys(allVoices).sort().forEach((lang)=>{
+                const opt=document.createElement('option');
+                opt.value=lang;
+                opt.textContent=lang;
+                if(![...langSelect.options].some((o)=>o.value===lang)){
+                    langSelect.appendChild(opt);
+                }
+            });
+            renderVoices(voiceSearch.value||'');
+            const total=Object.values(allVoices).reduce((count,list)=>count+list.length,0);
+            voiceHint.textContent=total+' dynamic voices loaded from Edge-TTS.';
+        }
+    }catch(e){
+        console.error('Failed to load voices',e);
+        voiceHint.textContent='Dynamic voice loading is unavailable right now. You can still use the built-in voice list.';
+    }
+}
+voiceSearch.addEventListener('input',(e)=>renderVoices(e.target.value));
+scriptField.addEventListener('input',updateScriptMetrics);
+fillSample.addEventListener('click',()=>{
+    if(!titleField.value){
+        titleField.value='How AI Is Changing Everyday Life';
+    }
+    scriptField.value=sampleScript;
+    langSelect.value='english';
+    renderVoices(voiceSearch.value||'');
+    updateScriptMetrics();
+    window.scrollTo({top:form.offsetTop-20,behavior:'smooth'});
+});
+setupForm.addEventListener('submit',async(e)=>{
+    e.preventDefault();
+    setMessage(setupFeedback,'Saving setup...',false);
+    const payload={
+        PEXELS_API_KEY:document.getElementById('setup-pexels').value,
+        PIXABAY_API_KEY:document.getElementById('setup-pixabay').value,
+        GEMINI_API_KEY:document.getElementById('setup-gemini').value,
+        PUBLIC_BASE_URL:document.getElementById('setup-public-base-url').value
+    };
+    try{
+        const res=await fetch('/api/setup/env',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        const json=await res.json();
+        if(!res.ok||!json.success){
+            throw new Error(json.error||'Unable to save setup.');
+        }
+        setMessage(setupFeedback,'Setup saved. This browser workspace is ready to use.',true);
+        renderSetupStatus(json.data);
+    }catch(err){
+        setMessage(setupFeedback,err instanceof Error?err.message:'Unable to save setup.',false);
+    }
+});
+form.addEventListener('submit',async(e)=>{
+    e.preventDefault();
+    setMessage(status,'Starting render...',false);
+    const payload={
+        title:document.getElementById('title').value,
+        script:document.getElementById('script').value,
+        orientation:document.getElementById('orientation').value,
+        language:document.getElementById('language').value,
+        voice:document.getElementById('voice').value||undefined,
+        backgroundMusic:document.getElementById('backgroundMusic').value,
+        defaultVideo:document.getElementById('defaultVideo').value,
+        showText:document.getElementById('showText').checked
+    };
+    try{
+        const res=await fetch('/generate-video',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        const json=await res.json();
+        if(!res.ok||!json.success){
+            throw new Error(json.error||'Unable to start render.');
+        }
+        window.location.href=json.data.statusPageUrl;
+    }catch(err){
+        setMessage(status,err instanceof Error?err.message:'Unable to start render.',false);
+    }
+});
+updateScriptMetrics();
+loadSetupStatus();
+loadAllVoices();`,
     );
 }
 
 function jobPage(req: Request, jobId: string): string {
     return html(
         `Render Job ${jobId} | ${PROJECT_NAME}`,
-        `<section><h1 id="title">Render in progress</h1><p id="message" class="muted">This page refreshes automatically until the video is ready.</p><div class="bar"><div id="progress"></div></div><div class="meta"><div><strong>Status</strong><p id="status" class="muted">pending</p></div><div><strong>Progress</strong><p id="percent" class="muted">0%</p></div><div><strong>Job ID</strong><p class="muted">${escapeHtml(jobId)}</p></div></div><div id="actions" class="row" style="margin-top:14px"></div><div id="error" class="status" hidden></div></section>`,
+        `<section class="hero-surface"><div class="hero-grid"><div class="stack"><span class="eyebrow">Live Render Status</span><div><h1 id="title">Render in progress</h1><p id="message" class="lead small">This page refreshes automatically while the generator downloads assets, creates voiceover, and renders the final MP4.</p></div><div class="bar"><div id="progress"></div></div><div class="metric-grid"><div class="metric-card"><strong id="percent">0%</strong><span class="muted">overall progress</span></div><div class="metric-card"><strong id="status">pending</strong><span class="muted">current status</span></div><div class="metric-card"><strong>3 sec</strong><span class="muted">auto refresh interval</span></div></div></div><div class="highlight-box stack"><span class="eyebrow">Job Details</span><div class="row"><span class="status-chip ok">Watching live</span><span class="pill">${escapeHtml(jobId)}</span></div><p class="muted">Keep this tab open. When the job finishes, the watch page and MP4 download button will appear here automatically.</p><div id="actions" class="toolbar"></div><div id="error" class="status" hidden></div></div></div></section><section class="layout-split"><div class="panel"><span class="eyebrow">Pipeline</span><h2>What the app is doing now</h2><div class="timeline"><div class="timeline-step" data-step="queued"><span>1</span><div><strong>Queued</strong><p class="muted">The job has been accepted and is waiting to begin.</p></div></div><div class="timeline-step" data-step="assets"><span>2</span><div><strong>Assets and voiceover</strong><p class="muted">The generator prepares scenes, downloads stock footage, and creates narration.</p></div></div><div class="timeline-step" data-step="render"><span>3</span><div><strong>Final render</strong><p class="muted">Remotion assembles the scenes into a single MP4 file.</p></div></div><div class="timeline-step" data-step="ready"><span>4</span><div><strong>Ready to watch</strong><p class="muted">Your delivery page and download link are prepared.</p></div></div></div></div><div class="panel soft"><span class="eyebrow">While You Wait</span><h2>Helpful notes</h2><ul class="compact-list"><li>The longest step is usually stock download and video rendering.</li><li>You can leave this tab open instead of watching the terminal.</li><li>If a stock clip fails, the generator can use fallback video before falling back to an image.</li><li>When finished, you will get a watch page and a direct MP4 download button.</li></ul></div></section>`,
         {
             canonical: absoluteUrl(req, `/jobs/${encodeURIComponent(jobId)}`),
             description: 'Track a video rendering job in Automated Video Generator.',
             ogType: 'website',
             robots: 'noindex, nofollow',
         },
-        `const id=${JSON.stringify(jobId)};const title=document.getElementById('title');const message=document.getElementById('message');const status=document.getElementById('status');const percent=document.getElementById('percent');const progress=document.getElementById('progress');const actions=document.getElementById('actions');const error=document.getElementById('error');async function refresh(){try{const res=await fetch('/api/jobs/'+encodeURIComponent(id),{cache:'no-store'});const json=await res.json();if(!res.ok||!json.success)throw new Error(json.error||'Unable to load job.');const data=json.data;title.textContent=data.title||'Render in progress';message.textContent=data.message||'Working on your video.';status.textContent=String(data.status);percent.textContent=String(data.progress)+'%';progress.style.width=Math.max(0,Math.min(100,Number(data.progress)||0))+'%';if(data.status==='completed'){actions.innerHTML='<a class="button" href="'+data.watchUrl+'">Open Watch Page</a><a class="button secondary" href="'+data.downloadUrl+'">Download MP4</a><a class="button secondary" href="/">Back to Portal</a>';window.clearInterval(timer);}if(data.status==='failed'){error.hidden=false;error.textContent=data.error||'Render failed.';window.clearInterval(timer);}}catch(err){error.hidden=false;error.textContent=err instanceof Error?err.message:'Unable to load job.';}}const timer=window.setInterval(refresh,3000);refresh();`,
+        `const id=${JSON.stringify(jobId)};
+const title=document.getElementById('title');
+const message=document.getElementById('message');
+const status=document.getElementById('status');
+const percent=document.getElementById('percent');
+const progress=document.getElementById('progress');
+const actions=document.getElementById('actions');
+const error=document.getElementById('error');
+const steps=[...document.querySelectorAll('[data-step]')];
+function setStepState(current){
+    const order=['queued','assets','render','ready'];
+    const currentIndex=order.indexOf(current);
+    steps.forEach((step)=>{
+        const index=order.indexOf(step.dataset.step);
+        step.classList.toggle('active',index===currentIndex);
+        step.classList.toggle('done',currentIndex>index);
+    });
+}
+function mapStep(data){
+    if(data.status==='completed'){
+        return 'ready';
+    }
+    if(data.status==='pending'){
+        return 'queued';
+    }
+    if(data.progress>=75){
+        return 'render';
+    }
+    return 'assets';
+}
+async function refresh(){
+    try{
+        const res=await fetch('/api/jobs/'+encodeURIComponent(id),{cache:'no-store'});
+        const json=await res.json();
+        if(!res.ok||!json.success){
+            throw new Error(json.error||'Unable to load job.');
+        }
+        const data=json.data;
+        title.textContent=data.title||'Render in progress';
+        message.textContent=data.message||'Working on your video.';
+        status.textContent=String(data.status);
+        percent.textContent=String(data.progress)+'%';
+        progress.style.width=Math.max(0,Math.min(100,Number(data.progress)||0))+'%';
+        setStepState(mapStep(data));
+        if(data.status==='completed'){
+            actions.innerHTML='<a class="button" href="'+data.watchUrl+'">Open Watch Page</a><a class="button secondary" href="'+data.downloadUrl+'">Download MP4</a><a class="button ghost" href="/">Back to Portal</a>';
+            window.clearInterval(timer);
+        }
+        if(data.status==='failed'){
+            error.hidden=false;
+            error.textContent=data.error||'Render failed.';
+            window.clearInterval(timer);
+        }
+    }catch(err){
+        error.hidden=false;
+        error.textContent=err instanceof Error?err.message:'Unable to load job.';
+    }
+}
+const timer=window.setInterval(refresh,3000);
+refresh();`,
     );
 }
 
@@ -529,7 +937,7 @@ function watchPage(req: Request, video: VideoRecord): string {
 
     return html(
         `${video.title} | ${PROJECT_NAME}`,
-        `<section><h1>${escapeHtml(video.title)}</h1><p class="muted">Stream the video here or download the MP4. This delivery page is generated by ${PROJECT_NAME}.</p><div class="row"><span class="pill">${escapeHtml(video.orientation)}</span>${video.durationSeconds ? `<span class="pill">${Math.round(video.durationSeconds)} sec</span>` : ''}<span class="pill">${video.fileSizeMB} MB</span></div></section><section><video class="video" controls playsinline preload="metadata"${video.thumbnailUrl ? ` poster="${video.thumbnailUrl}"` : ''}><source src="${video.videoUrl}" type="video/mp4"></video><div class="row" style="margin-top:14px"><a class="button" href="${video.downloadUrl}">Download MP4</a><a class="button secondary" href="/">Back to Portal</a></div></section>${video.description ? `<section><h2>Video details</h2><p>${escapeHtml(video.description).replace(/\n/g, '<br>')}</p></section>` : ''}<section><h2>Built with ${PROJECT_NAME}</h2><p class="muted footer-note">This video was published using a free and open-source Remotion-based text-to-video generator.</p><div class="row"><a class="button secondary" href="${PROJECT_REPOSITORY_URL}" target="_blank" rel="noreferrer">View on GitHub</a></div></section>`,
+        `<section class="hero-surface"><div class="hero-grid"><div class="stack"><span class="eyebrow">Video Ready</span><div><h1>${escapeHtml(video.title)}</h1><p class="lead small">Preview the result in the browser, then download the MP4 or return to the workspace to make another version.</p></div><div class="row"><span class="pill">${escapeHtml(video.orientation)}</span>${video.durationSeconds ? `<span class="pill">${Math.round(video.durationSeconds)} sec</span>` : ''}<span class="pill">${video.fileSizeMB} MB</span><span class="pill">${escapeHtml(new Date(video.createdAt).toLocaleString())}</span></div></div><div class="highlight-box stack"><span class="eyebrow">Output File</span><div class="info-list"><div class="info-row"><strong>Filename</strong><span class="muted">${escapeHtml(video.videoFilename)}</span></div><div class="info-row"><strong>Delivery page</strong><span class="muted">Ready for watching and download</span></div><div class="info-row"><strong>Generator</strong><span class="muted">${PROJECT_NAME}</span></div></div><div class="toolbar"><a class="button" href="${video.downloadUrl}">Download MP4</a><a class="button secondary" href="/">Back to Portal</a></div></div></div></section><section class="watch-grid"><div class="video-stage"><video class="video" controls playsinline preload="metadata"${video.thumbnailUrl ? ` poster="${video.thumbnailUrl}"` : ''}><source src="${video.videoUrl}" type="video/mp4"></video></div><div class="stack"><div class="panel"><span class="eyebrow">Delivery Summary</span><h2>What this output contains</h2><div class="info-list"><div class="info-row"><strong>Orientation</strong><span class="muted">${escapeHtml(video.orientation)}</span></div>${video.durationSeconds ? `<div class="info-row"><strong>Duration</strong><span class="muted">${Math.round(video.durationSeconds)} seconds</span></div>` : ''}<div class="info-row"><strong>File size</strong><span class="muted">${video.fileSizeMB} MB</span></div><div class="info-row"><strong>Created</strong><span class="muted">${escapeHtml(new Date(video.createdAt).toLocaleString())}</span></div></div></div>${video.description ? `<div class="panel soft"><span class="eyebrow">Video Details</span><h2>Notes and description</h2><p>${escapeHtml(video.description).replace(/\n/g, '<br>')}</p></div>` : ''}<div class="panel"><span class="eyebrow">Next Step</span><h2>Create another version</h2><p class="muted footer-note">Return to the portal if you want to change the script, voice, orientation, music, or subtitle settings and render a new MP4.</p><div class="toolbar"><a class="button secondary" href="/">Open Workspace</a><a class="button ghost" href="${PROJECT_REPOSITORY_URL}" target="_blank" rel="noreferrer">Project Repository</a></div></div></div></section>`,
         {
             canonical: video.watchUrl,
             description,
@@ -769,6 +1177,27 @@ app.get('/api/voices', (req: Request, res: Response) => {
         res.json({ success: true, data: voices });
     } catch (error: any) {
         res.status(500).json({ success: false, error: 'Failed to fetch voices' });
+    }
+});
+
+app.get('/api/setup/status', (req: Request, res: Response) => {
+    res.json({ success: true, data: setupStatus() });
+});
+
+app.post('/api/setup/env', (req: Request, res: Response) => {
+    try {
+        const updates: Partial<Record<EditableEnvKey, string>> = {};
+
+        for (const key of EDITABLE_ENV_KEYS) {
+            if (key in (req.body || {})) {
+                updates[key] = normalizeEnvValue(req.body?.[key]);
+            }
+        }
+
+        updateEnvValues(updates);
+        res.json({ success: true, data: setupStatus() });
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error?.message || 'Unable to save setup.' });
     }
 });
 

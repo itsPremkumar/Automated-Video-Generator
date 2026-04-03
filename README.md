@@ -54,7 +54,7 @@ If you are searching for a free video generator, open-source AI video generator,
 
 ## 🧊 The "Vibe Video" Philosophy
 
-Inspired by the **Vibe Coding** movement, this project shifts you from a "manual editor" to a **Creative Director**. 
+Inspired by the **Vibe Coding** movement, this project shifts you from a "manual editor" to a **Creative Director**.
 
 - **High-Level Intent**: Describe your story and the "vibe" you want.
 - **Automated Performance**: The AI handles media fetching, voice synthesis, and frame-perfect audio-visual synchronization.
@@ -69,11 +69,10 @@ The Automated Video Generator project is officially available on ClawHub. You ca
 
 ## Why this repo gets attention
 
--   **Worldwide support for 400+ voices across all major languages with a searchable interface**
--   Text-to-video pipeline with Remotion and React
--   **Multi-language support including Tamil, Hindi, Spanish, French, and German**
--   Edge-TTS voiceovers with multiple neural voice options
-
+- **Worldwide support for 400+ voices across all major languages with a searchable interface**
+- Text-to-video pipeline with Remotion and React
+- **Multi-language support including Tamil, Hindi, Spanish, French, and German**
+- Edge-TTS voiceovers with multiple neural voice options
 - Stock media fetching from Pexels and Pixabay
 - Local asset support for your own images and videos
 - **Configurable background music with volume control**
@@ -104,12 +103,219 @@ The Automated Video Generator project is officially available on ClawHub. You ca
 
 ## Quick start
 
+### One-click Windows launcher
+
+For non-technical users on Windows, the easiest option is:
+
+```text
+Start-Automated-Video-Generator.bat
+```
+
+If you are already inside PowerShell, use:
+
+```powershell
+.\Start-Automated-Video-Generator.bat
+```
+
+There is also a native PowerShell launcher:
+
+```powershell
+.\Start-Automated-Video-Generator.ps1
+```
+
+It can:
+
+- install Node.js and Python with `winget` if missing
+- create `.env` from `.env.example`
+- install Node dependencies
+- install Python voice dependencies if needed
+- start the local portal
+- open the browser automatically
+
+After the browser opens:
+
+1. Save your `PEXELS_API_KEY`
+2. Paste or edit your script
+3. Click `Generate Video`
+4. Wait on the live status page
+5. Watch or download the final MP4
+
+### End-to-end simple installation workflows
+
+#### Workflow 1: Windows one-click setup for common users
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/itsPremkumar/Automated-Video-Generator.git
+cd Automated-Video-Generator
+```
+
+2. Double-click:
+
+```text
+Start-Automated-Video-Generator.bat
+```
+
+If you are launching from PowerShell instead of File Explorer, use:
+
+```powershell
+.\Start-Automated-Video-Generator.bat
+```
+
+3. The launcher handles the first-time setup and opens the browser portal.
+
+4. In the portal:
+
+- save your API key
+- paste the script
+- choose voice, orientation, and music if needed
+- start the render
+- watch or download the result
+
+#### Workflow 2: Manual setup for Windows, macOS, or Linux
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/itsPremkumar/Automated-Video-Generator.git
+cd Automated-Video-Generator
+```
+
+2. Install Node dependencies:
+
+```bash
+npm install
+```
+
+3. Install Python voice dependencies:
+
+Windows:
+
+```bash
+py -m pip install -r requirements.txt
+```
+
+If `py` does not work:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+macOS or Linux:
+
+```bash
+python3 -m pip install -r requirements.txt
+```
+
+4. Copy `.env.example` to `.env`
+
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+macOS or Linux:
+
+```bash
+cp .env.example .env
+```
+
+5. Add `PEXELS_API_KEY` to `.env`
+
+6. Start the browser portal:
+
+```bash
+npm run dev
+```
+
+7. Open:
+
+```text
+http://localhost:3001/
+```
+
+### Quick verification commands
+
+Check Node.js:
+
+```bash
+node -v
+```
+
+Check npm:
+
+```bash
+npm -v
+```
+
+Check Python:
+
+Windows:
+
+```bash
+py --version
+```
+
+or:
+
+```bash
+python --version
+```
+
+macOS or Linux:
+
+```bash
+python3 --version
+```
+
+Check Edge-TTS:
+
+Windows:
+
+```bash
+py -m edge_tts --help
+```
+
+or:
+
+```bash
+python -m edge_tts --help
+```
+
+macOS or Linux:
+
+```bash
+python3 -m edge_tts --help
+```
+
+Portal health check:
+
+```bash
+npm run dev
+```
+
+Then open:
+
+```text
+http://localhost:3001/health
+```
+
+You should see JSON similar to:
+
+```json
+{"status":"ok","service":"video-generator"}
+```
+
 ### Prerequisites
 
 - Node.js 18+
 - npm
 - Python 3.8+
 - FFmpeg available on your `PATH`
+
+Note: the renderer tries to use bundled `ffmpeg-static` and `ffprobe-static` first, so many users will not need a separate FFmpeg install. A global FFmpeg install is still useful as a fallback on some machines.
 
 ### Install
 
@@ -198,10 +404,23 @@ http://localhost:3001/
 The portal lets you:
 
 - Start a render from the browser
+- Save API keys from the browser setup form
+- Fill a sample script without touching `input/input-scripts.json`
 - Track progress on a job page
 - Watch completed videos
 - Download the final MP4
 - Expose SEO-ready pages if you deploy it publicly
+
+### Example end-to-end common user flow
+
+1. Clone the repo
+2. Run the launcher or complete the manual install
+3. Open `http://localhost:3001/`
+4. Save `PEXELS_API_KEY`
+5. Paste the script
+6. Click `Generate Video`
+7. Wait for the render page to finish
+8. Watch or download the MP4
 
 ## Remotion studio
 
@@ -306,6 +525,44 @@ Yes. Put files in `input/input-assests/` and reference them with `[Visual: filen
 ### Can I self-host it?
 
 Yes. You can run it locally, in Docker, or behind your own deployment setup.
+
+### Do I need to install FFmpeg manually?
+
+Not always. The project tries bundled `ffmpeg-static` first. A global FFmpeg install is mainly a fallback for machines where the bundled binary cannot be used.
+
+### What should a normal user do first?
+
+Clone the repo, run `Start-Automated-Video-Generator.bat`, save the `PEXELS_API_KEY` in the browser portal, and generate from the UI.
+
+### What if `py` exists but is broken on Windows?
+
+Try:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+If Python itself is broken, reinstall Python 3 or use:
+
+```powershell
+winget install --id Python.Python.3.12 --exact --accept-package-agreements --accept-source-agreements --silent
+```
+
+### Why does PowerShell say the batch file is not recognized?
+
+PowerShell does not run files from the current folder by name alone.
+
+Use:
+
+```powershell
+.\Start-Automated-Video-Generator.bat
+```
+
+or:
+
+```powershell
+.\Start-Automated-Video-Generator.ps1
+```
 
 ## GEO and AI-friendly docs
 
