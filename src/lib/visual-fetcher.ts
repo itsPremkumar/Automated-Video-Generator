@@ -36,15 +36,25 @@ const GEMINI_MAX_CONCURRENCY = Math.max(1, Number.parseInt(process.env.GEMINI_MA
 
 const BASE_URL = 'https://api.pexels.com/v1';
 const CACHE_FILE = resolveProjectPath('.video-cache.json');
-const MAX_DOWNLOAD_BYTES = 40 * 1024 * 1024;
-const DOWNLOAD_STALL_TIMEOUT_MS = 15000;
+const MAX_DOWNLOAD_BYTES = Math.max(
+    40 * 1024 * 1024,
+    Number.parseInt(process.env.MAX_DOWNLOAD_BYTES || '', 10) || 150 * 1024 * 1024
+);
+const DOWNLOAD_STALL_TIMEOUT_MS = Math.max(
+    15000,
+    Number.parseInt(process.env.DOWNLOAD_STALL_TIMEOUT_MS || '', 10) || 30000
+);
 const TARGET_VIDEO_DURATION_SECONDS = 6;
 const DEFAULT_RENDER_FPS = 30;
 const SAFE_VIDEO_END_BUFFER_FRAMES = 15;
 
-// Preferred video quality order (highest first)
-const PREFERRED_QUALITIES = ['uhd', 'hd', 'sd'];
+const PREFERRED_QUALITIES = ['hd', 'uhd', 'sd'];
 const MIN_WIDTH = 720; // Minimum acceptable video width
+const TARGET_RENDER_WIDTH = {
+    portrait: 1080,
+    landscape: 1920,
+    none: 1080,
+} as const;
 
 // Log API key status on load
 // console.log('\n🔑 [VISUAL-FETCHER] Module loaded');
@@ -54,6 +64,23 @@ const MIN_WIDTH = 720; // Minimum acceptable video width
 // Simple cache for video URLs
 interface VideoCache {
     [keywords: string]: MediaAsset;
+}
+
+type CachedMediaType = MediaAsset['type'];
+
+function buildCacheKey(
+    query: string,
+    orientation: 'portrait' | 'landscape' | 'none',
+    mediaType: CachedMediaType
+): string {
+    return `${mediaType}:${query.toLowerCase()}:${orientation}`;
+}
+
+function buildLegacyCacheKey(
+    query: string,
+    orientation: 'portrait' | 'landscape' | 'none'
+): string {
+    return `${query.toLowerCase()}:${orientation}`;
 }
 
 function loadCache(): VideoCache {
@@ -97,11 +124,24 @@ export function invalidateCachedVisual(
     keywords: string[],
     orientation: 'portrait' | 'landscape' = 'portrait'
 ): void {
-    const cacheKey = `${keywords.join(' ').toLowerCase()}:${orientation}`;
+    const query = keywords.join(' ');
     const cache = getCache();
 
-    if (cache[cacheKey]) {
-        delete cache[cacheKey];
+    const cacheKeys = [
+        buildCacheKey(query, orientation, 'video'),
+        buildCacheKey(query, orientation, 'image'),
+        buildLegacyCacheKey(query, orientation),
+    ];
+
+    let changed = false;
+    for (const cacheKey of cacheKeys) {
+        if (cache[cacheKey]) {
+            delete cache[cacheKey];
+            changed = true;
+        }
+    }
+
+    if (changed) {
         saveCache(cache);
     }
 }
@@ -275,7 +315,19 @@ export function getVideoDuration(filePath: string): number {
 /**
  * Select the best quality video file
  */
-function selectBestVideoFile(videoFiles: any[]): any {
+function getQualityRank(quality: unknown): number {
+    if (typeof quality !== 'string') {
+        return Number.MAX_SAFE_INTEGER;
+    }
+
+    const rank = PREFERRED_QUALITIES.indexOf(quality.toLowerCase());
+    return rank === -1 ? Number.MAX_SAFE_INTEGER : rank;
+}
+
+function selectBestVideoFile(
+    videoFiles: any[],
+    orientation: 'portrait' | 'landscape' | 'none' = 'portrait'
+): any {
     // console.log(`    🎬 [QUALITY] Selecting best from ${videoFiles.length} video files`);
 
     // Log available qualities
@@ -773,9 +825,22 @@ export async function fetchVisualsForScene(
     orientation: 'portrait' | 'landscape' | 'none' = 'portrait',
     sceneText?: string
 ): Promise<MediaAsset | null> {
-    const query = keywords.join(' ');
-    const cacheKey = `${query.toLowerCase()}:${orientation}`;
+    const query = keywords.join(' ').trim();
     const cache = getCache();
+    const preferredType: CachedMediaType = preferVideo ? 'video' : 'image';
+    const preferredCacheKey = buildCacheKey(query, orientation, preferredType);
+    const legacyCacheKey = buildLegacyCacheKey(query, orientation);
+    const cacheKey = preferredCacheKey;
+
+    if (!query) {
+        return null;
+    }
+
+    const legacyCachedAsset = cache[legacyCacheKey];
+    if (legacyCachedAsset?.type === preferredType) {
+        cache[cacheKey] = legacyCachedAsset;
+        saveCache(cache);
+    }
 
     // Skip Gemini and provider calls entirely when we already have a cached result.
     if (cache[cacheKey]) {
@@ -833,6 +898,7 @@ export async function fetchVisualsForScene(
                     console.log(`🎨 [FETCH] ⚠️ No video for "${q}" at orientation "${orient}"`);
                 }
             }
+            return null;
         }
 
         // Fallback to images

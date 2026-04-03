@@ -212,10 +212,10 @@ export async function generateVideo(
                             }
                         } catch (err: any) {
                             // console.error(`⚠️ [SCENE ${i + 1}] Download failed: ${err.message}`);
+                            console.log(`⚠️ [SCENE ${i + 1}] Video download failed, trying fallback: ${err.message}`);
                             invalidateCachedVisual(scene.searchKeywords, orientation);
 
-                            const imageFallback = await fetchVisualsForScene(scene.searchKeywords, false, orientation, scene.voiceoverText);
-                            visual = imageFallback && imageFallback.type === 'image' ? imageFallback : null;
+                            visual = null;
                         }
                     } else if (visual) {
                         // console.log(`🖼️ [SCENE ${i + 1}] Using image: ${visual.url}`);
@@ -248,6 +248,11 @@ export async function generateVideo(
                     } else {
                         // console.warn(`❌ [SCENE ${i + 1}] Default video ${defaultVideo} not found in input-assests`);
                     }
+                }
+
+                if (!visual) {
+                    const imageFallback = await fetchVisualsForScene(scene.searchKeywords, false, orientation, scene.voiceoverText);
+                    visual = imageFallback && imageFallback.type === 'image' ? imageFallback : null;
                 }
 
                 if (visual?.type === 'video' && !visual.localPath) {

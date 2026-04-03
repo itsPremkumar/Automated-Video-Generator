@@ -1,9 +1,10 @@
 [
   {
-    "id": "tamil-ai-showcase",
-    "title": "AI in Tamil",
-    "language": "tamil",
-    "script": "வணக்கம்! செயற்கை நுண்ணறிவு தொழில்நுட்பம் உலகையே மாற்றிக்கொண்டிருக்கிறது. இது ஒரு புதிய புரட்சி.",
-    "orientation": "portrait"
+    "id": "english-end-user-test",
+    "title": "How AI Is Changing Everyday Life",
+    "language": "english",
+    "voice": "en-US-JennyNeural",
+    "orientation": "portrait",
+    "script": "[Visual: sunrise city skyline drone]\nArtificial intelligence is no longer a distant idea. It already helps cities, schools, hospitals, and businesses work faster and smarter.\n\n[Visual: software engineer coding on laptop]\nBehind the scenes, machine learning systems organize huge amounts of information, detect patterns, and turn messy data into useful decisions.\n\n[Visual: doctor reviewing digital health monitor]\nIn healthcare, AI can support doctors by highlighting unusual scans, tracking patient risk, and reducing the time needed to review critical cases.\n\n[Visual: teacher using tablet in classroom]\nIn education, adaptive tools can help teachers explain difficult topics, personalize lessons, and give students more confidence as they learn step by step.\n\n[Visual: warehouse robots moving packages]\nInside factories and warehouses, intelligent software coordinates robots, predicts maintenance, and keeps products moving smoothly from one station to the next.\n\n[Visual: farmer checking crops with drone]\nOn farms, AI can analyze soil, weather, and crop conditions so growers can save water, reduce waste, and improve harvest planning.\n\n[Visual: customer service agent with headset in office]\nFor support teams, AI assistants can answer routine questions quickly, summarize conversations, and give human agents more time for complex problems.\n\n[Visual: cybersecurity analyst monitoring screens]\nSecurity teams also use AI to detect unusual behavior, respond to threats faster, and monitor systems that would be impossible to review manually all day.\n\n[Visual: family using smart home devices]\nAt home, people see AI in voice assistants, recommendation engines, navigation apps, and smart devices that quietly learn from repeated habits.\n\n[Visual: diverse team discussing ethics in office]\nThe next challenge is not only building more powerful systems, but using them responsibly, transparently, and in ways that genuinely improve human life."
   }
 ]
