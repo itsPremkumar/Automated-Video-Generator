@@ -22,10 +22,12 @@
 
 <br/>
 <div align="center">
+  <h2>📥 Download the Windows App (Easiest)</h2>
   <a href="https://github.com/itsPremkumar/Automated-Video-Generator/releases/latest">
-    <img src="https://img.shields.io/badge/⬇️_Download_Windows_App-0D1117?style=for-the-badge&logo=windows&logoColor=blue" alt="Download Windows App" height="48">
+    <img src="https://img.shields.io/badge/⬇️_Download_Windows_.exe_Installer-0D1117?style=for-the-badge&logo=windows&logoColor=blue" alt="Download Windows App" height="56">
   </a>
   <p><strong>Zero Setup • No Python Required • No Node.js Required</strong></p>
+  <p>Just download the latest <code>.exe</code> file, double-click, and start generating videos locally!</p>
 </div>
 <br/>
 
