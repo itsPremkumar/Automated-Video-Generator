@@ -36,5 +36,13 @@ Thumbs.db
 .video-cache.json
 .mcp-jobs.json
 *.tmp
+tmp/
 public/audio/
 public/visuals/
+
+# Electron Build Output
+dist-electron/
+release/
+
+# Portable Runtime
+portable-python/

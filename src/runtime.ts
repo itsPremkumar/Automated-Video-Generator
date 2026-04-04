@@ -2,10 +2,21 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { format } from 'util';
 
-export const projectRoot = path.resolve(__dirname, '..');
+// Detect if running inside a packaged Electron app
+const isElectronPackaged = !!(process.versions as any).electron
+    && !(process.env as any).ELECTRON_IS_DEV
+    && (process as any).resourcesPath;
+
+export const projectRoot = isElectronPackaged
+    ? path.join((process as any).resourcesPath, 'app')
+    : path.resolve(__dirname, '..');
 
 export function resolveProjectPath(...segments: string[]): string {
-  return path.join(projectRoot, ...segments);
+    return path.join(projectRoot, ...segments);
+}
+
+export function isElectron(): boolean {
+    return !!(process.versions as any).electron;
 }
 
 export function inMcpRuntime(): boolean {

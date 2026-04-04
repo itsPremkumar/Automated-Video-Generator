@@ -20,6 +20,15 @@
   </a>
 </div>
 
+<br/>
+<div align="center">
+  <a href="https://github.com/itsPremkumar/Automated-Video-Generator/releases/latest">
+    <img src="https://img.shields.io/badge/⬇️_Download_Windows_App-0D1117?style=for-the-badge&logo=windows&logoColor=blue" alt="Download Windows App" height="48">
+  </a>
+  <p><strong>Zero Setup • No Python Required • No Node.js Required</strong></p>
+</div>
+<br/>
+
 ## Connect to Claude (one command)
 
 ### Claude Code
@@ -103,7 +112,19 @@ The Automated Video Generator project is officially available on ClawHub. You ca
 
 ## Quick start
 
-### One-click Windows launcher
+### 🚀 Standalone Windows Desktop App (Easiest)
+
+For non-technical users, we provide a **completely standalone Windows desktop app**. No terminal, no Node.js, and no Python installation required.
+
+[**👉 Click here to download the latest Windows `.exe` Installer**](https://github.com/itsPremkumar/Automated-Video-Generator/releases/latest)
+
+- **Zero Setup**: Just run the installer and you're ready to go.
+- **Natively Bundled**: Python, Node, and FFmpeg are all pre-packaged inside.
+- **Auto-Open**: The video generator portal launches automatically on startup.
+
+---
+
+### One-click Windows launcher (PowerShell/Batch)
 
 For non-technical users on Windows, the easiest option is:
 
@@ -571,6 +592,7 @@ These files make the project easier for AI tools and answer engines to understan
 - [`llms.txt`](./llms.txt)
 - [`llms-full.txt`](./llms-full.txt)
 - [`QUICKSTART.md`](./QUICKSTART.md)
+- [`WINDOWS_INSTALLER.md`](./docs/WINDOWS_INSTALLER.md)
 - [`SETUP.md`](./docs/SETUP.md)
 - [`CLAUDE_MCP_SETUP.md`](./docs/CLAUDE_MCP_SETUP.md)
 

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Setup — Automated Video Generator</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1d27;
+            --surface-hover: #22263a;
+            --border: #2a2e3f;
+            --brand: #d8642a;
+            --brand-glow: rgba(216, 100, 42, 0.25);
+            --brand-soft: #f09a62;
+            --green: #34d399;
+            --green-bg: rgba(52, 211, 153, 0.1);
+            --green-border: rgba(52, 211, 153, 0.25);
+            --red: #f87171;
+            --red-bg: rgba(248, 113, 113, 0.1);
+            --red-border: rgba(248, 113, 113, 0.25);
+            --yellow: #fbbf24;
+            --yellow-bg: rgba(251, 191, 36, 0.1);
+            --yellow-border: rgba(251, 191, 36, 0.25);
+            --text: #e4e7ef;
+            --text-muted: #8b91a5;
+            --radius: 14px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            -webkit-app-region: drag;
+            overflow: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(216, 100, 42, 0.06), transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(31, 58, 86, 0.08), transparent 50%);
+            animation: bgFloat 20s ease-in-out infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes bgFloat {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(-2%, -2%) rotate(2deg); }
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 32px;
+            gap: 24px;
+            -webkit-app-region: no-drag;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+        }
+
+        .header .icon {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 12px;
+            background: linear-gradient(135deg, var(--brand), var(--brand-soft));
+            border-radius: 16px;
+            display: grid;
+            place-items: center;
+            font-size: 28px;
+            box-shadow: 0 8px 32px var(--brand-glow);
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #fff, var(--text-muted));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 6px;
+        }
+
+        .dep-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .dep-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            transition: all 0.2s ease;
+        }
+
+        .dep-item:hover {
+            background: var(--surface-hover);
+        }
+
+        .dep-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            font-size: 18px;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .dep-icon.checking {
+            background: var(--yellow-bg);
+            border: 1px solid var(--yellow-border);
+            animation: pulse 1.5s infinite;
+        }
+
+        .dep-icon.ok {
+            background: var(--green-bg);
+            border: 1px solid var(--green-border);
+        }
+
+        .dep-icon.missing {
+            background: var(--red-bg);
+            border: 1px solid var(--red-border);
+        }
+
+        .dep-icon.installing {
+            background: var(--yellow-bg);
+            border: 1px solid var(--yellow-border);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .dep-info {
+            flex: 1;
+        }
+
+        .dep-name {
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .dep-status {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .dep-status.ok { color: var(--green); }
+        .dep-status.missing { color: var(--red); }
+        .dep-status.installing { color: var(--yellow); }
+
+        .progress-section {
+            display: none;
+            padding: 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+
+        .progress-section.visible {
+            display: block;
+        }
+
+        .progress-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .progress-bar-track {
+            height: 6px;
+            background: var(--border);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--brand), var(--brand-soft));
+            border-radius: 999px;
+            transition: width 0.4s ease;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 999px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--brand), var(--brand-soft));
+            color: #fff;
+            box-shadow: 0 6px 24px var(--brand-glow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 32px var(--brand-glow);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface-hover);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #059669, #34d399);
+            color: #fff;
+            box-shadow: 0 6px 24px rgba(52, 211, 153, 0.25);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-1px);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            justify-content: center;
+        }
+
+        .status-badge.all-good {
+            background: var(--green-bg);
+            border: 1px solid var(--green-border);
+            color: var(--green);
+        }
+
+        .status-badge.needs-setup {
+            background: var(--yellow-bg);
+            border: 1px solid var(--yellow-border);
+            color: var(--yellow);
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-muted);
+            padding-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon">🎬</div>
+            <h1>Automated Video Generator</h1>
+            <p>Checking system requirements...</p>
+            <div id="overallStatus" style="margin-top: 10px;"></div>
+        </div>
+
+        <div id="depList" class="dep-list">
+            <!-- Populated by JS -->
+        </div>
+
+        <div id="progressSection" class="progress-section">
+            <div id="progressLabel" class="progress-label">Installing dependencies...</div>
+            <div class="progress-bar-track">
+                <div id="progressBar" class="progress-bar-fill"></div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button id="installBtn" class="btn btn-primary" disabled>Install Missing Dependencies</button>
+            <button id="launchBtn" class="btn btn-success" style="display:none;">Launch App →</button>
+            <button id="skipBtn" class="btn btn-secondary" style="display:none;">Skip & Launch Anyway</button>
+        </div>
+
+        <div class="footer">
+            Automated Video Generator &mdash; Free and Open Source
+        </div>
+    </div>
+
+    <script>
+        const depIcons = {
+            'node': '⬢',
+            'python': '🐍',
+            'ffmpeg': '🎞️',
+            'edge-tts': '🗣️',
+            'node_modules': '📦',
+        };
+
+        let deps = [];
+        let isInstalling = false;
+
+        function renderDeps() {
+            const list = document.getElementById('depList');
+            list.innerHTML = deps.map(dep => {
+                const iconClass = dep._state || (dep.installed ? 'ok' : 'missing');
+                const statusClass = dep._state || (dep.installed ? 'ok' : 'missing');
+                const statusText = dep._statusText || (dep.installed ? (dep.version || 'Ready') : 'Not found');
+                const icon = dep._state === 'installing' ? '⏳' :
+                    dep._state === 'checking' ? '🔍' :
+                        dep.installed ? '✅' : '❌';
+
+                return `<div class="dep-item">
+                    <div class="dep-icon ${iconClass}">${icon}</div>
+                    <div class="dep-info">
+                        <div class="dep-name">${dep.label}</div>
+                        <div class="dep-status ${statusClass}">${statusText}</div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            updateButtons();
+        }
+
+        function updateButtons() {
+            const installBtn = document.getElementById('installBtn');
+            const launchBtn = document.getElementById('launchBtn');
+            const skipBtn = document.getElementById('skipBtn');
+            const allOk = deps.filter(d => d.required).every(d => d.installed);
+
+            if (allOk) {
+                installBtn.style.display = 'none';
+                launchBtn.style.display = '';
+                skipBtn.style.display = 'none';
+                document.getElementById('overallStatus').innerHTML = '<span class="status-badge all-good">✅ All dependencies ready</span>';
+            } else if (!isInstalling) {
+                installBtn.style.display = '';
+                installBtn.disabled = false;
+                launchBtn.style.display = 'none';
+                skipBtn.style.display = '';
+                const missing = deps.filter(d => d.required && !d.installed).length;
+                document.getElementById('overallStatus').innerHTML = `<span class="status-badge needs-setup">⚠️ ${missing} dependencies need setup</span>`;
+            }
+        }
+
+        async function checkDeps() {
+            deps = (await window.electronAPI.checkDependencies()).map(d => ({
+                ...d, _state: null, _statusText: null
+            }));
+            renderDeps();
+        }
+
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if (isInstalling) return;
+            isInstalling = true;
+
+            const installBtn = document.getElementById('installBtn');
+            installBtn.disabled = true;
+            installBtn.textContent = 'Installing...';
+
+            const progressSection = document.getElementById('progressSection');
+            progressSection.classList.add('visible');
+
+            // Mark missing deps as installing
+            deps.forEach(d => {
+                if (d.required && !d.installed) {
+                    d._state = 'installing';
+                    d._statusText = 'Waiting...';
+                }
+            });
+            renderDeps();
+
+            await window.electronAPI.installAllDependencies();
+
+            // Re-check after install
+            await checkDeps();
+            isInstalling = false;
+            progressSection.classList.remove('visible');
+        });
+
+        document.getElementById('launchBtn').addEventListener('click', () => {
+            window.electronAPI.removeAllListeners('install-progress');
+            window.electronAPI.removeAllListeners('setup-complete');
+            // Signal main process to proceed
+            const { ipcRenderer } = require('electron');
+            // Use a workaround since we're in preload context
+            window.close();
+        });
+
+        document.getElementById('skipBtn').addEventListener('click', () => {
+            window.close();
+        });
+
+        window.electronAPI.onInstallProgress((event, data) => {
+            const dep = deps.find(d => d.name === data.step);
+            if (dep) {
+                dep._state = 'installing';
+                dep._statusText = data.message;
+                renderDeps();
+            }
+            document.getElementById('progressLabel').textContent = data.message;
+            document.getElementById('progressBar').style.width = data.percent + '%';
+        });
+
+        window.electronAPI.onSetupComplete(async () => {
+            await checkDeps();
+            isInstalling = false;
+            document.getElementById('progressSection').classList.remove('visible');
+        });
+
+        // Initial check
+        checkDeps();
+    </script>
+</body>
+</html>

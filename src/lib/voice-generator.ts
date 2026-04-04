@@ -169,6 +169,32 @@ function edgeTtsCandidates(): EdgeTtsRuntime[] {
     });
   }
 
+  // Check bundled portable-python FIRST (for packaged Electron app)
+  const { resolveProjectPath } = require('../runtime');
+  const bundledPaths = [
+    path.join(resolveProjectPath('portable-python'), 'python.exe'),          // dev mode
+    path.join((process as any).resourcesPath || '', 'portable-python', 'python.exe'), // packaged
+  ];
+  for (const bundledPython of bundledPaths) {
+    if (fileExists(bundledPython)) {
+      // Direct edge-tts.exe in Scripts folder
+      const bundledEdgeTts = path.join(path.dirname(bundledPython), 'Scripts', 'edge-tts.exe');
+      if (fileExists(bundledEdgeTts)) {
+        pushCandidate(candidates, seen, {
+          command: bundledEdgeTts,
+          argsPrefix: [],
+          label: `bundled: ${bundledEdgeTts}`,
+        });
+      }
+      // Python module fallback
+      pushCandidate(candidates, seen, {
+        command: bundledPython,
+        argsPrefix: ['-m', 'edge_tts'],
+        label: `bundled: ${bundledPython} -m edge_tts`,
+      });
+    }
+  }
+
   pushCandidate(candidates, seen, { command: 'edge-tts', argsPrefix: [], label: 'edge-tts' });
 
   for (const pythonDir of windowsInstalledPythonDirs()) {

@@ -542,9 +542,17 @@ function html(title: string, body: string, options: HtmlOptions = {}, script = '
 
     return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)}</title><meta name="description" content="${escapeHtml(description)}"><meta name="keywords" content="${escapeHtml(keywords)}"><meta name="robots" content="${escapeHtml(robots)}"><meta name="theme-color" content="${BRAND_COLOR}"><meta name="generator" content="${PROJECT_NAME}"><meta property="og:site_name" content="${PROJECT_NAME}"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:type" content="${escapeHtml(ogType)}">${ogUrl}${imageMeta}<meta name="twitter:card" content="${twitterCard}"><meta name="twitter:title" content="${escapeHtml(title)}"><meta name="twitter:description" content="${escapeHtml(description)}"><link rel="alternate" type="text/plain" href="/llms.txt" title="LLMs summary">${canonical}${jsonLd}<style>
 :root{--shell:#f4ead9;--cream:#fff9ef;--surface:#fffdf8;--surface-soft:#fff7ec;--line:#e6d6be;--line-strong:#d9c3a8;--ink:#172033;--muted:#5c6677;--brand:${BRAND_COLOR};--brand-strong:#cf6b36;--accent:#1f3a56;--success:#2f7d5d;--shadow:0 24px 60px rgba(31,22,10,.08);--radius-xl:28px;--radius-lg:22px;--radius-md:16px}
-*{box-sizing:border-box}
-html{background:linear-gradient(180deg,#f8efe2 0%,#f5ebde 100%)}
-body{margin:0;font:16px/1.6 "Aptos","Trebuchet MS","Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at top left,rgba(212,125,55,.16),transparent 28%),radial-gradient(circle at top right,rgba(23,58,86,.12),transparent 28%),linear-gradient(180deg,#f8efe2 0%,#f3eadf 40%,#f8f5ef 100%);min-height:100vh}
+* { box-sizing: border-box; }
+html { background: linear-gradient(180deg, #f8efe2 0%, #f5ebde 100%); scroll-behavior: smooth; }
+body { margin: 0; font: 16px/1.6 "Aptos", "Trebuchet MS", "Segoe UI", sans-serif; color: var(--ink); background: radial-gradient(circle at top left, rgba(212, 125, 55, .16), transparent 28%), radial-gradient(circle at top right, rgba(23, 58, 86, .12), transparent 28%), linear-gradient(180deg, #f8efe2 0%, #f3eadf 40%, #f8f5ef 100%); min-height: 100vh; }
+.top-nav { background: rgba(255, 253, 248, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(230, 214, 190, 0.6); position: sticky; top: 0; z-index: 100; padding: 14px 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); }
+.nav-content { max-width: 1180px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+.nav-brand { font-family: "Georgia", "Times New Roman", serif; font-size: 1.25rem; font-weight: 700; color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: 8px; transition: opacity 0.2s ease; }
+.nav-brand:hover { opacity: 0.8; }
+.nav-links { display: flex; gap: 24px; align-items: center; }
+.nav-link { text-decoration: none; color: var(--muted); font-weight: 600; font-size: 0.95rem; transition: color 0.15s ease; }
+.nav-link:hover { color: var(--brand-strong); }
+.nav-badge { background: #fee2d5; color: #b74c1a; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 800; margin-left: 6px; }
 body::before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.12) 1px,transparent 1px);background-size:64px 64px;opacity:.16;pointer-events:none}
 main{max-width:1180px;margin:0 auto;padding:32px 20px 56px;position:relative}
 section{margin-bottom:22px}
@@ -646,7 +654,22 @@ textarea{min-height:250px;resize:vertical}
 .browser-item.disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:980px){.hero-grid,.layout-split,.watch-grid{grid-template-columns:1fr}main{padding:24px 16px 48px}}
 @media(max-width:640px){body{font-size:15px}.hero-surface,.panel{padding:18px;border-radius:22px}h1{font-size:2.15rem}.small-card{grid-template-columns:1fr}.script-toolbar,.panel-head,.info-row{align-items:flex-start}}
-</style></head><body><main>${body}</main>${script ? `<script>${script}</script>` : ''}</body></html>`;
+</style></head><body>
+<nav class="top-nav">
+  <div class="nav-content">
+    <a href="/" class="nav-brand">
+      <span style="background: linear-gradient(135deg, var(--brand), var(--brand-strong)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🎬</span>
+      Automated Video Gen
+    </a>
+    <div class="nav-links">
+      <a href="/" class="nav-link">Home</a>
+      <a href="/#workspace" class="nav-link">Workspace</a>
+      <a href="/#recent-videos" class="nav-link">Library</a>
+      <a href="https://github.com/itsPremkumar/Automated-Video-Generator" target="_blank" class="nav-link" style="display:flex;align-items:center;">GitHub <span class="nav-badge">v1.0</span></a>
+    </div>
+  </div>
+</nav>
+<main>${body}</main>${script ? `<script>${script}</script>` : ''}</body></html>`;
 
 }
 
@@ -1068,7 +1091,7 @@ function addAssetToGallery(data) {
 function jobPage(req: Request, jobId: string): string {
     return html(
         `Render Job ${jobId} | ${PROJECT_NAME}`,
-        `<section class="hero-surface"><div class="hero-grid"><div class="stack"><span class="eyebrow">Live Render Status</span><div><h1 id="title">Render in progress</h1><p id="message" class="lead small">This page refreshes automatically while the generator downloads assets, creates voiceover, and renders the final MP4.</p></div><div class="bar"><div id="progress"></div></div><div class="metric-grid"><div class="metric-card"><strong id="percent">0%</strong><span class="muted">overall progress</span></div><div class="metric-card"><strong id="status">pending</strong><span class="muted">current status</span></div><div class="metric-card"><strong>3 sec</strong><span class="muted">auto refresh interval</span></div></div></div><div class="highlight-box stack"><span class="eyebrow">Job Details</span><div class="row"><span class="status-chip ok">Watching live</span><span class="pill">${escapeHtml(jobId)}</span></div><p class="muted">Keep this tab open. When the job finishes, the watch page and MP4 download button will appear here automatically.</p><div id="actions" class="toolbar"></div><div id="error" class="status" hidden></div></div></div></section><section class="layout-split"><div class="panel"><span class="eyebrow">Pipeline</span><h2>What the app is doing now</h2><div class="timeline"><div class="timeline-step" data-step="queued"><span>1</span><div><strong>Queued</strong><p class="muted">The job has been accepted and is waiting to begin.</p></div></div><div class="timeline-step" data-step="assets"><span>2</span><div><strong>Assets and voiceover</strong><p class="muted">The generator prepares scenes, downloads stock footage, and creates narration.</p></div></div><div class="timeline-step" data-step="render"><span>3</span><div><strong>Final render</strong><p class="muted">Remotion assembles the scenes into a single MP4 file.</p></div></div><div class="timeline-step" data-step="ready"><span>4</span><div><strong>Ready to watch</strong><p class="muted">Your delivery page and download link are prepared.</p></div></div></div></div><div class="panel soft"><span class="eyebrow">While You Wait</span><h2>Helpful notes</h2><ul class="compact-list"><li>The longest step is usually stock download and video rendering.</li><li>You can leave this tab open instead of watching the terminal.</li><li>If a stock clip fails, the generator can use fallback video before falling back to an image.</li><li>When finished, you will get a watch page and a direct MP4 download button.</li></ul></div></section>`,
+        `<section class="hero-surface"><div class="hero-grid"><div class="stack"><span class="eyebrow">Live Render Status</span><div><h1 id="title">Render in progress</h1><p id="message" class="lead small">This page refreshes automatically while the generator downloads assets, creates voiceover, and renders the final MP4.</p></div><div class="bar"><div id="progress"></div></div><div class="metric-grid"><div class="metric-card"><strong id="percent">0%</strong><span class="muted">overall progress</span></div><div class="metric-card"><strong id="status">pending</strong><span class="muted">current status</span></div><div class="metric-card"><strong>3 sec</strong><span class="muted">auto refresh interval</span></div></div></div><div class="highlight-box stack"><span class="eyebrow">Job Details</span><div class="row"><span class="status-chip ok">Watching live</span><span class="pill">${escapeHtml(jobId)}</span></div><p id="wait-message" class="muted">Keep this tab open. When the job finishes, the final video and MP4 download button will appear here automatically.</p><div id="video-container" class="video-stage" hidden style="margin: 10px 0; padding: 0; box-shadow: none; background: transparent; border: 1px solid var(--line); overflow: hidden;"></div><div id="actions" class="toolbar"></div><div id="error" class="status" hidden></div></div></div></section><section class="layout-split"><div class="panel"><span class="eyebrow">Pipeline</span><h2>What the app is doing now</h2><div class="timeline"><div class="timeline-step" data-step="queued"><span>1</span><div><strong>Queued</strong><p class="muted">The job has been accepted and is waiting to begin.</p></div></div><div class="timeline-step" data-step="assets"><span>2</span><div><strong>Assets and voiceover</strong><p class="muted">The generator prepares scenes, downloads stock footage, and creates narration.</p></div></div><div class="timeline-step" data-step="render"><span>3</span><div><strong>Final render</strong><p class="muted">Remotion assembles the scenes into a single MP4 file.</p></div></div><div class="timeline-step" data-step="ready"><span>4</span><div><strong>Ready to watch</strong><p class="muted">Your delivery page and download link are prepared.</p></div></div></div></div><div class="panel soft"><span class="eyebrow">While You Wait</span><h2>Helpful notes</h2><ul class="compact-list"><li>The longest step is usually stock download and video rendering.</li><li>You can leave this tab open instead of watching the terminal.</li><li>If a stock clip fails, the generator can use fallback video before falling back to an image.</li><li>When finished, the video player and a direct MP4 download button will appear.</li></ul></div></section>`,
         {
             canonical: absoluteUrl(req, `/jobs/${encodeURIComponent(jobId)}`),
             description: 'Track a video rendering job in Automated Video Generator.',
@@ -1120,7 +1143,17 @@ async function refresh(){
         progress.style.width=Math.max(0,Math.min(100,Number(data.progress)||0))+'%';
         setStepState(mapStep(data));
         if(data.status==='completed'){
-            actions.innerHTML='<a class="button" href="'+data.watchUrl+'">Open Watch Page</a><a class="button secondary" href="'+data.downloadUrl+'">Download MP4</a><a class="button ghost" href="/">Back to Portal</a>';
+            const waitMessage = document.getElementById('wait-message');
+            if (waitMessage) waitMessage.hidden = true;
+            
+            const videoContainer = document.getElementById('video-container');
+            if (videoContainer && data.videoUrl) {
+                videoContainer.hidden = false;
+                const posterStr = (data.video && data.video.thumbnailUrl) ? 'poster="'+data.video.thumbnailUrl+'"' : '';
+                videoContainer.innerHTML = '<video class="video" controls playsinline preload="metadata" ' + posterStr + ' style="max-height: 350px; width: 100%; object-fit: contain; background: #000; border-radius: 12px;"><source src="' + data.videoUrl + '" type="video/mp4"></video>';
+            }
+            
+            actions.innerHTML='<a class="button" href="'+data.downloadUrl+'">Download MP4</a><a class="button secondary" href="'+data.watchUrl+'">Watch Page Overview</a><a class="button ghost" href="/">Back to Portal</a>';
             window.clearInterval(timer);
         }
         if(data.status==='failed'){
@@ -1612,11 +1645,33 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     res.status(500).json({ success: false, error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-    const url = `http://localhost:${PORT}`;
-    console.log(`Video Generator portal running on ${url}`);
-    
-    // Automatically open the browser
-    const start = process.platform === 'win32' ? 'start' : process.platform === 'darwin' ? 'open' : 'xdg-open';
-    exec(`${start} ${url}`);
-});
+// Export the Express app and a startServer function for Electron integration
+export { app as expressApp };
+
+export function startServer(port?: number): Promise<void> {
+    const listenPort = port || PORT;
+    return new Promise((resolve) => {
+        app.listen(listenPort, () => {
+            const url = `http://localhost:${listenPort}`;
+            console.log(`Video Generator portal running on ${url}`);
+            resolve();
+        });
+    });
+}
+
+// Auto-start when run directly or launched by Electron as a background process
+const isElectronMain = !!(process.versions as any).electron && !process.env.ELECTRON_BACKEND_SERVER;
+const isBackgroundWorker = !!process.env.ELECTRON_BACKEND_SERVER;
+
+if (!isElectronMain || isBackgroundWorker) {
+    app.listen(PORT, () => {
+        const url = `http://localhost:${PORT}`;
+        console.log(`Video Generator portal running on ${url}`);
+        
+        // Automatically open the browser if not running as a background worker
+        if (!isBackgroundWorker) {
+            const start = process.platform === 'win32' ? 'start' : process.platform === 'darwin' ? 'open' : 'xdg-open';
+            exec(`${start} ${url}`);
+        }
+    });
+}

@@ -59,6 +59,15 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
     console.log('╚════════════════════════════════════════════════════════════════╝');
     console.log(`\n🎥 [RENDER] Start time: ${new Date().toISOString()}`);
 
+    // Fix for Windows: Avoid spaces in system TEMP path (e.g. "PREM KUMAR")
+    // by pointing REMOTION_TMPDIR to a local project-relative folder.
+    const localTmpDir = resolveProjectPath('tmp', 'remotion');
+    if (!fs.existsSync(localTmpDir)) {
+        fs.mkdirSync(localTmpDir, { recursive: true });
+    }
+    process.env.REMOTION_TMPDIR = localTmpDir;
+    console.log(`🛠️  [RENDER] Using local temp directory: ${localTmpDir}`);
+
     let bundleLocation: string | undefined;
     let assetWorkspaceDir: string | undefined;
     let renderCompleted = false;
