@@ -1,0 +1,46 @@
+import { Router } from 'express';
+import * as ApiController from '../controllers/api.controller';
+import { RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS } from '../constants/config';
+
+// Simple rate limiter implementation same as in original server.ts
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+function rateLimiter(req: any, res: any, next: any) {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const now = Date.now();
+    const record = rateLimitMap.get(ip);
+
+    if (!record || now > record.resetTime) {
+        rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+        next();
+        return;
+    }
+
+    if (record.count >= RATE_LIMIT_MAX) {
+        const retryAfter = Math.ceil((record.resetTime - now) / 1000);
+        res.set('Retry-After', String(retryAfter));
+        res.status(429).json({ success: false, error: 'Too many requests', retryAfter });
+        return;
+    }
+
+    record.count += 1;
+    next();
+}
+
+const router = Router();
+
+router.get('/health', ApiController.healthCheck);
+router.get('/videos', ApiController.getVideos);
+router.get('/videos/:videoId', ApiController.getVideoById);
+router.get('/voices', ApiController.getVoices);
+router.get('/setup/status', ApiController.getStatus);
+router.post('/setup/env', ApiController.updateEnv);
+router.get('/jobs/:jobId', ApiController.getJobStatus);
+router.post('/jobs', rateLimiter, ApiController.startJobController);
+
+// File System APIs
+router.get('/fs/ls', ApiController.listFiles);
+router.post('/fs/pick', ApiController.pickFile);
+router.get('/fs/drives', ApiController.listDrives);
+router.get('/fs/home', ApiController.getHomeDirs);
+
+export default router;

@@ -259,13 +259,15 @@ function runEdgeTts(args: string[], timeout = 60000): string {
   });
 
   if (result.error) {
-    throw result.error;
+    const cmdStr = `${runtime.command} ${runtime.argsPrefix.join(' ')} ${args.join(' ')}`;
+    throw new Error(`Failed to spawn Edge-TTS: ${result.error.message}\nCommand: ${cmdStr}`);
   }
 
   if (result.status !== 0) {
     const stderr = result.stderr?.trim();
     const stdout = result.stdout?.trim();
-    throw new Error(stderr || stdout || `Edge-TTS exited with status ${result.status}`);
+    const cmdStr = `${runtime.command} ${runtime.argsPrefix.join(' ')} ${args.join(' ')}`;
+    throw new Error(`Edge-TTS failed (status ${result.status}).\nCommand: ${cmdStr}\nSTDERR: ${stderr}\nSTDOUT: ${stdout}`);
   }
 
   return result.stdout || '';

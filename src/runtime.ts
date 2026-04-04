@@ -85,6 +85,7 @@ export interface JobStatus {
     message: string;
     outputPath?: string;
     error?: string;
+    errorDetails?: string;
     startTime: number;
     endTime?: number;
 }
