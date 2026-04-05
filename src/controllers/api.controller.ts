@@ -12,6 +12,7 @@ import {
 } from '../services/video.service';
 import { getSetupStatus, updateEnvValues, normalizeEnvValue } from '../services/env.service';
 import { getDynamicVoices } from '../lib/voice-generator';
+import { generateScriptFromPrompt } from '../services/ai.service';
 import { createAndRunJob } from '../services/job.service';
 import { EDITABLE_ENV_KEYS, DEFAULT_FALLBACK_VIDEO } from '../constants/config';
 import { EditableEnvKey } from '../types/server.types';
@@ -288,4 +289,19 @@ export const getHomeDirs = (req: Request, res: Response) => {
             videos: path.join(home, 'Videos')
         }
     });
+};
+
+export const generateScriptAI = async (req: Request, res: Response) => {
+    try {
+        const { prompt } = req.body;
+        if (!prompt) {
+            res.status(400).json({ success: false, error: 'Prompt is required' });
+            return;
+        }
+        
+        const result = await generateScriptFromPrompt(prompt);
+        res.json({ success: true, data: result });
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+    }
 };

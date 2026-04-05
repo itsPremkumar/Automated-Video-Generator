@@ -1,7 +1,7 @@
 import { parseScript, validateScript } from './lib/script-parser';
 import { fetchVisualsForScene, downloadMedia, getVideoMetadata, invalidateCachedVisual } from './lib/visual-fetcher';
 import { generateVoiceovers, DEFAULT_VOICE_CONFIG, LANGUAGE_DEFAULTS } from './lib/voice-generator';
-import { getAudioDuration, splitAudioFile } from './lib/audio-processor';
+import { getAudioDuration, splitAudioFile, generateSilence, applyAutoDucking } from './lib/audio-processor';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logError, logInfo, resolveProjectPath } from './runtime';
@@ -332,16 +332,39 @@ export async function generateVideo(
         }
 
         // ══════════════════════════════════════════════════════════════════
-        // STEP 4.5: HANDLE BACKGROUND MUSIC
+        // STEP 4.5: HANDLE BACKGROUND MUSIC & AUTO-DUCKING
         // ══════════════════════════════════════════════════════════════════
         let resolvedMusicPath: string | undefined = undefined;
         if (backgroundMusic) {
             const musicInputPath = resolveProjectPath('input', 'music', backgroundMusic);
             if (fs.existsSync(musicInputPath)) {
                 // console.log(`🎵 [STEP 4.5] Found background music: ${backgroundMusic}`);
-                const targetPath = path.join(audioDir, backgroundMusic);
-                fs.copyFileSync(musicInputPath, targetPath);
-                resolvedMusicPath = toPublicRelativePath(targetPath);
+                onProgress?.('audio', 80, 'Applying auto-ducking to background music');
+                
+                const duckingVoicePaths: string[] = [];
+                for (let i = 0; i < parsed.scenes.length; i++) {
+                    const scene = parsed.scenes[i];
+                    const audioResult = audioFiles.get(scene.sceneNumber);
+                    const actualDuration = audioResult?.duration || scene.duration;
+                    
+                    if (audioResult && audioResult.path) {
+                        duckingVoicePaths.push(audioResult.path);
+                    } else {
+                        const silencePath = await generateSilence(actualDuration, audioDir, scene.sceneNumber);
+                        duckingVoicePaths.push(silencePath);
+                    }
+                }
+                
+                try {
+                    const duckedBgmPath = await applyAutoDucking(musicInputPath, duckingVoicePaths, audioDir);
+                    resolvedMusicPath = toPublicRelativePath(duckedBgmPath);
+                    logInfo(`[STEP 4.5] Auto-ducking applied successfully on track: ${backgroundMusic}`);
+                } catch (duckError: any) {
+                    logError(`[STEP 4.5] Auto-ducking failed, falling back to original music: ${duckError.message}`);
+                    const targetPath = path.join(audioDir, backgroundMusic);
+                    fs.copyFileSync(musicInputPath, targetPath);
+                    resolvedMusicPath = toPublicRelativePath(targetPath);
+                }
             } else {
                 // console.log(`⚠️ [STEP 4.5] Background music file NOT FOUND: ${musicInputPath}`);
             }

@@ -265,6 +265,14 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
                     </div>
                 </div>
 
+                <div class="field" style="background:rgba(16,185,129,0.1); padding:12px; border-radius:8px; border:1px solid rgba(16,185,129,0.2)">
+                    <label for="ai-prompt" style="color:#10b981">✨ Generate with Gemini AI</label>
+                    <div class="row" style="flex-wrap:nowrap; gap:8px">
+                        <input id="ai-prompt" placeholder="E.g. A short video about the history of space travel..." style="flex:1" onkeydown="if(event.key === 'Enter') { event.preventDefault(); document.getElementById('generate-ai').click(); }">
+                        <button type="button" id="generate-ai" class="secondary" style="padding:8px 16px; border-color:rgba(16,185,129,0.5); color:#10b981">Generate</button>
+                    </div>
+                </div>
+
                 <div class="field">
                     <label for="title">Video title</label>
                     <input id="title" value="${escapeHtml(defaultTitle)}" placeholder="How AI Is Changing Everyday Life" maxlength="${MAX_TITLE_LENGTH}" required>
@@ -526,6 +534,8 @@ const status        = document.getElementById('form-status');
 const setupForm     = document.getElementById('setup-form');
 const setupFeedback = document.getElementById('setup-feedback');
 const setupReadiness = document.getElementById('setup-readiness');
+const generateAiBtn = document.getElementById('generate-ai');
+const aiPromptInput = document.getElementById('ai-prompt');
 const fillSample    = document.getElementById('fill-sample');
 const fillHello     = document.getElementById('fill-hello');
 const voiceSelect   = document.getElementById('voice');
@@ -730,6 +740,44 @@ fillHello.addEventListener('click', () => {
     renderVoices(voiceSearch.value || '');
     updateScriptMetrics();
     window.scrollTo({ top: form.offsetTop - 20, behavior: 'smooth' });
+});
+
+// AI Script Generation
+generateAiBtn?.addEventListener('click', async () => {
+    const prompt = aiPromptInput.value.trim();
+    if (!prompt) return;
+
+    const originalText = generateAiBtn.textContent;
+    generateAiBtn.textContent = 'Generating...';
+    generateAiBtn.disabled = true;
+
+    try {
+        const res = await fetch('/api/ai/generate-script', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt })
+        });
+        const json = await res.json();
+        
+        if (!res.ok || !json.success) {
+            throw new Error(json.error || 'Failed to generate script');
+        }
+
+        titleField.value = json.data.title || '';
+        scriptField.value = json.data.script || '';
+        updateScriptMetrics();
+        setMessage(status, 'AI Script generated successfully. You can review and edit it below.', true);
+        window.scrollTo({ top: titleField.offsetTop - 80, behavior: 'smooth' });
+    } catch (err) {
+        let errMsg = err instanceof Error ? err.message : 'Unknown error';
+        if (errMsg.includes('GEMINI_API_KEY is not set')) {
+            errMsg = 'Gemini API Key missing. Please set it in the One-Time Setup above.';
+        }
+        setMessage(status, 'AI Generation Error: ' + errMsg, false);
+    } finally {
+        generateAiBtn.textContent = originalText;
+        generateAiBtn.disabled = false;
+    }
 });
 
 // ─── Setup Form Submission ──────────────────────────────────────────────────────

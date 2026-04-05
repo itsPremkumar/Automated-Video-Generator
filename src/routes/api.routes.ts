@@ -36,6 +36,7 @@ router.get('/setup/status', ApiController.getStatus);
 router.post('/setup/env', ApiController.updateEnv);
 router.get('/jobs/:jobId', ApiController.getJobStatus);
 router.post('/jobs', rateLimiter, ApiController.startJobController);
+router.post('/ai/generate-script', rateLimiter, ApiController.generateScriptAI);
 
 // File System APIs
 router.get('/fs/ls', ApiController.listFiles);
