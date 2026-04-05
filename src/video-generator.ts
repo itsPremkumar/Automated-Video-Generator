@@ -1,6 +1,7 @@
 import { parseScript, validateScript } from './lib/script-parser';
 import { fetchVisualsForScene, downloadMedia, getVideoMetadata, invalidateCachedVisual } from './lib/visual-fetcher';
 import { generateVoiceovers, DEFAULT_VOICE_CONFIG, LANGUAGE_DEFAULTS } from './lib/voice-generator';
+import { getAudioDuration, splitAudioFile } from './lib/audio-processor';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logError, logInfo, resolveProjectPath } from './runtime';
@@ -39,6 +40,8 @@ interface GenerationOptions {
     publicId?: string;
     /** Background Music */
     backgroundMusic?: string;
+    /** Personal Audio */
+    personalAudio?: string;
     musicVolume?: number;
     /** Language key for default voice mapping */
     language?: string;
@@ -47,7 +50,9 @@ interface GenerationOptions {
         color?: string;
         fontSize?: number;
         position?: 'top' | 'center' | 'bottom';
-        animation?: 'fade' | 'slide' | 'zoom' | 'typewriter';
+        animation?: 'fade' | 'slide' | 'zoom' | 'typewriter' | 'pop';
+        background?: 'none' | 'box' | 'glass';
+        glow?: boolean;
     };
 }
 
@@ -63,7 +68,7 @@ export async function generateVideo(
     outputDir: string = resolveProjectPath('output'),
     options: GenerationOptions = {}
 ): Promise<GenerationResult> {
-    const { onProgress, orientation = 'portrait', title, showText = true, defaultVideo = 'default.mp4', publicId, backgroundMusic, musicVolume, language, textConfig } = options;
+    const { onProgress, orientation = 'portrait', title, showText = true, defaultVideo = 'default.mp4', publicId, backgroundMusic, personalAudio, musicVolume, language, textConfig } = options;
     
     // Resolve voice: 1. explicit voice, 2. default for language, 3. global default
     let voice = options.voice;
@@ -302,12 +307,29 @@ export async function generateVideo(
 
         // console.log(`🎤 [STEP 4] Audio output directory: ${audioDir}`);
 
-        const voiceConfig = {
-            ...DEFAULT_VOICE_CONFIG,
-            voice: voice || DEFAULT_VOICE_CONFIG.voice
-        };
+        let audioFiles: Map<number, { path: string; duration: number }>;
 
-        const audioFiles = await generateVoiceovers(parsed.scenes, audioDir, voiceConfig);
+        if (personalAudio) {
+            onProgress?.('audio', 55, 'Processing personal audio recording');
+            const personalAudioPath = resolveProjectPath('input', 'music', personalAudio);
+            
+            if (fs.existsSync(personalAudioPath)) {
+                const totalDuration = await getAudioDuration(personalAudioPath);
+                const durationPerScene = totalDuration / parsed.scenes.length;
+                const durations = parsed.scenes.map(() => durationPerScene);
+                
+                audioFiles = await splitAudioFile(personalAudioPath, durations, audioDir);
+            } else {
+                throw new Error(`Personal audio file not found: ${personalAudio}`);
+            }
+        } else {
+            const voiceConfig = {
+                ...DEFAULT_VOICE_CONFIG,
+                voice: voice || DEFAULT_VOICE_CONFIG.voice
+            };
+
+            audioFiles = await generateVoiceovers(parsed.scenes, audioDir, voiceConfig);
+        }
 
         // ══════════════════════════════════════════════════════════════════
         // STEP 4.5: HANDLE BACKGROUND MUSIC

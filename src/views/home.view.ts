@@ -307,23 +307,47 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
                         </select>
                     </div>
                     <div class="field">
-                        <label for="language">Language</label>
-                        <select id="language">
-                            <option value="">Detect automatically</option>
-                            ${languageOptions}
+                        <label>Narrator Mode</label>
+                        <select id="narratorMode" onchange="document.getElementById('ai-voice-settings').style.display = this.value === 'ai' ? '' : 'none'; document.getElementById('personal-audio-settings').style.display = this.value === 'personal' ? '' : 'none';">
+                            <option value="ai">AI Voice</option>
+                            <option value="personal">Personal Audio</option>
                         </select>
                     </div>
-                    <div class="field">
-                        <label for="voice-search">Search voice</label>
-                        <input type="text" id="voice-search" class="voice-search" placeholder="Search voices...">
+
+                    <div id="ai-voice-settings" class="stack" style="gap:12px">
+                        <div class="field">
+                            <label for="language">Language</label>
+                            <select id="language">
+                                <option value="">Detect automatically</option>
+                                ${languageOptions}
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="voice-search">Search voice</label>
+                            <input type="text" id="voice-search" class="voice-search" placeholder="Search voices...">
+                        </div>
+                        <div class="field">
+                            <label for="voice">Voice override</label>
+                            <select id="voice">
+                                <option value="">Optional Override</option>
+                                ${voiceOptions}
+                            </select>
+                            <p id="voice-hint" class="field-help" style="font-size:11px"></p>
+                        </div>
                     </div>
-                    <div class="field">
-                        <label for="voice">Voice override</label>
-                        <select id="voice">
-                            <option value="">Optional Override</option>
-                            ${voiceOptions}
-                        </select>
-                        <p id="voice-hint" class="field-help" style="font-size:11px"></p>
+
+                    <div id="personal-audio-settings" class="stack" style="gap:12px; display:none">
+                        <div class="field">
+                            <label for="personalAudio">Audio Recording</label>
+                            <div class="row" style="flex-wrap:nowrap">
+                                <select id="personalAudio" style="font-size:13px">
+                                    <option value="">Select an audio file</option>
+                                    ${musicOptions}
+                                </select>
+                                <button type="button" class="secondary" onclick="openSystemBrowser('personalAudio')" style="padding:8px 12px;font-size:13px">Browse</button>
+                            </div>
+                            <p class="field-help">Your recording roughly matching the script length.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -364,6 +388,7 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
                                     <option value="slide">Slide Up</option>
                                     <option value="zoom">Zoom In</option>
                                     <option value="typewriter">Typewriter</option>
+                                    <option value="pop">Pop (Elastic)</option>
                                 </select>
                             </div>
                             <div class="field">
@@ -378,9 +403,21 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
                                 <label for="subtitle-color" style="font-size:13px; margin-bottom:6px; display:block">Color</label>
                                 <input id="subtitle-color" type="color" value="#ffffff" style="height:44px; padding:4px">
                             </div>
-                            <div class="field">
-                                <label for="subtitle-fontSize" style="font-size:13px; margin-bottom:6px; display:block">Font Size (px)</label>
                                 <input id="subtitle-fontSize" type="number" value="52" min="10" max="120">
+                            </div>
+                            <div class="field">
+                                <label for="subtitle-background" style="font-size:13px; margin-bottom:6px; display:block">Background Style</label>
+                                <select id="subtitle-background">
+                                    <option value="none">None</option>
+                                    <option value="box">Dark Box</option>
+                                    <option value="glass">Glassmorphism</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label class="toggle-row" for="subtitle-glow" style="margin-top:24px; padding:8px 12px; font-size:13px">
+                                    <input id="subtitle-glow" type="checkbox">
+                                    <div><strong>Glow Effect</strong></div>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -498,6 +535,8 @@ const langSelect    = document.getElementById('language');
 const scriptField   = document.getElementById('script');
 const titleField    = document.getElementById('title');
 const scriptMetrics = document.getElementById('script-metrics');
+const narratorMode  = document.getElementById('narratorMode');
+const personalAudioSelect = document.getElementById('personalAudio');
 let allVoices = {};
 
 // ─── Utility Functions ─────────────────────────────────────────────────────────
@@ -735,8 +774,9 @@ form.addEventListener('submit', async (e) => {
         title: document.getElementById('title').value,
         script: document.getElementById('script').value,
         orientation: document.getElementById('orientation').value,
-        language: document.getElementById('language').value,
-        voice: document.getElementById('voice').value || undefined,
+        language: document.getElementById('narratorMode').value === 'ai' ? document.getElementById('language').value : undefined,
+        voice: document.getElementById('narratorMode').value === 'ai' ? (document.getElementById('voice').value || undefined) : undefined,
+        personalAudio: document.getElementById('narratorMode').value === 'personal' ? document.getElementById('personalAudio').value : undefined,
         backgroundMusic: document.getElementById('backgroundMusic').value,
         defaultVideo: document.getElementById('defaultVideo').value,
         showText: document.getElementById('showText').checked,
@@ -744,7 +784,9 @@ form.addEventListener('submit', async (e) => {
             animation: document.getElementById('subtitle-animation').value,
             position: document.getElementById('subtitle-position').value,
             color: document.getElementById('subtitle-color').value,
-            fontSize: parseInt(document.getElementById('subtitle-fontSize').value) || 52
+            fontSize: parseInt(document.getElementById('subtitle-fontSize').value) || 52,
+            background: document.getElementById('subtitle-background').value,
+            glow: document.getElementById('subtitle-glow').checked
         }
     };
     try {
@@ -839,8 +881,8 @@ async function loadPath(path = '') {
 
         data.items.forEach(item => {
             const div = document.createElement('div');
-            const isSelectable = currentBrowserType === 'music'
-                ? item.ext === '.mp3'
+            const isSelectable = (currentBrowserType === 'music' || currentBrowserType === 'personalAudio')
+                ? (item.ext === '.mp3' || item.ext === '.wav' || item.ext === '.m4a')
                 : ['.mp4', '.mov', '.jpg', '.png', '.jpeg'].includes(item.ext);
 
             const isImage = ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(item.ext);
@@ -882,12 +924,17 @@ async function pickFile(path) {
         const json = await res.json();
         if (!json.success) throw new Error(json.error);
 
-        if (currentBrowserType === 'music') {
+        if (currentBrowserType === 'music' || currentBrowserType === 'personalAudio') {
             const opt = document.createElement('option');
             opt.value = json.data.filename;
             opt.textContent = json.data.filename;
-            musicSelect.appendChild(opt);
-            musicSelect.value = json.data.filename;
+            if (currentBrowserType === 'music') {
+                musicSelect.appendChild(opt);
+                musicSelect.value = json.data.filename;
+            } else {
+                personalAudioSelect.appendChild(opt);
+                personalAudioSelect.value = json.data.filename;
+            }
         } else {
             addAssetToGallery(json.data);
         }

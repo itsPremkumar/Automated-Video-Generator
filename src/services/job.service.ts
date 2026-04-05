@@ -18,6 +18,7 @@ export async function createAndRunJob(
         voice?: string;
         showText: boolean;
         backgroundMusic: string;
+        personalAudio?: string;
         defaultVideo?: string;
         textConfig?: {
             color?: string;
@@ -52,6 +53,7 @@ export async function createAndRunJob(
                 textConfig: options.textConfig,
                 defaultVideo: options.defaultVideo || DEFAULT_FALLBACK_VIDEO,
                 backgroundMusic: options.backgroundMusic,
+                personalAudio: options.personalAudio,
                 onProgress: (step: string, percent: number, message: string) => {
                     jobStore.set(jobId, {
                         status: 'processing',

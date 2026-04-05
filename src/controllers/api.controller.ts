@@ -86,7 +86,7 @@ export const getJobStatus = (req: Request, res: Response) => {
 };
 
 export const startJobController = async (req: Request, res: Response) => {
-    const { title, script, orientation, language, voice, backgroundMusic, defaultVideo, showText, textConfig } = req.body;
+    const { title, script, orientation, language, voice, backgroundMusic, defaultVideo, showText, textConfig, personalAudio } = req.body;
     
     const publicId = `${sanitizeFolderTitle(title) || 'video'}_${Date.now()}`;
     const jobId = `job_${Date.now()}_${title.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10) || 'video'}`;
@@ -96,6 +96,7 @@ export const startJobController = async (req: Request, res: Response) => {
         language,
         voice,
         backgroundMusic,
+        personalAudio,
         defaultVideo: defaultVideo || DEFAULT_FALLBACK_VIDEO,
         showText: showText !== false,
         textConfig: textConfig
@@ -161,7 +162,7 @@ export const pickFile = (req: Request, res: Response) => {
 
     try {
         const filename = path.basename(sourcePath);
-        const targetDir = type === 'music' 
+        const targetDir = (type === 'music' || type === 'personalAudio')
             ? resolveProjectPath('input', 'music') 
             : resolveProjectPath('input', 'input-assests');
         
@@ -177,8 +178,8 @@ export const pickFile = (req: Request, res: Response) => {
             data: { 
                 filename, 
                 targetPath,
-                assetUrl: `/assets/input/${type === 'music' ? 'music' : 'input-assests'}/${filename}`,
-                tag: type === 'music' ? filename : `[Visual: ${filename}]`
+                assetUrl: `/assets/input/${(type === 'music' || type === 'personalAudio') ? 'music' : 'input-assests'}/${filename}`,
+                tag: (type === 'music' || type === 'personalAudio') ? filename : `[Visual: ${filename}]`
             } 
         });
     } catch (error: any) {

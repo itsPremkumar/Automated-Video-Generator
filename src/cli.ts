@@ -24,7 +24,9 @@ interface VideoJob {
         color?: string;
         fontSize?: number;
         position?: 'top' | 'center' | 'bottom';
-        animation?: 'fade' | 'slide' | 'zoom' | 'typewriter';
+        animation?: 'fade' | 'slide' | 'zoom' | 'typewriter' | 'pop';
+        background?: 'none' | 'box' | 'glass';
+        glow?: boolean;
     };
 }
 
