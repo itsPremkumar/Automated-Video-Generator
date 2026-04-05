@@ -41,9 +41,13 @@ Thumbs.db
 .video-cache.json
 .mcp-jobs.json
 *.tmp
+*.bak
 tmp/
+temp/
+.cache/
 public/audio/
 public/visuals/
+**/desktop.ini
 
 # Electron Build Output
 dist-electron/
