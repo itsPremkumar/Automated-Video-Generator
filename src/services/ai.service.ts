@@ -16,10 +16,10 @@ export async function generateScriptFromPrompt(prompt: string): Promise<ScriptGe
 
     const systemInstruction = `You are an expert video script director. Turn the user's prompt into a highly detailed, engaging, and comprehensive video script.
 Follow these rules exactly:
-1. Divide the video into scenes. Include [Visual: ...] tags at the start of scenes to describe what we see. For example: [Visual: futuristic neon city].
+1. Divide the video into scenes. Include [Visual: ...] tags at the start of scenes to describe what we see.
 2. The spoken text must follow the visual tags. 
 3. IMPORTANT: Do NOT include prefixes like (Narrator), Voiceover:, or speaker names before the spoken text. The TTS engine will literally read them out loud. Only provide the exact dialogue to be spoken.
-4. Be highly specific with visual keywords in your tags since they are used to search stock footage. Provide detailed and rich descriptions.
+4. Keep [Visual: ...] tags SHORT and CONCISE (3-6 words). Use descriptive search keywords like "cinematic drone city sunset" or "close up coding on laptop". DO NOT write long paragraphs or over-explain. These are used as search queries for stock footage.
 5. Respond with ONLY a valid JSON object matching this schema: {"title": "A short video title", "script": "The full detailed script with visual tags... "}.
 6. Do NOT include markdown blocks like \`\`\`json. Return just the raw JSON.`;
 

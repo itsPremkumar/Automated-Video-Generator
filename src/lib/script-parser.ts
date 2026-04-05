@@ -67,7 +67,10 @@ function parseScriptLocally(script: string): ParsedScript {
         for (const line of lines) {
             // Split by periods/questions/exclamations followed by space or end (sentence boundaries)
             // But NOT punctuation in the middle of words (URLs, abbreviations)
-            const sentences = line.split(/(?<=[.?!])\s+/);
+            // Split by periods/questions/exclamations followed by space or end (sentence boundaries)
+            // But NOT punctuation in the middle of words (URLs, abbreviations)
+            // And NOT punctuation inside [Visual: ...] or other bracketed tags
+            const sentences = line.split(/(?<=[.?!])\s+(?![^\[]*\])/);
             for (const sentence of sentences) {
                 const trimmed = sentence.trim();
                 if (trimmed.length > 0) {
@@ -90,15 +93,15 @@ function parseScriptLocally(script: string): ParsedScript {
     for (const line of lines) {
         // console.log(`  📝 [SCENE ${scenes.length + 1}] Processing: "${line.substring(0, 50)}..."`);
 
-        const inlineVisualMatch = line.match(/\[Visual:?\s*(.*?)\]/i);
+        const inlineVisualMatch = line.match(/\[Visual:?\s*(.*?)\]/is);
         let visualCue = inlineVisualMatch?.[1]?.trim() || '';
         
-        const inlineTextMatch = line.match(/\[Text:?\s*(on|off)\]/i);
+        const inlineTextMatch = line.match(/\[Text:?\s*(on|off)\]/is);
         const sceneShowText = inlineTextMatch ? inlineTextMatch[1].toLowerCase() === 'on' : undefined;
 
         let cleanText = line
-            .replace(/\[Visual:?\s*.*?\]/gi, '')
-            .replace(/\[Text:?\s*.*?\]/gi, '')
+            .replace(/\[Visual:?\s*.*?\]/gis, '')
+            .replace(/\[Text:?\s*.*?\]/gis, '')
             .trim();
 
         if (!visualCue && pendingVisualCue) {
