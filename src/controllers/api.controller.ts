@@ -59,9 +59,13 @@ export const getStatus = (req: Request, res: Response) => {
 export const updateEnv = (req: Request, res: Response) => {
     try {
         const updates: Partial<Record<EditableEnvKey, string>> = {};
+        const body = req.body || {};
         for (const key of EDITABLE_ENV_KEYS) {
-            if (key in (req.body || {})) {
-                updates[key] = normalizeEnvValue(req.body?.[key]);
+            if (key in body) {
+                const value = normalizeEnvValue(body[key]);
+                if (value) {
+                    updates[key] = value;
+                }
             }
         }
         updateEnvValues(updates);
