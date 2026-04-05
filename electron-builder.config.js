@@ -26,6 +26,13 @@ module.exports = {
         'docs/**/*',
         'public/**/*',
         'bin/**/*',
+        '!input/input-assests/**/*',
+        '!input/music/**/*',
+        '!output/**/*',
+        '!.env',
+        '!.env.*',
+        '!**/*.log',
+        '!**/.DS_Store',
     ],
 
     // Extra resources bundled alongside the app (not inside asar)
@@ -36,7 +43,6 @@ module.exports = {
             filter: [
                 'package-lock.json',
                 'tsconfig.json',
-                '.env',
                 '.env.example',
                 'requirements.txt',
                 'portable-python/**/*',

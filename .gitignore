@@ -4,8 +4,11 @@ lib/
 
 # Build and Output
 dist/
+dist-electron/
+release/
 output/
 .remotion/
+*.remotion
 public/visuals/
 
 # Environment Variables
