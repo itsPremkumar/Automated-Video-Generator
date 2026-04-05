@@ -17,6 +17,8 @@ public/visuals/
 *.mp3
 *.wav
 *.log
+input/input-assests/
+input/music/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

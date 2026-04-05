@@ -207,6 +207,49 @@ export const listGalleryAssets = (req: Request, res: Response) => {
     }
 };
 
+export const viewFile = (req: Request, res: Response) => {
+    const filePath = String(req.query.path || '');
+    if (!filePath || !fs.existsSync(filePath)) {
+        res.status(404).send('File not found');
+        return;
+    }
+
+    const ext = path.extname(filePath).toLowerCase();
+    const mediaExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.mov', '.webm', '.ogg'];
+    
+    if (!mediaExtensions.includes(ext)) {
+        res.status(403).send('File type not allowed for preview');
+        return;
+    }
+
+    const stat = fs.statSync(filePath);
+    if (!stat.isFile()) {
+        res.status(400).send('Not a file');
+        return;
+    }
+
+    // Basic range support for video streaming preview
+    const range = req.headers.range;
+    if (range && (['.mp4', '.mov', '.webm', '.ogg'].includes(ext))) {
+        const parts = range.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
+        const chunksize = (end - start) + 1;
+        const file = fs.createReadStream(filePath, { start, end });
+        const head = {
+            'Content-Range': `bytes \${start}-\${end}/\${stat.size}`,
+            'Accept-Ranges': 'bytes',
+            'Content-Length': chunksize,
+            'Content-Type': (ext === '.mp4' || ext === '.mov') ? 'video/mp4' : (ext === '.webm' ? 'video/webm' : 'video/ogg'),
+        };
+        res.writeHead(206, head);
+        file.pipe(res);
+        return;
+    }
+
+    res.sendFile(filePath);
+};
+
 export const listDrives = (req: Request, res: Response) => {
     if (process.platform !== 'win32') {
         res.json({ success: true, data: ['/'] });

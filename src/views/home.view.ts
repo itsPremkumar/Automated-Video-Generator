@@ -807,9 +807,19 @@ async function loadPath(path = '') {
                 ? item.ext === '.mp3'
                 : ['.mp4', '.mov', '.jpg', '.png', '.jpeg'].includes(item.ext);
 
+            const isImage = ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(item.ext);
+            const isVideo = ['.mp4', '.mov', '.webm', '.ogg'].includes(item.ext);
+            const viewUrl = \`/api/fs/view?path=\${encodeURIComponent(item.path)}\`;
+
             div.className = 'browser-item' + (!item.isDir && !isSelectable ? ' disabled' : '');
             div.innerHTML = \`
-                <span class="browser-icon">\${item.isDir ? '📁' : (item.ext === '.mp4' || item.ext === '.mov' ? '🎬' : '🖼️')}</span>
+                <span class="browser-icon">
+                    \${isImage 
+                        ? \`<img src="\${viewUrl}" class="browser-preview">\` 
+                        : isVideo 
+                            ? \`<video src="\${viewUrl}" class="browser-preview" muted onmouseover="this.play()" onmouseout="this.pause();this.currentTime=0"></video>\`
+                            : (item.isDir ? '📁' : '📄')}
+                </span>
                 <span class="browser-name">\${item.name}</span>
                 <span class="browser-size">\${item.isDir ? '' : 'File'}</span>
             \`;

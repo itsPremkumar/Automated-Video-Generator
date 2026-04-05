@@ -638,7 +638,7 @@ textarea { min-height: 250px; resize: vertical; }
 
 .browser-item {
     display: grid;
-    grid-template-columns: 32px 1fr 100px;
+    grid-template-columns: 42px 1fr 100px;
     align-items: center;
     padding: 10px 14px;
     border-radius: 12px;
@@ -647,8 +647,14 @@ textarea { min-height: 250px; resize: vertical; }
 }
 .browser-item:hover    { background: #fff3e4; }
 .browser-item.disabled { opacity: .5; cursor: not-allowed; }
-
-.browser-icon { font-size: 18px; }
+.browser-icon { font-size: 18px; display: flex; align-items: center; justify-content: center; }
+.browser-preview {
+    width: 34px;
+    height: 34px;
+    object-fit: cover;
+    border-radius: 6px;
+    background: var(--surface-soft);
+}
 .browser-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .browser-size { font-size: 12px; color: var(--muted); text-align: right; }
 
