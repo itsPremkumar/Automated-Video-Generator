@@ -2,21 +2,42 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { format } from 'util';
 
-// Detect if running inside a packaged Electron app
-const isElectronPackaged = !!(process.versions as any).electron
-    && !(process.env as any).ELECTRON_IS_DEV
-    && (process as any).resourcesPath;
+// Detect if running inside a packaged Electron app.
+// When the server runs as a subprocess with ELECTRON_RUN_AS_NODE=1,
+// process.versions.electron and process.resourcesPath are stripped.
+// We fall back to the ELECTRON_BACKEND_SERVER env var set by electron-main.
+const isElectronPackaged = (
+    (!!(process.versions as any).electron && !(process.env as any).ELECTRON_IS_DEV && (process as any).resourcesPath)
+    || (process.env.ELECTRON_BACKEND_SERVER === '1' && !!process.env.ELECTRON_RESOURCES_PATH)
+);
+
+// The resources path: either the native Electron property or the env var from electron-main
+const resourcesPath: string = (process as any).resourcesPath
+    || process.env.ELECTRON_RESOURCES_PATH
+    || '';
 
 export const projectRoot = isElectronPackaged
-    ? path.join((process as any).resourcesPath, 'app')
+    ? (process.env.ELECTRON_APP_ROOT || path.join(resourcesPath, 'app'))
     : path.resolve(__dirname, '..');
 
 export function resolveProjectPath(...segments: string[]): string {
     return path.join(projectRoot, ...segments);
 }
 
+/**
+ * Resolve a path relative to the Electron resources directory.
+ * In packaged mode, this points to e.g. resources/app-bundle/portable-python
+ * In dev mode, this falls back to projectRoot.
+ */
+export function resolveResourcePath(...segments: string[]): string {
+    if (resourcesPath) {
+        return path.join(resourcesPath, ...segments);
+    }
+    return path.join(projectRoot, ...segments);
+}
+
 export function isElectron(): boolean {
-    return !!(process.versions as any).electron;
+    return !!(process.versions as any).electron || process.env.ELECTRON_BACKEND_SERVER === '1';
 }
 
 export function inMcpRuntime(): boolean {

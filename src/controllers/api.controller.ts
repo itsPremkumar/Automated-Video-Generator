@@ -15,13 +15,17 @@ import { getDynamicVoices } from '../lib/voice-generator';
 import { createAndRunJob } from '../services/job.service';
 import { EDITABLE_ENV_KEYS, DEFAULT_FALLBACK_VIDEO } from '../constants/config';
 import { EditableEnvKey } from '../types/server.types';
+import { runHealthCheck } from '../services/health.service';
 
 export const healthCheck = (req: Request, res: Response) => {
+    const health = runHealthCheck();
     res.json({ 
-        status: 'ok', 
+        status: health.overall, 
         service: 'video-generator', 
         publishedVideos: listVideos(req).length, 
-        jobsTracked: jobStore.all().length 
+        jobsTracked: jobStore.all().length,
+        dependencies: health.checks,
+        environment: health.environment,
     });
 };
 

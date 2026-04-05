@@ -169,14 +169,24 @@ function edgeTtsCandidates(): EdgeTtsRuntime[] {
     });
   }
 
-  // Check bundled portable-python FIRST (for packaged Electron app)
-  const { resolveProjectPath } = require('../runtime');
+  // Check bundled portable-python in ALL possible locations (for packaged Electron app)
+  const { resolveProjectPath, resolveResourcePath } = require('../runtime');
   const bundledPaths = [
-    path.join(resolveProjectPath('portable-python'), 'python.exe'),          // dev mode
-    path.join((process as any).resourcesPath || '', 'portable-python', 'python.exe'), // packaged
+    resolveProjectPath('portable-python', 'python.exe'),                          // dev mode: projectRoot/portable-python/
+    resolveResourcePath('app-bundle', 'portable-python', 'python.exe'),           // packaged: resources/app-bundle/portable-python/
+    resolveResourcePath('portable-python', 'python.exe'),                         // legacy fallback: resources/portable-python/
+    path.join((process as any).resourcesPath || '', 'app-bundle', 'portable-python', 'python.exe'), // direct native path
+    path.join((process as any).resourcesPath || '', 'portable-python', 'python.exe'),               // direct native legacy
   ];
+
+  // Deduplicate and check each candidate
+  const checkedPythonPaths = new Set<string>();
   for (const bundledPython of bundledPaths) {
+    if (!bundledPython || checkedPythonPaths.has(bundledPython)) continue;
+    checkedPythonPaths.add(bundledPython);
+
     if (fileExists(bundledPython)) {
+      console.log(`[VOICE-GEN] Found bundled Python at: ${bundledPython}`);
       // Direct edge-tts.exe in Scripts folder
       const bundledEdgeTts = path.join(path.dirname(bundledPython), 'Scripts', 'edge-tts.exe');
       if (fileExists(bundledEdgeTts)) {
@@ -229,7 +239,10 @@ function resolveEdgeTtsRuntime(): EdgeTtsRuntime | null {
     return resolvedEdgeTtsRuntime;
   }
 
-  for (const candidate of edgeTtsCandidates()) {
+  const allCandidates = edgeTtsCandidates();
+  const diagnostics: string[] = [];
+
+  for (const candidate of allCandidates) {
     const probe = spawnSync(candidate.command, [...candidate.argsPrefix, '--help'], {
       encoding: 'utf-8',
       stdio: 'pipe',
@@ -237,10 +250,31 @@ function resolveEdgeTtsRuntime(): EdgeTtsRuntime | null {
     });
 
     if (probe.status === 0) {
+      console.log(`[VOICE-GEN] Resolved edge-tts runtime: ${candidate.label}`);
       resolvedEdgeTtsRuntime = candidate;
       return candidate;
     }
+
+    // Collect diagnostic info for failure reporting
+    const reason = probe.error
+      ? `spawn error: ${probe.error.message}`
+      : `exit code ${probe.status}`;
+    diagnostics.push(`  ✗ ${candidate.label} → ${reason}`);
   }
+
+  // Log all diagnostic info so it shows up in error details
+  console.error('[VOICE-GEN] ═══════ EDGE-TTS RESOLUTION FAILED ═══════');
+  console.error('[VOICE-GEN] No working edge-tts runtime found.');
+  console.error('[VOICE-GEN] Candidates tried:');
+  for (const line of diagnostics) {
+    console.error(`[VOICE-GEN] ${line}`);
+  }
+  console.error(`[VOICE-GEN] ELECTRON_BACKEND_SERVER=${process.env.ELECTRON_BACKEND_SERVER || 'unset'}`);
+  console.error(`[VOICE-GEN] ELECTRON_RESOURCES_PATH=${process.env.ELECTRON_RESOURCES_PATH || 'unset'}`);
+  console.error(`[VOICE-GEN] process.resourcesPath=${(process as any).resourcesPath || 'unset'}`);
+  console.error(`[VOICE-GEN] __dirname=${__dirname}`);
+  console.error(`[VOICE-GEN] cwd=${process.cwd()}`);
+  console.error('[VOICE-GEN] ═══════════════════════════════════════════');
 
   return null;
 }

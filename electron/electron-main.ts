@@ -354,6 +354,8 @@ function startServer(): Promise<void> {
             PORT: String(PORT),
             ELECTRON_RUN_AS_NODE: '1', // Crucial: forces Electron to act like Node.js
             ELECTRON_BACKEND_SERVER: '1', // Tells server.ts to auto-start
+            ELECTRON_RESOURCES_PATH: process.resourcesPath || '', // Pass resources path so subprocess can find bundled portable-python
+            ELECTRON_APP_ROOT: appRoot, // Pass app root for reliable path resolution
         };
 
         serverProcess = spawn(cmd, args, {
@@ -570,10 +572,91 @@ function registerIpcHandlers() {
 
 // ─── App Lifecycle ───────────────────────────────────────────────────────────
 
+/**
+ * Pre-flight check: verify the bundled portable-python is functional.
+ * If the bundled Python can't run, check if system Python + edge-tts exists.
+ * Returns diagnostic info if everything fails.
+ */
+function verifyPortablePython(): { ok: boolean; detail: string } {
+    const resourcesDir = process.resourcesPath || '';
+    const candidatePaths = [
+        path.join(appRoot, 'portable-python', 'python.exe'),                          // dev mode
+        path.join(resourcesDir, 'app-bundle', 'portable-python', 'python.exe'),       // packaged
+        path.join(resourcesDir, 'portable-python', 'python.exe'),                     // legacy
+    ];
+
+    for (const pythonPath of candidatePaths) {
+        if (!fs.existsSync(pythonPath)) continue;
+
+        // Check python.exe works
+        const pyResult = runQuiet(`"${pythonPath}" --version`);
+        if (!pyResult) continue;
+
+        // Check edge-tts is installed
+        const edgeTtsExe = path.join(path.dirname(pythonPath), 'Scripts', 'edge-tts.exe');
+        if (fs.existsSync(edgeTtsExe)) {
+            return { ok: true, detail: `Bundled edge-tts found at: ${edgeTtsExe}` };
+        }
+
+        const moduleCheck = runQuiet(`"${pythonPath}" -m edge_tts --help`);
+        if (moduleCheck) {
+            return { ok: true, detail: `Bundled Python edge_tts module at: ${pythonPath}` };
+        }
+
+        return { ok: false, detail: `Python found at ${pythonPath} but edge-tts is not installed in it.` };
+    }
+
+    // Check system Python as fallback
+    const systemPython = findPythonExecutable();
+    if (systemPython) {
+        const sysCheck = runQuiet(`"${systemPython}" -m edge_tts --help`);
+        if (sysCheck) {
+            return { ok: true, detail: `System edge-tts via: ${systemPython}` };
+        }
+    }
+
+    // Check edge-tts on PATH
+    const pathCheck = runQuiet('edge-tts --help');
+    if (pathCheck) {
+        return { ok: true, detail: 'edge-tts found on system PATH' };
+    }
+
+    const checkedList = candidatePaths.map(p => `  - ${p} (${fs.existsSync(p) ? 'exists but broken' : 'not found'})`).join('\n');
+    return {
+        ok: false,
+        detail: `No working edge-tts found.\n\nPaths checked:\n${checkedList}\n\nSystem Python: ${systemPython || 'not found'}\nresourcesPath: ${resourcesDir || 'not set'}`,
+    };
+}
+
 async function launchApp() {
     registerIpcHandlers();
     
-    // We bundle Python, Node, FFmpeg, Edge-TTS so we no longer need the setup wizard
+    // Verify bundled Python + edge-tts before starting
+    const pythonCheck = verifyPortablePython();
+    if (!pythonCheck.ok) {
+        console.warn('[Electron] Portable Python check failed:', pythonCheck.detail);
+        // Show setup wizard so user can install dependencies
+        const response = dialog.showMessageBoxSync({
+            type: 'warning',
+            title: 'Edge-TTS Voice Engine Not Found',
+            message: 'The bundled voice engine (edge-tts) could not be verified.\n\nThe app will still launch, but video generation may fail until this is resolved.',
+            detail: pythonCheck.detail,
+            buttons: ['Launch Anyway', 'Install Dependencies', 'Quit'],
+            defaultId: 0,
+        });
+
+        if (response === 2) {
+            app.quit();
+            return;
+        }
+
+        if (response === 1) {
+            // Show setup wizard
+            createSetupWindow();
+            return;
+        }
+    }
+
     await startServerAndShowPortal();
 }
 
