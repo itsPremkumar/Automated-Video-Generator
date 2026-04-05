@@ -42,5 +42,6 @@ router.get('/fs/ls', ApiController.listFiles);
 router.post('/fs/pick', ApiController.pickFile);
 router.get('/fs/drives', ApiController.listDrives);
 router.get('/fs/home', ApiController.getHomeDirs);
+router.get('/fs/assets', ApiController.listGalleryAssets);
 
 export default router;

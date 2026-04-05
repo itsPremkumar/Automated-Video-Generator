@@ -4,6 +4,8 @@ import viewRoutes from './routes/view.routes';
 import fileRoutes from './routes/file.routes';
 import * as ApiController from './controllers/api.controller';
 import { RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS } from './constants/config';
+import { resolveProjectPath } from './runtime';
+
 
 // Rate Limiter
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -69,8 +71,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 
+// Assets
+app.use('/assets/input', express.static(resolveProjectPath('input')));
+
 // Routes
 app.post('/generate-video', rateLimiter, ApiController.startJobController);
+
 app.use('/api', apiRoutes);
 app.use(fileRoutes);
 app.use(viewRoutes);

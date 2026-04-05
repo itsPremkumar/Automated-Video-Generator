@@ -732,6 +732,7 @@ form.addEventListener('submit', async (e) => {
 updateScriptMetrics();
 loadSetupStatus();
 loadAllVoices();
+loadGalleryAssets();
 
 // ─── File Browser Modal Logic ───────────────────────────────────────────────────
 
@@ -851,9 +852,11 @@ async function pickFile(path) {
 }
 
 function addAssetToGallery(data) {
+    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(data.filename);
     const div = document.createElement('div');
     div.className = 'asset-item';
     div.innerHTML = \`
+        \${isImage ? \`<img src="\${data.assetUrl}" class="asset-preview" alt="\${data.filename}">\` : ''}
         <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\${data.filename}</div>
         <div class="tag-copy" title="Click to insert into script">\${data.tag}</div>
     \`;
@@ -866,6 +869,18 @@ function addAssetToGallery(data) {
         script.focus();
     };
     assetGallery.appendChild(div);
+}
+
+async function loadGalleryAssets() {
+    try {
+        const res = await fetch('/api/fs/assets');
+        const json = await res.json();
+        if (json.success) {
+            json.data.forEach(addAssetToGallery);
+        }
+    } catch (e) {
+        console.error('Failed to load gallery assets', e);
+    }
 }
 `;
 

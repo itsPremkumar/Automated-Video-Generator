@@ -176,9 +176,32 @@ export const pickFile = (req: Request, res: Response) => {
             data: { 
                 filename, 
                 targetPath,
+                assetUrl: `/assets/input/${type === 'music' ? 'music' : 'input-assests'}/${filename}`,
                 tag: type === 'music' ? filename : `[Visual: ${filename}]`
             } 
         });
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+export const listGalleryAssets = (req: Request, res: Response) => {
+    try {
+        const assetsDir = resolveProjectPath('input', 'input-assests');
+        if (!fs.existsSync(assetsDir)) {
+            res.json({ success: true, data: [] });
+            return;
+        }
+
+        const items = fs.readdirSync(assetsDir, { withFileTypes: true })
+            .filter(item => !item.isDirectory())
+            .map(item => ({
+                filename: item.name,
+                assetUrl: `/assets/input/input-assests/${item.name}`,
+                tag: `[Visual: ${item.name}]`
+            }));
+
+        res.json({ success: true, data: items });
     } catch (error: any) {
         res.status(500).json({ success: false, error: error.message });
     }

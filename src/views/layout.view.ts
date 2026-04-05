@@ -678,6 +678,20 @@ textarea { min-height: 250px; resize: vertical; }
     background: #fff;
     position: relative;
     text-align: center;
+    transition: transform .16s ease, border-color .16s ease;
+}
+.asset-item:hover {
+    transform: translateY(-2px);
+    border-color: var(--brand);
+}
+.asset-preview {
+    width: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: var(--surface-soft);
+    display: block;
 }
 .asset-item .tag-copy {
     font-size: 11px;
