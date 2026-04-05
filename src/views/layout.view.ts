@@ -74,9 +74,12 @@ p{margin:0 0 10px}
 .panel{padding:22px}
 .panel.soft{background:rgba(255,247,236,.94)}
 .panel.tint{background:linear-gradient(135deg,rgba(255,248,238,.98),rgba(243,235,225,.95))}
-.hero-grid,.layout-split,.watch-grid,.cards,.metric-grid,.field-grid,.status-board,.feature-list,.recent-grid{display:grid;gap:14px}
+.hero-grid,.layout-split,.watch-grid,.cards,.metric-grid,.field-grid,.status-board,.feature-list,.recent-grid,.studio-grid{display:grid;gap:14px}
 .hero-grid{grid-template-columns:minmax(0,1.45fr) minmax(320px,.95fr);align-items:start}
 .layout-split{grid-template-columns:minmax(0,1.35fr) minmax(300px,.9fr)}
+.studio-grid{grid-template-columns:1.2fr 1fr 1fr;align-items:start}
+@media(max-width:1100px){.studio-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:768px){.studio-grid{grid-template-columns:1fr}}
 .watch-grid{grid-template-columns:minmax(0,1.5fr) minmax(320px,.8fr);align-items:start}
 .cards{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
 .metric-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
