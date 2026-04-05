@@ -351,9 +351,39 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
                         <input id="defaultVideo" value="${escapeHtml(DEFAULT_FALLBACK_VIDEO)}" placeholder="Fallback asset">
                     </div>
                     <label class="toggle-row" for="showText" style="padding:10px 12px">
-                        <input id="showText" type="checkbox" checked>
+                        <input id="showText" type="checkbox" checked onchange="document.getElementById('subtitle-config').style.display = this.checked ? '' : 'none'">
                         <div><strong>Show subtitles</strong></div>
                     </label>
+
+                    <div id="subtitle-config" class="panel soft" style="gap:12px; padding:16px; margin: 4px 0 12px;">
+                        <div class="field-grid two-up" style="gap:16px">
+                            <div class="field">
+                                <label for="subtitle-animation" style="font-size:13px; margin-bottom:6px; display:block">Animation</label>
+                                <select id="subtitle-animation">
+                                    <option value="fade">Fade</option>
+                                    <option value="slide">Slide Up</option>
+                                    <option value="zoom">Zoom In</option>
+                                    <option value="typewriter">Typewriter</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="subtitle-position" style="font-size:13px; margin-bottom:6px; display:block">Position</label>
+                                <select id="subtitle-position">
+                                    <option value="bottom">Bottom</option>
+                                    <option value="center">Center</option>
+                                    <option value="top">Top</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="subtitle-color" style="font-size:13px; margin-bottom:6px; display:block">Color</label>
+                                <input id="subtitle-color" type="color" value="#ffffff" style="height:44px; padding:4px">
+                            </div>
+                            <div class="field">
+                                <label for="subtitle-fontSize" style="font-size:13px; margin-bottom:6px; display:block">Font Size (px)</label>
+                                <input id="subtitle-fontSize" type="number" value="52" min="10" max="120">
+                            </div>
+                        </div>
+                    </div>
                     <div class="stack" style="margin-top:4px">
                         <div class="row" style="justify-content:space-between;align-items:center">
                             <strong style="font-size:14px">Local Media</strong>
@@ -709,7 +739,13 @@ form.addEventListener('submit', async (e) => {
         voice: document.getElementById('voice').value || undefined,
         backgroundMusic: document.getElementById('backgroundMusic').value,
         defaultVideo: document.getElementById('defaultVideo').value,
-        showText: document.getElementById('showText').checked
+        showText: document.getElementById('showText').checked,
+        textConfig: {
+            animation: document.getElementById('subtitle-animation').value,
+            position: document.getElementById('subtitle-position').value,
+            color: document.getElementById('subtitle-color').value,
+            fontSize: parseInt(document.getElementById('subtitle-fontSize').value) || 52
+        }
     };
     try {
         const res = await fetch('/generate-video', {

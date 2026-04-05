@@ -12,6 +12,7 @@ import {
     interpolate,
     Easing,
 } from 'remotion';
+import { SubtitleOverlay, TextConfig } from './SubtitleOverlay';
 
 interface Scene {
     sceneNumber: number;
@@ -29,6 +30,7 @@ interface Scene {
         videoTrimAfterFrames?: number;
     } | null;
     audioPath?: string;
+    showText?: boolean;
 }
 
 interface VideoData {
@@ -36,6 +38,7 @@ interface VideoData {
     totalDuration: number;
     style: string;
     showText?: boolean;
+    textConfig?: TextConfig;
     backgroundMusic?: string;
     musicVolume?: number;
 }
@@ -123,6 +126,7 @@ export const MainVideo: React.FC<{ sceneData: VideoData }> = ({
                             scene={scene}
                             durationInFrames={sceneDurationInFrames}
                             showText={videoData.showText !== false}
+                            textConfig={videoData.textConfig}
                         />
                         {scene.audioPath && scene.audioPath.endsWith('.mp3') && (
                             (() => {
@@ -149,9 +153,10 @@ interface SceneProps {
     scene: Scene;
     durationInFrames: number;
     showText?: boolean;
+    textConfig?: TextConfig;
 }
 
-const SceneComponent: React.FC<SceneProps> = ({ scene, durationInFrames, showText = true }) => {
+const SceneComponent: React.FC<SceneProps> = ({ scene, durationInFrames, showText = true, textConfig }) => {
     // console.log(`SceneComponent: Rendered scene ${scene.sceneNumber}`, { scene, durationInFrames });
     const frame = useCurrentFrame();
     const { fps } = useVideoConfig();
@@ -360,43 +365,13 @@ const SceneComponent: React.FC<SceneProps> = ({ scene, durationInFrames, showTex
             )}
 
             {/* Text Overlay */}
-            {showText && (
-                <div
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        padding: 40,
-                    }}
-                >
-                    <div
-                        style={{
-                            textAlign: 'center',
-                            color: '#fff',
-                            maxWidth: '85%',
-                            opacity: combinedTextOpacity,
-                            transform: `translateY(${textSlide}px)`,
-                        }}
-                    >
-                        <h1
-                            style={{
-                                fontSize: 52,
-                                fontWeight: 700,
-                                lineHeight: 1.4,
-                                textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 4px 40px rgba(0,0,0,0.5)',
-                                letterSpacing: '-0.5px',
-                                fontFamily: 'system-ui, -apple-system, sans-serif',
-                            }}
-                        >
-                            {scene.voiceoverText}
-                        </h1>
-                    </div>
-                </div>
+            {(scene.showText !== undefined ? scene.showText : showText) && (
+                <SubtitleOverlay
+                    text={scene.voiceoverText}
+                    config={textConfig}
+                    durationInFrames={durationInFrames}
+                    delayInFrames={FADE_DURATION * 0.5}
+                />
             )}
         </AbsoluteFill>
     );

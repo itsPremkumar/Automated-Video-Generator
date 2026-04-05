@@ -86,7 +86,7 @@ export const getJobStatus = (req: Request, res: Response) => {
 };
 
 export const startJobController = async (req: Request, res: Response) => {
-    const { title, script, orientation, language, voice, backgroundMusic, defaultVideo, showText } = req.body;
+    const { title, script, orientation, language, voice, backgroundMusic, defaultVideo, showText, textConfig } = req.body;
     
     const publicId = `${sanitizeFolderTitle(title) || 'video'}_${Date.now()}`;
     const jobId = `job_${Date.now()}_${title.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10) || 'video'}`;
@@ -97,7 +97,8 @@ export const startJobController = async (req: Request, res: Response) => {
         voice,
         backgroundMusic,
         defaultVideo: defaultVideo || DEFAULT_FALLBACK_VIDEO,
-        showText: showText !== false
+        showText: showText !== false,
+        textConfig: textConfig
     });
 
     res.status(202).json({

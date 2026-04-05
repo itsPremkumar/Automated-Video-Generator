@@ -41,6 +41,12 @@ interface SceneData {
     orientation?: 'portrait' | 'landscape';
     title?: string;
     showText?: boolean;
+    textConfig?: {
+        color?: string;
+        fontSize?: number;
+        position?: 'top' | 'center' | 'bottom';
+        animation?: 'fade' | 'slide' | 'zoom' | 'typewriter';
+    };
     backgroundMusic?: string;
     musicVolume?: number;
     assetNamespace?: string;
@@ -161,6 +167,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                     isFirstScene: true,
                     isLastScene: false,
                     showText: sceneData.showText !== false,
+                    textConfig: sceneData.textConfig,
                     backgroundMusic: sceneData.backgroundMusic,
                     musicVolume: sceneData.musicVolume,
                     globalStartFrame: 0,
@@ -181,6 +188,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                     isFirstScene: true,
                     isLastScene: false,
                     showText: sceneData.showText !== false,
+                    textConfig: sceneData.textConfig,
                     backgroundMusic: sceneData.backgroundMusic,
                     musicVolume: sceneData.musicVolume,
                     globalStartFrame: 0,
@@ -268,6 +276,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                         isFirstScene,
                         isLastScene,
                         showText: sceneData.showText !== false,
+                        textConfig: sceneData.textConfig,
                         backgroundMusic: sceneData.backgroundMusic,
                         musicVolume: sceneData.musicVolume,
                         globalStartFrame,
@@ -290,6 +299,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                         isFirstScene,
                         isLastScene,
                         showText: sceneData.showText !== false,
+                        textConfig: sceneData.textConfig,
                         backgroundMusic: sceneData.backgroundMusic,
                         musicVolume: sceneData.musicVolume,
                         globalStartFrame,

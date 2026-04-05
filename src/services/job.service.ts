@@ -19,6 +19,12 @@ export async function createAndRunJob(
         showText: boolean;
         backgroundMusic: string;
         defaultVideo?: string;
+        textConfig?: {
+            color?: string;
+            fontSize?: number;
+            position?: 'top' | 'center' | 'bottom';
+            animation?: 'fade' | 'slide' | 'zoom' | 'typewriter';
+        };
     }
 ) {
     const outputDir = resolveProjectPath('output', publicId);
@@ -43,6 +49,7 @@ export async function createAndRunJob(
                 language: options.language,
                 voice: options.voice,
                 showText: options.showText,
+                textConfig: options.textConfig,
                 defaultVideo: options.defaultVideo || DEFAULT_FALLBACK_VIDEO,
                 backgroundMusic: options.backgroundMusic,
                 onProgress: (step: string, percent: number, message: string) => {

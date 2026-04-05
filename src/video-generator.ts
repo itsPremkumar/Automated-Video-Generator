@@ -42,6 +42,13 @@ interface GenerationOptions {
     musicVolume?: number;
     /** Language key for default voice mapping */
     language?: string;
+    /** Text configuration */
+    textConfig?: {
+        color?: string;
+        fontSize?: number;
+        position?: 'top' | 'center' | 'bottom';
+        animation?: 'fade' | 'slide' | 'zoom' | 'typewriter';
+    };
 }
 
 
@@ -56,7 +63,7 @@ export async function generateVideo(
     outputDir: string = resolveProjectPath('output'),
     options: GenerationOptions = {}
 ): Promise<GenerationResult> {
-    const { onProgress, orientation = 'portrait', title, showText = true, defaultVideo = 'default.mp4', publicId, backgroundMusic, musicVolume, language } = options;
+    const { onProgress, orientation = 'portrait', title, showText = true, defaultVideo = 'default.mp4', publicId, backgroundMusic, musicVolume, language, textConfig } = options;
     
     // Resolve voice: 1. explicit voice, 2. default for language, 3. global default
     let voice = options.voice;
@@ -353,6 +360,7 @@ export async function generateVideo(
             orientation,
             title,
             showText,
+            textConfig,
             backgroundMusic: resolvedMusicPath,
             musicVolume: typeof musicVolume === 'number' ? musicVolume : undefined,
             assetNamespace: workspace.publicNamespace,

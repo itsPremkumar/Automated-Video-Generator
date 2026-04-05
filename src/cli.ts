@@ -20,6 +20,12 @@ interface VideoJob {
     backgroundMusic?: string;
     musicVolume?: number;
     language?: string;
+    textConfig?: {
+        color?: string;
+        fontSize?: number;
+        position?: 'top' | 'center' | 'bottom';
+        animation?: 'fade' | 'slide' | 'zoom' | 'typewriter';
+    };
 }
 
 
@@ -161,7 +167,8 @@ async function main() {
                 showText: job.showText !== false,
                 defaultVideo: job.defaultVideo,
                 backgroundMusic: job.backgroundMusic || globalMusic,
-                musicVolume: job.musicVolume
+                musicVolume: job.musicVolume,
+                textConfig: job.textConfig
             });
 
 

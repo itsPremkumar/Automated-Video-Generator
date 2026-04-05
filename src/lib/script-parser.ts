@@ -8,6 +8,7 @@ export interface Scene {
     voiceoverText: string;
     searchKeywords: string[];
     localAsset?: string;
+    showText?: boolean;
 }
 
 export interface ParsedScript {
@@ -91,7 +92,14 @@ function parseScriptLocally(script: string): ParsedScript {
 
         const inlineVisualMatch = line.match(/\[Visual:?\s*(.*?)\]/i);
         let visualCue = inlineVisualMatch?.[1]?.trim() || '';
-        let cleanText = line.replace(/\[Visual:?\s*.*?\]/gi, '').trim();
+        
+        const inlineTextMatch = line.match(/\[Text:?\s*(on|off)\]/i);
+        const sceneShowText = inlineTextMatch ? inlineTextMatch[1].toLowerCase() === 'on' : undefined;
+
+        let cleanText = line
+            .replace(/\[Visual:?\s*.*?\]/gi, '')
+            .replace(/\[Text:?\s*.*?\]/gi, '')
+            .trim();
 
         if (!visualCue && pendingVisualCue) {
             visualCue = pendingVisualCue;
@@ -147,7 +155,8 @@ function parseScriptLocally(script: string): ParsedScript {
             visualDescription,
             voiceoverText: cleanText,
             searchKeywords: keywords,
-            localAsset
+            localAsset,
+            showText: sceneShowText
         });
     }
 
@@ -198,4 +207,3 @@ export function validateScript(script: string): void {
 
     // console.log('📋 [VALIDATOR] ✅ Script validation PASSED\n');
 }
-

@@ -1,10 +1,68 @@
 [
   {
-    "id": "english-end-user-test14",
-    "title": "How AI Is Changing Everyday Life14",
-    "language": "english",
-    "voice": "en-US-JennyNeural",
-    "orientation": "portrait",
-    "script": "[Visual: sunrise city skyline drone]\nArtificial intelligence is no longer a distant idea."
+    "id": "test-default-subtitles",
+    "title": "1. Default Subtitles",
+    "script": "[Visual: modern office] This video uses the standard subtitle style (Fade, Bottom, White).",
+    "showText": true
+  },
+  {
+    "id": "test-subtitles-disabled",
+    "title": "2. Subtitles Disabled",
+    "script": "[Visual: forest] In this video, subtitles are completely disabled via the showText: false flag.",
+    "showText": false
+  },
+  {
+    "id": "test-styled-top-slide",
+    "title": "3. Styled: Top Slide",
+    "script": "[Visual: city skyline] These subtitles appear at the Top and use the Slide Up animation.",
+    "showText": true,
+    "textConfig": {
+      "animation": "slide",
+      "position": "top",
+      "color": "#00FFCC",
+      "fontSize": 64
+    }
+  },
+  {
+    "id": "test-styled-center-zoom",
+    "title": "4. Styled: Center Zoom",
+    "script": "[Visual: ocean] These subtitles are Centered and use the Zoom In animation with a Yellow color.",
+    "showText": true,
+    "textConfig": {
+      "animation": "zoom",
+      "position": "center",
+      "color": "#FFFF00",
+      "fontSize": 48
+    }
+  },
+  {
+    "id": "test-typewriter-small",
+    "title": "5. Styled: Typewriter",
+    "script": "[Visual: library] This uses the Typewriter effect with small, red text at the bottom.",
+    "showText": true,
+    "textConfig": {
+      "animation": "typewriter",
+      "position": "bottom",
+      "color": "#FF5555",
+      "fontSize": 32
+    }
+  },
+  {
+    "id": "test-per-scene-override",
+    "title": "6. Per-Scene Logic",
+    "script": "[Visual: sunrise] [Text: off] (This line has NO subtitles because of the off tag).\n[Visual: mountains] [Text: on] (This line HAS subtitles, even if global was off).\n[Visual: tech] This line follows the global setting.",
+    "showText": true
+  },
+  {
+    "id": "test-mixed-overrides",
+    "title": "7. Global Style + Per-Scene Control",
+    "script": "[Visual: abstract] [Text: off] Starting without text...\n[Visual: fire] [Text: on] Now showing Large White Top-Aligned Text!\n[Visual: ice] Ending with the Same Global Style.",
+    "showText": true,
+    "textConfig": {
+      "animation": "fade",
+      "position": "top",
+      "color": "#FFFFFF",
+      "fontSize": 72
+    }
   }
 ]
