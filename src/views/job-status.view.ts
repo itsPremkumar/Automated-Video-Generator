@@ -189,8 +189,8 @@ export function jobPage(req: Request, jobId: string): string {
         let scenes = [];
         let currentIdx = -1;
         let draggedIdx = -1;
-
         const audioPlayer = new Audio();
+        let lastSceneHash = '';
 
         async function refresh() {
             const res = await fetch('/api/jobs/' + jobId);
@@ -221,8 +221,12 @@ export function jobPage(req: Request, jobId: string): string {
             const res = await fetch(\`/api/jobs/\${jobId}/scenes\`);
             const json = await res.json();
             if (json.success) {
-                scenes = json.data;
-                renderTimeline();
+                const hash = JSON.stringify(json.data);
+                if (hash !== lastSceneHash) {
+                    scenes = json.data;
+                    lastSceneHash = hash;
+                    renderTimeline();
+                }
             }
         }
 
@@ -253,15 +257,21 @@ export function jobPage(req: Request, jobId: string): string {
             document.getElementById('total-duration-display').textContent = total + 's';
         }
 
+        audioPlayer.onerror = (e) => {
+            console.error("Audio Player Error:", audioPlayer.error, "Source:", audioPlayer.src);
+        };
+
         function createCard(scene, idx) {
             const card = document.createElement('div');
             card.className = 'scene-card';
             card.draggable = true;
 
-            const tbn = scene.visual && scene.visual.localPath ? \`/api/fs/view?path=\${encodeURIComponent(scene.visual.localPath)}&t=\${Date.now()}\` : '';
-            const aud = scene.audioPath ? \`/api/fs/view?path=\${encodeURIComponent(scene.audioPath)}&t=\${Date.now()}\` : '';
+            const tbn = scene.visual && scene.visual.localPath ? \`/api/fs/view?path=\${encodeURIComponent(scene.visual.localPath)}\` : '';
+            const aud = scene.audioPath ? \`/api/fs/view?path=\${encodeURIComponent(scene.audioPath)}\` : '';
             const isVid = scene.visual && scene.visual.type === 'video';
             const vc = scene.voiceConfig || { pitch: 0, rate: 0 };
+
+            console.log(\`[SCENE-\${idx+1}] Media URLs:\`, { tbn, aud });
 
             card.innerHTML = \`
                 <div class="drag-handle">≡</div>
@@ -275,7 +285,7 @@ export function jobPage(req: Request, jobId: string): string {
                         <div class="media-focus">
                             <div class="scene-thumb-container" onclick="previewMedia('\${tbn}', \${isVid}, '\${aud}')">
                                 <div class="thumb-overlay"><span style="font-size:32px">▶️</span></div>
-                                \${tbn ? (isVid ? \`<video src="\${tbn}" muted loop onmouseenter="this.play()" onmouseleave="this.pause()"></video>\` : \`<img src="\${tbn}">\`) : '<div style="padding:40px; font-size:10px">No Visual</div>'}
+                                \${tbn ? (isVid ? \`<video src="\${tbn}" muted loop onmouseenter="this.play()" onmouseleave="this.pause()" onerror="console.error('Video Error (Card) Scene \${idx+1}:', this.error)"></video>\` : \`<img src="\${tbn}" onerror="console.error('Image Error Scene \${idx+1}:', '\${tbn}')">\`) : '<div style="padding:40px; font-size:10px">No Visual</div>'}
                             </div>
                             <div class="row" style="gap:8px;">
                                 <button class="button secondary small" onclick="playAudio('\${aud}', this)" style="flex:1; border-radius:8px">🔊 Listen to Voice</button>

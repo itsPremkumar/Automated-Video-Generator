@@ -328,9 +328,12 @@ export const viewFile = (req: Request, res: Response) => {
 
     // Attempt to resolve path relative to public/ if not absolute
     const filePath = path.isAbsolute(rawPath) ? rawPath : resolveProjectPath('public', rawPath);
+    const exists = fs.existsSync(filePath);
 
-    if (!fs.existsSync(filePath)) {
-        console.error(`[FS-VIEW] File not found: ${filePath} (raw: ${rawPath})`);
+    console.log(`[FS-VIEW] Request: ${rawPath} --> ${filePath} (Exists: ${exists})`);
+
+    if (!exists) {
+        console.error(`[FS-VIEW] 404: ${filePath}`);
         res.status(404).send('File not found');
         return;
     }
@@ -349,6 +352,8 @@ export const viewFile = (req: Request, res: Response) => {
         return;
     }
 
+    const contentType = (ext === '.mp4' || ext === '.mov') ? 'video/mp4' : (ext === '.webm' ? 'video/webm' : (ext === '.ogg' ? 'video/ogg' : (ext === '.mp3' ? 'audio/mpeg' : (ext === '.wav' ? 'audio/wav' : ''))));
+
     // Basic range support for video/audio streaming preview
     const range = req.headers.range;
     if (range && (['.mp4', '.mov', '.webm', '.ogg', '.mp3', '.wav'].includes(ext))) {
@@ -358,17 +363,19 @@ export const viewFile = (req: Request, res: Response) => {
         const chunksize = (end - start) + 1;
         const file = fs.createReadStream(filePath, { start, end });
         const head = {
-            'Content-Range': `bytes \${start}-\${end}/\${stat.size}`,
+            'Content-Range': `bytes ${start}-${end}/${stat.size}`,
             'Accept-Ranges': 'bytes',
             'Content-Length': chunksize,
-            'Content-Type': (ext === '.mp4' || ext === '.mov') ? 'video/mp4' : (ext === '.webm' ? 'video/webm' : 'video/ogg'),
+            'Content-Type': contentType,
         };
+        console.log(`[FS-VIEW] Stream: ${start}-${end}/${stat.size} (${contentType})`);
         res.writeHead(206, head);
         file.pipe(res);
-        return;
+    } else {
+        console.log(`[FS-VIEW] Send: ${filePath} (${contentType})`);
+        if (contentType) res.setHeader('Content-Type', contentType);
+        res.sendFile(filePath);
     }
-
-    res.sendFile(filePath);
 };
 
 export const listDrives = (req: Request, res: Response) => {
