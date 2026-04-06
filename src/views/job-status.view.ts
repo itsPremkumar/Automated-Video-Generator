@@ -12,6 +12,10 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
 
     const styles = `
     <style>
+        .job-progress-shell { display:grid; gap:10px; }
+        .job-progress-meta { display:flex; justify-content:space-between; align-items:center; font-weight:700; color:var(--muted); font-size:14px; }
+        .job-progress-meta strong { color: var(--ink); }
+        .job-progress-label { color: var(--brand); font-weight: 800; }
         .studio-header { margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
         .studio-header h2 { margin: 0; font-size: 2.2rem; }
         
@@ -114,14 +118,20 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
                     <p id="message" class="lead small">Check the progress or customize your scenes below.</p>
                     <p id="error-detail" class="muted" style="display:none; color:#b45309; font-weight:600;"></p>
                 </div>
-                <div class="bar"><div id="progress"></div></div>
+                <div class="job-progress-shell">
+                    <div class="job-progress-meta">
+                        <span>Job progress</span>
+                        <strong id="progress-label" class="job-progress-label">0%</strong>
+                    </div>
+                    <div class="bar"><div id="progress"></div></div>
+                </div>
                 <div class="metric-grid">
                     <div class="metric-card">
                         <strong id="percent">0%</strong>
-                        <span class="muted">overall status</span>
+                        <span class="muted">overall progress</span>
                     </div>
                     <div class="metric-card">
-                        <strong id="status-display">pending</strong>
+                        <strong id="status-display">queued</strong>
                         <span class="muted">current stage</span>
                     </div>
                 </div>
@@ -221,11 +231,13 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
         }
 
         function setStatusMessage(data) {
+            const progressValue = Math.max(0, Math.min(100, Number(data.progress) || 0));
             document.getElementById('title').textContent = data.title || 'Working on video...';
             document.getElementById('message').textContent = data.message || 'Check the progress or customize your scenes below.';
-            document.getElementById('percent').textContent = data.progress + '%';
-            document.getElementById('progress').style.width = data.progress + '%';
-            document.getElementById('status-display').textContent = data.status;
+            document.getElementById('percent').textContent = progressValue + '%';
+            document.getElementById('progress-label').textContent = progressValue + '%';
+            document.getElementById('progress').style.width = progressValue + '%';
+            document.getElementById('status-display').textContent = formatStageLabel(data);
             const errorDetail = document.getElementById('error-detail');
             if (data.error) {
                 errorDetail.style.display = 'block';
@@ -234,6 +246,17 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
                 errorDetail.style.display = 'none';
                 errorDetail.textContent = '';
             }
+        }
+
+        function formatStageLabel(data) {
+            if (data.status === 'completed') return 'completed';
+            if (data.status === 'failed') return 'failed';
+            if (data.status === 'cancelled') return 'cancelled';
+            if (data.status === 'cancelling') return 'cancelling';
+            if (data.status === 'awaiting_review') return 'review';
+            if (data.phase === 'render') return 'rendering';
+            if (data.phase === 'generate') return data.status === 'pending' ? 'queued' : 'generating';
+            return data.status || 'pending';
         }
 
         function updateEditorState(data) {
