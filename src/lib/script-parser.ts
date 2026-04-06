@@ -9,6 +9,18 @@ export interface Scene {
     searchKeywords: string[];
     localAsset?: string;
     showText?: boolean;
+    voiceConfig?: {
+        voice?: string;
+        pitch?: number;
+        rate?: number;
+    };
+    audioPath?: string;
+    visual?: {
+        type: 'video' | 'image';
+        url: string;
+        localPath: string;
+        videoDuration?: number;
+    };
 }
 
 export interface ParsedScript {

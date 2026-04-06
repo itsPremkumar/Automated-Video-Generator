@@ -428,7 +428,19 @@ export async function generateVoiceovers(
     writeProgress(`\r[VOICE-GEN] Processing scene ${i + 1}/${scenes.length}...`);
 
     try {
-      const result = await generateSceneVoiceoverWithRetry(scene, outputDir, config);
+      // Determine scene-specific config
+      const sceneConfig = { ...config };
+      if (scene.voiceConfig) {
+        if (scene.voiceConfig.voice) sceneConfig.voice = scene.voiceConfig.voice;
+        if (scene.voiceConfig.rate !== undefined) {
+          sceneConfig.rate = (scene.voiceConfig.rate >= 0 ? '+' : '') + scene.voiceConfig.rate + '%';
+        }
+        if (scene.voiceConfig.pitch !== undefined) {
+          sceneConfig.pitch = (scene.voiceConfig.pitch >= 0 ? '+' : '') + scene.voiceConfig.pitch + 'Hz';
+        }
+      }
+
+      const result = await generateSceneVoiceoverWithRetry(scene, outputDir, sceneConfig);
       audioFiles.set(scene.sceneNumber, result);
 
       if (result.path.endsWith('.mp3')) {

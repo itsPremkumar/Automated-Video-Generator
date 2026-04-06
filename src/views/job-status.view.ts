@@ -1,250 +1,468 @@
 import { Request } from 'express';
 import { PROJECT_NAME } from '../constants/config';
 import { layout, escapeHtml } from './layout.view';
-import { absoluteUrl } from '../services/video.service';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// JOB STATUS PAGE — Live render progress tracking
+// JOB STATUS PAGE — Premium Timeline Editor V3 (Studio Style)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function jobPage(req: Request, jobId: string): string {
 
-    // ─── Page Body HTML ────────────────────────────────────────────────────────
+    // ─── Premium UI Styles ──────────────────────────────────────────────────────
+
+    const styles = `
+    <style>
+        .studio-header { margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .studio-header h2 { margin: 0; font-size: 2.2rem; }
+        
+        #timeline-canvas { display: grid; gap: 24px; padding-bottom: 40px; }
+
+        .scene-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--line);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 40px 1fr;
+            gap: 20px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.04);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+        .scene-card:hover { border-color: var(--brand); transform: translateY(-2px); box-shadow: 0 20px 50px rgba(202,106,43,0.08); }
+        .scene-card.dragging { opacity: 0.2; border: 2px dashed var(--brand); }
+        .scene-card.updating { opacity: 0.5; pointer-events: none; }
+
+        .drag-handle { 
+            cursor: grab; display: flex; align-items: center; justify-content: center; 
+            color: var(--line-strong); font-size: 22px; 
+        }
+
+        /* 2-Column Scene Body */
+        .scene-body { display: grid; grid-template-columns: 320px 1fr; gap: 30px; }
+        
+        /* Media Section (Left) */
+        .media-focus { display: flex; flex-direction: column; gap: 12px; }
+        .scene-thumb-container {
+            width: 100%; aspect-ratio: 16/9; border-radius: 14px; overflow: hidden;
+            position: relative; border: 1px solid var(--line); background: #eee;
+        }
+        .scene-thumb-container img, .scene-thumb-container video { width: 100%; height: 100%; object-fit: cover; }
+        .thumb-overlay { 
+            position: absolute; inset: 0; background: rgba(0,0,0,0.3); 
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.2s; cursor: pointer;
+        }
+        .scene-thumb-container:hover .thumb-overlay { opacity: 1; }
+
+        /* Content Section (Right) */
+        .content-focus { display: flex; flex-direction: column; gap: 16px; }
+        .field-group { display: flex; flex-direction: column; gap: 6px; }
+        .field-group label { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--brand); letter-spacing: 0.05em; }
+        
+        .scene-input-large { 
+            min-height: 100px; padding: 14px; border-radius: 12px; font-size: 15px; line-height:1.5;
+            background: #fff; border: 1px solid var(--line); color: var(--ink);
+        }
+
+        /* Settings Bar (Bottom) */
+        .settings-bar {
+            grid-column: 1 / -1; margin-top: 10px; padding-top: 20px;
+            border-top: 1px solid var(--line); display: grid; 
+            grid-template-columns: 1fr 1fr 150px auto; gap: 30px; align-items: center;
+        }
+
+        .voice-slider-group { display: flex; flex-direction: column; gap: 8px; }
+        .voice-slider-group label { font-size: 11px; font-weight: 700; color: var(--muted); display: flex; justify-content: space-between; }
+        
+        /* Interaction Buttons */
+        .scene-actions { display: flex; gap: 12px; align-items: center; }
+        .action-icon-btn { 
+            background: #fff; border: 1px solid var(--line); border-radius: 10px; 
+            width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; transition: all 0.2s;
+        }
+        .action-icon-btn:hover { border-color: var(--brand); color: var(--brand); background: var(--surface-soft); }
+        .action-icon-btn.delete:hover { border-color: #e53e3e; color: #e53e3e; background: #fff5f5; }
+
+        .btn-premium {
+            padding: 12px 24px; border-radius: 12px; font-weight: 700; border: 0;
+            cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+            background: linear-gradient(135deg, var(--brand), var(--brand-strong)); color: #white;
+        }
+
+        /* Modal Redesign */
+        #media-preview, #ai-modal, #gallery-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(23,32,51,0.85); backdrop-filter: blur(10px); 
+            z-index: 5000; display: none; align-items: center; justify-content: center; padding: 40px;
+        }
+        .preview-box { background: #000; border-radius: 20px; overflow: hidden; max-width: 90vw; }
+        .modal-body { background: #fff; padding: 30px; border-radius: 20px; width: 100%; max-width: 500px; position: relative; }
+    </style>
+    `;
 
     const body = `
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         HERO: Progress Overview
-         ═══════════════════════════════════════════════════════════════════════ -->
+    ${styles}
     <section class="hero-surface">
         <div class="hero-grid">
             <div class="stack">
-                <span class="eyebrow">Live Render Status</span>
+                <span class="eyebrow">Project Hub</span>
                 <div>
-                    <h1 id="title">Render in progress</h1>
-                    <p id="message" class="lead small">
-                        This page refreshes automatically while the generator downloads assets,
-                        creates voiceover, and renders the final MP4.
-                    </p>
+                    <h1 id="title">Working on video...</h1>
+                    <p id="message" class="lead small">Check the progress or customize your scenes below.</p>
                 </div>
-
-                <!-- Progress Bar -->
                 <div class="bar"><div id="progress"></div></div>
-
-                <!-- Metrics -->
                 <div class="metric-grid">
                     <div class="metric-card">
                         <strong id="percent">0%</strong>
-                        <span class="muted">overall progress</span>
+                        <span class="muted">overall status</span>
                     </div>
                     <div class="metric-card">
-                        <strong id="status">pending</strong>
-                        <span class="muted">current status</span>
-                    </div>
-                    <div class="metric-card">
-                        <strong>3 sec</strong>
-                        <span class="muted">auto refresh interval</span>
+                        <strong id="status-display">pending</strong>
+                        <span class="muted">current stage</span>
                     </div>
                 </div>
             </div>
-
-            <!-- Job Details Sidebar -->
-            <div class="highlight-box stack">
-                <span class="eyebrow">Job Details</span>
-                <div class="row">
-                    <span class="status-chip ok">Watching live</span>
-                    <span class="pill">${escapeHtml(jobId)}</span>
+            <div class="highlight-box stack" style="justify-content:center; align-items:center;">
+                <div id="video-container" hidden></div>
+                <div id="wait-placeholder" class="muted" style="text-align:center">
+                    <span style="font-size:40px">🕒</span>
+                    <p>Live preview will appear when rendering finishes.</p>
                 </div>
-                <p id="wait-message" class="muted">
-                    Keep this tab open. When the job finishes, the final video and MP4 download button will appear here automatically.
-                </p>
-
-                <!-- Video Container (shown on completion) -->
-                <div id="video-container" class="video-stage" hidden
-                     style="margin: 10px 0; padding: 0; box-shadow: none; background: transparent; border: 1px solid var(--line); overflow: hidden;">
-                </div>
-
-                <!-- Action Buttons (shown on completion) -->
-                <div id="actions" class="toolbar"></div>
-
-                <!-- Error Details (shown on failure) -->
-                <div id="error-container" hidden>
-                    <div id="error" class="status" style="margin-bottom: 12px"></div>
-                    <div style="background: #fff; border: 1px solid #efcfb8; border-radius: 12px; padding: 12px;">
-                        <div class="row" style="justify-content: space-between; margin-bottom: 8px;">
-                            <strong>Detailed Error Log</strong>
-                            <button type="button" id="copy-error" class="secondary" style="padding: 6px 12px; font-size: 13px;">Copy Stack Trace</button>
-                        </div>
-                        <pre id="error-details" class="muted"
-                             style="white-space: pre-wrap; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto; margin: 0;"></pre>
-                    </div>
-                </div>
+                <div id="actions" class="toolbar" style="margin-top:20px;"></div>
             </div>
         </div>
     </section>
 
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         PIPELINE TIMELINE
-         ═══════════════════════════════════════════════════════════════════════ -->
-    <section class="layout-split">
-        <div class="panel">
-            <span class="eyebrow">Pipeline</span>
-            <h2>What the app is doing now</h2>
-            <div class="timeline">
-                <div class="timeline-step" data-step="queued">
-                    <span>1</span>
-                    <div>
-                        <strong>Queued</strong>
-                        <p class="muted">The job has been accepted and is waiting to begin.</p>
-                    </div>
+    <section id="editor-section" class="panel" hidden style="background: linear-gradient(180deg, #fffcf8, #fff); border: 2px solid var(--brand); padding: 32px;">
+        <div class="studio-header">
+            <div>
+                <span class="eyebrow" style="background:#fff7ee; color:var(--brand);">Video Production Studio</span>
+                <h2>Planning & Timeline</h2>
+                <p class="muted">Edit the narrator's script, swap visuals, or adjust the voice personality.</p>
+            </div>
+            <div class="row">
+                <div class="metric-card" style="padding:10px 20px; border-radius:12px; background:white;">
+                    <span class="muted" style="font-size:11px">ESTIMATED LENGTH</span>
+                    <strong id="total-duration-display" style="font-size:18px">0s</strong>
                 </div>
-                <div class="timeline-step" data-step="assets">
-                    <span>2</span>
-                    <div>
-                        <strong>Assets and voiceover</strong>
-                        <p class="muted">The generator prepares scenes, downloads stock footage, and creates narration.</p>
-                    </div>
-                </div>
-                <div class="timeline-step" data-step="render">
-                    <span>3</span>
-                    <div>
-                        <strong>Final render</strong>
-                        <p class="muted">Remotion assembles the scenes into a single MP4 file.</p>
-                    </div>
-                </div>
-                <div class="timeline-step" data-step="ready">
-                    <span>4</span>
-                    <div>
-                        <strong>Ready to watch</strong>
-                        <p class="muted">Your delivery page and download link are prepared.</p>
-                    </div>
-                </div>
+                <button id="confirm-render" class="button accent" style="height:56px; padding: 0 32px;">Confirm & Finalize Video</button>
             </div>
         </div>
 
-        <!-- Helpful Notes -->
-        <div class="panel soft">
-            <span class="eyebrow">While You Wait</span>
-            <h2>Helpful notes</h2>
-            <ul class="compact-list">
-                <li>The longest step is usually stock download and video rendering.</li>
-                <li>You can leave this tab open instead of watching the terminal.</li>
-                <li>If a stock clip fails, the generator can use fallback video before falling back to an image.</li>
-                <li>When finished, the video player and a direct MP4 download button will appear.</li>
-            </ul>
+        <div id="timeline-canvas">
+            <!-- Scenes injected here -->
         </div>
-    </section>`;
+    </section>
 
-    // ─── Client-Side JavaScript ────────────────────────────────────────────────
+    <!-- Modals -->
+    <div id="media-preview" onclick="this.style.display='none'">
+        <div class="preview-box" onclick="event.stopPropagation()" id="preview-content"></div>
+    </div>
+
+    <div id="ai-modal">
+        <div class="modal-body">
+            <button class="close-btn" onclick="document.getElementById('ai-modal').style.display='none'">✕</button>
+            <h3>✨ AI Creative Assistant</h3>
+            <p class="muted">Tell the AI how to improve this scene (e.g., "Make it more exciting").</p>
+            <textarea id="ai-instruction" placeholder="Enter instructions..." style="min-height:120px; margin-top:15px;"></textarea>
+            <div class="row" style="margin-top:20px; justify-content:flex-end;">
+                <button id="apply-ai" class="button">Improve Scene</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gallery-modal">
+        <div class="modal-body" style="max-width: 800px;">
+            <button class="close-btn" onclick="document.getElementById('gallery-modal').style.display='none'">✕</button>
+            <h3>🖼️ Video Library</h3>
+            <p class="muted">Pick a different video clip or image for this scene.</p>
+            <div id="gallery-grid" class="asset-gallery" style="margin-top:20px; max-height:400px; overflow-y:auto;"></div>
+        </div>
+    </div>
+    `;
 
     const script = `
-// ─── DOM References ────────────────────────────────────────────────────────────
-const id             = ${JSON.stringify(jobId)};
-const title          = document.getElementById('title');
-const message        = document.getElementById('message');
-const status         = document.getElementById('status');
-const percent        = document.getElementById('percent');
-const progress       = document.getElementById('progress');
-const actions        = document.getElementById('actions');
-const errorContainer = document.getElementById('error-container');
-const error          = document.getElementById('error');
-const errorDetails   = document.getElementById('error-details');
-const copyError      = document.getElementById('copy-error');
-const steps          = [...document.querySelectorAll('[data-step]')];
+        const jobId = ${JSON.stringify(jobId)};
+        let scenes = [];
+        let currentIdx = -1;
+        let draggedIdx = -1;
 
-// ─── Copy Error Button ─────────────────────────────────────────────────────────
-if (copyError) {
-    copyError.addEventListener('click', () => {
-        navigator.clipboard.writeText(errorDetails.textContent);
-        copyError.textContent = 'Copied!';
-        setTimeout(() => copyError.textContent = 'Copy Stack Trace', 2000);
-    });
-}
+        const audioPlayer = new Audio();
 
-// ─── Timeline Step Highlighting ─────────────────────────────────────────────────
-function setStepState(current) {
-    const order = ['queued', 'assets', 'render', 'ready'];
-    const currentIndex = order.indexOf(current);
-    steps.forEach((step) => {
-        const index = order.indexOf(step.dataset.step);
-        step.classList.toggle('active', index === currentIndex);
-        step.classList.toggle('done', currentIndex > index);
-    });
-}
+        async function refresh() {
+            const res = await fetch('/api/jobs/' + jobId);
+            const json = await res.json();
+            if (!json.success) return;
+            
+            const data = json.data;
+            document.getElementById('percent').textContent = data.progress + '%';
+            document.getElementById('progress').style.width = data.progress + '%';
+            document.getElementById('status-display').textContent = data.status;
 
-function mapStep(data) {
-    if (data.status === 'completed') return 'ready';
-    if (data.status === 'pending')   return 'queued';
-    if (data.progress >= 75)         return 'render';
-    return 'assets';
-}
-
-// ─── Auto-Refresh Loop ─────────────────────────────────────────────────────────
-async function refresh() {
-    try {
-        const res = await fetch('/api/jobs/' + encodeURIComponent(id), { cache: 'no-store' });
-        const json = await res.json();
-        if (!res.ok || !json.success) {
-            throw new Error(json.error || 'Unable to load job.');
-        }
-
-        const data = json.data;
-        title.textContent   = data.title || 'Render in progress';
-        message.textContent = data.message || 'Working on your video.';
-        status.textContent  = String(data.status);
-        percent.textContent = String(data.progress) + '%';
-        progress.style.width = Math.max(0, Math.min(100, Number(data.progress) || 0)) + '%';
-        setStepState(mapStep(data));
-
-        // ─── Completed: Show video + download ───
-        if (data.status === 'completed') {
-            const waitMessage = document.getElementById('wait-message');
-            if (waitMessage) waitMessage.hidden = true;
-
-            const videoContainer = document.getElementById('video-container');
-            if (videoContainer && data.videoUrl) {
-                videoContainer.hidden = false;
-                const posterStr = (data.video && data.video.thumbnailUrl) ? 'poster="' + data.video.thumbnailUrl + '"' : '';
-                videoContainer.innerHTML =
-                    '<video class="video" controls playsinline preload="metadata" ' + posterStr +
-                    ' style="max-height: 350px; width: 100%; object-fit: contain; background: #000; border-radius: 12px;">' +
-                    '<source src="' + data.videoUrl + '" type="video/mp4"></video>';
+            if (data.status === 'awaiting_review') {
+                if (document.getElementById('editor-section').hidden) {
+                    document.getElementById('editor-section').hidden = false;
+                    loadScenes();
+                }
+            } else {
+                document.getElementById('editor-section').hidden = true;
             }
 
-            actions.innerHTML =
-                '<a class="button" href="' + data.downloadUrl + '">Download MP4</a>' +
-                '<a class="button secondary" href="' + data.watchUrl + '">Watch Page Overview</a>' +
-                '<a class="button ghost" href="/">Back to Portal</a>';
-            window.clearInterval(timer);
+            if (data.status === 'completed') {
+                showVideo(data.videoUrl, data.downloadUrl);
+                window.clearInterval(timer);
+            }
         }
 
-        // ─── Failed: Show error details ───
-        if (data.status === 'failed') {
-            errorContainer.hidden = false;
-            error.textContent = data.error || 'Render failed.';
-            errorDetails.textContent = data.errorDetails || data.error || 'No additional details provided.';
-            window.clearInterval(timer);
+        async function loadScenes() {
+            const res = await fetch(\`/api/jobs/\${jobId}/scenes\`);
+            const json = await res.json();
+            if (json.success) {
+                scenes = json.data;
+                renderTimeline();
+            }
         }
-    } catch (err) {
-        error.hidden = false;
-        error.textContent = err instanceof Error ? err.message : 'Unable to load job.';
-    }
-}
 
-const timer = window.setInterval(refresh, 3000);
-refresh();
-`;
+        document.getElementById('confirm-render').onclick = async () => {
+            const btn = document.getElementById('confirm-render');
+            btn.disabled = true;
+            btn.textContent = 'Starting Render...';
+            const res = await fetch(\`/api/jobs/\${jobId}/confirm\`, { method: 'POST' });
+            const json = await res.json();
+            if (json.success) {
+                document.getElementById('editor-section').hidden = true;
+                refresh();
+            } else {
+                alert('Confirm failed: ' + json.error);
+                btn.disabled = false;
+                btn.textContent = 'Confirm & Finalize Video';
+            }
+        };
 
-    // ─── Return the assembled page ─────────────────────────────────────────────
+        function renderTimeline() {
+            const canvas = document.getElementById('timeline-canvas');
+            canvas.innerHTML = '';
+            let total = 0;
+            scenes.forEach((s, idx) => {
+                total += (s.duration || 0);
+                canvas.appendChild(createCard(s, idx));
+            });
+            document.getElementById('total-duration-display').textContent = total + 's';
+        }
+
+        function createCard(scene, idx) {
+            const card = document.createElement('div');
+            card.className = 'scene-card';
+            card.draggable = true;
+
+            const tbn = scene.visual && scene.visual.localPath ? \`/api/fs/view?path=\${encodeURIComponent(scene.visual.localPath)}&t=\${Date.now()}\` : '';
+            const aud = scene.audioPath ? \`/api/fs/view?path=\${encodeURIComponent(scene.audioPath)}&t=\${Date.now()}\` : '';
+            const isVid = scene.visual && scene.visual.type === 'video';
+            const vc = scene.voiceConfig || { pitch: 0, rate: 0 };
+
+            card.innerHTML = \`
+                <div class="drag-handle">≡</div>
+                <div class="stack">
+                    <div class="row" style="justify-content:space-between; align-items:center;">
+                        <span class="eyebrow" style="background:#fff; border-color:var(--line);">SCENE #\${idx + 1}</span>
+                        <button class="button ghost small" onclick="openAI(\${idx})">✨ AI Assistant</button>
+                    </div>
+                    
+                    <div class="scene-body">
+                        <div class="media-focus">
+                            <div class="scene-thumb-container" onclick="previewMedia('\${tbn}', \${isVid}, '\${aud}')">
+                                <div class="thumb-overlay"><span style="font-size:32px">▶️</span></div>
+                                \${tbn ? (isVid ? \`<video src="\${tbn}" muted loop onmouseenter="this.play()" onmouseleave="this.pause()"></video>\` : \`<img src="\${tbn}">\`) : '<div style="padding:40px; font-size:10px">No Visual</div>'}
+                            </div>
+                            <div class="row" style="gap:8px;">
+                                <button class="button secondary small" onclick="playAudio('\${aud}', this)" style="flex:1; border-radius:8px">🔊 Listen to Voice</button>
+                                <button class="action-icon-btn" onclick="openGallery(\${idx})" title="Swap Clip">🖼️</button>
+                            </div>
+                        </div>
+
+                        <div class="content-focus">
+                            <div class="field-group">
+                                <label>What the narrator says</label>
+                                <textarea class="scene-input-large" data-field="script">\${scene.voiceoverText}</textarea>
+                            </div>
+                            <div class="field-group">
+                                <label>Video Clips & Keywords</label>
+                                <input class="scene-input" data-field="keywords" value="\${(scene.searchKeywords || []).join(', ')}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-bar">
+                        <div class="voice-slider-group">
+                            <label>Voice Tone (Deep ↔ High) <span>\${vc.pitch}Hz</span></label>
+                            <input type="range" class="voice-pitch" min="-20" max="20" value="\${vc.pitch}">
+                        </div>
+                        <div class="voice-slider-group">
+                            <label>Talking Speed (Slow ↔ Fast) <span>\${vc.rate}%</span></label>
+                            <input type="range" class="voice-rate" min="-50" max="50" step="5" value="\${vc.rate}">
+                        </div>
+                        <div class="voice-slider-group">
+                            <label>Time (Seconds)</label>
+                            <input type="number" class="scene-duration" value="\${scene.duration}" style="padding:8px; border-radius:8px">
+                        </div>
+                        <div class="scene-actions">
+                            <button class="button small save-btn">Save Changes</button>
+                            <button class="action-icon-btn delete" onclick="deleteScene(\${idx})">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+            \`;
+
+            // Events
+            card.querySelector('.save-btn').onclick = () => save(idx, card);
+            card.addEventListener('dragstart', () => { draggedIdx = idx; card.classList.add('dragging'); });
+            card.addEventListener('dragend', () => { draggedIdx = -1; card.classList.remove('dragging'); });
+            card.addEventListener('dragover', (e) => e.preventDefault());
+            card.addEventListener('drop', () => { if(draggedIdx !== idx) reorder(draggedIdx, idx); });
+
+            return card;
+        }
+
+        async function playAudio(url, btn) {
+            if (!url) return alert('Voice not ready yet. Save the scene first!');
+            if (audioPlayer.src.includes(url) && !audioPlayer.paused) {
+                audioPlayer.pause();
+                btn.textContent = '🔊 Listen to Voice';
+            } else {
+                audioPlayer.src = url;
+                audioPlayer.play();
+                btn.textContent = '⏸ Pause Voice';
+                audioPlayer.onended = () => btn.textContent = '🔊 Listen to Voice';
+            }
+        }
+
+        async function save(idx, card) {
+            card.classList.add('updating');
+            const updates = {
+                voiceoverText: card.querySelector('[data-field="script"]').value,
+                searchKeywords: card.querySelector('[data-field="keywords"]').value.split(',').map(s => s.trim()).filter(Boolean),
+                duration: parseInt(card.querySelector('.scene-duration').value),
+                voiceConfig: {
+                    pitch: parseInt(card.querySelector('.voice-pitch').value),
+                    rate: parseInt(card.querySelector('.voice-rate').value)
+                }
+            };
+            const res = await fetch(\`/api/jobs/\${jobId}/scenes/\${idx}\`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates)
+            });
+            const json = await res.json();
+            if (json.success) {
+                scenes[idx] = json.data;
+                renderTimeline();
+            }
+            card.classList.remove('updating');
+        }
+
+        function previewMedia(url, isVid, audioUrl) {
+            const box = document.getElementById('preview-content');
+            box.innerHTML = \`
+                <div style="background:#000; display:flex; flex-direction:column; align-items:center;">
+                    \${isVid ? \`<video src="\${url}" id="pv" style="width:100%"></video>\` : \`<img src="\${url}" style="width:100%">\`}
+                    <audio src="\${audioUrl}" id="pa"></audio>
+                    <div class="row" style="padding:20px; gap:20px; background:#111; width:100%; justify-content:center">
+                        <button class="button" onclick="playPreview()">▶️ Play Scene</button>
+                        <button class="button secondary" onclick="stopPreview()">⏹ Stop</button>
+                    </div>
+                </div>
+            \`;
+            document.getElementById('media-preview').style.display = 'flex';
+        }
+
+        window.playPreview = () => {
+            const v = document.getElementById('pv');
+            const a = document.getElementById('pa');
+            if(v) v.play();
+            if(a) a.play();
+        };
+
+        window.stopPreview = () => {
+            const v = document.getElementById('pv');
+            const a = document.getElementById('pa');
+            if(v) { v.pause(); v.currentTime = 0; }
+            if(a) { a.pause(); a.currentTime = 0; }
+        };
+
+        async function reorder(from, to) {
+            const res = await fetch(\`/api/jobs/\${jobId}/scenes/reorder\`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fromIndex: from, toIndex: to })
+            });
+            const json = await res.json();
+            if (json.success) { scenes = json.data; renderTimeline(); }
+        }
+
+        function showVideo(url, dl) {
+            document.getElementById('wait-placeholder').hidden = true;
+            const container = document.getElementById('video-container');
+            container.hidden = false;
+            container.innerHTML = \`<video src="\${url}" controls class="video"></video>\`;
+            document.getElementById('actions').innerHTML = 
+                \`<a class="button" href="\${dl}">Download MP4</a><a class="button secondary" href="/">New Project</a>\`;
+        }
+
+        function openAI(idx) { currentIdx = idx; document.getElementById('ai-modal').style.display='flex'; }
+        function openGallery(idx) { currentIdx = idx; loadGallery(); }
+
+        async function loadGallery() {
+            const res = await fetch('/api/gallery');
+            const json = await res.json();
+            const grid = document.getElementById('gallery-grid');
+            grid.innerHTML = '';
+            json.data.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'asset-item';
+                div.innerHTML = \`<img src="\${item.assetUrl}" class="asset-preview"><span class="tag-copy">\${item.filename}</span>\`;
+                div.onclick = () => swap(item.filename);
+                grid.appendChild(div);
+            });
+            document.getElementById('gallery-modal').style.display='flex';
+        }
+
+        async function swap(file) {
+            const res = await fetch(\`/api/jobs/\${jobId}/scenes/\${currentIdx}\`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ localAsset: file })
+            });
+            const json = await res.json();
+            if (json.success) { scenes[currentIdx] = json.data; renderTimeline(); }
+            document.getElementById('gallery-modal').style.display='none';
+        }
+
+        document.getElementById('apply-ai').onclick = async () => {
+            const btn = document.getElementById('apply-ai');
+            const instr = document.getElementById('ai-instruction').value;
+            btn.disabled = true; btn.textContent = 'Assistant thinking...';
+            const res = await fetch(\`/api/jobs/\${jobId}/scenes/\${currentIdx}/refine\`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ instruction: instr })
+            });
+            const json = await res.json();
+            if (json.success) { scenes[currentIdx] = json.data; renderTimeline(); }
+            document.getElementById('ai-modal').style.display='none';
+            btn.disabled = false; btn.textContent = 'Improve Scene';
+        };
+
+        const timer = setInterval(refresh, 3000);
+        refresh();
+    `;
 
     return layout(
-        `Render Job ${jobId} | ${PROJECT_NAME}`,
+        `Production Studio | ${PROJECT_NAME}`,
         body,
-        {
-            canonical: absoluteUrl(req, `/jobs/${encodeURIComponent(jobId)}`),
-            description: 'Track a video rendering job in Automated Video Generator.',
-            ogType: 'website',
-            robots: 'noindex, nofollow',
-        },
+        { robots: 'noindex, nofollow' },
         script
     );
 }

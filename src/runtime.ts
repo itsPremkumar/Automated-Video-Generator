@@ -101,7 +101,7 @@ export interface JobStatus {
     id: string;
     title?: string;
     publicId?: string;
-    status: 'pending' | 'processing' | 'completed' | 'failed';
+    status: 'pending' | 'processing' | 'awaiting_review' | 'completed' | 'failed';
     progress: number;
     message: string;
     outputPath?: string;

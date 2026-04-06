@@ -386,6 +386,10 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
                         <input id="showText" type="checkbox" checked onchange="document.getElementById('subtitle-config').style.display = this.checked ? '' : 'none'">
                         <div><strong>Show subtitles</strong></div>
                     </label>
+                    <label class="toggle-row" for="enableReview" style="padding:10px 12px; border: 1px solid var(--accent); border-radius: 8px; margin-top: 4px; background: rgba(var(--accent-rgb), 0.05);">
+                        <input id="enableReview" type="checkbox">
+                        <div><strong>Enable Timeline Editor (Review Mode)</strong></div>
+                    </label>
 
                     <div id="subtitle-config" class="panel soft" style="gap:12px; padding:16px; margin: 4px 0 12px;">
                         <div class="field-grid two-up" style="gap:16px">
@@ -828,6 +832,7 @@ form.addEventListener('submit', async (e) => {
         backgroundMusic: document.getElementById('backgroundMusic').value,
         defaultVideo: document.getElementById('defaultVideo').value,
         showText: document.getElementById('showText').checked,
+        skipReview: !document.getElementById('enableReview').checked,
         textConfig: {
             animation: document.getElementById('subtitle-animation').value,
             position: document.getElementById('subtitle-position').value,

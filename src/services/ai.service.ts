@@ -58,3 +58,44 @@ Follow these rules exactly:
         throw new Error(apiError.message || 'Unknown network error occurred while reaching Gemini API.');
     }
 }
+
+export async function refineSceneAI(
+    text: string,
+    keywords: string[],
+    instruction: string
+): Promise<{ voiceoverText: string; searchKeywords: string[] }> {
+    const envValues = readEnvValues();
+    const apiKey = envValues.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    
+    if (!apiKey) {
+        throw new Error('GEMINI_API_KEY is not set.');
+    }
+
+    const systemInstruction = `You are a video script editor. Refine the provided scene based on the user's instructions.
+Return ONLY a valid JSON object: {"voiceoverText": "Updated text", "searchKeywords": ["word1", "word2"]}.
+Keep keywords concise (3-6 words). Do NOT include markdown formatting.`;
+
+    const prompt = `
+Current Scene Text: "${text}"
+Current Keywords: ${JSON.stringify(keywords)}
+User Instruction: "${instruction}"
+`;
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    
+    try {
+        const response = await axios.post(url, {
+            system_instruction: { parts: { text: systemInstruction } },
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { response_mime_type: "application/json" }
+        });
+        
+        const content = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!content) throw new Error('AI response empty');
+        
+        return JSON.parse(content);
+    } catch (err: any) {
+        console.error('Refine AI failed:', err.message);
+        throw new Error('Failed to refine scene with AI.');
+    }
+}

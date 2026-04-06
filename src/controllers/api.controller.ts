@@ -12,8 +12,9 @@ import {
 } from '../services/video.service';
 import { getSetupStatus, updateEnvValues, normalizeEnvValue } from '../services/env.service';
 import { getDynamicVoices } from '../lib/voice-generator';
-import { generateScriptFromPrompt } from '../services/ai.service';
-import { createAndRunJob } from '../services/job.service';
+import { generateScriptFromPrompt, refineSceneAI } from '../services/ai.service';
+import { updateSceneInJob, reorderJobScenes, deleteJobScene } from '../video-generator';
+import { createAndRunJob, continueJobToRender } from '../services/job.service';
 import { EDITABLE_ENV_KEYS, DEFAULT_FALLBACK_VIDEO } from '../constants/config';
 import { EditableEnvKey } from '../types/server.types';
 import { runHealthCheck } from '../services/health.service';
@@ -86,8 +87,115 @@ export const getJobStatus = (req: Request, res: Response) => {
     res.json({ success: true, data: getJobData(job, req) });
 };
 
+export const getJobScenes = (req: Request, res: Response) => {
+    const jobId = String(req.params.jobId);
+    const job = jobStore.get(jobId);
+    if (!job) {
+        res.status(404).json({ success: false, error: 'Job not found.' });
+        return;
+    }
+    const outputDir = resolveProjectPath('output', job.publicId!);
+    const dataPath = path.join(outputDir, 'scene-data.json');
+    if (!fs.existsSync(dataPath)) {
+        res.status(404).json({ success: false, error: 'Scene data not found.' });
+        return;
+    }
+    const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+    res.json({ success: true, data: data.scenes });
+};
+
+export const updateJobScene = async (req: Request, res: Response) => {
+    try {
+        const jobId = String(req.params.jobId);
+        const sceneIndex = String(req.params.sceneIndex);
+        const job = jobStore.get(jobId);
+        if (!job) {
+            res.status(404).json({ success: false, error: 'Job not found.' });
+            return;
+        }
+
+        const outputDir = resolveProjectPath('output', job.publicId!);
+        const idx = parseInt(sceneIndex, 10);
+        
+        const updatedScene = await updateSceneInJob(outputDir, idx, req.body);
+        res.json({ success: true, data: updatedScene });
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+export const reorderScenes = async (req: Request, res: Response) => {
+    try {
+        const jobId = String(req.params.jobId);
+        const { fromIndex, toIndex } = req.body;
+        const job = jobStore.get(jobId);
+        if (!job) return res.status(404).json({ success: false, error: 'Job not found.' });
+
+        const outputDir = resolveProjectPath('output', job.publicId!);
+        const scenes = await reorderJobScenes(outputDir, fromIndex, toIndex);
+        res.json({ success: true, data: scenes });
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+export const deleteScene = async (req: Request, res: Response) => {
+    try {
+        const jobId = String(req.params.jobId);
+        const sceneIndex = String(req.params.sceneIndex);
+        const job = jobStore.get(jobId);
+        if (!job) return res.status(404).json({ success: false, error: 'Job not found.' });
+
+        const outputDir = resolveProjectPath('output', job.publicId!);
+        const idx = parseInt(sceneIndex, 10);
+        const scenes = await deleteJobScene(outputDir, idx);
+        res.json({ success: true, data: scenes });
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+export const refineSceneWithAI = async (req: Request, res: Response) => {
+    try {
+        const jobId = String(req.params.jobId);
+        const sceneIndex = String(req.params.sceneIndex);
+        const { instruction } = req.body;
+        const job = jobStore.get(jobId);
+        if (!job) return res.status(404).json({ success: false, error: 'Job not found.' });
+
+        const outputDir = resolveProjectPath('output', job.publicId!);
+        const idx = parseInt(sceneIndex, 10);
+        const dataPath = path.join(outputDir, 'scene-data.json');
+        const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+        const scene = data.scenes[idx];
+
+        if (!scene) throw new Error('Scene not found');
+
+        const refined = await refineSceneAI(scene.voiceoverText, scene.searchKeywords, instruction);
+        
+        // Apply refined fields and regenerate assets
+        const updatedScene = await updateSceneInJob(outputDir, idx, refined);
+        res.json({ success: true, data: updatedScene });
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+export const confirmJobRender = async (req: Request, res: Response) => {
+    try {
+        const jobId = String(req.params.jobId);
+        // This is async but we don't need to wait for it for the response
+        continueJobToRender(jobId).catch(err => {
+            console.error(`Error continuing job ${jobId}:`, err);
+        });
+        res.json({ success: true, message: 'Render resumed.' });
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
 export const startJobController = async (req: Request, res: Response) => {
-    const { title, script, orientation, language, voice, backgroundMusic, defaultVideo, showText, textConfig, personalAudio } = req.body;
+    const { title, script, orientation, language, voice, backgroundMusic, defaultVideo, showText, textConfig, personalAudio, skipReview } = req.body;
     
     const publicId = `${sanitizeFolderTitle(title) || 'video'}_${Date.now()}`;
     const jobId = `job_${Date.now()}_${title.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10) || 'video'}`;
@@ -100,7 +208,8 @@ export const startJobController = async (req: Request, res: Response) => {
         personalAudio,
         defaultVideo: defaultVideo || DEFAULT_FALLBACK_VIDEO,
         showText: showText !== false,
-        textConfig: textConfig
+        textConfig: textConfig,
+        skipReview: !!skipReview
     });
 
     res.status(202).json({
@@ -211,14 +320,23 @@ export const listGalleryAssets = (req: Request, res: Response) => {
 };
 
 export const viewFile = (req: Request, res: Response) => {
-    const filePath = String(req.query.path || '');
-    if (!filePath || !fs.existsSync(filePath)) {
+    const rawPath = String(req.query.path || '');
+    if (!rawPath) {
+        res.status(400).send('Path required');
+        return;
+    }
+
+    // Attempt to resolve path relative to public/ if not absolute
+    const filePath = path.isAbsolute(rawPath) ? rawPath : resolveProjectPath('public', rawPath);
+
+    if (!fs.existsSync(filePath)) {
+        console.error(`[FS-VIEW] File not found: ${filePath} (raw: ${rawPath})`);
         res.status(404).send('File not found');
         return;
     }
 
     const ext = path.extname(filePath).toLowerCase();
-    const mediaExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.mov', '.webm', '.ogg'];
+    const mediaExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.mov', '.webm', '.ogg', '.mp3', '.wav'];
     
     if (!mediaExtensions.includes(ext)) {
         res.status(403).send('File type not allowed for preview');
@@ -231,9 +349,9 @@ export const viewFile = (req: Request, res: Response) => {
         return;
     }
 
-    // Basic range support for video streaming preview
+    // Basic range support for video/audio streaming preview
     const range = req.headers.range;
-    if (range && (['.mp4', '.mov', '.webm', '.ogg'].includes(ext))) {
+    if (range && (['.mp4', '.mov', '.webm', '.ogg', '.mp3', '.wav'].includes(ext))) {
         const parts = range.replace(/bytes=/, "").split("-");
         const start = parseInt(parts[0], 10);
         const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;

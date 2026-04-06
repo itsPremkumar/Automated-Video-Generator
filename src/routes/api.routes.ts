@@ -35,6 +35,12 @@ router.get('/voices', ApiController.getVoices);
 router.get('/setup/status', ApiController.getStatus);
 router.post('/setup/env', ApiController.updateEnv);
 router.get('/jobs/:jobId', ApiController.getJobStatus);
+router.get('/jobs/:jobId/scenes', ApiController.getJobScenes);
+router.post('/jobs/:jobId/scenes/reorder', ApiController.reorderScenes);
+router.post('/jobs/:jobId/scenes/:sceneIndex', ApiController.updateJobScene);
+router.delete('/jobs/:jobId/scenes/:sceneIndex', ApiController.deleteScene);
+router.post('/jobs/:jobId/scenes/:sceneIndex/refine', ApiController.refineSceneWithAI);
+router.post('/jobs/:jobId/confirm', ApiController.confirmJobRender);
 router.post('/jobs', rateLimiter, ApiController.startJobController);
 router.post('/ai/generate-script', rateLimiter, ApiController.generateScriptAI);
 

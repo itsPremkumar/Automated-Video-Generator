@@ -26,6 +26,7 @@ export async function createAndRunJob(
             position?: 'top' | 'center' | 'bottom';
             animation?: 'fade' | 'slide' | 'zoom' | 'typewriter';
         };
+        skipReview?: boolean;
     }
 ) {
     const outputDir = resolveProjectPath('output', publicId);
@@ -75,6 +76,15 @@ export async function createAndRunJob(
                 return;
             }
 
+            if (!options.skipReview) {
+                jobStore.set(jobId, { 
+                    status: 'awaiting_review', 
+                    progress: 70, 
+                    message: 'Assets prepared. Awaiting your review in the Timeline Editor.' 
+                });
+                return;
+            }
+
             jobStore.set(jobId, { status: 'processing', progress: 75, message: 'Rendering final MP4.' });
             await renderVideo(outputDir);
 
@@ -110,3 +120,47 @@ export async function createAndRunJob(
         }
     })();
 }
+
+export async function continueJobToRender(jobId: string) {
+    const job = jobStore.get(jobId);
+    if (!job) throw new Error('Job not found');
+
+    const outputDir = resolveProjectPath('output', job.publicId!);
+    
+    jobStore.set(jobId, { status: 'processing', progress: 75, message: 'Rendering final MP4 (Post-Review).' });
+
+    try {
+        await renderVideo(outputDir);
+
+        const finalVideo = findVideoFile(outputDir);
+        if (!finalVideo) {
+            jobStore.set(jobId, {
+                status: 'failed',
+                progress: 100,
+                message: 'Render finished without a final MP4.',
+                error: 'No final video file found.',
+                errorDetails: 'The Remotion process completed but output directory ' + outputDir + ' is missing the MP4 file.',
+                endTime: Date.now(),
+            });
+            return;
+        }
+
+        jobStore.set(jobId, {
+            status: 'completed',
+            progress: 100,
+            message: 'Video ready for playback and download.',
+            outputPath: path.join(outputDir, finalVideo),
+            endTime: Date.now(),
+        });
+    } catch (error: any) {
+        jobStore.set(jobId, {
+            status: 'failed',
+            progress: 100,
+            message: 'A fatal error occurred while rendering the job after review.',
+            error: error?.message || 'Unknown server error.',
+            errorDetails: (error?.stack || String(error)) + (error?.stderr ? '\n\nSTDERR:\n' + error.stderr.toString() : '') + (error?.stdout ? '\n\nSTDOUT:\n' + error.stdout.toString() : ''),
+            endTime: Date.now(),
+        });
+    }
+}
+
