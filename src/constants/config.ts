@@ -1,5 +1,9 @@
+import * as dotenv from 'dotenv';
 import { resolveProjectPath } from '../runtime';
 import { AVAILABLE_VOICES } from '../lib/voice-generator';
+
+const envPath = resolveProjectPath('.env');
+dotenv.config({ path: envPath });
 
 export { AVAILABLE_VOICES };
 

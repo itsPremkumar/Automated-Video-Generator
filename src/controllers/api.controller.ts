@@ -319,6 +319,34 @@ export const listGalleryAssets = (req: Request, res: Response) => {
     }
 };
 
+export const deleteAsset = (req: Request, res: Response) => {
+    const filename = String(req.params.filename);
+    if (!filename) {
+        res.status(400).json({ success: false, error: 'Filename is required' });
+        return;
+    }
+
+    try {
+        const assetsDir = resolveProjectPath('input', 'input-assests');
+        const filePath = path.join(assetsDir, filename);
+
+        // Security check: Ensure the path is within the assetsDir
+        if (!filePath.startsWith(assetsDir)) {
+            res.status(403).json({ success: false, error: 'Access denied' });
+            return;
+        }
+
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            res.json({ success: true, message: 'Asset deleted successfully' });
+        } else {
+            res.status(404).json({ success: false, error: 'Asset not found' });
+        }
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
 export const viewFile = (req: Request, res: Response) => {
     const rawPath = String(req.query.path || '');
     if (!rawPath) {

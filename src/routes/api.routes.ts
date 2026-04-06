@@ -50,6 +50,7 @@ router.post('/fs/pick', ApiController.pickFile);
 router.get('/fs/drives', ApiController.listDrives);
 router.get('/fs/home', ApiController.getHomeDirs);
 router.get('/fs/assets', ApiController.listGalleryAssets);
+router.delete('/fs/assets/:filename', ApiController.deleteAsset);
 router.get('/fs/view', ApiController.viewFile);
 
 export default router;
