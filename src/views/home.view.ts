@@ -94,7 +94,7 @@ function buildLanguageOptions(voicesList: Record<string, { male: string[]; femal
 function buildSetupSummary(setup: SetupStatus): string {
     return [
         `<span class="status-chip ${setup.hasPexelsKey ? 'ok' : 'warn'}">Pexels key: ${setup.hasPexelsKey ? 'Saved' : 'Missing'}</span>`,
-        `<span class="status-chip ${setup.edgeTtsReady ? 'ok' : 'warn'}">Voice engine: ${setup.edgeTtsReady ? 'Ready' : 'Not ready'}</span>`,
+        `<span class="status-chip ${setup.voiceGenerationReady ? 'ok' : 'warn'}">Voice engine: ${setup.voiceEngineMode === 'edge-tts' ? 'Edge-TTS ready' : setup.voiceEngineMode === 'windows-sapi-fallback' ? 'Windows voice ready' : setup.voiceEngineMode === 'gtts-fallback' ? 'Fallback mode' : 'Not ready'}</span>`,
         `<span class="status-chip ok">Portal workflow: Browser first</span>`,
     ].join('');
 }
@@ -635,7 +635,7 @@ window.toggleFieldUpdate = toggleFieldUpdate;
 function renderSetupStatus(data) {
     const items = [
         ['Pexels API', data.hasPexelsKey, 'Needed for the strongest video search'],
-        ['Voice engine', data.edgeTtsReady, 'Needed for narration'],
+        ['Voice engine', data.voiceGenerationReady, data.voiceEngineMessage || 'Needed for narration'],
         ['Ready to render', data.readyForGeneration, 'Main requirements satisfied']
     ];
     setupReadiness.innerHTML = items.map(([label, ok, help]) =>

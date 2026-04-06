@@ -128,7 +128,7 @@ export const MainVideo: React.FC<{ sceneData: VideoData }> = ({
                             showText={videoData.showText !== false}
                             textConfig={videoData.textConfig}
                         />
-                        {scene.audioPath && scene.audioPath.endsWith('.mp3') && (
+                        {scene.audioPath && (scene.audioPath.endsWith('.mp3') || scene.audioPath.endsWith('.wav')) && (
                             (() => {
                                 // console.log(`MainVideo: Processing audio for scene ${scene.sceneNumber}`, {
                                 //     originalPath: scene.audioPath,

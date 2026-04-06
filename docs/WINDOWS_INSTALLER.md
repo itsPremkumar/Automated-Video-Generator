@@ -1,105 +1,221 @@
-# Windows Desktop App & Installer Documentation
+# Windows Desktop App and Installer Guide
 
-This document providing a comprehensive guide to building, packaging, and distributing the **Automated Video Generator** as a standalone Windows application.
+This document explains how the Windows desktop app works, how it is packaged, and how to verify that releases are safe to ship.
 
-## 🚀 Overview
+## Overview
 
-The Windows version is a **zero-setup, self-contained application**. It enables users to generate AI videos without needing to manually install Node.js, Python, or manage environment variables.
+The Windows desktop app is designed so non-technical users can install a local video generator without manually setting up Node.js, Python, or FFmpeg.
 
-### Key Features
-- **Standalone Runtime**: Embedded Node.js and Python.
-- **Embedded Dependencies**: Pre-installed `edge-tts` and `pip` in a portable Python environment.
-- **One-Click Installer**: Provided as a standard `.exe` (NSIS).
-- **Background Server**: Automatically launches the Express portal on startup.
+The current desktop flow is more resilient than the original implementation:
 
----
+- the app can open a setup wizard when repair is needed
+- the setup wizard can now actually launch the app
+- narration no longer depends only on a globally installed `edge-tts`
+- packaged builds are verified before and after build output is created
 
-## 🛠️ Development & Building
+## Desktop Runtime Architecture
 
-### Prerequisites
-- Node.js (v18+)
-- Python (v3.12 recommended)
-- `npm`
+The Windows app is made of these parts:
 
-### 1. Compiling the App
-Before building the installer, you must compile the TypeScript code for the Electron main process:
+1. Electron main process
+2. local Express server started as a child process
+3. browser portal UI
+4. bundled desktop resources in `resources/app-bundle`
+5. bundled portable Python runtime for `Edge-TTS`
+
+### Startup flow
+
+At launch, the desktop app:
+
+1. verifies whether a working voice engine exists
+2. shows the setup window if repair may be needed
+3. starts the backend server through Electron
+4. opens the portal in the main desktop window
+5. keeps the app available through the tray
+
+### Setup wizard flow
+
+The setup window is now a real control surface:
+
+- `Install Missing Dependencies` repairs the bundled runtime when possible
+- `Launch App` starts the backend and opens the portal
+- `Skip` also starts the app instead of silently closing the setup window
+- closing the setup window before launch exits cleanly instead of leaving the app half-open
+
+## Voice Engine Strategy
+
+Voice generation on Windows now follows this order:
+
+1. bundled `edge-tts.exe`
+2. bundled Python `-m edge_tts`
+3. system `edge-tts`
+4. Windows offline speech voices using `System.Speech`
+5. Google TTS fallback when available
+
+Why this matters:
+
+- a developer laptop may already have Python and `edge-tts` installed
+- a normal user laptop usually does not
+- the desktop app must still work on the second machine
+
+The new Windows offline speech fallback is especially important for fresh installs and partially broken voice runtimes.
+
+## Security and Reliability Defaults
+
+The desktop build now includes these protections:
+
+- Electron windows run with `contextIsolation: true`
+- Electron windows run with `sandbox: true`
+- navigation and `window.open()` are guarded
+- external URLs are allowlisted
+- render Chromium web security is enabled by default
+- release verification checks for bundled runtime files before shipping
+
+If you must disable Chromium web security for debugging:
+
+```bash
+set REMOTION_DISABLE_WEB_SECURITY=1
+```
+
+Do not enable this in normal releases unless you fully understand the risk.
+
+## Build and Packaging Workflow
+
+### 1. Verify source bundle inputs
+
+```bash
+npm run electron:verify-bundle
+```
+
+This checks source-side requirements such as:
+
+- `requirements.txt`
+- `portable-python/python.exe`
+- `portable-python/Scripts/edge-tts.exe`
+- desktop icons
+- setup HTML
+
+### 2. Compile Electron code
+
 ```bash
 npm run electron:compile
 ```
-This generates the `dist-electron/electron-main.js` file.
 
-### 2. Building the Installer Locally
-To generate the `.exe` setup file on your machine without publishing to GitHub:
+### 3. Build installer
+
 ```bash
 npm run electron:build
 ```
-The output will be found in the `release/` folder as `Automated Video Generator Setup 1.0.0.exe`.
 
-### 3. Testing the Unpacked App
-To test the app without running a full installer (faster for debugging):
+This now performs:
+
+1. source bundle verification
+2. Electron TypeScript compilation
+3. Electron build
+4. unpacked release verification
+
+### 4. Build unpacked app for testing
+
 ```bash
 npm run electron:pack
 ```
-The unpacked application will be in `release/win-unpacked/Automated Video Generator.exe`.
 
----
+The unpacked app is typically created in:
 
-## 🌎 Releasing to GitHub
+```text
+release/win-unpacked/
+```
 
-The application is configured to automatically upload builds to GitHub Releases.
+### 5. Verify unpacked release manually
 
-### Option A: Automatic via GitHub Actions (Recommended)
-This repo includes a CI/CD workflow that builds and releases the app whenever you push a version tag.
-1. Update `"version"` in `package.json` (e.g., `1.0.1`).
-2. Commit and push:
-   ```bash
-   git tag v1.0.1
-   git push origin v1.0.1
-   ```
-3. GitHub will start the "Release" Action, build the app, and attach the `.exe` to a new release automatically.
+```bash
+npm run electron:verify-release
+```
 
-### Option B: Manual Release Script
-If you want to push a release directly from your local machine:
+This checks the unpacked release for:
+
+- packaged executable
+- packaged icons
+- `resources/app-bundle/requirements.txt`
+- packaged portable Python
+- packaged `edge-tts.exe`
+
+## Release Workflow
+
+### Local release
+
 ```bash
 npm run electron:release
 ```
-**Required**: You must have a `GH_TOKEN` environment variable set with GitHub "repo" permissions.
 
----
+This requires a valid `GH_TOKEN` for GitHub publishing.
 
-## 🏗️ Technical Architecture
+### Tag-based GitHub release
 
-### 1. Portable Python Setup
-The app uses a script (`scripts/setup-portable-python.cjs`) that:
-- Downloads the official Python 3.12 embeddable package.
-- Installs `pip` using `get-pip.py`.
-- Installs `edge-tts` and its dependencies into the local `portable-python` directory.
-- This directory is then bundled into the installer's `resources` folder.
+1. Update the version in `package.json`
+2. Commit the version change
+3. Create and push a tag
+4. Let GitHub Actions build and publish the installer
 
-### 2. The Electron Main Process
-The `electron/electron-main.ts` file is the brain of the app:
-- It spawns a child process of itself using `ELECTRON_RUN_AS_NODE=1` to run the `src/server.ts` backend.
-- It detects the portable Python location and sets it in the environment.
-- It displays a native "Startup Error" dialog if the background server fails to bind its port.
+## Common Troubleshooting
 
-### 3. Path Resolution
-All file paths (for assets, music, and voice generation) are resolved relative to `process.resourcesPath` when packaged. This allows the app to find its internal files regardless of where the user installs it.
+### "Edge-TTS is not available"
 
----
+The app should no longer stop at that single point of failure.
 
-## ❓ Troubleshooting
+Check these in order:
 
-### Blank Screen on Startup
-If the app opens to a white/blank screen, it usually means the backend server crashed silently.
-- **Cause**: Usually a module resolution error (e.g., `Cannot find module 'express'`).
-- **Fix**: Ensure all dependencies are included in the `files` array in `electron-builder.config.js`. I have already unified these into the `app/` directory to prevent this.
+1. open the setup wizard and repair dependencies
+2. verify the bundled runtime with `npm run electron:verify-bundle`
+3. verify the unpacked release with `npm run electron:verify-release`
+4. confirm Windows has at least one speech voice installed
 
-### Python Errors
-If voice generation fails inside the app:
-- Check if `portable-python/` exists in the local project directory before building.
-- Ensure the `voice-generator.ts` is looking for the `edge-tts` script inside the bundled resources.
+If Windows offline speech is available, the app can still narrate even when `Edge-TTS` is unavailable.
 
----
+### App closes after setup
 
-## 📜 Version History
-- **v1.0.0**: Initial Desktop App release. Zero-setup implementation with bundled Python and automated GitHub releases.
+That behavior was fixed. If it happens again, treat it as a bug and check:
+
+- whether the backend server failed during startup
+- whether the unpacked release is missing bundled files
+- whether the tray or main window was created successfully
+
+### Blank screen or empty portal
+
+Possible causes:
+
+- backend server startup failure
+- missing packaged dependencies
+- incorrect release contents
+
+Use:
+
+```bash
+npm run electron:verify-release
+```
+
+and inspect the startup error dialog if one appears.
+
+### Works in dev, fails in packaged app
+
+That usually means your dev machine is using globally installed tools that are not actually bundled.
+
+Always verify the packaged output, not just the dev environment.
+
+## Files Involved
+
+Important desktop files:
+
+- `electron/electron-main.ts`
+- `electron/electron-preload.ts`
+- `electron/electron-setup.html`
+- `scripts/verify-desktop-bundle.cjs`
+- `scripts/setup-portable-python.cjs`
+- `electron-builder.config.js`
+- `src/lib/voice-generator.ts`
+
+## Related Docs
+
+- [../QUICKSTART.md](../QUICKSTART.md)
+- [SETUP.md](./SETUP.md)
+- [PRODUCTION_HARDENING.md](./PRODUCTION_HARDENING.md)

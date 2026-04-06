@@ -160,17 +160,25 @@ export function publicVideo(video: VideoRecord) {
 
 export function getJobData(job: JobStatus, req: Request) {
     const publicId = job.publicId || (job.outputPath ? path.basename(path.dirname(job.outputPath)) : null);
+    const isTerminal = job.status === 'completed' || job.status === 'failed' || job.status === 'cancelled';
     const data: Record<string, unknown> = {
         jobId: job.id,
         title: job.title || null,
         publicId,
         status: job.status,
+        phase: job.phase,
         progress: job.progress,
         message: job.message,
         error: job.error || null,
         errorDetails: job.errorDetails || null,
         startedAt: new Date(job.startTime).toISOString(),
+        updatedAt: new Date(job.updatedAt).toISOString(),
         finishedAt: job.endTime ? new Date(job.endTime).toISOString() : null,
+        cancelRequested: job.cancelRequested,
+        retryCount: job.retryCount,
+        canCancel: !isTerminal && job.status !== 'cancelling',
+        canRetry: job.status === 'failed' || job.status === 'cancelled',
+        isTerminal,
         statusUrl: absoluteUrl(req, `/api/jobs/${encodeURIComponent(job.id)}`),
         statusPageUrl: absoluteUrl(req, `/jobs/${encodeURIComponent(job.id)}`),
     };

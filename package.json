@@ -60,10 +60,12 @@
         "mcp": "tsx src/mcp-server.ts",
         "prepublishOnly": "npm run typecheck",
         "electron:compile": "tsc -p tsconfig.electron.json",
+        "electron:verify-bundle": "node scripts/verify-desktop-bundle.cjs",
+        "electron:verify-release": "node scripts/verify-desktop-bundle.cjs --release release/win-unpacked",
         "electron:dev": "npm run electron:compile && electron .",
-        "electron:build": "npm run electron:compile && electron-builder --config electron-builder.config.js",
-        "electron:release": "npm run electron:compile && electron-builder --config electron-builder.config.js --publish always",
-        "electron:pack": "npm run electron:compile && electron-builder --config electron-builder.config.js --dir"
+        "electron:build": "npm run electron:verify-bundle && npm run electron:compile && electron-builder --config electron-builder.config.js && npm run electron:verify-release",
+        "electron:release": "npm run electron:verify-bundle && npm run electron:compile && electron-builder --config electron-builder.config.js --publish always && npm run electron:verify-release",
+        "electron:pack": "npm run electron:verify-bundle && npm run electron:compile && electron-builder --config electron-builder.config.js --dir && npm run electron:verify-release"
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.28.0",

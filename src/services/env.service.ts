@@ -3,7 +3,7 @@ import { parse } from 'dotenv';
 import { ENV_FILE, EDITABLE_ENV_KEYS } from '../constants/config';
 import { EditableEnvKey, SetupStatus } from '../types/server.types';
 import { resolveProjectPath } from '../runtime';
-import { validateEdgeTTS } from '../lib/voice-generator';
+import { getVoiceEngineStatus } from '../lib/voice-generator';
 
 export function readEnvValues(): Record<string, string> {
     if (!fs.existsSync(ENV_FILE)) {
@@ -59,7 +59,7 @@ export function getSetupStatus(): SetupStatus {
     const hasPixabayKey = Boolean(envValues.PIXABAY_API_KEY?.trim());
     const hasGeminiKey = Boolean(envValues.GEMINI_API_KEY?.trim());
     const hasPublicBaseUrl = Boolean(envValues.PUBLIC_BASE_URL?.trim());
-    const edgeTtsReady = validateEdgeTTS();
+    const voiceEngine = getVoiceEngineStatus();
 
     return {
         envFileExists: fs.existsSync(ENV_FILE),
@@ -67,7 +67,11 @@ export function getSetupStatus(): SetupStatus {
         hasPixabayKey,
         hasGeminiKey,
         hasPublicBaseUrl,
-        edgeTtsReady,
-        readyForGeneration: hasPexelsKey && edgeTtsReady,
+        edgeTtsReady: voiceEngine.edgeTtsReady,
+        voiceFallbackReady: voiceEngine.fallbackReady,
+        voiceGenerationReady: voiceEngine.generationReady,
+        voiceEngineMode: voiceEngine.activeEngine,
+        voiceEngineMessage: voiceEngine.detail,
+        readyForGeneration: hasPexelsKey && voiceEngine.generationReady,
     };
 }

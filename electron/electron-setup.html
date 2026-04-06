@@ -348,6 +348,7 @@
 
         let deps = [];
         let isInstalling = false;
+        let isLaunching = false;
 
         function renderDeps() {
             const list = document.getElementById('depList');
@@ -381,14 +382,45 @@
                 installBtn.style.display = 'none';
                 launchBtn.style.display = '';
                 skipBtn.style.display = 'none';
+                launchBtn.disabled = isLaunching;
                 document.getElementById('overallStatus').innerHTML = '<span class="status-badge all-good">✅ All dependencies ready</span>';
             } else if (!isInstalling) {
                 installBtn.style.display = '';
                 installBtn.disabled = false;
                 launchBtn.style.display = 'none';
                 skipBtn.style.display = '';
+                skipBtn.disabled = isLaunching;
                 const missing = deps.filter(d => d.required && !d.installed).length;
                 document.getElementById('overallStatus').innerHTML = `<span class="status-badge needs-setup">⚠️ ${missing} dependencies need setup</span>`;
+            }
+        }
+
+        async function launchFromSetup(mode) {
+            if (isLaunching) return;
+            isLaunching = true;
+            document.getElementById('installBtn').disabled = true;
+            document.getElementById('launchBtn').disabled = true;
+            document.getElementById('skipBtn').disabled = true;
+            document.getElementById('progressSection').classList.add('visible');
+            document.getElementById('progressLabel').textContent = mode === 'skip'
+                ? 'Launching app with current setup...'
+                : 'Launching app...';
+            document.getElementById('progressBar').style.width = '100%';
+
+            try {
+                if (mode === 'skip') {
+                    await window.electronAPI.skipSetup();
+                } else {
+                    await window.electronAPI.launchAfterSetup();
+                }
+            } catch (error) {
+                isLaunching = false;
+                document.getElementById('progressLabel').textContent = error && error.message
+                    ? error.message
+                    : 'Failed to launch the desktop app.';
+                document.getElementById('launchBtn').disabled = false;
+                document.getElementById('skipBtn').disabled = false;
+                updateButtons();
             }
         }
 
@@ -427,17 +459,14 @@
             progressSection.classList.remove('visible');
         });
 
-        document.getElementById('launchBtn').addEventListener('click', () => {
+        document.getElementById('launchBtn').addEventListener('click', async () => {
             window.electronAPI.removeAllListeners('install-progress');
             window.electronAPI.removeAllListeners('setup-complete');
-            // Signal main process to proceed
-            const { ipcRenderer } = require('electron');
-            // Use a workaround since we're in preload context
-            window.close();
+            await launchFromSetup('launch');
         });
 
-        document.getElementById('skipBtn').addEventListener('click', () => {
-            window.close();
+        document.getElementById('skipBtn').addEventListener('click', async () => {
+            await launchFromSetup('skip');
         });
 
         window.electronAPI.onInstallProgress((event, data) => {

@@ -61,6 +61,8 @@ router.post(
     asyncHandler(ApiController.refineSceneWithAI),
 );
 router.post('/jobs/:jobId/confirm', validateRequest({ params: jobIdParamsSchema }), asyncHandler(ApiController.confirmJobRender));
+router.post('/jobs/:jobId/cancel', validateRequest({ params: jobIdParamsSchema }), asyncHandler(ApiController.cancelJobController));
+router.post('/jobs/:jobId/retry', validateRequest({ params: jobIdParamsSchema }), asyncHandler(ApiController.retryJobController));
 router.post('/jobs', createJobLimiter, validateRequest({ body: startJobBodySchema }), asyncHandler(ApiController.startJobController));
 router.post(
     '/ai/generate-script',

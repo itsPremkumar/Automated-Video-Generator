@@ -6,6 +6,7 @@ import { execSync } from 'child_process';
 import { cleanupAssets } from './lib/cleaner';
 import { logError, logInfo, logWarn, resolveProjectPath, writeProgress } from './runtime';
 import { createPipelineWorkspace } from './pipeline-workspace';
+import { JobCancellationError } from './lib/job-cancellation';
 
 const console = {
     log: (...args: unknown[]) => logInfo(...args),
@@ -54,12 +55,34 @@ interface SceneData {
     assetNamespace?: string;
 }
 
+interface RenderOptions {
+    shouldCancel?: () => boolean;
+}
+
+function throwIfCancelled(shouldCancel?: () => boolean): void {
+    if (shouldCancel?.()) {
+        throw new JobCancellationError();
+    }
+}
+
+function getChromiumOptions() {
+    if (process.env.REMOTION_DISABLE_WEB_SECURITY === '1') {
+        console.warn('[RENDER] REMOTION_DISABLE_WEB_SECURITY=1 detected. Chromium web security is disabled for this render.');
+        return {
+            disableWebSecurity: true,
+        };
+    }
+
+    return undefined;
+}
+
 /**
  * Segmented Video Renderer
  * Renders video scene-by-scene for memory efficiency and crash recovery
  */
-export const renderVideo = async (outputDir: string = resolveProjectPath('output')) => {
+export const renderVideo = async (outputDir: string = resolveProjectPath('output'), options: RenderOptions = {}) => {
     const totalStartTime = Date.now();
+    const { shouldCancel } = options;
 
     console.log('\n');
     console.log('╔════════════════════════════════════════════════════════════════╗');
@@ -82,6 +105,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
     const segmentsDir = path.join(outputDir, 'segments');
 
     try {
+        throwIfCancelled(shouldCancel);
         // ══════════════════════════════════════════════════════════════════
         // STEP 1: LOAD SCENE DATA
         // ══════════════════════════════════════════════════════════════════
@@ -97,6 +121,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
 
         const fileContent = fs.readFileSync(sceneDataPath, 'utf8');
         const sceneData: SceneData = JSON.parse(fileContent);
+        throwIfCancelled(shouldCancel);
         assetWorkspaceDir = sceneData.assetNamespace
             ? resolveProjectPath('public', sceneData.assetNamespace)
             : createPipelineWorkspace(outputDir).workspaceDir;
@@ -160,6 +185,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         const thumbnailLocation = path.join(outputDir, 'thumbnail.jpg');
 
         if (!fs.existsSync(thumbnailLocation)) {
+            throwIfCancelled(shouldCancel);
             const firstScene = sceneData.scenes[0];
             const thumbnailComposition = await selectComposition({
                 serveUrl: bundleLocation,
@@ -215,6 +241,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         let cumulativeFrames = 0;
 
         for (let i = 0; i < sceneData.scenes.length; i++) {
+            throwIfCancelled(shouldCancel);
             const scene = sceneData.scenes[i];
             const segmentFilename = `segment_${String(i + 1).padStart(3, '0')}.mp4`;
             const segmentPath = path.join(segmentsDir, segmentFilename);
@@ -309,14 +336,14 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                     crf: 18,
                     timeoutInMilliseconds: 300000,  // 5 min per scene max
                     concurrency: 1,
-                    chromiumOptions: {
-                        disableWebSecurity: true,
-                    },
+                    chromiumOptions: getChromiumOptions(),
                     onProgress: ({ progress }) => {
+                        throwIfCancelled(shouldCancel);
                         const percent = Math.round(progress * 100);
                         writeProgress(`\r   ⏳ Progress: ${percent}%`);
                     }
                 });
+                throwIfCancelled(shouldCancel);
 
                 const sceneTime = Date.now() - sceneStart;
                 const stats = fs.statSync(segmentPath);
@@ -345,6 +372,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         const videoTitle = sceneData.title || 'video';
         const safeFilename = videoTitle.replace(/[<>:"/\\|?*]/g, '').trim();
         const finalOutput = path.join(outputDir, `${safeFilename}.mp4`);
+        throwIfCancelled(shouldCancel);
 
         const missingSegments = segments.filter((segmentPath) => !fs.existsSync(segmentPath));
         if (missingSegments.length > 0) {
@@ -381,6 +409,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         } catch (ffmpegError: any) {
             // Try with re-encoding if concat copy fails
             console.log('⚠️ [RENDER] Lossless concat failed, trying with re-encode...');
+            throwIfCancelled(shouldCancel);
             const ffmpegReencodeCmd = `"${ffmpegPath}" -y -f concat -safe 0 -i "${concatListPath}" -c:v libx264 -crf 18 -c:a aac "${finalOutput}"`;
 
             try {

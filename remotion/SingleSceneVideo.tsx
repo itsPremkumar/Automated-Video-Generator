@@ -276,7 +276,7 @@ export const SingleSceneVideo: React.FC<SingleSceneProps> = ({
             )}
 
             {/* Voiceover Audio */}
-            {scene.audioPath && scene.audioPath.endsWith('.mp3') && (
+            {scene.audioPath && (scene.audioPath.endsWith('.mp3') || scene.audioPath.endsWith('.wav')) && (
                 <Audio
                     src={staticFile(resolveStaticMediaPath(scene.audioPath))}
                     volume={1.0}

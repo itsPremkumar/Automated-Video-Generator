@@ -16,7 +16,7 @@ import { getSetupStatus, updateEnvValues } from '../services/env.service';
 import { getDynamicVoices } from '../lib/voice-generator';
 import { generateScriptFromPrompt, refineSceneAI } from '../services/ai.service';
 import { deleteJobScene, reorderJobScenes, updateSceneInJob } from '../video-generator';
-import { continueJobToRender, createAndRunJob } from '../services/job.service';
+import { cancelJob, continueJobToRender, createAndRunJob, retryJob } from '../services/job.service';
 import { DEFAULT_FALLBACK_VIDEO, EDITABLE_ENV_KEYS } from '../constants/config';
 import { EditableEnvKey } from '../types/server.types';
 import { runHealthCheck } from '../services/health.service';
@@ -43,11 +43,15 @@ function getJobOrThrow(jobId: string) {
 
 function getJobOutputDir(jobId: string): string {
     const job = getJobOrThrow(jobId);
-    if (!job.publicId) {
-        throw new NotFoundError('Job output directory not found.');
+    if (job.publicId) {
+        return resolveProjectPath('output', job.publicId);
     }
 
-    return resolveProjectPath('output', job.publicId);
+    if (job.outputPath) {
+        return path.dirname(job.outputPath);
+    }
+
+    throw new NotFoundError('Job output directory not found.');
 }
 
 function readJsonFile<T>(filePath: string, notFoundMessage: string): T {
@@ -220,7 +224,40 @@ export const confirmJobRender = async (req: Request, res: Response) => {
 
     res.json({
         success: true,
+        data: result,
         message: result.alreadyQueued ? 'Render is already queued or running.' : 'Render queued.',
+    });
+};
+
+export const cancelJobController = async (req: Request, res: Response) => {
+    const jobId = String(req.params.jobId);
+    const result = await cancelJob(jobId);
+
+    res.json({
+        success: true,
+        data: result,
+        message: result.completed
+            ? 'Job cancelled.'
+            : 'Cancellation requested. The job will stop after the current safe checkpoint.',
+    });
+};
+
+export const retryJobController = async (req: Request, res: Response) => {
+    const jobId = String(req.params.jobId);
+    const result = await retryJob(jobId);
+
+    const message = result.alreadyQueued
+        ? 'Retry is already queued or running.'
+        : result.mode === 'review'
+            ? 'Job restored to the review stage.'
+            : result.mode === 'render'
+                ? 'Render retry queued.'
+                : 'Generation retry queued.';
+
+    res.json({
+        success: true,
+        data: result,
+        message,
     });
 };
 

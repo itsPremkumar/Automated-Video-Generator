@@ -40,5 +40,9 @@ export interface SetupStatus {
     hasGeminiKey: boolean;
     hasPublicBaseUrl: boolean;
     edgeTtsReady: boolean;
+    voiceFallbackReady: boolean;
+    voiceGenerationReady: boolean;
+    voiceEngineMode: 'edge-tts' | 'windows-sapi-fallback' | 'gtts-fallback' | 'unavailable';
+    voiceEngineMessage: string;
     readyForGeneration: boolean;
 }

@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     installDependency: (name: string) => ipcRenderer.invoke('install-dependency', name),
     installAllDependencies: () => ipcRenderer.invoke('install-all-dependencies'),
     openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
+    launchAfterSetup: () => ipcRenderer.invoke('launch-after-setup'),
+    skipSetup: () => ipcRenderer.invoke('skip-setup'),
     getAppVersion: () => ipcRenderer.invoke('get-app-version'),
 
     // Listen for progress updates from main process

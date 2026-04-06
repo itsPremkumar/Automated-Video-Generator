@@ -1,7 +1,7 @@
 import { app, BrowserWindow, Tray, Menu, ipcMain, shell, nativeImage, dialog } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { execSync, spawn, ChildProcess } from 'child_process';
+import { execSync, spawn, spawnSync, ChildProcess } from 'child_process';
 
 // ─── Path Resolution ─────────────────────────────────────────────────────────
 const isDev = !app.isPackaged;
@@ -16,8 +16,12 @@ let mainWindow: BrowserWindow | null = null;
 let setupWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let serverProcess: ChildProcess | null = null;
+let portalStartPromise: Promise<void> | null = null;
+let isHandlingSetupLaunch = false;
+let ipcHandlersRegistered = false;
 const PORT = 3001;
 const SERVER_URL = `http://localhost:${PORT}`;
+const ALLOWED_EXTERNAL_HOSTS = new Set(['github.com', 'www.github.com']);
 
 // ─── Dependency Checking ─────────────────────────────────────────────────────
 interface DepStatus {
@@ -41,6 +45,153 @@ function runQuiet(command: string): string | null {
     }
 }
 
+function encodePowerShellCommand(script: string): string {
+    return Buffer.from(script, 'utf16le').toString('base64');
+}
+
+function runPowerShellEncoded(script: string, envOverrides: NodeJS.ProcessEnv = process.env): string | null {
+    if (process.platform !== 'win32') {
+        return null;
+    }
+
+    try {
+        const result = spawnSync(
+            'powershell.exe',
+            ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encodePowerShellCommand(script)],
+            {
+                encoding: 'utf8',
+                env: envOverrides,
+                stdio: 'pipe',
+                timeout: 15000,
+                windowsHide: true,
+            }
+        );
+
+        if (result.status === 0) {
+            return result.stdout.trim() || 'Windows offline speech ready';
+        }
+    } catch {
+        // Ignore probe errors and fall back to other runtimes.
+    }
+
+    return null;
+}
+
+function detectWindowsOfflineVoice(): string | null {
+    return runPowerShellEncoded(`
+Add-Type -AssemblyName System.Speech
+$synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
+try {
+  $voices = @($synth.GetInstalledVoices() | Where-Object { $_.Enabled })
+  if ($voices.Count -le 0) {
+    throw 'No enabled Windows speech voices are installed.'
+  }
+  Write-Output $voices[0].VoiceInfo.Name
+} finally {
+  $synth.Dispose()
+}
+    `);
+}
+
+function canOpenInPortal(url: string): boolean {
+    return url === SERVER_URL || url.startsWith(`${SERVER_URL}/`);
+}
+
+function canOpenExternalUrl(url: string): boolean {
+    try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'https:') {
+            return false;
+        }
+
+        return ALLOWED_EXTERNAL_HOSTS.has(parsed.hostname.toLowerCase());
+    } catch {
+        return false;
+    }
+}
+
+async function openExternalSafely(url: string): Promise<void> {
+    if (!canOpenExternalUrl(url) && !canOpenInPortal(url)) {
+        throw new Error(`Blocked external URL: ${url}`);
+    }
+
+    await shell.openExternal(url);
+}
+
+function bundledPythonCandidates(): string[] {
+    return [
+        resolveApp('portable-python', 'python.exe'),
+        path.join(process.resourcesPath || '', 'app-bundle', 'portable-python', 'python.exe'),
+        path.join(process.resourcesPath || '', 'portable-python', 'python.exe'),
+    ].filter(Boolean);
+}
+
+function bundledRequirementsCandidates(): string[] {
+    return [
+        resolveApp('requirements.txt'),
+        path.join(process.resourcesPath || '', 'app-bundle', 'requirements.txt'),
+    ].filter(Boolean);
+}
+
+function findBundledPythonExecutable(): string | null {
+    const candidates = bundledPythonCandidates();
+    for (const pythonExe of candidates) {
+        if (!fs.existsSync(pythonExe)) {
+            continue;
+        }
+
+        const version = runQuiet(`"${pythonExe}" --version`);
+        if (version) {
+            return pythonExe;
+        }
+    }
+
+    return null;
+}
+
+function findBundledEdgeTtsExecutable(): string | null {
+    const bundledPython = findBundledPythonExecutable();
+    if (!bundledPython) {
+        return null;
+    }
+
+    const edgeExe = path.join(path.dirname(bundledPython), 'Scripts', 'edge-tts.exe');
+    if (fs.existsSync(edgeExe) && runQuiet(`"${edgeExe}" --help`)) {
+        return edgeExe;
+    }
+
+    if (runQuiet(`"${bundledPython}" -m edge_tts --help`)) {
+        return bundledPython;
+    }
+
+    return null;
+}
+
+function repairBundledEdgeTts(): boolean {
+    const bundledPython = findBundledPythonExecutable();
+    if (!bundledPython) {
+        return false;
+    }
+
+    const requirementsFile = bundledRequirementsCandidates().find((candidate) => fs.existsSync(candidate));
+    const installCommand = requirementsFile
+        ? `"${bundledPython}" -m pip install -r "${requirementsFile}" --no-warn-script-location`
+        : `"${bundledPython}" -m pip install edge-tts --no-warn-script-location`;
+
+    try {
+        execSync(installCommand, {
+            encoding: 'utf8',
+            timeout: 240000,
+            stdio: 'pipe',
+            windowsHide: true,
+        });
+
+        return Boolean(findBundledEdgeTtsExecutable());
+    } catch {
+        return false;
+    }
+}
+
 function checkNodeInstalled(): DepStatus {
     const version = runQuiet('node --version');
     return {
@@ -53,6 +204,18 @@ function checkNodeInstalled(): DepStatus {
 }
 
 function checkPythonInstalled(): DepStatus {
+    const bundledPython = findBundledPythonExecutable();
+    if (bundledPython) {
+        const version = runQuiet(`"${bundledPython}" --version`);
+        return {
+            name: 'python',
+            label: 'Python 3',
+            installed: true,
+            version: version ? `${version} (bundled)` : `Bundled at ${bundledPython}`,
+            required: true,
+        };
+    }
+
     const pythonExe = findPythonExecutable();
     if (pythonExe) {
         const version = runQuiet(`"${pythonExe}" --version`);
@@ -172,12 +335,25 @@ function checkFfmpegInstalled(): DepStatus {
 }
 
 function checkEdgeTtsInstalled(): DepStatus {
+    const bundledEdgeTts = findBundledEdgeTtsExecutable();
+    if (bundledEdgeTts) {
+        return {
+            name: 'edge-tts',
+            label: 'Voice Engine',
+            installed: true,
+            version: bundledEdgeTts.endsWith('python.exe')
+                ? `${bundledEdgeTts} -m edge_tts`
+                : `${bundledEdgeTts} (bundled)`,
+            required: true,
+        };
+    }
+
     // Check edge-tts command on PATH
     const edgeCheck = runQuiet('edge-tts --help');
     if (edgeCheck) {
         return {
             name: 'edge-tts',
-            label: 'Edge-TTS (Voice Engine)',
+            label: 'Voice Engine',
             installed: true,
             version: 'edge-tts CLI',
             required: true,
@@ -191,7 +367,7 @@ function checkEdgeTtsInstalled(): DepStatus {
         if (pyCheck) {
             return {
                 name: 'edge-tts',
-                label: 'Edge-TTS (Voice Engine)',
+                label: 'Voice Engine',
                 installed: true,
                 version: `${pythonExe} -m edge_tts`,
                 required: true,
@@ -214,7 +390,7 @@ function checkEdgeTtsInstalled(): DepStatus {
                             if (check) {
                                 return {
                                     name: 'edge-tts',
-                                    label: 'Edge-TTS (Voice Engine)',
+                                    label: 'Voice Engine',
                                     installed: true,
                                     version: edgeExe,
                                     required: true,
@@ -227,9 +403,20 @@ function checkEdgeTtsInstalled(): DepStatus {
         }
     }
 
+    const windowsOfflineVoice = detectWindowsOfflineVoice();
+    if (windowsOfflineVoice) {
+        return {
+            name: 'edge-tts',
+            label: 'Voice Engine',
+            installed: true,
+            version: `Windows offline voice: ${windowsOfflineVoice}`,
+            required: true,
+        };
+    }
+
     return {
         name: 'edge-tts',
-        label: 'Edge-TTS (Voice Engine)',
+        label: 'Voice Engine',
         installed: false,
         required: true,
     };
@@ -271,6 +458,11 @@ async function installDependency(win: BrowserWindow | null, name: string): Promi
     try {
         switch (name) {
             case 'python': {
+                if (findBundledPythonExecutable()) {
+                    sendProgress(win, name, 'Bundled Python runtime is already available.', 100);
+                    return true;
+                }
+
                 sendProgress(win, name, 'Installing Python 3 via winget...', 10);
                 execSync('winget install --id Python.Python.3.12 --exact --accept-package-agreements --accept-source-agreements --silent', {
                     encoding: 'utf8',
@@ -286,6 +478,19 @@ async function installDependency(win: BrowserWindow | null, name: string): Promi
                 return true;
             }
             case 'edge-tts': {
+                if (findBundledEdgeTtsExecutable()) {
+                    sendProgress(win, name, 'Bundled Edge-TTS voice engine is already available.', 100);
+                    return true;
+                }
+
+                const bundledPython = findBundledPythonExecutable();
+                if (bundledPython) {
+                    sendProgress(win, name, 'Repairing bundled Edge-TTS voice engine...', 20);
+                    const repaired = repairBundledEdgeTts();
+                    sendProgress(win, name, repaired ? 'Bundled Edge-TTS repaired successfully' : 'Bundled Edge-TTS repair failed', repaired ? 100 : 0);
+                    return repaired;
+                }
+
                 sendProgress(win, name, 'Installing edge-tts Python package...', 10);
                 const pipCmd = runQuiet('python -m pip --version') ? 'python' :
                     runQuiet('py -m pip --version') ? 'py' : null;
@@ -293,6 +498,7 @@ async function installDependency(win: BrowserWindow | null, name: string): Promi
                     sendProgress(win, name, 'Python pip not found. Install Python first.', 0);
                     return false;
                 }
+
                 execSync(`${pipCmd} -m pip install edge-tts`, {
                     encoding: 'utf8',
                     timeout: 120000,
@@ -420,9 +626,52 @@ function stopServer() {
     }
 }
 
+function closeSetupWindow(): void {
+    if (!setupWindow || setupWindow.isDestroyed()) {
+        setupWindow = null;
+        return;
+    }
+
+    const win = setupWindow;
+    setupWindow = null;
+    win.removeAllListeners('closed');
+    win.close();
+}
+
+function attachNavigationGuards(win: BrowserWindow): void {
+    win.webContents.setWindowOpenHandler(({ url }) => {
+        if (canOpenExternalUrl(url)) {
+            void openExternalSafely(url).catch((error) => {
+                console.warn('[Electron] Failed to open external URL:', error.message);
+            });
+        }
+
+        return { action: 'deny' };
+    });
+
+    win.webContents.on('will-navigate', (event, url) => {
+        if (url === 'about:blank' || canOpenInPortal(url)) {
+            return;
+        }
+
+        event.preventDefault();
+        if (canOpenExternalUrl(url)) {
+            void openExternalSafely(url).catch((error) => {
+                console.warn('[Electron] Failed to open external URL:', error.message);
+            });
+        }
+    });
+}
+
 // ─── Window Creation ─────────────────────────────────────────────────────────
 
 function createSetupWindow() {
+    if (setupWindow && !setupWindow.isDestroyed()) {
+        setupWindow.show();
+        setupWindow.focus();
+        return;
+    }
+
     setupWindow = new BrowserWindow({
         width: 720,
         height: 620,
@@ -435,6 +684,7 @@ function createSetupWindow() {
             preload: path.join(__dirname, 'electron-preload.js'),
             contextIsolation: true,
             nodeIntegration: false,
+            sandbox: true,
         },
     });
 
@@ -442,14 +692,24 @@ function createSetupWindow() {
         ? path.join(__dirname, '..', 'electron', 'electron-setup.html')
         : path.join(__dirname, 'electron-setup.html');
 
+    attachNavigationGuards(setupWindow);
     setupWindow.loadFile(setupHtmlPath);
 
     setupWindow.on('closed', () => {
         setupWindow = null;
+        if (!mainWindow && !portalStartPromise && !isHandlingSetupLaunch) {
+            app.quit();
+        }
     });
 }
 
 function createMainWindow() {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.show();
+        mainWindow.focus();
+        return;
+    }
+
     mainWindow = new BrowserWindow({
         width: 1280,
         height: 860,
@@ -462,9 +722,11 @@ function createMainWindow() {
         webPreferences: {
             contextIsolation: true,
             nodeIntegration: false,
+            sandbox: true,
         },
     });
 
+    attachNavigationGuards(mainWindow);
     mainWindow.loadURL(SERVER_URL);
 
     mainWindow.once('ready-to-show', () => {
@@ -518,7 +780,9 @@ function createTray() {
         {
             label: 'Open in Browser',
             click: () => {
-                shell.openExternal(SERVER_URL);
+                void openExternalSafely(SERVER_URL).catch((error) => {
+                    console.warn('[Electron] Failed to open browser URL:', error.message);
+                });
             },
         },
         { type: 'separator' },
@@ -548,6 +812,12 @@ function createFallbackTrayIcon(): string {
 // ─── IPC Handlers ────────────────────────────────────────────────────────────
 
 function registerIpcHandlers() {
+    if (ipcHandlersRegistered) {
+        return;
+    }
+
+    ipcHandlersRegistered = true;
+
     ipcMain.handle('check-dependencies', () => {
         return checkAllDependencies();
     });
@@ -562,22 +832,50 @@ function registerIpcHandlers() {
     });
 
     ipcMain.handle('open-external', async (_event, url: string) => {
-        await shell.openExternal(url);
+        await openExternalSafely(url);
     });
 
     ipcMain.handle('get-app-version', () => {
         return app.getVersion();
+    });
+
+    ipcMain.handle('launch-after-setup', async () => {
+        isHandlingSetupLaunch = true;
+        try {
+            await startServerAndShowPortal();
+            closeSetupWindow();
+            return { ok: true };
+        } finally {
+            isHandlingSetupLaunch = false;
+        }
+    });
+
+    ipcMain.handle('skip-setup', async () => {
+        isHandlingSetupLaunch = true;
+        try {
+            await startServerAndShowPortal();
+            closeSetupWindow();
+            return { ok: true };
+        } finally {
+            isHandlingSetupLaunch = false;
+        }
     });
 }
 
 // ─── App Lifecycle ───────────────────────────────────────────────────────────
 
 /**
- * Pre-flight check: verify the bundled portable-python is functional.
- * If the bundled Python can't run, check if system Python + edge-tts exists.
- * Returns diagnostic info if everything fails.
+ * Pre-flight check: verify that at least one narration engine is available.
  */
-function verifyPortablePython(): { ok: boolean; detail: string } {
+function verifyVoiceEngine(): { ok: boolean; detail: string } {
+    const voiceEngineStatus = checkEdgeTtsInstalled();
+    if (voiceEngineStatus.installed) {
+        return {
+            ok: true,
+            detail: voiceEngineStatus.version || 'Voice engine ready',
+        };
+    }
+
     const resourcesDir = process.resourcesPath || '';
     const candidatePaths = [
         path.join(appRoot, 'portable-python', 'python.exe'),                          // dev mode
@@ -624,23 +922,23 @@ function verifyPortablePython(): { ok: boolean; detail: string } {
     const checkedList = candidatePaths.map(p => `  - ${p} (${fs.existsSync(p) ? 'exists but broken' : 'not found'})`).join('\n');
     return {
         ok: false,
-        detail: `No working edge-tts found.\n\nPaths checked:\n${checkedList}\n\nSystem Python: ${systemPython || 'not found'}\nresourcesPath: ${resourcesDir || 'not set'}`,
+        detail: `No working bundled Edge-TTS runtime was found.\n\nPaths checked:\n${checkedList}\n\nSystem Python: ${systemPython || 'not found'}\nresourcesPath: ${resourcesDir || 'not set'}`,
     };
 }
 
 async function launchApp() {
     registerIpcHandlers();
     
-    // Verify bundled Python + edge-tts before starting
-    const pythonCheck = verifyPortablePython();
-    if (!pythonCheck.ok) {
-        console.warn('[Electron] Portable Python check failed:', pythonCheck.detail);
+    // Verify voice engine availability before starting
+    const voiceEngineCheck = verifyVoiceEngine();
+    if (!voiceEngineCheck.ok) {
+        console.warn('[Electron] Voice engine check failed:', voiceEngineCheck.detail);
         // Show setup wizard so user can install dependencies
         const response = dialog.showMessageBoxSync({
             type: 'warning',
-            title: 'Edge-TTS Voice Engine Not Found',
-            message: 'The bundled voice engine (edge-tts) could not be verified.\n\nThe app will still launch, but video generation may fail until this is resolved.',
-            detail: pythonCheck.detail,
+            title: 'Voice Engine Not Found',
+            message: 'The bundled voice engine could not be verified.\n\nThe app can still launch, but installing or repairing the voice engine is recommended for the best narration quality.',
+            detail: voiceEngineCheck.detail,
             buttons: ['Launch Anyway', 'Install Dependencies', 'Quit'],
             defaultId: 0,
         });
@@ -661,25 +959,38 @@ async function launchApp() {
 }
 
 async function startServerAndShowPortal() {
-    try {
-        // Create tray first for visual feedback
-        createTray();
-
-        // Start the Express server
-        await startServer();
-
-        // Give server a moment to fully initialize
-        await new Promise(r => setTimeout(r, 2000));
-
-        // Open the main window
-        createMainWindow();
-    } catch (err: any) {
-        dialog.showErrorBox(
-            'Startup Error',
-            `Failed to start the video generator server.\n\n${err.message}\n\nMake sure all dependencies are installed.`
-        );
-        app.quit();
+    if (portalStartPromise) {
+        return portalStartPromise;
     }
+
+    portalStartPromise = (async () => {
+        try {
+            if (!tray) {
+                createTray();
+            }
+
+            if (!serverProcess) {
+                await startServer();
+                await new Promise(r => setTimeout(r, 2000));
+            }
+
+            createMainWindow();
+            closeSetupWindow();
+            mainWindow?.show();
+            mainWindow?.focus();
+        } catch (err: any) {
+            dialog.showErrorBox(
+                'Startup Error',
+                `Failed to start the video generator server.\n\n${err.message}\n\nMake sure all dependencies are installed.`
+            );
+            app.quit();
+            throw err;
+        } finally {
+            portalStartPromise = null;
+        }
+    })();
+
+    return portalStartPromise;
 }
 
 // Prevent multiple instances
@@ -691,6 +1002,12 @@ if (!gotTheLock) {
         if (mainWindow) {
             mainWindow.show();
             mainWindow.focus();
+            return;
+        }
+
+        if (setupWindow) {
+            setupWindow.show();
+            setupWindow.focus();
         }
     });
 
@@ -702,7 +1019,14 @@ if (!gotTheLock) {
 
     app.on('activate', () => {
         if (mainWindow === null) {
-            createMainWindow();
+            if (serverProcess || tray || allDependenciesReady()) {
+                void startServerAndShowPortal();
+                return;
+            }
+
+            if (setupWindow === null) {
+                createSetupWindow();
+            }
         }
     });
 

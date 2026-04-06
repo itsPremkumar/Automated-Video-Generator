@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logError, logInfo, resolveProjectPath } from './runtime';
 import { createPipelineWorkspace, ensurePipelineWorkspace, toPublicRelativePath } from './pipeline-workspace';
+import { JobCancellationError } from './lib/job-cancellation';
 
 const console = {
     log: (...args: unknown[]) => logInfo(...args),
@@ -26,6 +27,8 @@ interface GenerationResult {
 interface GenerationOptions {
     /** Callback for progress updates */
     onProgress?: (step: string, percent: number, message: string) => void;
+    /** Allow long-running work to stop at safe checkpoints */
+    shouldCancel?: () => boolean;
     /** Output video orientation */
     orientation?: 'portrait' | 'landscape';
     /** Voice for TTS */
@@ -56,6 +59,12 @@ interface GenerationOptions {
     };
 }
 
+function throwIfCancelled(shouldCancel?: () => boolean): void {
+    if (shouldCancel?.()) {
+        throw new JobCancellationError();
+    }
+}
+
 
 // console.log('\n🎬 [VIDEO-GEN] Module loaded');
 // console.log(`🎬 [VIDEO-GEN] Working directory: ${process.cwd()}`);
@@ -68,7 +77,7 @@ export async function generateVideo(
     outputDir: string = resolveProjectPath('output'),
     options: GenerationOptions = {}
 ): Promise<GenerationResult> {
-    const { onProgress, orientation = 'portrait', title, showText = true, defaultVideo = 'default.mp4', publicId, backgroundMusic, personalAudio, musicVolume, language, textConfig } = options;
+    const { onProgress, orientation = 'portrait', title, showText = true, defaultVideo = 'default.mp4', publicId, backgroundMusic, personalAudio, musicVolume, language, textConfig, shouldCancel } = options;
     
     // Resolve voice: 1. explicit voice, 2. default for language, 3. global default
     let voice = options.voice;
@@ -82,6 +91,12 @@ export async function generateVideo(
     const totalStartTime = Date.now();
     const workspace = createPipelineWorkspace(outputDir, publicId);
 
+    const reportProgress = (step: string, percent: number, message: string) => {
+        throwIfCancelled(shouldCancel);
+        onProgress?.(step, percent, message);
+        throwIfCancelled(shouldCancel);
+    };
+
 
     // console.log('\n');
     // console.log('╔════════════════════════════════════════════════════════════════╗');
@@ -93,7 +108,7 @@ export async function generateVideo(
     // console.log(`🎬 [VIDEO-GEN] Orientation: ${orientation}\n`);
 
     try {
-        onProgress?.('init', 0, 'Starting video generation');
+        reportProgress('init', 0, 'Starting video generation');
 
         // ══════════════════════════════════════════════════════════════════
         // STEP 1: VALIDATE SCRIPT
@@ -103,9 +118,10 @@ export async function generateVideo(
         // console.log('╚══════════════════════════════════════════╝');
 
         const step1Start = Date.now();
-        onProgress?.('validate', 5, 'Validating script');
+        reportProgress('validate', 5, 'Validating script');
 
         validateScript(script);
+        throwIfCancelled(shouldCancel);
 
         const step1Time = Date.now() - step1Start;
         // console.log(`✅ [STEP 1] Script validated in ${step1Time}ms\n`);
@@ -118,9 +134,10 @@ export async function generateVideo(
         // console.log('╚══════════════════════════════════════════╝');
 
         const step2Start = Date.now();
-        onProgress?.('parse', 10, 'Parsing script into scenes');
+        reportProgress('parse', 10, 'Parsing script into scenes');
 
         const parsed = await parseScript(script);
+        throwIfCancelled(shouldCancel);
 
         const step2Time = Date.now() - step2Start;
         // console.log(`✅ [STEP 2] Created ${parsed.scenes.length} scenes in ${step2Time}ms`);
@@ -159,7 +176,8 @@ export async function generateVideo(
         const processScene = async (i: number) => {
             const scene = parsed.scenes[i];
             const progressPercent = 15 + Math.floor((i / parsed.scenes.length) * 35);
-            onProgress?.('visuals', progressPercent, `Downloading video ${i + 1}/${parsed.scenes.length}`);
+            reportProgress('visuals', progressPercent, `Downloading video ${i + 1}/${parsed.scenes.length}`);
+            throwIfCancelled(shouldCancel);
 
             // console.log(`\n═══ [SCENE ${i + 1}/${parsed.scenes.length}] ═══════════════════════════`);
             // console.log(`🎬 Keywords: [${scene.searchKeywords.join(', ')}]`);
@@ -272,9 +290,11 @@ export async function generateVideo(
                 }
 
                 visuals[i] = visual;
+                throwIfCancelled(shouldCancel);
             } catch (err: any) {
                 // console.error(`❌ [SCENE ${i + 1}] Error fetching visual: ${err.message}`);
                 visuals[i] = null;
+                throwIfCancelled(shouldCancel);
             }
         };
 
@@ -302,7 +322,7 @@ export async function generateVideo(
         // console.log('╚══════════════════════════════════════════╝');
 
         const step4Start = Date.now();
-        onProgress?.('audio', 55, 'Generating voiceovers');
+        reportProgress('audio', 55, 'Generating voiceovers');
         const audioDir = workspace.audioDir;
 
         // console.log(`🎤 [STEP 4] Audio output directory: ${audioDir}`);
@@ -310,7 +330,7 @@ export async function generateVideo(
         let audioFiles: Map<number, { path: string; duration: number }>;
 
         if (personalAudio) {
-            onProgress?.('audio', 55, 'Processing personal audio recording');
+            reportProgress('audio', 55, 'Processing personal audio recording');
             const personalAudioPath = resolveProjectPath('input', 'music', personalAudio);
             
             if (fs.existsSync(personalAudioPath)) {
@@ -325,7 +345,8 @@ export async function generateVideo(
         } else {
             const voiceConfig = {
                 ...DEFAULT_VOICE_CONFIG,
-                voice: voice || DEFAULT_VOICE_CONFIG.voice
+                voice: voice || DEFAULT_VOICE_CONFIG.voice,
+                language,
             };
 
             audioFiles = await generateVoiceovers(parsed.scenes, audioDir, voiceConfig);
@@ -339,7 +360,7 @@ export async function generateVideo(
             const musicInputPath = resolveProjectPath('input', 'music', backgroundMusic);
             if (fs.existsSync(musicInputPath)) {
                 // console.log(`🎵 [STEP 4.5] Found background music: ${backgroundMusic}`);
-                onProgress?.('audio', 80, 'Applying auto-ducking to background music');
+                reportProgress('audio', 80, 'Applying auto-ducking to background music');
                 
                 const duckingVoicePaths: string[] = [];
                 for (let i = 0; i < parsed.scenes.length; i++) {
@@ -381,7 +402,7 @@ export async function generateVideo(
         // console.log('╚══════════════════════════════════════════╝');
 
         const step5Start = Date.now();
-        onProgress?.('prepare', 90, 'Preparing scene data');
+        reportProgress('prepare', 90, 'Preparing scene data');
 
         // Build scene data with actual audio durations
         let totalActualDuration = 0;
@@ -434,7 +455,7 @@ export async function generateVideo(
         // console.log('╚══════════════════════════════════════════╝');
 
         const step6Start = Date.now();
-        onProgress?.('metadata', 95, 'Generating metadata');
+        reportProgress('metadata', 95, 'Generating metadata');
 
         // Generate Description (First 3 sentences)
         // Split by periods but handle common abbreviations if possible, or just a simple split
@@ -484,7 +505,7 @@ export async function generateVideo(
         // console.log('   2. Run: npm run remotion:render');
         // console.log('\n');
 
-        onProgress?.('complete', 100, 'Pre-processing complete');
+        reportProgress('complete', 100, 'Pre-processing complete');
 
         return {
             success: true,
@@ -562,7 +583,7 @@ export async function updateSceneInJob(
         }
         if (!voice) voice = DEFAULT_VOICE_CONFIG.voice;
 
-        const baseVoiceConfig = { ...DEFAULT_VOICE_CONFIG, voice };
+        const baseVoiceConfig = { ...DEFAULT_VOICE_CONFIG, voice, language: data.language };
         
         // Force cleanup of current audio to ensure fresh generation
         if (scene.audioPath) {

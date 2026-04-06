@@ -35,7 +35,7 @@
   <a href="https://github.com/itsPremkumar/Automated-Video-Generator/releases/latest">
     <img src="https://img.shields.io/badge/⬇️_Download_Windows_.exe_Installer-0D1117?style=for-the-badge&logo=windows&logoColor=blue" alt="Download Windows App" height="56">
   </a>
-  <p><strong>Zero Setup • No Python Required • No Node.js Required</strong></p>
+  <p><strong>No Manual Runtime Setup • No Separate Python Install • No Separate Node.js Install</strong></p>
   <p>Just download the latest <code>.exe</code> file, double-click, and start generating videos locally!</p>
 </div>
 <br/>
@@ -92,7 +92,7 @@ The Automated Video Generator project is officially available on ClawHub. You ca
 - **Worldwide support for 400+ voices across all major languages with a searchable interface**
 - Text-to-video pipeline with Remotion and React
 - **Multi-language support including Tamil, Hindi, Spanish, French, and German**
-- Edge-TTS voiceovers with multiple neural voice options
+- Edge-TTS voiceovers with Windows desktop fallback support for fresh installs
 - Stock media fetching from Pexels and Pixabay
 - Local asset support for your own images and videos
 - **Configurable background music with volume control**
@@ -114,11 +114,13 @@ The Automated Video Generator project is officially available on ClawHub. You ca
 - Script-driven video generation from plain text or JSON
 - Director mode with `[Visual: ...]` tags for exact visual control
 - Automatic scene parsing and timeline generation
-- Neural voice generation using `edge-tts`
+- Neural voice generation with `edge-tts`, Windows offline speech fallback, and recovery-friendly desktop setup
 - Portrait and landscape video output
 - Resumable segmented rendering with Remotion
+- Cancel, retry, and restart-aware job recovery
 - Render thumbnails for completed videos
 - Browser portal for generation, status tracking, playback, and downloads
+- Windows desktop installer with setup wizard, bundled runtime checks, and release verification
 - MCP tool interface for agentic workflows
 
 ## Quick start
@@ -129,9 +131,13 @@ For non-technical users, we provide a **completely standalone Windows desktop ap
 
 [**👉 Click here to download the latest Windows `.exe` Installer**](https://github.com/itsPremkumar/Automated-Video-Generator/releases/latest)
 
-- **Zero Setup**: Just run the installer and you're ready to go.
-- **Natively Bundled**: Python, Node, and FFmpeg are all pre-packaged inside.
+- **No Manual Runtime Setup**: Most users do not need to install Node.js or Python themselves.
+- **Natively Bundled**: The desktop app ships with its own runtime and bundled voice engine resources.
+- **Fallback Friendly**: If bundled `Edge-TTS` is unavailable, Windows builds can fall back to offline Windows speech.
 - **Auto-Open**: The video generator portal launches automatically on startup.
+- **Repair Friendly**: The setup wizard can repair missing runtime pieces and launch the app directly.
+
+If you are shipping or testing the Windows app, read [`docs/WINDOWS_INSTALLER.md`](./docs/WINDOWS_INSTALLER.md) and [`docs/PRODUCTION_HARDENING.md`](./docs/PRODUCTION_HARDENING.md).
 
 ---
 
@@ -489,7 +495,7 @@ Useful for:
 
 1. Parse a script into scenes and durations.
 2. Fetch stock visuals or use local assets from `input/input-assests/`.
-3. Generate voiceover audio with Edge-TTS.
+3. Generate voiceover audio with Edge-TTS and supported fallbacks when needed.
 4. Save scene data into `output/<job-id>/scene-data.json`.
 5. Render scene segments with Remotion.
 6. Stitch the final MP4 and thumbnail for playback and sharing.
@@ -505,6 +511,8 @@ npm run remotion:render  # Render using the render pipeline
 npm run dev              # Start the local web portal
 npm run mcp              # Start the MCP server
 npm run typecheck        # Validate TypeScript before opening a PR
+npm run electron:verify-bundle   # Check desktop bundle inputs before building
+npm run electron:verify-release  # Check the unpacked Windows release
 ```
 
 ## Project structure
@@ -562,6 +570,12 @@ Yes. You can run it locally, in Docker, or behind your own deployment setup.
 
 Not always. The project tries bundled `ffmpeg-static` first. A global FFmpeg install is mainly a fallback for machines where the bundled binary cannot be used.
 
+### What happens if Edge-TTS is missing on Windows?
+
+The desktop app now tries multiple voice paths instead of failing immediately.
+
+It prefers bundled `Edge-TTS`, can repair the bundled runtime from the setup wizard, and can fall back to Windows offline speech if needed.
+
 ### What should a normal user do first?
 
 Clone the repo, run `Start-Automated-Video-Generator.bat`, save the `PEXELS_API_KEY` in the browser portal, and generate from the UI.
@@ -605,6 +619,7 @@ These files make the project easier for AI tools and answer engines to understan
 - [`QUICKSTART.md`](./QUICKSTART.md)
 - [`WINDOWS_INSTALLER.md`](./docs/WINDOWS_INSTALLER.md)
 - [`SETUP.md`](./docs/SETUP.md)
+- [`PRODUCTION_HARDENING.md`](./docs/PRODUCTION_HARDENING.md)
 - [`CLAUDE_MCP_SETUP.md`](./docs/CLAUDE_MCP_SETUP.md)
 
 ## Roadmap and contributing

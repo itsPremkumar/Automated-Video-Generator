@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import { resolveProjectPath, resolveResourcePath, projectRoot } from '../runtime';
+import { getVoiceEngineStatus } from '../lib/voice-generator';
 
 export interface HealthCheckResult {
     overall: 'healthy' | 'degraded' | 'unhealthy';
@@ -85,6 +86,15 @@ function checkPortablePython(): DependencyCheck {
 }
 
 function checkEdgeTts(): DependencyCheck {
+    const voiceEngine = getVoiceEngineStatus();
+    if (voiceEngine.generationReady) {
+        return {
+            name: 'Voice Engine',
+            status: 'ok',
+            detail: voiceEngine.detail,
+        };
+    }
+
     const resourcesPath = (process as any).resourcesPath
         || process.env.ELECTRON_RESOURCES_PATH
         || '';
@@ -101,7 +111,7 @@ function checkEdgeTts(): DependencyCheck {
             const check = runQuiet(`"${edgePath}" --help`);
             if (check) {
                 return {
-                    name: 'Edge-TTS',
+                    name: 'Voice Engine',
                     status: 'ok',
                     detail: `Ready at ${edgePath}`,
                     paths_checked: uniquePaths,
@@ -114,7 +124,7 @@ function checkEdgeTts(): DependencyCheck {
     const sysCheck = runQuiet('edge-tts --help');
     if (sysCheck) {
         return {
-            name: 'Edge-TTS',
+            name: 'Voice Engine',
             status: 'ok',
             detail: 'Available on system PATH',
             paths_checked: uniquePaths,
@@ -122,9 +132,9 @@ function checkEdgeTts(): DependencyCheck {
     }
 
     return {
-        name: 'Edge-TTS',
+        name: 'Voice Engine',
         status: 'missing',
-        detail: 'edge-tts voice engine not found',
+        detail: 'No working voice engine found',
         paths_checked: uniquePaths,
     };
 }

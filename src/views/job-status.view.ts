@@ -189,6 +189,7 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
         let scenes = [];
         let currentIdx = -1;
         let draggedIdx = -1;
+        let currentJob = null;
         const audioPlayer = new Audio();
         let lastSceneHash = '';
 
@@ -201,41 +202,135 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
                 .replace(/'/g, '&#39;');
         }
 
-        async function refresh() {
-            const res = await fetch('/api/jobs/' + jobId);
-            const json = await res.json();
-            if (!json.success) return;
-            
-            const data = json.data;
+        async function requestJson(url, options) {
+            const response = await fetch(url, options);
+            let payload = null;
+
+            try {
+                payload = await response.json();
+            } catch (error) {
+                throw new Error('Unexpected server response.');
+            }
+
+            if (!response.ok || !payload.success) {
+                throw new Error(payload.error || payload.message || 'Request failed.');
+            }
+
+            return payload;
+        }
+
+        function setStatusMessage(data) {
+            document.getElementById('title').textContent = data.title || 'Working on video...';
+            document.getElementById('message').textContent = data.message || 'Check the progress or customize your scenes below.';
             document.getElementById('percent').textContent = data.progress + '%';
             document.getElementById('progress').style.width = data.progress + '%';
             document.getElementById('status-display').textContent = data.status;
+        }
+
+        function updateEditorState(data) {
+            const editor = document.getElementById('editor-section');
+            const confirmButton = document.getElementById('confirm-render');
 
             if (data.status === 'awaiting_review') {
-                if (document.getElementById('editor-section').hidden) {
-                    document.getElementById('editor-section').hidden = false;
-                    loadScenes();
-                }
-            } else {
-                document.getElementById('editor-section').hidden = true;
+                editor.hidden = false;
+                confirmButton.disabled = false;
+                confirmButton.textContent = 'Confirm & Finalize Video';
+                loadScenes();
+                return;
             }
 
-            if (data.status === 'completed') {
-                showVideo(data.videoUrl, data.downloadUrl);
-                window.clearInterval(timer);
+            editor.hidden = true;
+            confirmButton.disabled = true;
+            if (data.status === 'pending' && data.phase === 'render') {
+                confirmButton.textContent = 'Render Queued';
+            } else if (data.status === 'processing' && data.phase === 'render') {
+                confirmButton.textContent = 'Rendering Video...';
+            } else if (data.status === 'cancelling') {
+                confirmButton.textContent = 'Cancelling...';
+            } else {
+                confirmButton.textContent = 'Confirm & Finalize Video';
+            }
+        }
+
+        function renderPrimaryActions(data) {
+            const actions = document.getElementById('actions');
+            actions.innerHTML = '';
+
+            if (data.status === 'completed' && data.downloadUrl) {
+                const downloadLink = document.createElement('a');
+                downloadLink.className = 'button';
+                downloadLink.href = data.downloadUrl;
+                downloadLink.textContent = 'Download MP4';
+                actions.appendChild(downloadLink);
+            }
+
+            if (data.canRetry) {
+                const retryButton = document.createElement('button');
+                retryButton.className = 'button';
+                retryButton.textContent = 'Retry Job';
+                retryButton.onclick = () => runJobAction('/retry', retryButton, 'Retrying...', 'Retry failed');
+                actions.appendChild(retryButton);
+            }
+
+            if (data.canCancel) {
+                const cancelButton = document.createElement('button');
+                cancelButton.className = 'button secondary';
+                cancelButton.textContent = 'Cancel Job';
+                cancelButton.onclick = () => runJobAction('/cancel', cancelButton, 'Cancelling...', 'Cancel failed');
+                actions.appendChild(cancelButton);
+            }
+
+            const newProjectLink = document.createElement('a');
+            newProjectLink.className = data.status === 'completed' ? 'button secondary' : 'button ghost';
+            newProjectLink.href = '/';
+            newProjectLink.textContent = 'New Project';
+            actions.appendChild(newProjectLink);
+        }
+
+        async function runJobAction(pathname, button, busyText, errorPrefix) {
+            const original = button.textContent;
+            button.disabled = true;
+            button.textContent = busyText;
+
+            try {
+                await requestJson('/api/jobs/' + jobId + pathname, { method: 'POST' });
+                await refresh();
+            } catch (error) {
+                alert(errorPrefix + ': ' + error.message);
+                button.disabled = false;
+                button.textContent = original;
+            }
+        }
+
+        async function refresh() {
+            try {
+                const json = await requestJson('/api/jobs/' + jobId);
+                currentJob = json.data;
+                setStatusMessage(currentJob);
+                updateEditorState(currentJob);
+                renderPrimaryActions(currentJob);
+
+                if (currentJob.status === 'completed' && currentJob.videoUrl && currentJob.downloadUrl) {
+                    showVideo(currentJob.videoUrl, currentJob.downloadUrl);
+                    window.clearInterval(timer);
+                }
+            } catch (error) {
+                document.getElementById('message').textContent = 'Unable to refresh the job right now.';
+                console.error('Refresh failed:', error);
             }
         }
 
         async function loadScenes() {
-            const res = await fetch(\`/api/jobs/\${jobId}/scenes\`);
-            const json = await res.json();
-            if (json.success) {
+            try {
+                const json = await requestJson(\`/api/jobs/\${jobId}/scenes\`);
                 const hash = JSON.stringify(json.data);
                 if (hash !== lastSceneHash) {
                     scenes = json.data;
                     lastSceneHash = hash;
                     renderTimeline();
                 }
+            } catch (error) {
+                console.error('Failed to load scenes:', error);
             }
         }
 
@@ -243,13 +338,13 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
             const btn = document.getElementById('confirm-render');
             btn.disabled = true;
             btn.textContent = 'Starting Render...';
-            const res = await fetch(\`/api/jobs/\${jobId}/confirm\`, { method: 'POST' });
-            const json = await res.json();
-            if (json.success) {
+
+            try {
+                await requestJson(\`/api/jobs/\${jobId}/confirm\`, { method: 'POST' });
                 document.getElementById('editor-section').hidden = true;
-                refresh();
-            } else {
-                alert('Confirm failed: ' + json.error);
+                await refresh();
+            } catch (error) {
+                alert('Confirm failed: ' + error.message);
                 btn.disabled = false;
                 btn.textContent = 'Confirm & Finalize Video';
             }
@@ -363,23 +458,26 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
             const updates = {
                 voiceoverText: card.querySelector('[data-field="script"]').value,
                 searchKeywords: card.querySelector('[data-field="keywords"]').value.split(',').map(s => s.trim()).filter(Boolean),
-                duration: parseInt(card.querySelector('.scene-duration').value),
+                duration: parseInt(card.querySelector('.scene-duration').value, 10),
                 voiceConfig: {
-                    pitch: parseInt(card.querySelector('.voice-pitch').value),
-                    rate: parseInt(card.querySelector('.voice-rate').value)
+                    pitch: parseInt(card.querySelector('.voice-pitch').value, 10),
+                    rate: parseInt(card.querySelector('.voice-rate').value, 10)
                 }
             };
-            const res = await fetch(\`/api/jobs/\${jobId}/scenes/\${idx}\`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updates)
-            });
-            const json = await res.json();
-            if (json.success) {
+
+            try {
+                const json = await requestJson(\`/api/jobs/\${jobId}/scenes/\${idx}\`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updates)
+                });
                 scenes[idx] = json.data;
                 renderTimeline();
+            } catch (error) {
+                alert('Save failed: ' + error.message);
+            } finally {
+                card.classList.remove('updating');
             }
-            card.classList.remove('updating');
         }
 
         function previewMedia(url, isVid, audioUrl) {
@@ -412,66 +510,102 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
         };
 
         async function reorder(from, to) {
-            const res = await fetch(\`/api/jobs/\${jobId}/scenes/reorder\`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fromIndex: from, toIndex: to })
-            });
-            const json = await res.json();
-            if (json.success) { scenes = json.data; renderTimeline(); }
+            try {
+                const json = await requestJson(\`/api/jobs/\${jobId}/scenes/reorder\`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fromIndex: from, toIndex: to })
+                });
+                scenes = json.data;
+                renderTimeline();
+            } catch (error) {
+                alert('Reorder failed: ' + error.message);
+            }
         }
 
         function showVideo(url, dl) {
             document.getElementById('wait-placeholder').hidden = true;
             const container = document.getElementById('video-container');
             container.hidden = false;
-            container.innerHTML = \`<video src="\${url}" controls class="video"></video>\`;
-            document.getElementById('actions').innerHTML = 
-                \`<a class="button" href="\${dl}">Download MP4</a><a class="button secondary" href="/">New Project</a>\`;
+            container.innerHTML = '';
+            const video = document.createElement('video');
+            video.src = url;
+            video.controls = true;
+            video.className = 'video';
+            container.appendChild(video);
+
+            if (currentJob) {
+                renderPrimaryActions(currentJob);
+            }
         }
 
         function openAI(idx) { currentIdx = idx; document.getElementById('ai-modal').style.display='flex'; }
         function openGallery(idx) { currentIdx = idx; loadGallery(); }
 
         async function loadGallery() {
-            const res = await fetch('/api/fs/assets');
-            const json = await res.json();
-            const grid = document.getElementById('gallery-grid');
-            grid.innerHTML = '';
-            json.data.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'asset-item';
-                div.innerHTML = \`<img src="\${item.assetUrl}" class="asset-preview"><span class="tag-copy">\${escapeHtml(item.filename)}</span>\`;
-                div.onclick = () => swap(item.filename);
-                grid.appendChild(div);
-            });
-            document.getElementById('gallery-modal').style.display='flex';
+            try {
+                const json = await requestJson('/api/fs/assets');
+                const grid = document.getElementById('gallery-grid');
+                grid.innerHTML = '';
+                json.data.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'asset-item';
+                    div.innerHTML = \`<img src="\${item.assetUrl}" class="asset-preview"><span class="tag-copy">\${escapeHtml(item.filename)}</span>\`;
+                    div.onclick = () => swap(item.filename);
+                    grid.appendChild(div);
+                });
+                document.getElementById('gallery-modal').style.display='flex';
+            } catch (error) {
+                alert('Gallery failed: ' + error.message);
+            }
         }
 
         async function swap(file) {
-            const res = await fetch(\`/api/jobs/\${jobId}/scenes/\${currentIdx}\`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ localAsset: file })
-            });
-            const json = await res.json();
-            if (json.success) { scenes[currentIdx] = json.data; renderTimeline(); }
-            document.getElementById('gallery-modal').style.display='none';
+            try {
+                const json = await requestJson(\`/api/jobs/\${jobId}/scenes/\${currentIdx}\`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ localAsset: file })
+                });
+                scenes[currentIdx] = json.data;
+                renderTimeline();
+                document.getElementById('gallery-modal').style.display='none';
+            } catch (error) {
+                alert('Swap failed: ' + error.message);
+            }
+        }
+
+        async function deleteScene(idx) {
+            try {
+                const json = await requestJson(\`/api/jobs/\${jobId}/scenes/\${idx}\`, {
+                    method: 'DELETE'
+                });
+                scenes = json.data;
+                renderTimeline();
+            } catch (error) {
+                alert('Delete failed: ' + error.message);
+            }
         }
 
         document.getElementById('apply-ai').onclick = async () => {
             const btn = document.getElementById('apply-ai');
             const instr = document.getElementById('ai-instruction').value;
             btn.disabled = true; btn.textContent = 'Assistant thinking...';
-            const res = await fetch(\`/api/jobs/\${jobId}/scenes/\${currentIdx}/refine\`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ instruction: instr })
-            });
-            const json = await res.json();
-            if (json.success) { scenes[currentIdx] = json.data; renderTimeline(); }
-            document.getElementById('ai-modal').style.display='none';
-            btn.disabled = false; btn.textContent = 'Improve Scene';
+
+            try {
+                const json = await requestJson(\`/api/jobs/\${jobId}/scenes/\${currentIdx}/refine\`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ instruction: instr })
+                });
+                scenes[currentIdx] = json.data;
+                renderTimeline();
+                document.getElementById('ai-modal').style.display='none';
+            } catch (error) {
+                alert('AI refine failed: ' + error.message);
+            } finally {
+                btn.disabled = false; btn.textContent = 'Improve Scene';
+            }
         };
 
         const timer = setInterval(refresh, 3000);
