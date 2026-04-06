@@ -57,6 +57,7 @@ export function layout(title: string, body: string, options: HtmlOptions = {}, s
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>${escapeHtml(title)}</title>
+    <link rel="icon" type="image/png" href="/logo.png">
 
     <!-- SEO Meta -->
     <meta name="description" content="${escapeHtml(description)}">
@@ -740,7 +741,7 @@ textarea { min-height: 250px; resize: vertical; }
 <nav class="top-nav">
     <div class="nav-content">
         <a href="/" class="nav-brand">
-            <span style="background: linear-gradient(135deg, var(--brand), var(--brand-strong)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">🎬</span>
+            <img src="/logo.png" alt="Logo" style="height:32px; width:auto; border-radius:6px;">
             Automated Video Gen
         </a>
         <div class="nav-links">

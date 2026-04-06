@@ -72,6 +72,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Assets
+app.use(express.static(resolveProjectPath('public')));
 app.use('/assets/input', express.static(resolveProjectPath('input')));
 
 // Routes

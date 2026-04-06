@@ -1,6 +1,15 @@
 # Automated Video Generator
 
 <div align="center">
+  <img src="assets/logo-automation.png" alt="Automated Video Generator Logo" width="200" style="border-radius: 20px;">
+  <p align="center">
+    <strong>Turn text into frame-perfect videos with AI, Automation, and Remotion.</strong>
+  </p>
+</div>
+
+---
+
+<div align="center">
   <a href="https://github.com/itsPremkumar/Automated-Video-Generator/stargazers">
     <img src="https://img.shields.io/github/stars/itsPremkumar/Automated-Video-Generator?style=for-the-badge" alt="GitHub stars">
   </a>
