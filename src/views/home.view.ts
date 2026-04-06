@@ -1005,7 +1005,12 @@ function addAssetToGallery(data) {
         \${isImage ? \`<img src="\${data.assetUrl}" class="asset-preview" alt="\${data.filename}">\` : ''}
         <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\${data.filename}</div>
         <div class="tag-copy" title="Click to insert into script">\${data.tag}</div>
+        <div class="delete-btn" title="Remove asset">✕</div>
     \`;
+    div.querySelector('.delete-btn').onclick = (e) => {
+        e.stopPropagation();
+        deleteAsset(data.filename, div);
+    };
     div.querySelector('.tag-copy').onclick = () => {
         const script = document.getElementById('script');
         const pos = script.selectionStart;
@@ -1015,6 +1020,25 @@ function addAssetToGallery(data) {
         script.focus();
     };
     assetGallery.appendChild(div);
+}
+
+async function deleteAsset(filename, element) {
+    if (!confirm('Are you sure you want to permanently delete this asset?')) return;
+    
+    try {
+        const res = await fetch('/api/fs/assets/' + encodeURIComponent(filename), {
+            method: 'DELETE'
+        });
+        const json = await res.json();
+        if (json.success) {
+            element.remove();
+        } else {
+            alert('Failed to delete asset: ' + json.error);
+        }
+    } catch (e) {
+        console.error('Delete failed', e);
+        alert('Failed to delete asset. Check console for details.');
+    }
 }
 
 async function loadGalleryAssets() {

@@ -711,6 +711,34 @@ textarea { min-height: 250px; resize: vertical; }
     cursor: pointer;
 }
 .asset-item .tag-copy:hover { background: #efdfcf; }
+.asset-item .delete-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 22px;
+    height: 22px;
+    background: #ff4d4d;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    opacity: 0;
+    transition: all .2s ease;
+    z-index: 10;
+}
+.asset-item:hover .delete-btn {
+    opacity: 1;
+}
+.asset-item .delete-btn:hover {
+    transform: scale(1.1);
+    background: #e60000;
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    RESPONSIVE BREAKPOINTS
