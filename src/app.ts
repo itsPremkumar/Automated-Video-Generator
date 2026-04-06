@@ -1,10 +1,10 @@
 import express, { NextFunction, Request, Response } from 'express';
-import apiRoutes from './routes/api.routes';
-import viewRoutes from './routes/view.routes';
-import fileRoutes from './routes/file.routes';
-import * as ApiController from './controllers/api.controller';
+import apiRoutes from './adapters/http/api-routes';
+import viewRoutes from './adapters/http/view-routes';
+import fileRoutes from './adapters/http/file-routes';
+import { startJobController } from './adapters/http/jobs-controller';
 import { RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS } from './constants/config';
-import { resolveProjectPath } from './runtime';
+import { resolveProjectPath } from './shared/runtime/paths';
 import { ForbiddenError } from './lib/errors';
 import { asyncHandler, validateRequest } from './lib/validation';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
@@ -160,7 +160,7 @@ app.post(
     '/generate-video',
     startJobLimiter,
     validateRequest({ body: startJobBodySchema }),
-    asyncHandler(ApiController.startJobController),
+    asyncHandler(startJobController),
 );
 
 app.use('/api', apiRoutes);

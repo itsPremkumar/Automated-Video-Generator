@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { MAX_TITLE_LENGTH } from '../constants/config';
+import { pipelineJobRequestSchema } from '../shared/contracts/job.contract';
 
 const safeFilenameSchema = z.string().trim().min(1).max(255).regex(/^[^\\/]+$/, 'Invalid filename.');
 
@@ -18,19 +19,10 @@ const voiceConfigSchema = z.object({
     voice: z.string().trim().min(1).max(120).optional(),
 }).strict();
 
-export const startJobBodySchema = z.object({
-    title: z.string().trim().min(1).max(MAX_TITLE_LENGTH),
-    script: z.string().trim().min(10).max(5000),
-    orientation: z.enum(['portrait', 'landscape']).default('portrait'),
-    language: z.string().trim().min(1).max(50).optional(),
-    voice: z.string().trim().min(1).max(120).optional(),
-    backgroundMusic: safeFilenameSchema.or(z.literal('')).optional().default(''),
-    personalAudio: safeFilenameSchema.or(z.literal('')).optional(),
-    defaultVideo: safeFilenameSchema.optional(),
-    showText: z.boolean().optional().default(true),
-    skipReview: z.boolean().optional().default(false),
-    textConfig: textConfigSchema.optional(),
-}).strict();
+export const startJobBodySchema = pipelineJobRequestSchema.omit({
+    id: true,
+    publicId: true,
+});
 
 export const updateEnvBodySchema = z.object({
     PEXELS_API_KEY: z.string().trim().max(300).optional(),
@@ -42,7 +34,7 @@ export const updateEnvBodySchema = z.object({
 });
 
 export const jobIdParamsSchema = z.object({
-    jobId: z.string().trim().min(1).max(128).regex(/^job_[a-zA-Z0-9_]+$/, 'Invalid job ID.'),
+    jobId: z.string().trim().min(1).max(128).regex(/^job_[a-zA-Z0-9_-]+$/, 'Invalid job ID.'),
 }).strict();
 
 export const videoIdParamsSchema = z.object({
@@ -50,7 +42,7 @@ export const videoIdParamsSchema = z.object({
 }).strict();
 
 export const sceneParamsSchema = z.object({
-    jobId: z.string().trim().min(1).max(128).regex(/^job_[a-zA-Z0-9_]+$/, 'Invalid job ID.'),
+    jobId: z.string().trim().min(1).max(128).regex(/^job_[a-zA-Z0-9_-]+$/, 'Invalid job ID.'),
     sceneIndex: z.string().trim().regex(/^\d+$/, 'Invalid scene index.'),
 }).strict();
 

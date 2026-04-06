@@ -13,6 +13,8 @@ The hardening work focused on:
 - stronger fallback behavior
 - improved release reliability for non-technical Windows users
 
+This work now sits on top of the refactored runtime structure described in [ARCHITECTURE.md](./ARCHITECTURE.md).
+
 ## Backend and API Improvements
 
 ### Input validation
@@ -184,12 +186,12 @@ Verified artifacts include:
 
 ### Cleaner separation of concerns
 
-The codebase moved further toward clearer boundaries between:
+The codebase now has clearer boundaries between:
 
-- middleware
-- controllers
-- services
-- runtime state
+- adapters
+- application services
+- infrastructure
+- shared runtime/contracts
 - renderer integration
 - Electron shell logic
 
@@ -243,3 +245,4 @@ The repo is in a much better place now, but these are still strong next steps:
 - [../QUICKSTART.md](../QUICKSTART.md)
 - [SETUP.md](./SETUP.md)
 - [WINDOWS_INSTALLER.md](./WINDOWS_INSTALLER.md)
+- [ARCHITECTURE.md](./ARCHITECTURE.md)

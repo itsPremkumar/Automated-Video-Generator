@@ -1,10 +1,10 @@
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import * as fs from 'fs';
 import * as path from 'path';
-import { projectRoot, resolveProjectPath } from './runtime';
-import { readInputScripts } from './mcp-tools-input';
-import { listOutputVideos, readOutputFile } from './mcp-tools-output';
-import { readEnvConfig } from './mcp-tools-env';
+import { projectRoot, resolveProjectPath } from './shared/runtime/paths';
+import { readInputScripts } from './adapters/mcp/input-store';
+import { listOutputVideos, readOutputFile } from './adapters/mcp/output-store';
+import { readEnvConfig } from './adapters/mcp/env-tools';
 
 function buildTree(dir: string): Record<string, unknown> {
   if (!fs.existsSync(dir)) {
@@ -255,4 +255,3 @@ export function registerResources(server: McpServer) {
     },
   );
 }
-

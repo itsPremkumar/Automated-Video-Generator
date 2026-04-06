@@ -57,6 +57,7 @@
         "remotion:render": "tsx src/render.ts",
         "typecheck": "tsc -p tsconfig.json --noEmit",
         "test": "npm run typecheck",
+        "test:unit": "tsx --test src/application/pipeline-app.service.test.ts src/shared/contracts/job.contract.test.ts src/adapters/http/api-helpers.test.ts",
         "mcp": "tsx src/mcp-server.ts",
         "prepublishOnly": "npm run typecheck",
         "electron:compile": "tsc -p tsconfig.electron.json",

@@ -87,3 +87,14 @@ Add the `backgroundMusic` and `musicVolume` properties to your job in `input/inp
 - **Images**: `.jpg`, `.jpeg`, `.png`, `.webp`
 - **Videos**: `.mp4`, `.mov`, `.webm`, `.m4v`
 - **Audio**: `.mp3`, `.wav`, `.m4a`
+
+This local asset behavior is shared across all runtime entrypoints:
+- HTTP portal
+- CLI
+- MCP server
+- Electron desktop app
+
+Related docs:
+- [../README.md](../README.md)
+- [../QUICKSTART.md](../QUICKSTART.md)
+- [ARCHITECTURE.md](./ARCHITECTURE.md)

@@ -1,4 +1,4 @@
-import { JobStatus } from '../runtime';
+import { JobStatus } from '../shared/contracts/job.contract';
 import { EDITABLE_ENV_KEYS } from '../constants/config';
 
 export type EditableEnvKey = typeof EDITABLE_ENV_KEYS[number];

@@ -1,8 +1,8 @@
 import { Request } from 'express';
 import { PROJECT_NAME, PROJECT_REPOSITORY_URL, DEFAULT_SITE_DESCRIPTION, DEFAULT_SITE_KEYWORDS } from '../constants/config';
 import { VideoRecord } from '../types/server.types';
+import { absoluteUrl } from '../shared/http/public-url';
 import { layout, escapeHtml, truncateText } from './layout.view';
-import { absoluteUrl } from '../services/video.service';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 

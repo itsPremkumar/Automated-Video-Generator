@@ -2,7 +2,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { generateVideo } from '../video-generator';
 import { renderVideo } from '../render';
-import { JobPhase, JobRequestOptions, JobStatus, jobStore, resolveProjectPath } from '../runtime';
+import { JobPhase, JobRequestOptions, JobStatus } from '../shared/contracts/job.contract';
+import { resolveProjectPath } from '../shared/runtime/paths';
+import { jobStore } from '../infrastructure/persistence/job-store';
 import { findVideoFile, sanitizeFolderTitle } from './video.service';
 import { DEFAULT_FALLBACK_VIDEO, MAX_CONCURRENT_JOBS } from '../constants/config';
 import { ConflictError, NotFoundError } from '../lib/errors';
@@ -429,6 +431,39 @@ export async function createAndRunJob(
     });
 
     queueGeneration(jobId);
+}
+
+export function registerJobForRender(
+    jobId: string,
+    publicId: string,
+    title: string,
+    script: string,
+    options: JobRequestOptions,
+) {
+    const outputDir = resolveProjectPath('output', publicId);
+    if (!fs.existsSync(path.join(outputDir, 'scene-data.json'))) {
+        throw new ConflictError('Scene data is missing, so rendering cannot continue.');
+    }
+
+    jobStore.set(jobId, {
+        title,
+        publicId,
+        status: 'awaiting_review',
+        phase: 'review',
+        progress: 70,
+        message: 'Assets restored. Ready to render.',
+        cancelRequested: false,
+        retryCount: 0,
+        error: undefined,
+        errorDetails: undefined,
+        endTime: undefined,
+        outputPath: undefined,
+        request: {
+            title,
+            script,
+            options,
+        },
+    });
 }
 
 export async function continueJobToRender(

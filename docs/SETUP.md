@@ -13,11 +13,21 @@ This document explains how to set up the project for development, local renderin
 
 ## Runtime Overview
 
-The project supports three main execution modes:
+The project now supports four main runtime entrypoints that share one application core:
 
-1. Browser portal development with `npm run dev`
+1. Browser portal and HTTP API with `npm run dev`
 2. CLI generation with `npm run generate`
-3. Windows desktop packaging with Electron
+3. MCP server with `npm run mcp`
+4. Windows desktop packaging with Electron
+
+Current executable entry files:
+
+- `src/server.ts`
+- `src/cli.ts`
+- `src/mcp-server.ts`
+- `electron/electron-main.ts`
+
+For the architectural layout behind these entrypoints, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 Voice generation now follows this order when possible:
 
@@ -129,6 +139,14 @@ Create or update `input/input-scripts.json`, then run:
 ```bash
 npm run generate
 ```
+
+### MCP server
+
+```bash
+npm run mcp
+```
+
+Use this runtime when connecting Claude Desktop, Claude Code, or other MCP clients.
 
 ### Remotion Studio
 
@@ -247,3 +265,4 @@ That checks the unpacked desktop build for the expected bundled runtime files.
 - [../QUICKSTART.md](../QUICKSTART.md)
 - [WINDOWS_INSTALLER.md](./WINDOWS_INSTALLER.md)
 - [PRODUCTION_HARDENING.md](./PRODUCTION_HARDENING.md)
+- [ARCHITECTURE.md](./ARCHITECTURE.md)

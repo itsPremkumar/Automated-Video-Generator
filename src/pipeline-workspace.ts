@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { resolveProjectPath } from './runtime';
+import { resolveProjectPath } from './shared/runtime/paths';
 
 export interface PipelineWorkspace {
   outputId: string;
@@ -58,4 +58,3 @@ export function toPublicRelativePath(absolutePath: string): string {
 
   return relativePath.replace(/\\/g, '/');
 }
-

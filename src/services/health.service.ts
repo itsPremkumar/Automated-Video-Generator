@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
-import { resolveProjectPath, resolveResourcePath, projectRoot } from '../runtime';
+import { projectRoot, resolveProjectPath, resolveResourcePath } from '../shared/runtime/paths';
 import { getVoiceEngineStatus } from '../lib/voice-generator';
 
 export interface HealthCheckResult {

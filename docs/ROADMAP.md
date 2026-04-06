@@ -4,11 +4,15 @@ This roadmap keeps the project focused on the work most likely to improve reliab
 
 ## Near term
 
+- Complete an architecture refactor pass so browser, CLI, MCP, and Electron all use one shared job orchestration layer
+- Break up runtime-heavy modules before more features land in CLI, desktop, and MCP paths
 - Improve render reliability across long videos and low-memory machines
 - Add more validation around input scripts and local asset handling
 - Add more automated tests for parsing, rendering, and server routes
 - Polish the browser portal for first-time users
 - Improve documentation for self-hosting and public deployment
+
+Architecture detail lives in [Architecture Refactor Roadmap](./ARCHITECTURE_REFACTOR_ROADMAP.md).
 
 ## Creator workflow
 

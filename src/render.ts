@@ -4,7 +4,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { execSync } from 'child_process';
 import { cleanupAssets } from './lib/cleaner';
-import { logError, logInfo, logWarn, resolveProjectPath, writeProgress } from './runtime';
+import { logError, logInfo, logWarn, writeProgress } from './shared/logging/runtime-logging';
+import { resolveProjectPath } from './shared/runtime/paths';
 import { createPipelineWorkspace } from './pipeline-workspace';
 import { JobCancellationError } from './lib/job-cancellation';
 

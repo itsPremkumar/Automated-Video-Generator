@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv';
-import { resolveProjectPath } from '../runtime';
+import { resolveProjectPath } from '../shared/runtime/paths';
 import { AVAILABLE_VOICES } from '../lib/voice-generator';
 
 const envPath = resolveProjectPath('.env');

@@ -519,16 +519,29 @@ npm run electron:verify-release  # Check the unpacked Windows release
 
 ```text
 src/
-  cli.ts                 Batch generation entry point
-  server.ts              Local web portal and API
-  mcp-server.ts          MCP server entry point
-  video-generator.ts     Generation pipeline
+  adapters/
+    http/                Express controllers, routes, and server bootstrap
+    cli/                 CLI adapter and batch runner
+    mcp/                 MCP tool registrars and MCP-specific stores/helpers
+  application/           Shared application services and orchestration
+  infrastructure/
+    persistence/         Persistent job tracking
+  shared/
+    contracts/           Shared runtime-safe request/status contracts
+    runtime/             Path and runtime helpers
+    logging/             Runtime-aware logging helpers
+  app.ts                 Express app composition
+  server.ts              Thin HTTP executable entrypoint
+  cli.ts                 Thin CLI executable entrypoint
+  mcp-server.ts          Thin MCP executable entrypoint
+  video-generator.ts     Pipeline generation implementation
   render.ts              Segmented Remotion renderer
-  lib/
-    script-parser.ts
-    visual-fetcher.ts
-    voice-generator.ts
-    cleaner.ts
+electron/
+  electron-main.ts       Desktop composition root
+  dependency-service.ts  Desktop dependency checks and repair
+  server-manager.ts      Desktop backend process manager
+  window-manager.ts      Desktop window and tray manager
+  ipc.ts                 Electron IPC wiring
 remotion/
   MainVideo.tsx
   SingleSceneVideo.tsx
@@ -539,6 +552,8 @@ input/
 output/                  Generated videos
 public/                  Job assets served by the portal
 ```
+
+For the full architecture reference, see [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ## FAQ
 

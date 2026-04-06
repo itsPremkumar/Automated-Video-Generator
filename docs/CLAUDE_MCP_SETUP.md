@@ -6,17 +6,22 @@ It covers:
 - how to connect Claude to the MCP server
 - the current end-to-end generation process
 - the latest folder layout
+- the current MCP adapter structure
 - the live tool, resource, and prompt surface
 - the important current limitations
 
 ## Overview
 
-The project now supports two main entry points that share the same pipeline:
+The project now supports multiple entry points that share the same application core:
 
 - CLI: `npm run generate`
 - MCP for Claude Desktop / Claude Code: `npx automated-video-generator` (or `npx -y tsx src/mcp-server.ts` for local development)
+- HTTP portal: `npm run dev`
+- Electron desktop app: installer or `npm run electron:dev`
 
-Both paths ultimately use the same generation and rendering flow:
+These runtime adapters ultimately use the same shared orchestration flow through `PipelineAppService`.
+
+The underlying generation and rendering flow is:
 
 1. Parse the script into scenes.
 2. Fetch or reuse visuals.
@@ -25,7 +30,7 @@ Both paths ultimately use the same generation and rendering flow:
 5. Render segmented scene videos with Remotion.
 6. Concatenate the segments into the final MP4 with FFmpeg.
 
-The MCP path adds:
+The MCP adapter adds:
 - async job tracking in `.mcp-jobs.json`
 - per-job asset workspaces under `public/jobs/<outputId>/`
 - Claude-readable resources for `input`, `output`, `public`, and config state
@@ -172,6 +177,34 @@ public/
 .mcp-jobs.json
 .video-cache.json
 ```
+
+## Current MCP Code Layout
+
+The current MCP implementation is organized like this:
+
+```text
+src/
+  mcp-server.ts
+  mcp-resources.ts
+  mcp-prompts.ts
+  adapters/
+    mcp/
+      register-admin-tools.ts
+      register-input-tools.ts
+      register-job-tools.ts
+      register-output-tools.ts
+      input-store.ts
+      output-store.ts
+      env-tools.ts
+      pipeline-commands.ts
+      responses.ts
+```
+
+Important note:
+
+- `mcp-server.ts` is now a thin bootstrap file
+- MCP tool registration lives under `src/adapters/mcp/`
+- MCP job creation and lifecycle actions flow through the shared application layer instead of owning pipeline logic inline
 
 ## Current MCP Resources
 
@@ -357,7 +390,7 @@ to understand exactly where the current job wrote files.
 
 The latest Claude integration is no longer just a thin wrapper around `npm run generate`.
 
-It is now a structured MCP workflow with:
+It is now a structured MCP adapter over the shared application core, with:
 - async job tracking
 - per-job public workspaces
 - Claude-readable resources
@@ -365,4 +398,4 @@ It is now a structured MCP workflow with:
 - safer stock clip handling
 - output folders that map cleanly to each Claude request
 
-For top-level project documentation, see [README.md](README.md).
+For top-level project documentation, see [README.md](README.md) and [docs/ARCHITECTURE.md](./ARCHITECTURE.md).

@@ -58,6 +58,13 @@ python -m pip install -r requirements.txt
 npm run dev
 ```
 
+Current runtime entrypoints:
+
+- `npm run dev` -> HTTP portal via `src/server.ts`
+- `npm run generate` -> CLI adapter via `src/cli.ts`
+- `npm run mcp` -> MCP adapter via `src/mcp-server.ts`
+- `npm run electron:dev` -> Electron desktop app
+
 Then open:
 
 ```text
@@ -139,3 +146,4 @@ Use these docs:
 - [docs/SETUP.md](./docs/SETUP.md)
 - [docs/WINDOWS_INSTALLER.md](./docs/WINDOWS_INSTALLER.md)
 - [docs/PRODUCTION_HARDENING.md](./docs/PRODUCTION_HARDENING.md)
+- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)

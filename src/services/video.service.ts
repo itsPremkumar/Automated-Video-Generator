@@ -1,9 +1,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Request } from 'express';
-import { OUTPUT_ROOT, PORT } from '../constants/config';
+import { OUTPUT_ROOT } from '../constants/config';
 import { VideoRecord } from '../types/server.types';
-import { resolveProjectPath, JobStatus } from '../runtime';
+import { JobStatus } from '../shared/contracts/job.contract';
+import { resolveProjectPath } from '../shared/runtime/paths';
+
+function relativeUrl(pathname: string): string {
+    return pathname;
+}
 
 export function sanitizeFolderTitle(value: string): string {
     return value
@@ -12,26 +17,6 @@ export function sanitizeFolderTitle(value: string): string {
         .replace(/\s+/g, '_')
         .replace(/_+/g, '_')
         .slice(0, 50);
-}
-
-export function baseUrl(req: Request): string {
-    const configured = process.env.PUBLIC_BASE_URL?.trim();
-    if (configured) {
-        return configured.replace(/\/+$/, '');
-    }
-
-    const host = (req.get('host') || '').trim();
-    const safeHostPattern = /^(?:[a-zA-Z0-9.-]+|\[[a-fA-F0-9:]+\])(?::\d{1,5})?$/;
-
-    if (safeHostPattern.test(host)) {
-        return `${req.protocol}://${host}`;
-    }
-
-    return `http://localhost:${PORT}`;
-}
-
-export function absoluteUrl(req: Request, pathname: string): string {
-    return `${baseUrl(req)}${pathname}`;
 }
 
 export function safePublicId(publicId: string): boolean {
@@ -115,10 +100,10 @@ export function getVideo(publicId: string, req: Request): VideoRecord | null {
         videoFilename,
         videoPath,
         thumbnailPath: fs.existsSync(thumbnailPath) ? thumbnailPath : null,
-        watchUrl: absoluteUrl(req, `/videos/${encodeURIComponent(publicId)}`),
-        downloadUrl: absoluteUrl(req, `/download/${encodeURIComponent(publicId)}`),
-        videoUrl: absoluteUrl(req, `/files/${encodeURIComponent(publicId)}/video`),
-        thumbnailUrl: fs.existsSync(thumbnailPath) ? absoluteUrl(req, `/files/${encodeURIComponent(publicId)}/thumbnail`) : null,
+        watchUrl: relativeUrl(`/videos/${encodeURIComponent(publicId)}`),
+        downloadUrl: relativeUrl(`/download/${encodeURIComponent(publicId)}`),
+        videoUrl: relativeUrl(`/files/${encodeURIComponent(publicId)}/video`),
+        thumbnailUrl: fs.existsSync(thumbnailPath) ? relativeUrl(`/files/${encodeURIComponent(publicId)}/thumbnail`) : null,
     };
 }
 
@@ -179,13 +164,13 @@ export function getJobData(job: JobStatus, req: Request) {
         canCancel: !isTerminal && job.status !== 'cancelling',
         canRetry: job.status === 'failed' || job.status === 'cancelled',
         isTerminal,
-        statusUrl: absoluteUrl(req, `/api/jobs/${encodeURIComponent(job.id)}`),
-        statusPageUrl: absoluteUrl(req, `/jobs/${encodeURIComponent(job.id)}`),
+        statusUrl: relativeUrl(`/api/jobs/${encodeURIComponent(job.id)}`),
+        statusPageUrl: relativeUrl(`/jobs/${encodeURIComponent(job.id)}`),
     };
 
     if (publicId) {
-        data.watchUrl = absoluteUrl(req, `/videos/${encodeURIComponent(publicId)}`);
-        data.downloadUrl = absoluteUrl(req, `/download/${encodeURIComponent(publicId)}`);
+        data.watchUrl = relativeUrl(`/videos/${encodeURIComponent(publicId)}`);
+        data.downloadUrl = relativeUrl(`/download/${encodeURIComponent(publicId)}`);
     }
 
     if (publicId && job.status === 'completed') {

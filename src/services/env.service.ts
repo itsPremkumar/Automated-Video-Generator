@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import { parse } from 'dotenv';
 import { ENV_FILE, EDITABLE_ENV_KEYS } from '../constants/config';
 import { EditableEnvKey, SetupStatus } from '../types/server.types';
-import { resolveProjectPath } from '../runtime';
+import { resolveProjectPath } from '../shared/runtime/paths';
 import { getVoiceEngineStatus } from '../lib/voice-generator';
 
 export function readEnvValues(): Record<string, string> {

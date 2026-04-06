@@ -18,10 +18,18 @@ The current desktop flow is more resilient than the original implementation:
 The Windows app is made of these parts:
 
 1. Electron main process
-2. local Express server started as a child process
+2. local HTTP server started as a child process
 3. browser portal UI
 4. bundled desktop resources in `resources/app-bundle`
 5. bundled portable Python runtime for `Edge-TTS`
+
+Current desktop modules:
+
+- `electron/electron-main.ts`
+- `electron/dependency-service.ts`
+- `electron/server-manager.ts`
+- `electron/window-manager.ts`
+- `electron/ipc.ts`
 
 ### Startup flow
 
@@ -207,6 +215,10 @@ Always verify the packaged output, not just the dev environment.
 Important desktop files:
 
 - `electron/electron-main.ts`
+- `electron/dependency-service.ts`
+- `electron/server-manager.ts`
+- `electron/window-manager.ts`
+- `electron/ipc.ts`
 - `electron/electron-preload.ts`
 - `electron/electron-setup.html`
 - `scripts/verify-desktop-bundle.cjs`
@@ -219,3 +231,4 @@ Important desktop files:
 - [../QUICKSTART.md](../QUICKSTART.md)
 - [SETUP.md](./SETUP.md)
 - [PRODUCTION_HARDENING.md](./PRODUCTION_HARDENING.md)
+- [ARCHITECTURE.md](./ARCHITECTURE.md)

@@ -13,7 +13,7 @@ import {
 } from '../constants/config';
 import { VideoRecord, SetupStatus } from '../types/server.types';
 import { layout, escapeHtml } from './layout.view';
-import { absoluteUrl } from '../services/video.service';
+import { absoluteUrl } from '../shared/http/public-url';
 
 // ─── Helper: Build video library cards ─────────────────────────────────────────
 

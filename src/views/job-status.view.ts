@@ -112,6 +112,7 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
                 <div>
                     <h1 id="title">Working on video...</h1>
                     <p id="message" class="lead small">Check the progress or customize your scenes below.</p>
+                    <p id="error-detail" class="muted" style="display:none; color:#b45309; font-weight:600;"></p>
                 </div>
                 <div class="bar"><div id="progress"></div></div>
                 <div class="metric-grid">
@@ -225,6 +226,14 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
             document.getElementById('percent').textContent = data.progress + '%';
             document.getElementById('progress').style.width = data.progress + '%';
             document.getElementById('status-display').textContent = data.status;
+            const errorDetail = document.getElementById('error-detail');
+            if (data.error) {
+                errorDetail.style.display = 'block';
+                errorDetail.textContent = 'Latest issue: ' + data.error;
+            } else {
+                errorDetail.style.display = 'none';
+                errorDetail.textContent = '';
+            }
         }
 
         function updateEditorState(data) {
@@ -316,6 +325,9 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
                 }
             } catch (error) {
                 document.getElementById('message').textContent = 'Unable to refresh the job right now.';
+                const errorDetail = document.getElementById('error-detail');
+                errorDetail.style.display = 'block';
+                errorDetail.textContent = 'Refresh error for ' + jobId + ': ' + error.message;
                 console.error('Refresh failed:', error);
             }
         }
