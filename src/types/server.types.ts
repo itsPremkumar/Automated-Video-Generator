@@ -24,6 +24,7 @@ export interface VideoRecord {
 
 export interface HtmlOptions {
     canonical?: string;
+    cspNonce?: string;
     description?: string;
     imageUrl?: string | null;
     jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;

@@ -13,7 +13,7 @@ export const renderHome = (req: Request, res: Response) => {
     const videos = listVideos(req);
     const setup = getSetupStatus();
     const musicFiles = listMusicFiles();
-    res.type('html').send(homePage(req, videos, setup, musicFiles));
+    res.type('html').send(homePage(req, videos, setup, musicFiles, res.locals.cspNonce));
 };
 
 export const renderWatch = (req: Request, res: Response) => {
@@ -25,6 +25,7 @@ export const renderWatch = (req: Request, res: Response) => {
                 `Video Not Found | ${PROJECT_NAME}`,
                 '<section><h1>Video not found</h1><p class="muted">The requested video is not available.</p><a class="button secondary" href="/">Back to Portal</a></section>',
                 {
+                    cspNonce: res.locals.cspNonce,
                     description: 'The requested video page could not be found.',
                     ogType: 'website',
                     robots: 'noindex, nofollow',
@@ -33,12 +34,12 @@ export const renderWatch = (req: Request, res: Response) => {
         );
         return;
     }
-    res.type('html').send(watchPage(req, video));
+    res.type('html').send(watchPage(req, video, res.locals.cspNonce));
 };
 
 export const renderJob = (req: Request, res: Response) => {
     const jobId = String(req.params.jobId);
-    res.type('html').send(jobPage(req, jobId));
+    res.type('html').send(jobPage(req, jobId, res.locals.cspNonce));
 };
 
 export const renderRobots = (req: Request, res: Response) => {

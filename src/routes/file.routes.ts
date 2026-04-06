@@ -1,9 +1,11 @@
 import { Router, Request, Response } from 'express';
+import { asyncHandler, validateRequest } from '../lib/validation';
+import { videoIdParamsSchema } from '../schemas/api.schemas';
 import { getVideo } from '../services/video.service';
 
 const router = Router();
 
-router.get('/files/:videoId/video', (req: Request, res: Response) => {
+router.get('/files/:videoId/video', validateRequest({ params: videoIdParamsSchema }), asyncHandler((req: Request, res: Response) => {
     const videoId = String(req.params.videoId);
     const video = getVideo(videoId, req);
     if (!video) {
@@ -11,9 +13,9 @@ router.get('/files/:videoId/video', (req: Request, res: Response) => {
         return;
     }
     res.type('video/mp4').sendFile(video.videoPath);
-});
+}));
 
-router.get('/files/:videoId/thumbnail', (req: Request, res: Response) => {
+router.get('/files/:videoId/thumbnail', validateRequest({ params: videoIdParamsSchema }), asyncHandler((req: Request, res: Response) => {
     const videoId = String(req.params.videoId);
     const video = getVideo(videoId, req);
     if (!video || !video.thumbnailPath) {
@@ -21,9 +23,9 @@ router.get('/files/:videoId/thumbnail', (req: Request, res: Response) => {
         return;
     }
     res.sendFile(video.thumbnailPath);
-});
+}));
 
-router.get('/download/:videoId', (req: Request, res: Response) => {
+router.get('/download/:videoId', validateRequest({ params: videoIdParamsSchema }), asyncHandler((req: Request, res: Response) => {
     const videoId = String(req.params.videoId);
     const video = getVideo(videoId, req);
     if (!video) {
@@ -31,6 +33,6 @@ router.get('/download/:videoId', (req: Request, res: Response) => {
         return;
     }
     res.download(video.videoPath, video.videoFilename);
-});
+}));
 
 export default router;

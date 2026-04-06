@@ -48,7 +48,9 @@ export function updateEnvValues(updates: Partial<Record<EditableEnvKey, string>>
         process.env[key] = value;
     }
 
-    fs.writeFileSync(ENV_FILE, contents);
+    const tempEnvFile = `${ENV_FILE}.tmp`;
+    fs.writeFileSync(tempEnvFile, contents);
+    fs.renameSync(tempEnvFile, ENV_FILE);
 }
 
 export function getSetupStatus(): SetupStatus {

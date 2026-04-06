@@ -6,7 +6,7 @@ import { layout, escapeHtml } from './layout.view';
 // JOB STATUS PAGE — Premium Timeline Editor V3 (Studio Style)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function jobPage(req: Request, jobId: string): string {
+export function jobPage(req: Request, jobId: string, cspNonce?: string): string {
 
     // ─── Premium UI Styles ──────────────────────────────────────────────────────
 
@@ -192,6 +192,15 @@ export function jobPage(req: Request, jobId: string): string {
         const audioPlayer = new Audio();
         let lastSceneHash = '';
 
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         async function refresh() {
             const res = await fetch('/api/jobs/' + jobId);
             const json = await res.json();
@@ -296,11 +305,11 @@ export function jobPage(req: Request, jobId: string): string {
                         <div class="content-focus">
                             <div class="field-group">
                                 <label>What the narrator says</label>
-                                <textarea class="scene-input-large" data-field="script">\${scene.voiceoverText}</textarea>
+                                <textarea class="scene-input-large" data-field="script">\${escapeHtml(scene.voiceoverText || '')}</textarea>
                             </div>
                             <div class="field-group">
                                 <label>Video Clips & Keywords</label>
-                                <input class="scene-input" data-field="keywords" value="\${(scene.searchKeywords || []).join(', ')}">
+                                <input class="scene-input" data-field="keywords" value="\${escapeHtml((scene.searchKeywords || []).join(', '))}">
                             </div>
                         </div>
                     </div>
@@ -425,14 +434,14 @@ export function jobPage(req: Request, jobId: string): string {
         function openGallery(idx) { currentIdx = idx; loadGallery(); }
 
         async function loadGallery() {
-            const res = await fetch('/api/gallery');
+            const res = await fetch('/api/fs/assets');
             const json = await res.json();
             const grid = document.getElementById('gallery-grid');
             grid.innerHTML = '';
             json.data.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'asset-item';
-                div.innerHTML = \`<img src="\${item.assetUrl}" class="asset-preview"><span class="tag-copy">\${item.filename}</span>\`;
+                div.innerHTML = \`<img src="\${item.assetUrl}" class="asset-preview"><span class="tag-copy">\${escapeHtml(item.filename)}</span>\`;
                 div.onclick = () => swap(item.filename);
                 grid.appendChild(div);
             });
@@ -472,7 +481,10 @@ export function jobPage(req: Request, jobId: string): string {
     return layout(
         `Production Studio | ${PROJECT_NAME}`,
         body,
-        { robots: 'noindex, nofollow' },
+        {
+            robots: 'noindex, nofollow',
+            cspNonce,
+        },
         script
     );
 }

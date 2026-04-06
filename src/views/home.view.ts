@@ -103,7 +103,7 @@ function buildSetupSummary(setup: SetupStatus): string {
 // MAIN PAGE RENDERER
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus, musicFiles: string[]): string {
+export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus, musicFiles: string[], cspNonce?: string): string {
     const defaultOgImage = absoluteUrl(req, '/og-image.svg');
     const voicesList = AVAILABLE_VOICES as Record<string, { male: string[]; female: string[] }>;
     const totalVoicePresets = Object.values(voicesList).reduce((count, group) => count + group.male.length + group.female.length, 0);
@@ -1061,6 +1061,7 @@ async function loadGalleryAssets() {
         body,
         {
             canonical: absoluteUrl(req, '/'),
+            cspNonce,
             description: DEFAULT_SITE_DESCRIPTION,
             imageUrl: videos[0]?.thumbnailUrl || defaultOgImage,
             jsonLd: [

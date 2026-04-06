@@ -25,14 +25,15 @@ export function truncateText(value: string, maxLength: number): string {
     return `${normalized.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...`;
 }
 
-export function serializeJsonLd(jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>): string {
+export function serializeJsonLd(jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>, cspNonce?: string): string {
     if (!jsonLd) {
         return '';
     }
 
     const items = Array.isArray(jsonLd) ? jsonLd : [jsonLd];
+    const nonceAttribute = cspNonce ? ` nonce="${escapeHtml(cspNonce)}"` : '';
     return items
-        .map((item) => `<script type="application/ld+json">${JSON.stringify(item).replace(/</g, '\\u003c')}</script>`)
+        .map((item) => `<script type="application/ld+json"${nonceAttribute}>${JSON.stringify(item).replace(/</g, '\\u003c')}</script>`)
         .join('');
 }
 
@@ -49,7 +50,8 @@ export function layout(title: string, body: string, options: HtmlOptions = {}, s
         ? `<meta property="og:image" content="${escapeHtml(options.imageUrl)}"><meta name="twitter:image" content="${escapeHtml(options.imageUrl)}">`
         : '';
     const twitterCard = options.imageUrl ? 'summary_large_image' : 'summary';
-    const jsonLd = serializeJsonLd(options.jsonLd);
+    const jsonLd = serializeJsonLd(options.jsonLd, options.cspNonce);
+    const nonceAttribute = options.cspNonce ? ` nonce="${escapeHtml(options.cspNonce)}"` : '';
 
     return `<!doctype html>
 <html lang="en">
@@ -786,7 +788,7 @@ textarea { min-height: 250px; resize: vertical; }
 <!-- ─── Page Content ─── -->
 <main>${body}</main>
 
-${script ? `<script>${script}</script>` : ''}
+${script ? `<script${nonceAttribute}>${script}</script>` : ''}
 </body>
 </html>`;
 }

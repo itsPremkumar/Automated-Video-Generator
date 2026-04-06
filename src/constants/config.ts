@@ -7,6 +7,7 @@ dotenv.config({ path: envPath });
 
 export { AVAILABLE_VOICES };
 
+export const HOST = process.env.HOST || '127.0.0.1';
 export const PORT = Number(process.env.PORT || 3001);
 export const OUTPUT_ROOT = resolveProjectPath('output');
 export const ENV_FILE = resolveProjectPath('.env');
@@ -57,3 +58,4 @@ export const EDITABLE_ENV_KEYS = ['PEXELS_API_KEY', 'PIXABAY_API_KEY', 'GEMINI_A
 
 export const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 export const RATE_LIMIT_MAX = 10;
+export const MAX_CONCURRENT_JOBS = Math.max(1, Number.parseInt(process.env.MAX_CONCURRENT_JOBS || '1', 10) || 1);

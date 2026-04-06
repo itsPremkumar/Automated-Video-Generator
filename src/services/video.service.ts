@@ -20,7 +20,14 @@ export function baseUrl(req: Request): string {
         return configured.replace(/\/+$/, '');
     }
 
-    return `${req.protocol}://${req.get('host') || `localhost:${PORT}`}`;
+    const host = (req.get('host') || '').trim();
+    const safeHostPattern = /^(?:[a-zA-Z0-9.-]+|\[[a-fA-F0-9:]+\])(?::\d{1,5})?$/;
+
+    if (safeHostPattern.test(host)) {
+        return `${req.protocol}://${host}`;
+    }
+
+    return `http://localhost:${PORT}`;
 }
 
 export function absoluteUrl(req: Request, pathname: string): string {

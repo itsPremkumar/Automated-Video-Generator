@@ -1,33 +1,123 @@
+import { exec } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { promisify } from 'util';
 import { Request, Response } from 'express';
 import { jobStore, resolveProjectPath } from '../runtime';
-import { 
-    listVideos, 
-    getVideo, 
-    publicVideo, 
-    getJobData, 
-    sanitizeFolderTitle, 
-    absoluteUrl 
+import {
+    absoluteUrl,
+    getJobData,
+    getVideo,
+    listVideos,
+    publicVideo,
+    sanitizeFolderTitle,
 } from '../services/video.service';
-import { getSetupStatus, updateEnvValues, normalizeEnvValue } from '../services/env.service';
+import { getSetupStatus, updateEnvValues } from '../services/env.service';
 import { getDynamicVoices } from '../lib/voice-generator';
 import { generateScriptFromPrompt, refineSceneAI } from '../services/ai.service';
-import { updateSceneInJob, reorderJobScenes, deleteJobScene } from '../video-generator';
-import { createAndRunJob, continueJobToRender } from '../services/job.service';
-import { EDITABLE_ENV_KEYS, DEFAULT_FALLBACK_VIDEO } from '../constants/config';
+import { deleteJobScene, reorderJobScenes, updateSceneInJob } from '../video-generator';
+import { continueJobToRender, createAndRunJob } from '../services/job.service';
+import { DEFAULT_FALLBACK_VIDEO, EDITABLE_ENV_KEYS } from '../constants/config';
 import { EditableEnvKey } from '../types/server.types';
 import { runHealthCheck } from '../services/health.service';
+import { BadRequestError, NotFoundError } from '../lib/errors';
+import { buildUniqueFilePath, ensureAllowedExtension, INPUT_ASSET_ROOT, INPUT_MUSIC_ROOT, resolveAssetPath } from '../lib/path-safety';
+import { isLocalRequest } from '../middleware/local-only';
+import { getRequestLogger } from '../middleware/request-context';
+
+const execAsync = promisify(exec);
+const MAX_DIRECTORY_ITEMS = 500;
+
+type SceneDataFile = {
+    scenes: any[];
+};
+
+function getJobOrThrow(jobId: string) {
+    const job = jobStore.get(jobId);
+    if (!job) {
+        throw new NotFoundError('Job not found.');
+    }
+
+    return job;
+}
+
+function getJobOutputDir(jobId: string): string {
+    const job = getJobOrThrow(jobId);
+    if (!job.publicId) {
+        throw new NotFoundError('Job output directory not found.');
+    }
+
+    return resolveProjectPath('output', job.publicId);
+}
+
+function readJsonFile<T>(filePath: string, notFoundMessage: string): T {
+    if (!fs.existsSync(filePath)) {
+        throw new NotFoundError(notFoundMessage);
+    }
+
+    try {
+        return JSON.parse(fs.readFileSync(filePath, 'utf8')) as T;
+    } catch (error) {
+        throw new BadRequestError('Failed to parse JSON data.', {
+            filePath,
+            reason: error instanceof Error ? error.message : 'Unknown parse error',
+        });
+    }
+}
+
+function toSceneIndex(sceneIndex: string): number {
+    const parsed = Number.parseInt(sceneIndex, 10);
+    if (!Number.isInteger(parsed) || parsed < 0) {
+        throw new BadRequestError('Invalid scene index.');
+    }
+
+    return parsed;
+}
+
+function toEditableEnvUpdates(body: Record<string, unknown>): Partial<Record<EditableEnvKey, string>> {
+    const updates: Partial<Record<EditableEnvKey, string>> = {};
+    for (const key of EDITABLE_ENV_KEYS) {
+        const value = body[key];
+        if (typeof value === 'string' && value.length > 0) {
+            updates[key] = value;
+        }
+    }
+
+    return updates;
+}
+
+function resolveContentType(extension: string): string | null {
+    const lookup: Record<string, string> = {
+        '.gif': 'image/gif',
+        '.jpeg': 'image/jpeg',
+        '.jpg': 'image/jpeg',
+        '.m4a': 'audio/mp4',
+        '.mov': 'video/mp4',
+        '.mp3': 'audio/mpeg',
+        '.mp4': 'video/mp4',
+        '.ogg': 'audio/ogg',
+        '.png': 'image/png',
+        '.wav': 'audio/wav',
+        '.webm': 'video/webm',
+        '.webp': 'image/webp',
+    };
+
+    return lookup[extension] || null;
+}
 
 export const healthCheck = (req: Request, res: Response) => {
     const health = runHealthCheck();
-    res.json({ 
-        status: health.overall, 
-        service: 'video-generator', 
-        publishedVideos: listVideos(req).length, 
+    const includeDetails = isLocalRequest(req) || process.env.EXPOSE_HEALTH_DETAILS === '1';
+
+    res.json({
+        status: health.overall,
+        service: 'video-generator',
+        publishedVideos: listVideos(req).length,
         jobsTracked: jobStore.all().length,
-        dependencies: health.checks,
-        environment: health.environment,
+        ...(includeDetails ? {
+            dependencies: health.checks,
+            environment: health.environment,
+        } : {}),
     });
 };
 
@@ -39,177 +129,151 @@ export const getVideoById = (req: Request, res: Response) => {
     const videoId = String(req.params.videoId);
     const video = getVideo(videoId, req);
     if (!video) {
-        res.status(404).json({ success: false, error: 'Video not found.' });
-        return;
+        throw new NotFoundError('Video not found.');
     }
+
     res.json({ success: true, data: publicVideo(video) });
 };
 
-export const getVoices = (req: Request, res: Response) => {
-    try {
-        const voices = getDynamicVoices();
-        res.json({ success: true, data: voices });
-    } catch (error: any) {
-        res.status(500).json({ success: false, error: 'Failed to fetch voices' });
-    }
+export const getVoices = (_req: Request, res: Response) => {
+    const voices = getDynamicVoices();
+    res.json({ success: true, data: voices });
 };
 
-export const getStatus = (req: Request, res: Response) => {
+export const getStatus = (_req: Request, res: Response) => {
     res.json({ success: true, data: getSetupStatus() });
 };
 
 export const updateEnv = (req: Request, res: Response) => {
-    try {
-        const updates: Partial<Record<EditableEnvKey, string>> = {};
-        const body = req.body || {};
-        for (const key of EDITABLE_ENV_KEYS) {
-            if (key in body) {
-                const value = normalizeEnvValue(body[key]);
-                if (value) {
-                    updates[key] = value;
-                }
-            }
-        }
-        updateEnvValues(updates);
-        res.json({ success: true, data: getSetupStatus() });
-    } catch (error: any) {
-        res.status(500).json({ success: false, error: error?.message || 'Unable to save setup.' });
-    }
+    const updates = toEditableEnvUpdates(req.body as Record<string, unknown>);
+    updateEnvValues(updates);
+    res.json({ success: true, data: getSetupStatus() });
 };
 
 export const getJobStatus = (req: Request, res: Response) => {
     const jobId = String(req.params.jobId);
-    const job = jobStore.get(jobId);
-    if (!job) {
-        res.status(404).json({ success: false, error: 'Job not found.' });
-        return;
-    }
+    const job = getJobOrThrow(jobId);
     res.json({ success: true, data: getJobData(job, req) });
 };
 
 export const getJobScenes = (req: Request, res: Response) => {
-    const jobId = String(req.params.jobId);
-    const job = jobStore.get(jobId);
-    if (!job) {
-        res.status(404).json({ success: false, error: 'Job not found.' });
-        return;
-    }
-    const outputDir = resolveProjectPath('output', job.publicId!);
-    const dataPath = path.join(outputDir, 'scene-data.json');
-    if (!fs.existsSync(dataPath)) {
-        res.status(404).json({ success: false, error: 'Scene data not found.' });
-        return;
-    }
-    const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+    const outputDir = getJobOutputDir(String(req.params.jobId));
+    const data = readJsonFile<SceneDataFile>(path.join(outputDir, 'scene-data.json'), 'Scene data not found.');
     res.json({ success: true, data: data.scenes });
 };
 
 export const updateJobScene = async (req: Request, res: Response) => {
-    try {
-        const jobId = String(req.params.jobId);
-        const sceneIndex = String(req.params.sceneIndex);
-        const job = jobStore.get(jobId);
-        if (!job) {
-            res.status(404).json({ success: false, error: 'Job not found.' });
-            return;
-        }
+    const jobId = String(req.params.jobId);
+    getJobOrThrow(jobId);
 
-        const outputDir = resolveProjectPath('output', job.publicId!);
-        const idx = parseInt(sceneIndex, 10);
-        
-        const updatedScene = await updateSceneInJob(outputDir, idx, req.body);
-        res.json({ success: true, data: updatedScene });
-    } catch (error: any) {
-        res.status(500).json({ success: false, error: error.message });
-    }
+    const updatedScene = await updateSceneInJob(
+        getJobOutputDir(jobId),
+        toSceneIndex(String(req.params.sceneIndex)),
+        req.body,
+    );
+
+    res.json({ success: true, data: updatedScene });
 };
 
 export const reorderScenes = async (req: Request, res: Response) => {
-    try {
-        const jobId = String(req.params.jobId);
-        const { fromIndex, toIndex } = req.body;
-        const job = jobStore.get(jobId);
-        if (!job) return res.status(404).json({ success: false, error: 'Job not found.' });
+    const jobId = String(req.params.jobId);
+    getJobOrThrow(jobId);
 
-        const outputDir = resolveProjectPath('output', job.publicId!);
-        const scenes = await reorderJobScenes(outputDir, fromIndex, toIndex);
-        res.json({ success: true, data: scenes });
-    } catch (error: any) {
-        res.status(500).json({ success: false, error: error.message });
-    }
+    const { fromIndex, toIndex } = req.body as { fromIndex: number; toIndex: number };
+    const scenes = await reorderJobScenes(getJobOutputDir(jobId), fromIndex, toIndex);
+    res.json({ success: true, data: scenes });
 };
 
 export const deleteScene = async (req: Request, res: Response) => {
-    try {
-        const jobId = String(req.params.jobId);
-        const sceneIndex = String(req.params.sceneIndex);
-        const job = jobStore.get(jobId);
-        if (!job) return res.status(404).json({ success: false, error: 'Job not found.' });
+    const jobId = String(req.params.jobId);
+    getJobOrThrow(jobId);
 
-        const outputDir = resolveProjectPath('output', job.publicId!);
-        const idx = parseInt(sceneIndex, 10);
-        const scenes = await deleteJobScene(outputDir, idx);
-        res.json({ success: true, data: scenes });
-    } catch (error: any) {
-        res.status(500).json({ success: false, error: error.message });
-    }
+    const scenes = await deleteJobScene(
+        getJobOutputDir(jobId),
+        toSceneIndex(String(req.params.sceneIndex)),
+    );
+
+    res.json({ success: true, data: scenes });
 };
 
 export const refineSceneWithAI = async (req: Request, res: Response) => {
-    try {
-        const jobId = String(req.params.jobId);
-        const sceneIndex = String(req.params.sceneIndex);
-        const { instruction } = req.body;
-        const job = jobStore.get(jobId);
-        if (!job) return res.status(404).json({ success: false, error: 'Job not found.' });
+    const jobId = String(req.params.jobId);
+    const outputDir = getJobOutputDir(jobId);
+    const sceneIndex = toSceneIndex(String(req.params.sceneIndex));
+    const { instruction } = req.body as { instruction: string };
+    const data = readJsonFile<SceneDataFile>(path.join(outputDir, 'scene-data.json'), 'Scene data not found.');
+    const scene = data.scenes[sceneIndex];
 
-        const outputDir = resolveProjectPath('output', job.publicId!);
-        const idx = parseInt(sceneIndex, 10);
-        const dataPath = path.join(outputDir, 'scene-data.json');
-        const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-        const scene = data.scenes[idx];
-
-        if (!scene) throw new Error('Scene not found');
-
-        const refined = await refineSceneAI(scene.voiceoverText, scene.searchKeywords, instruction);
-        
-        // Apply refined fields and regenerate assets
-        const updatedScene = await updateSceneInJob(outputDir, idx, refined);
-        res.json({ success: true, data: updatedScene });
-    } catch (error: any) {
-        res.status(500).json({ success: false, error: error.message });
+    if (!scene) {
+        throw new NotFoundError('Scene not found.');
     }
+
+    const refined = await refineSceneAI(scene.voiceoverText, scene.searchKeywords, instruction);
+    const updatedScene = await updateSceneInJob(outputDir, sceneIndex, refined);
+
+    res.json({ success: true, data: updatedScene });
 };
 
 export const confirmJobRender = async (req: Request, res: Response) => {
-    try {
-        const jobId = String(req.params.jobId);
-        // This is async but we don't need to wait for it for the response
-        continueJobToRender(jobId).catch(err => {
-            console.error(`Error continuing job ${jobId}:`, err);
-        });
-        res.json({ success: true, message: 'Render resumed.' });
-    } catch (error: any) {
-        res.status(500).json({ success: false, error: error.message });
-    }
+    const jobId = String(req.params.jobId);
+    const result = await continueJobToRender(jobId);
+
+    res.json({
+        success: true,
+        message: result.alreadyQueued ? 'Render is already queued or running.' : 'Render queued.',
+    });
 };
 
 export const startJobController = async (req: Request, res: Response) => {
-    const { title, script, orientation, language, voice, backgroundMusic, defaultVideo, showText, textConfig, personalAudio, skipReview } = req.body;
-    
-    const publicId = `${sanitizeFolderTitle(title) || 'video'}_${Date.now()}`;
-    const jobId = `job_${Date.now()}_${title.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10) || 'video'}`;
-
-    await createAndRunJob(jobId, publicId, title, script, {
+    const logger = getRequestLogger(res);
+    const {
+        title,
+        script,
         orientation,
         language,
         voice,
         backgroundMusic,
+        defaultVideo,
+        showText,
+        textConfig,
+        personalAudio,
+        skipReview,
+    } = req.body as {
+        title: string;
+        script: string;
+        orientation: 'portrait' | 'landscape';
+        language?: string;
+        voice?: string;
+        backgroundMusic?: string;
+        defaultVideo?: string;
+        showText?: boolean;
+        textConfig?: Record<string, unknown>;
+        personalAudio?: string;
+        skipReview?: boolean;
+    };
+
+    const slug = sanitizeFolderTitle(title) || 'video';
+    const publicId = `${slug}_${Date.now()}`;
+    const jobId = `job_${Date.now()}_${slug.replace(/_/g, '').slice(0, 12) || 'video'}`;
+
+    await createAndRunJob(jobId, publicId, title, script, {
+        orientation,
+        language: language || 'english',
+        voice,
+        backgroundMusic: backgroundMusic || '',
         personalAudio,
         defaultVideo: defaultVideo || DEFAULT_FALLBACK_VIDEO,
         showText: showText !== false,
-        textConfig: textConfig,
-        skipReview: !!skipReview
+        textConfig,
+        skipReview: !!skipReview,
+    });
+
+    logger.info('job.created', {
+        jobId,
+        orientation,
+        publicId,
+        skipReview: !!skipReview,
+        title,
     });
 
     res.status(202).json({
@@ -225,211 +289,200 @@ export const startJobController = async (req: Request, res: Response) => {
 };
 
 export const listFiles = (req: Request, res: Response) => {
-    const queryPath = String(req.query.path || process.cwd());
-    try {
-        if (!fs.existsSync(queryPath)) {
-            res.status(404).json({ success: false, error: 'Path not found' });
-            return;
-        }
-
-        const stats = fs.statSync(queryPath);
-        if (!stats.isDirectory()) {
-            res.status(400).json({ success: false, error: 'Not a directory' });
-            return;
-        }
-
-        const items = fs.readdirSync(queryPath, { withFileTypes: true })
-            .map(item => ({
-                name: item.name,
-                isDir: item.isDirectory(),
-                path: path.join(queryPath, item.name),
-                ext: path.extname(item.name).toLowerCase()
-            }))
-            .sort((a, b) => {
-                if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
-                return a.name.localeCompare(b.name);
-            });
-
-        res.json({
-            success: true,
-            data: {
-                currentPath: queryPath,
-                parentPath: path.dirname(queryPath),
-                items
-            }
-        });
-    } catch (error: any) {
-        res.status(500).json({ success: false, error: error.message });
+    const queryPath = req.query.path ? path.resolve(String(req.query.path)) : process.cwd();
+    if (!fs.existsSync(queryPath)) {
+        throw new NotFoundError('Path not found.');
     }
+
+    const stats = fs.statSync(queryPath);
+    if (!stats.isDirectory()) {
+        throw new BadRequestError('Not a directory.');
+    }
+
+    const entries = fs.readdirSync(queryPath, { withFileTypes: true });
+    const truncated = entries.length > MAX_DIRECTORY_ITEMS;
+    const items = entries
+        .map((entry) => ({
+            name: entry.name,
+            isDir: entry.isDirectory(),
+            path: path.join(queryPath, entry.name),
+            ext: path.extname(entry.name).toLowerCase(),
+        }))
+        .sort((left, right) => {
+            if (left.isDir !== right.isDir) {
+                return left.isDir ? -1 : 1;
+            }
+            return left.name.localeCompare(right.name);
+        })
+        .slice(0, MAX_DIRECTORY_ITEMS);
+
+    res.json({
+        success: true,
+        data: {
+            currentPath: queryPath,
+            parentPath: path.dirname(queryPath),
+            items,
+            totalItems: entries.length,
+            truncated,
+        },
+    });
 };
 
 export const pickFile = (req: Request, res: Response) => {
-    const { sourcePath, type } = req.body;
-    if (!sourcePath || !fs.existsSync(sourcePath)) {
-        res.status(400).json({ success: false, error: 'Invalid source path' });
+    const { sourcePath, type } = req.body as {
+        sourcePath: string;
+        type: 'asset' | 'media' | 'music' | 'personalAudio';
+    };
+
+    if (!fs.existsSync(sourcePath)) {
+        throw new NotFoundError('Source file not found.');
+    }
+
+    const stats = fs.statSync(sourcePath);
+    if (!stats.isFile()) {
+        throw new BadRequestError('Source path must point to a file.');
+    }
+
+    const filename = path.basename(sourcePath);
+    const mediaType = type === 'music' || type === 'personalAudio' ? 'audio' : 'visual';
+    const targetDir = mediaType === 'audio' ? INPUT_MUSIC_ROOT : INPUT_ASSET_ROOT;
+    const allowedExtensions = mediaType === 'audio'
+        ? ['.m4a', '.mp3', '.wav']
+        : ['.gif', '.jpeg', '.jpg', '.mov', '.mp4', '.png', '.webm', '.webp'];
+
+    ensureAllowedExtension(filename, allowedExtensions);
+
+    if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+    }
+
+    const targetPath = buildUniqueFilePath(targetDir, filename);
+    fs.copyFileSync(sourcePath, targetPath);
+
+    const savedFilename = path.basename(targetPath);
+    const folderName = mediaType === 'audio' ? 'music' : 'input-assests';
+
+    res.json({
+        success: true,
+        data: {
+            filename: savedFilename,
+            targetPath,
+            assetUrl: `/assets/input/${folderName}/${encodeURIComponent(savedFilename)}`,
+            tag: mediaType === 'audio' ? savedFilename : `[Visual: ${savedFilename}]`,
+        },
+    });
+};
+
+export const listGalleryAssets = (_req: Request, res: Response) => {
+    if (!fs.existsSync(INPUT_ASSET_ROOT)) {
+        res.json({ success: true, data: [] });
         return;
     }
 
-    try {
-        const filename = path.basename(sourcePath);
-        const targetDir = (type === 'music' || type === 'personalAudio')
-            ? resolveProjectPath('input', 'music') 
-            : resolveProjectPath('input', 'input-assests');
-        
-        if (!fs.existsSync(targetDir)) {
-            fs.mkdirSync(targetDir, { recursive: true });
-        }
+    const items = fs.readdirSync(INPUT_ASSET_ROOT, { withFileTypes: true })
+        .filter((entry) => !entry.isDirectory())
+        .map((entry) => ({
+            filename: entry.name,
+            assetUrl: `/assets/input/input-assests/${encodeURIComponent(entry.name)}`,
+            tag: `[Visual: ${entry.name}]`,
+        }))
+        .sort((left, right) => left.filename.localeCompare(right.filename));
 
-        const targetPath = path.join(targetDir, filename);
-        fs.copyFileSync(sourcePath, targetPath);
-
-        res.json({ 
-            success: true, 
-            data: { 
-                filename, 
-                targetPath,
-                assetUrl: `/assets/input/${(type === 'music' || type === 'personalAudio') ? 'music' : 'input-assests'}/${filename}`,
-                tag: (type === 'music' || type === 'personalAudio') ? filename : `[Visual: ${filename}]`
-            } 
-        });
-    } catch (error: any) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-};
-
-export const listGalleryAssets = (req: Request, res: Response) => {
-    try {
-        const assetsDir = resolveProjectPath('input', 'input-assests');
-        if (!fs.existsSync(assetsDir)) {
-            res.json({ success: true, data: [] });
-            return;
-        }
-
-        const items = fs.readdirSync(assetsDir, { withFileTypes: true })
-            .filter(item => !item.isDirectory())
-            .map(item => ({
-                filename: item.name,
-                assetUrl: `/assets/input/input-assests/${item.name}`,
-                tag: `[Visual: ${item.name}]`
-            }));
-
-        res.json({ success: true, data: items });
-    } catch (error: any) {
-        res.status(500).json({ success: false, error: error.message });
-    }
+    res.json({ success: true, data: items });
 };
 
 export const deleteAsset = (req: Request, res: Response) => {
-    const filename = String(req.params.filename);
-    if (!filename) {
-        res.status(400).json({ success: false, error: 'Filename is required' });
-        return;
+    const filePath = resolveAssetPath(String(req.params.filename));
+    if (!fs.existsSync(filePath)) {
+        throw new NotFoundError('Asset not found.');
     }
 
-    try {
-        const assetsDir = resolveProjectPath('input', 'input-assests');
-        const filePath = path.join(assetsDir, filename);
-
-        // Security check: Ensure the path is within the assetsDir
-        if (!filePath.startsWith(assetsDir)) {
-            res.status(403).json({ success: false, error: 'Access denied' });
-            return;
-        }
-
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-            res.json({ success: true, message: 'Asset deleted successfully' });
-        } else {
-            res.status(404).json({ success: false, error: 'Asset not found' });
-        }
-    } catch (error: any) {
-        res.status(500).json({ success: false, error: error.message });
-    }
+    fs.unlinkSync(filePath);
+    res.json({ success: true, message: 'Asset deleted successfully.' });
 };
 
 export const viewFile = (req: Request, res: Response) => {
-    const rawPath = String(req.query.path || '');
-    if (!rawPath) {
-        res.status(400).send('Path required');
-        return;
+    const rawPath = String(req.query.path);
+    const filePath = path.isAbsolute(rawPath)
+        ? path.resolve(rawPath)
+        : resolveProjectPath('public', rawPath);
+
+    if (!fs.existsSync(filePath)) {
+        throw new NotFoundError('File not found.');
     }
 
-    // Attempt to resolve path relative to public/ if not absolute
-    const filePath = path.isAbsolute(rawPath) ? rawPath : resolveProjectPath('public', rawPath);
-    const exists = fs.existsSync(filePath);
-
-    console.log(`[FS-VIEW] Request: ${rawPath} --> ${filePath} (Exists: ${exists})`);
-
-    if (!exists) {
-        console.error(`[FS-VIEW] 404: ${filePath}`);
-        res.status(404).send('File not found');
-        return;
-    }
-
-    const ext = path.extname(filePath).toLowerCase();
-    const mediaExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.mov', '.webm', '.ogg', '.mp3', '.wav'];
-    
-    if (!mediaExtensions.includes(ext)) {
-        res.status(403).send('File type not allowed for preview');
-        return;
-    }
+    const extension = path.extname(filePath).toLowerCase();
+    const allowedExtensions = ['.gif', '.jpeg', '.jpg', '.m4a', '.mov', '.mp3', '.mp4', '.ogg', '.png', '.wav', '.webm', '.webp'];
+    ensureAllowedExtension(filePath, allowedExtensions);
 
     const stat = fs.statSync(filePath);
     if (!stat.isFile()) {
-        res.status(400).send('Not a file');
+        throw new BadRequestError('Not a file.');
+    }
+
+    const contentType = resolveContentType(extension);
+    const streamable = ['.m4a', '.mov', '.mp3', '.mp4', '.ogg', '.wav', '.webm'].includes(extension);
+    const range = req.headers.range;
+
+    if (range && streamable) {
+        const match = /^bytes=(\d*)-(\d*)$/.exec(range.trim());
+        if (!match) {
+            throw new BadRequestError('Invalid range header.');
+        }
+
+        const start = match[1] ? Number.parseInt(match[1], 10) : 0;
+        const end = match[2] ? Number.parseInt(match[2], 10) : stat.size - 1;
+        if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || end >= stat.size) {
+            throw new BadRequestError('Invalid range header.');
+        }
+
+        const stream = fs.createReadStream(filePath, { start, end });
+        res.writeHead(206, {
+            'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+            'Accept-Ranges': 'bytes',
+            'Content-Length': end - start + 1,
+            'Content-Type': contentType || 'application/octet-stream',
+        });
+        stream.pipe(res);
         return;
     }
 
-    const contentType = (ext === '.mp4' || ext === '.mov') ? 'video/mp4' : (ext === '.webm' ? 'video/webm' : (ext === '.ogg' ? 'video/ogg' : (ext === '.mp3' ? 'audio/mpeg' : (ext === '.wav' ? 'audio/wav' : ''))));
-
-    // Basic range support for video/audio streaming preview
-    const range = req.headers.range;
-    if (range && (['.mp4', '.mov', '.webm', '.ogg', '.mp3', '.wav'].includes(ext))) {
-        const parts = range.replace(/bytes=/, "").split("-");
-        const start = parseInt(parts[0], 10);
-        const end = parts[1] ? parseInt(parts[1], 10) : stat.size - 1;
-        const chunksize = (end - start) + 1;
-        const file = fs.createReadStream(filePath, { start, end });
-        const head = {
-            'Content-Range': `bytes ${start}-${end}/${stat.size}`,
-            'Accept-Ranges': 'bytes',
-            'Content-Length': chunksize,
-            'Content-Type': contentType,
-        };
-        console.log(`[FS-VIEW] Stream: ${start}-${end}/${stat.size} (${contentType})`);
-        res.writeHead(206, head);
-        file.pipe(res);
-    } else {
-        console.log(`[FS-VIEW] Send: ${filePath} (${contentType})`);
-        if (contentType) res.setHeader('Content-Type', contentType);
-        res.sendFile(filePath);
+    if (contentType) {
+        res.setHeader('Content-Type', contentType);
     }
+
+    res.sendFile(filePath);
 };
 
-export const listDrives = (req: Request, res: Response) => {
+export const listDrives = async (_req: Request, res: Response) => {
     if (process.platform !== 'win32') {
         res.json({ success: true, data: ['/'] });
         return;
     }
 
-    const { exec } = require('child_process');
-    exec('powershell "get-psdrive -psprovider filesystem | select -expand name"', (err: any, stdout: string) => {
-        if (err) {
-            const drives = [];
-            for (let i = 65; i <= 90; i++) {
-                const drive = String.fromCharCode(i) + ':';
-                if (fs.existsSync(drive + '\\')) drives.push(drive);
+    try {
+        const { stdout } = await execAsync('powershell "get-psdrive -psprovider filesystem | select -expand name"');
+        const drives = stdout
+            .split(/\r?\n/)
+            .map((value) => value.trim())
+            .filter((value) => value.length === 1)
+            .map((value) => `${value}:`);
+
+        res.json({ success: true, data: drives });
+    } catch {
+        const drives: string[] = [];
+        for (let code = 65; code <= 90; code += 1) {
+            const drive = `${String.fromCharCode(code)}:`;
+            if (fs.existsSync(`${drive}\\`)) {
+                drives.push(drive);
             }
-            res.json({ success: true, data: drives });
-            return;
         }
 
-        const drives = stdout.split(/\r?\n/).map(s => s.trim()).filter(s => s.length === 1).map(s => s + ':');
         res.json({ success: true, data: drives });
-    });
+    }
 };
 
-export const getHomeDirs = (req: Request, res: Response) => {
+export const getHomeDirs = (_req: Request, res: Response) => {
     const home = process.env.USERPROFILE || process.env.HOME || process.cwd();
     res.json({
         success: true,
@@ -439,22 +492,13 @@ export const getHomeDirs = (req: Request, res: Response) => {
             documents: path.join(home, 'Documents'),
             downloads: path.join(home, 'Downloads'),
             pictures: path.join(home, 'Pictures'),
-            videos: path.join(home, 'Videos')
-        }
+            videos: path.join(home, 'Videos'),
+        },
     });
 };
 
 export const generateScriptAI = async (req: Request, res: Response) => {
-    try {
-        const { prompt } = req.body;
-        if (!prompt) {
-            res.status(400).json({ success: false, error: 'Prompt is required' });
-            return;
-        }
-        
-        const result = await generateScriptFromPrompt(prompt);
-        res.json({ success: true, data: result });
-    } catch (error: any) {
-        res.status(500).json({ success: false, error: error.message });
-    }
+    const { prompt } = req.body as { prompt: string };
+    const result = await generateScriptFromPrompt(prompt);
+    res.json({ success: true, data: result });
 };

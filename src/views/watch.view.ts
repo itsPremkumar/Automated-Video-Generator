@@ -22,7 +22,7 @@ export function videoMetaDescription(video: VideoRecord): string {
 // WATCH PAGE — Final video delivery & download
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function watchPage(req: Request, video: VideoRecord): string {
+export function watchPage(req: Request, video: VideoRecord, cspNonce?: string): string {
     const description = videoMetaDescription(video);
 
     // ─── Page Body HTML ────────────────────────────────────────────────────────
@@ -142,6 +142,7 @@ export function watchPage(req: Request, video: VideoRecord): string {
         body,
         {
             canonical: video.watchUrl,
+            cspNonce,
             description,
             imageUrl: video.thumbnailUrl || absoluteUrl(req, '/og-image.svg'),
             jsonLd: [
