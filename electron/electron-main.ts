@@ -1,4 +1,5 @@
 import { app, dialog, shell } from 'electron';
+import { execSync } from 'child_process';
 import * as path from 'path';
 import { DependencyService } from './dependency-service';
 import { registerIpcHandlers } from './ipc';
@@ -28,11 +29,83 @@ console.log('[Electron] PORT:', PORT, '| SERVER_URL:', SERVER_URL);
 console.log('[Electron] ============================================');
 
 const dependencyService = new DependencyService({ appRoot });
-const serverManager = new ServerManager({ appRoot, port: PORT });
 
 let portalStartPromise: Promise<void> | null = null;
 let isHandlingSetupLaunch = false;
 let windowManager: WindowManager;
+let serverManager: ServerManager;
+
+// ─── Zombie Process Cleanup ────────────────────────────────────────
+
+/**
+ * Kill any zombie node processes that are still listening on PORT.
+ * This prevents EADDRINUSE when restarting after a crash.
+ */
+function killZombieProcessesOnPort(port: number): void {
+    const tag = '[Electron:killZombies]';
+
+    if (process.platform !== 'win32') {
+        return;
+    }
+
+    console.log(tag, `Checking for zombie processes on port ${port}...`);
+
+    try {
+        const result = execSync(`netstat -aon | findstr :${port} | findstr LISTENING`, {
+            encoding: 'utf8',
+            stdio: ['pipe', 'pipe', 'pipe'],
+            windowsHide: true,
+            timeout: 5000,
+        }).trim();
+
+        if (!result) {
+            console.log(tag, 'No processes found on port', port);
+            return;
+        }
+
+        // Parse PIDs from netstat output
+        const pids = new Set<number>();
+        for (const line of result.split('\n')) {
+            const parts = line.trim().split(/\s+/);
+            const pid = parseInt(parts[parts.length - 1], 10);
+            if (pid > 0 && pid !== process.pid) {
+                pids.add(pid);
+            }
+        }
+
+        if (pids.size === 0) {
+            console.log(tag, 'No foreign PIDs to kill');
+            return;
+        }
+
+        console.log(tag, 'Found zombie PIDs on port', port, ':', Array.from(pids));
+
+        for (const pid of pids) {
+            try {
+                execSync(`taskkill /F /T /PID ${pid}`, {
+                    stdio: 'pipe',
+                    windowsHide: true,
+                    timeout: 5000,
+                });
+                console.log(tag, '✓ Killed zombie PID:', pid);
+            } catch (killError: any) {
+                console.warn(tag, 'Failed to kill PID', pid, ':', killError.message);
+            }
+        }
+
+        // Wait for port to be released
+        console.log(tag, 'Waiting 1s for port to release...');
+    } catch (error: any) {
+        // netstat returned no results (no process on port) — this is fine
+        if (error.status === 1) {
+            console.log(tag, 'No processes found on port', port, '(clean)');
+            return;
+        }
+        console.warn(tag, 'Failed to check for zombie processes:', error.message);
+    }
+}
+
+// ─── URL Safety ────────────────────────────────────────────────────
 
 function canOpenInPortal(url: string): boolean {
     return url === SERVER_URL || url.startsWith(`${SERVER_URL}/`);
@@ -67,6 +140,68 @@ async function openExternalSafely(url: string): Promise<void> {
     await shell.openExternal(url);
 }
 
+// ─── Server Crash Recovery ─────────────────────────────────────────
+
+function handleServerRuntimeCrash(exitCode: number | null, signal: string | null, lastLog: string): void {
+    const tag = '[Electron:handleServerCrash]';
+    console.error(tag, 'Server process crashed at runtime! Code:', exitCode, '| Signal:', signal);
+
+    // Attempt auto-restart first
+    void (async () => {
+        console.log(tag, 'Attempting automatic server restart...');
+        const restarted = await serverManager.restartServer();
+
+        if (restarted) {
+            console.log(tag, '✓ Server auto-restarted successfully');
+            // Reload the main window to reconnect
+            const mainWindow = windowManager.getMainWindow();
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                console.log(tag, 'Reloading main window to reconnect...');
+                mainWindow.loadURL(SERVER_URL).catch((loadErr: Error) => {
+                    console.error(tag, 'Failed to reload main window:', loadErr.message);
+                });
+            }
+            return;
+        }
+
+        // Auto-restart failed — show dialog
+        console.error(tag, 'Auto-restart failed. Showing recovery dialog...');
+
+        try {
+            const response = dialog.showMessageBoxSync({
+                type: 'error',
+                title: 'Server Crashed',
+                message: 'The backend server has stopped unexpectedly.',
+                detail: `Exit code: ${exitCode}\nSignal: ${signal}\n\nThis usually happens when video generation runs out of memory or a dependency crashes.\n\nLast log:\n${lastLog.slice(-300) || '(no output)'}`,
+                buttons: ['Restart Server', 'Open Setup Wizard', 'Quit'],
+                defaultId: 0,
+                noLink: true,
+            });
+
+            if (response === 0) {
+                console.log(tag, 'User chose to restart server');
+                void startServerAndShowPortal();
+            } else if (response === 1) {
+                console.log(tag, 'User chose setup wizard');
+                windowManager.createSetupWindow();
+            } else {
+                console.log(tag, 'User chose to quit');
+                app.quit();
+            }
+        } catch (dialogErr: any) {
+            console.error(tag, 'Failed to show crash dialog:', dialogErr.message);
+        }
+    })();
+}
+
+// ─── Create Managers ───────────────────────────────────────────────
+
+serverManager = new ServerManager({
+    appRoot,
+    port: PORT,
+    onRuntimeCrash: handleServerRuntimeCrash,
+});
+
 windowManager = new WindowManager({
     isDev,
     serverUrl: SERVER_URL,
@@ -86,6 +221,8 @@ windowManager = new WindowManager({
         return shouldQuit;
     },
 });
+
+// ─── Startup Flow ──────────────────────────────────────────────────
 
 async function startServerAndShowPortal() {
     const tag = '[Electron:startServerAndShowPortal]';
@@ -189,6 +326,12 @@ async function launchApp() {
     console.log(tag, '=== Launching application ===');
 
     try {
+        // Step 0: Kill any zombie processes from a previous crash
+        killZombieProcessesOnPort(PORT);
+
+        // Wait for port cleanup
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
         registerIpcHandlers({
             dependencyService,
             getSetupWindow: () => windowManager.getSetupWindow(),
@@ -245,6 +388,8 @@ async function launchApp() {
         app.quit();
     }
 }
+
+// ─── Single Instance Lock & App Lifecycle ──────────────────────────
 
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {

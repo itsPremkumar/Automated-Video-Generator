@@ -130,7 +130,7 @@ function verifySourceBundle() {
     const requirementsFile = path.join(projectRoot, 'requirements.txt');
     const setupHtml = path.join(projectRoot, 'electron', 'electron-setup.html');
     const iconPath = path.join(projectRoot, 'assets', 'icon.ico');
-    const trayIconPath = path.join(projectRoot, 'assets', 'tray-icon.png');
+    const logoPath = path.join(projectRoot, 'assets', 'logo-automation.png');
     const preloadTs = path.join(projectRoot, 'electron', 'electron-preload.ts');
     const mainTs = path.join(projectRoot, 'electron', 'electron-main.ts');
 
@@ -138,6 +138,7 @@ function verifySourceBundle() {
     check(requirementsFile, 'requirements.txt');
     check(setupHtml, 'Electron setup page', { minSize: 100 });
     check(iconPath, 'Desktop icon (.ico)', { minSize: 1000 });
+    check(logoPath, 'Desktop logo (.png)', { minSize: 1000 });
     check(mainTs, 'Electron main entry', { minSize: 100 });
     check(preloadTs, 'Electron preload script', { minSize: 100 });
     check(portablePythonDir, 'portable-python directory');
@@ -145,7 +146,7 @@ function verifySourceBundle() {
     check(edgeTtsExe, 'Bundled edge-tts.exe', { minSize: 1000 });
 
     // Optional but recommended
-    check(trayIconPath, 'Tray icon (.png)', { required: false, minSize: 100 });
+    check(logoPath, 'Tray logo (.png)', { required: false, minSize: 100 });
 }
 
 function verifyReleaseBundle(releaseDir) {
@@ -165,7 +166,7 @@ function verifyReleaseBundle(releaseDir) {
     check(path.join(bundledAppDir, 'portable-python', 'Scripts', 'edge-tts.exe'), 'Packaged edge-tts.exe', { minSize: 1000 });
 
     // Optional release files
-    check(path.join(resourcesDir, 'tray-icon.png'), 'Packaged tray icon', { required: false, minSize: 100 });
+    check(path.join(resourcesDir, 'logo-automation.png'), 'Packaged tray logo', { required: false, minSize: 100 });
 }
 
 function main() {

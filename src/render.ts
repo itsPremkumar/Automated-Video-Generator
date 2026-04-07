@@ -7,7 +7,7 @@ import { cleanupAssets } from './lib/cleaner';
 import { logError, logInfo, logWarn, writeProgress } from './shared/logging/runtime-logging';
 import { resolveProjectPath } from './shared/runtime/paths';
 import { createPipelineWorkspace } from './pipeline-workspace';
-import { JobCancellationError } from './lib/job-cancellation';
+import { JobCancellationError, isJobCancellationError } from './lib/job-cancellation';
 
 const console = {
     log: (...args: unknown[]) => logInfo(...args),
@@ -81,6 +81,18 @@ function getChromiumOptions() {
  * Segmented Video Renderer
  * Renders video scene-by-scene for memory efficiency and crash recovery
  */
+function logMemoryUsage(label: string): void {
+    const usage = process.memoryUsage();
+    const heapMB = Math.round(usage.heapUsed / 1024 / 1024);
+    const rssMB = Math.round(usage.rss / 1024 / 1024);
+    const externalMB = Math.round(usage.external / 1024 / 1024);
+    console.log(`🧠 [MEMORY] ${label}: heap=${heapMB}MB rss=${rssMB}MB external=${externalMB}MB`);
+
+    if (heapMB > 512) {
+        console.warn(`🧠 [MEMORY] ⚠ HIGH HEAP USAGE (${heapMB}MB) — risk of OOM crash`);
+    }
+}
+
 export const renderVideo = async (outputDir: string = resolveProjectPath('output'), options: RenderOptions = {}) => {
     const totalStartTime = Date.now();
     const { shouldCancel } = options;
@@ -90,6 +102,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
     console.log('║         🎥 SEGMENTED REMOTION RENDER PIPELINE                  ║');
     console.log('╚════════════════════════════════════════════════════════════════╝');
     console.log(`\n🎥 [RENDER] Start time: ${new Date().toISOString()}`);
+    logMemoryUsage('Render pipeline start');
 
     // Fix for Windows: Avoid spaces in system TEMP path (e.g. "PREM KUMAR")
     // by pointing REMOTION_TMPDIR to a local project-relative folder.
@@ -239,6 +252,8 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         const segments: string[] = [];
         let renderedCount = 0;
         let skippedCount = 0;
+        let failedCount = 0;
+        const failedScenes: number[] = [];
         let cumulativeFrames = 0;
 
         for (let i = 0; i < sceneData.scenes.length; i++) {
@@ -261,6 +276,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                 }
             }
 
+            logMemoryUsage(`Before scene ${i + 1}`);
             const sceneStart = Date.now();
             const isFirstScene = i === 0;
             const isLastScene = i === sceneData.scenes.length - 1;
@@ -275,15 +291,12 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                     if (!fs.existsSync(absVisualPath)) {
                         console.warn(`\n   ⚠️ [WARNING] Visual asset missing: ${scene.visual.localPath}`);
                         console.warn(`   ⚠️ Switching to fallback background for this scene.`);
-                        // Remove visual object entirely to force gradient fallback in component
                         scene.visual = null;
                     }
                 }
 
                 // SAFETY CHECK: Ensure audio asset exists
                 if (scene.audioPath) {
-                    // Check if it's an absolute path or relative
-                    // The scene-data.json usually has absolute paths for audio
                     let absAudioPath = scene.audioPath;
                     if (!path.isAbsolute(absAudioPath)) {
                         absAudioPath = resolveProjectPath('public', scene.audioPath);
@@ -292,7 +305,6 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                     if (!fs.existsSync(absAudioPath)) {
                         console.warn(`\n   ⚠️ [WARNING] Audio asset missing: ${path.basename(scene.audioPath)}`);
                         console.warn(`   ⚠️ Process will continue without audio for this scene.`);
-                        // Remove audioPath to prevent 404 in Remotion
                         scene.audioPath = undefined;
                     }
                 }
@@ -355,13 +367,38 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                 renderedCount++;
 
             } catch (sceneError: any) {
+                // Per-scene crash isolation: log the failure and continue to the next scene
+                // instead of crashing the entire render pipeline.
+                if (isJobCancellationError(sceneError)) {
+                    throw sceneError; // Always respect cancellation
+                }
+
+                failedCount++;
+                failedScenes.push(i + 1);
+                cumulativeFrames += sceneDurationFrames;
                 console.error(`\n   ❌ Scene ${i + 1} failed: ${sceneError.message}`);
-                console.error(`   💡 Re-run to retry from this scene`);
-                throw sceneError;  // Stop and allow resume
+                console.error(`   Stack: ${sceneError.stack?.split('\n').slice(0, 3).join('\n')}`);
+
+                // Clean up partial segment file if it exists
+                try {
+                    if (fs.existsSync(segmentPath)) {
+                        fs.unlinkSync(segmentPath);
+                    }
+                } catch { /* ignore cleanup errors */ }
+
+                // If more than half the scenes fail, abort the render
+                if (failedCount > Math.ceil(sceneData.scenes.length / 2)) {
+                    throw new Error(`Too many scene render failures (${failedCount}/${sceneData.scenes.length}). Aborting render. Failed scenes: ${failedScenes.join(', ')}`);
+                }
+
+                console.log(`   💡 Continuing to next scene (${failedCount} failed so far)`);
             }
         }
 
-        console.log(`\n📊 [RENDER] Rendered: ${renderedCount}, Skipped: ${skippedCount}, Total: ${segments.length}`);
+        console.log(`\n📊 [RENDER] Rendered: ${renderedCount}, Skipped: ${skippedCount}, Failed: ${failedCount}, Total segments: ${segments.length}`);
+        if (failedScenes.length > 0) {
+            console.warn(`⚠️ [RENDER] Failed scenes: ${failedScenes.join(', ')} — these will be missing from the final video`);
+        }
 
         // ══════════════════════════════════════════════════════════════════
         // STEP 6: CONCATENATE ALL SEGMENTS
@@ -375,19 +412,27 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         const finalOutput = path.join(outputDir, `${safeFilename}.mp4`);
         throwIfCancelled(shouldCancel);
 
-        const missingSegments = segments.filter((segmentPath) => !fs.existsSync(segmentPath));
-        if (missingSegments.length > 0) {
-            throw new Error(`Missing segment files before concat: ${missingSegments.join(', ')}`);
+        // Filter out any segments that don't exist (from failed scenes)
+        const validSegments = segments.filter((segmentPath) => {
+            if (!fs.existsSync(segmentPath)) {
+                console.warn(`⚠️ [RENDER] Skipping missing segment: ${path.basename(segmentPath)}`);
+                return false;
+            }
+            return true;
+        });
+
+        if (validSegments.length === 0) {
+            throw new Error('No valid segments to concatenate. All scenes failed to render.');
         }
+
+        console.log(`🔗 [RENDER] Concatenating ${validSegments.length} valid segments (${failedCount} skipped due to failures)...`);
 
         // Create FFmpeg concat list
         const concatListPath = path.join(segmentsDir, 'segments.txt');
-        const concatList = segments
+        const concatList = validSegments
             .map((segmentPath) => `file '${segmentPath.replace(/\\/g, '/')}'`)
             .join('\n');
         fs.writeFileSync(concatListPath, concatList);
-
-        console.log(`🔗 [RENDER] Concatenating ${segments.length} segments...`);
 
         // Run FFmpeg concat (lossless copy)
         // Detect FFmpeg path - try to use ffmpeg-static
@@ -438,7 +483,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         console.log('╚══════════════════════════════════════════╝');
 
         // Delete segment files
-        for (const segment of segments) {
+        for (const segment of validSegments) {
             try {
                 fs.unlinkSync(segment);
             } catch (e) {
@@ -454,7 +499,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
             // Ignore cleanup errors
         }
 
-        console.log(`🧹 [RENDER] Cleaned up ${segments.length} segment files`);
+        console.log(`🧹 [RENDER] Cleaned up ${validSegments.length} segment files`);
         renderCompleted = true;
 
         // ══════════════════════════════════════════════════════════════════

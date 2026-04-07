@@ -60,8 +60,8 @@ export class WindowManager {
     private getIconPath(): string | undefined {
         const tag = logTag('getIconPath');
         const icoPath = this.options.isDev
-            ? path.join(__dirname, '..', 'assets', 'icon.ico')
-            : path.join(process.resourcesPath, 'icon.ico');
+            ? path.join(__dirname, '..', 'assets', 'logo-automation.png')
+            : path.join(process.resourcesPath, 'logo-automation.png');
 
         const exists = fs.existsSync(icoPath);
         console.log(tag, 'Icon path:', icoPath, '| Exists:', exists);
@@ -304,6 +304,53 @@ export class WindowManager {
             this.mainWindow = null;
         });
 
+        // ── Crash Detection & Recovery ──────────────────────────────────
+        this.mainWindow.webContents.on('render-process-gone', (_event, details) => {
+            console.error(tag, '══════════════════════════════════════════');
+            console.error(tag, '⚠ RENDERER PROCESS CRASHED');
+            console.error(tag, 'Reason:', details.reason);
+            console.error(tag, 'Exit code:', details.exitCode);
+            console.error(tag, '══════════════════════════════════════════');
+
+            // Auto-reload on crash instead of showing a blank window
+            if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+                console.log(tag, 'Attempting to reload main window after crash...');
+                setTimeout(() => {
+                    if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+                        this.mainWindow.loadURL(this.options.serverUrl).catch((loadErr: Error) => {
+                            console.error(tag, 'Failed to reload after crash:', loadErr.message);
+                        });
+                    }
+                }, 2000);
+            }
+        });
+
+        this.mainWindow.webContents.on('unresponsive', () => {
+            console.warn(tag, '══════════════════════════════════════════');
+            console.warn(tag, '⚠ RENDERER BECAME UNRESPONSIVE');
+            console.warn(tag, 'The page may be stuck due to heavy processing.');
+            console.warn(tag, 'Will wait 30s before force-reloading...');
+            console.warn(tag, '══════════════════════════════════════════');
+
+            // Give it 30 seconds to recover before force-reloading
+            setTimeout(() => {
+                if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+                    if (this.mainWindow.webContents.isCurrentlyAudible() || !this.mainWindow.webContents.isCrashed()) {
+                        console.log(tag, 'Window seems to have recovered — not reloading');
+                        return;
+                    }
+                    console.log(tag, 'Force-reloading unresponsive window...');
+                    this.mainWindow.loadURL(this.options.serverUrl).catch((loadErr: Error) => {
+                        console.error(tag, 'Failed to reload unresponsive window:', loadErr.message);
+                    });
+                }
+            }, 30000);
+        });
+
+        this.mainWindow.webContents.on('responsive', () => {
+            console.log(tag, '✓ Renderer became responsive again');
+        });
+
         console.log(tag, '✓ Main window created successfully');
         return this.mainWindow;
     }
@@ -318,8 +365,8 @@ export class WindowManager {
         }
 
         const trayIconPath = this.options.isDev
-            ? path.join(__dirname, '..', 'assets', 'tray-icon.png')
-            : path.join(process.resourcesPath, 'tray-icon.png');
+            ? path.join(__dirname, '..', 'assets', 'logo-automation.png')
+            : path.join(process.resourcesPath, 'logo-automation.png');
 
         console.log(tag, 'Tray icon path:', trayIconPath, '| Exists:', fs.existsSync(trayIconPath));
 

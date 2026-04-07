@@ -5,6 +5,8 @@ import * as path from 'path';
 type ServerManagerOptions = {
     appRoot: string;
     port: number;
+    /** Called when the server process dies unexpectedly after a successful startup */
+    onRuntimeCrash?: (exitCode: number | null, signal: string | null, lastLog: string) => void;
 };
 
 function logTag(method: string): string {
@@ -13,6 +15,11 @@ function logTag(method: string): string {
 
 export class ServerManager {
     private serverProcess: ChildProcess | null = null;
+    private serverStartedSuccessfully = false;
+    private lastErrorLog = '';
+    private restartCount = 0;
+    private readonly MAX_AUTO_RESTARTS = 3;
+    private lastRestartTime = 0;
 
     constructor(private readonly options: ServerManagerOptions) {
         console.log(logTag('constructor'), 'Initialized with appRoot:', this.options.appRoot, '| port:', this.options.port);
@@ -24,9 +31,17 @@ export class ServerManager {
         return this.serverProcess !== null;
     }
 
+    getRestartCount(): number {
+        return this.restartCount;
+    }
+
     async startServer(): Promise<void> {
         const tag = logTag('startServer');
         console.log(tag, '=== Starting backend server ===');
+
+        // Reset crash tracking for fresh starts (but not for auto-restarts)
+        this.serverStartedSuccessfully = false;
+        this.lastErrorLog = '';
 
         return new Promise((resolve, reject) => {
             const tsxPath = path.join(this.options.appRoot, 'node_modules', 'tsx', 'dist', 'cli.mjs');
@@ -95,6 +110,7 @@ export class ServerManager {
                 if (!started) {
                     started = true;
                     console.warn(tag, '⚠ Server did not emit "running on" within 15s — resolving anyway (server may still be starting)');
+                    this.serverStartedSuccessfully = true;
                     resolve();
                 }
             }, 15000);
@@ -105,19 +121,19 @@ export class ServerManager {
                 if (message.includes('running on') && !started) {
                     started = true;
                     clearTimeout(timeout);
+                    this.serverStartedSuccessfully = true;
                     console.log(tag, '✓ Server reported ready');
                     resolve();
                 }
             });
 
-            let lastErrorLog = '';
             this.serverProcess.stderr?.on('data', (data: Buffer) => {
                 const message = data.toString();
                 console.error('[Server:stderr]', message.trimEnd());
-                lastErrorLog += message;
-                // Keep only the last 2000 chars to avoid memory issues
-                if (lastErrorLog.length > 2000) {
-                    lastErrorLog = lastErrorLog.slice(-2000);
+                this.lastErrorLog += message;
+                // Keep only the last 4000 chars to avoid memory issues
+                if (this.lastErrorLog.length > 4000) {
+                    this.lastErrorLog = this.lastErrorLog.slice(-4000);
                 }
             });
 
@@ -132,18 +148,78 @@ export class ServerManager {
             });
 
             this.serverProcess.on('exit', (code, signal) => {
-                console.log(tag, 'Server process exited | Code:', code, '| Signal:', signal, '| PID:', this.serverProcess?.pid);
-                if (code !== 0 && !started) {
+                const pid = this.serverProcess?.pid;
+                console.log(tag, 'Server process exited | Code:', code, '| Signal:', signal, '| PID:', pid);
+
+                const wasRunning = this.serverStartedSuccessfully;
+                this.serverProcess = null;
+
+                if (!started) {
+                    // Crashed during startup — reject the startup promise
                     started = true;
                     clearTimeout(timeout);
-                    const snippet = lastErrorLog.trim().slice(-500);
+                    const snippet = this.lastErrorLog.trim().slice(-500);
                     const errMsg = `Server script crashed on startup (code ${code}, signal ${signal})\n\nLog:\n${snippet || 'No error log output available'}`;
                     console.error(tag, errMsg);
                     reject(new Error(errMsg));
+                    return;
                 }
-                this.serverProcess = null;
+
+                if (wasRunning && code !== 0 && signal !== 'SIGTERM' && signal !== 'SIGINT') {
+                    // Server crashed AFTER a successful startup — this is a runtime crash
+                    console.error(tag, '══════════════════════════════════════════════════');
+                    console.error(tag, '⚠ SERVER CRASHED AT RUNTIME');
+                    console.error(tag, 'Exit code:', code, '| Signal:', signal);
+                    console.error(tag, 'Last error log:', this.lastErrorLog.trim().slice(-500));
+                    console.error(tag, '══════════════════════════════════════════════════');
+
+                    this.serverStartedSuccessfully = false;
+
+                    // Notify the Electron main process
+                    if (this.options.onRuntimeCrash) {
+                        this.options.onRuntimeCrash(code, signal, this.lastErrorLog.trim().slice(-500));
+                    }
+                }
             });
         });
+    }
+
+    /**
+     * Attempt to restart the server after a runtime crash.
+     * Returns true if restart was initiated, false if max restarts exceeded.
+     */
+    async restartServer(): Promise<boolean> {
+        const tag = logTag('restartServer');
+        const now = Date.now();
+
+        // Reset the restart counter if more than 5 minutes since last restart
+        if (now - this.lastRestartTime > 5 * 60 * 1000) {
+            this.restartCount = 0;
+        }
+
+        if (this.restartCount >= this.MAX_AUTO_RESTARTS) {
+            console.error(tag, `Max auto-restarts (${this.MAX_AUTO_RESTARTS}) exceeded — not restarting`);
+            return false;
+        }
+
+        this.restartCount++;
+        this.lastRestartTime = now;
+        console.log(tag, `Restarting server (attempt ${this.restartCount}/${this.MAX_AUTO_RESTARTS})...`);
+
+        // Clean up any lingering process
+        this.stopServer();
+
+        // Wait a brief moment for the port to release
+        await new Promise<void>((resolve) => setTimeout(resolve, 1500));
+
+        try {
+            await this.startServer();
+            console.log(tag, '✓ Server restarted successfully');
+            return true;
+        } catch (error: any) {
+            console.error(tag, 'Server restart failed:', error.message);
+            return false;
+        }
     }
 
     stopServer() {
@@ -154,9 +230,28 @@ export class ServerManager {
         }
 
         console.log(tag, 'Stopping server process, PID:', this.serverProcess.pid);
+        this.serverStartedSuccessfully = false;
+
         try {
-            this.serverProcess.kill();
-            console.log(tag, '✓ Server process kill signal sent');
+            // On Windows, kill the entire process tree to prevent zombie children
+            if (process.platform === 'win32' && this.serverProcess.pid) {
+                try {
+                    const { execSync } = require('child_process');
+                    execSync(`taskkill /F /T /PID ${this.serverProcess.pid}`, {
+                        stdio: 'pipe',
+                        windowsHide: true,
+                        timeout: 5000,
+                    });
+                    console.log(tag, '✓ Process tree killed via taskkill');
+                } catch {
+                    // taskkill failed — fall back to regular kill
+                    this.serverProcess.kill();
+                    console.log(tag, '✓ Server process kill signal sent (fallback)');
+                }
+            } else {
+                this.serverProcess.kill();
+                console.log(tag, '✓ Server process kill signal sent');
+            }
         } catch (error: any) {
             console.warn(tag, 'Failed to kill server process (may have already exited):', error.message);
         }

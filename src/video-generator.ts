@@ -111,6 +111,15 @@ export async function generateVideo(
     try {
         reportProgress('init', 0, 'Starting video generation');
 
+        // Set a total pipeline timeout (30 minutes) to prevent hung jobs
+        const PIPELINE_TIMEOUT_MS = 30 * 60 * 1000;
+        const pipelineDeadline = Date.now() + PIPELINE_TIMEOUT_MS;
+        const checkPipelineTimeout = () => {
+            if (Date.now() > pipelineDeadline) {
+                throw new Error(`Video generation pipeline timed out after ${PIPELINE_TIMEOUT_MS / 60000} minutes.`);
+            }
+        };
+
         // ══════════════════════════════════════════════════════════════════
         // STEP 1: VALIDATE SCRIPT
         // ══════════════════════════════════════════════════════════════════
@@ -293,17 +302,24 @@ export async function generateVideo(
                 visuals[i] = visual;
                 throwIfCancelled(shouldCancel);
             } catch (err: any) {
-                // console.error(`❌ [SCENE ${i + 1}] Error fetching visual: ${err.message}`);
+                console.error(`[VIDEO-GEN] [SCENE ${i + 1}] Error fetching visual: ${err.message}`);
                 visuals[i] = null;
                 throwIfCancelled(shouldCancel);
             }
         };
 
-        // Execute with concurrency limit
+        // Execute with concurrency limit — use safe error handling so one
+        // scene failure doesn't crash the entire pipeline.
         for (let i = 0; i < parsed.scenes.length; i++) {
-            const p = processScene(i).then(() => {
-                activePromises.splice(activePromises.indexOf(p), 1);
-            });
+            const p = processScene(i)
+                .catch((err: any) => {
+                    // Catch per-scene errors so Promise.all doesn't reject
+                    console.error(`[VIDEO-GEN] Scene ${i + 1} processing failed: ${err.message}`);
+                    visuals[i] = null;
+                })
+                .then(() => {
+                    activePromises.splice(activePromises.indexOf(p), 1);
+                });
             activePromises.push(p);
             if (activePromises.length >= CONCURRENCY) {
                 await Promise.race(activePromises);

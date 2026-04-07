@@ -1,6 +1,6 @@
 {
     "name": "automated-video-generator",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "main": "dist-electron/electron-main.js",
     "description": "Free and open-source self-hosted AI text-to-video generator built with Remotion, Edge-TTS, stock media fetching, batch rendering, a local web portal, and MCP integration.",
     "author": "Premkumar",

@@ -77,8 +77,8 @@ module.exports = {
             to: 'icon.ico',
         },
         {
-            from: 'assets/tray-icon.png',
-            to: 'tray-icon.png',
+            from: 'assets/logo-automation.png',
+            to: 'logo-automation.png',
         },
     ],
 

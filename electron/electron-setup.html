@@ -76,10 +76,24 @@
             text-align: center;
         }
 
+        .header .icon-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        .main-logo-img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px var(--brand-glow);
+            -webkit-user-drag: none;
+        }
+
         .header .icon {
             width: 56px;
             height: 56px;
-            margin: 0 auto 12px;
             background: linear-gradient(135deg, var(--brand), var(--brand-soft));
             border-radius: 16px;
             display: grid;
@@ -309,7 +323,10 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="icon">🎬</div>
+            <div class="icon-container">
+                <img src="../assets/logo-automation.png" alt="Logo" class="main-logo-img" onerror="this.style.display='none'; document.getElementById('fallback-icon').style.display='grid'">
+                <div id="fallback-icon" class="icon" style="display:none;">🎬</div>
+            </div>
             <h1>Automated Video Generator</h1>
             <p>Checking system requirements...</p>
             <div id="overallStatus" style="margin-top: 10px;"></div>
