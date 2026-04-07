@@ -33,24 +33,26 @@ if (fs.existsSync(pluginPath)) {
 }
 
 // 2. Sync to SKILL.md files
-function updateSkillVersion(skillName) {
-    const skillPath = path.join(skillsDir, skillName, 'SKILL.md');
+function updateSkillVersion(skillName, baseDirName) {
+    const skillPath = path.join(rootDir, baseDirName, skillName, 'SKILL.md');
     if (fs.existsSync(skillPath)) {
         let content = fs.readFileSync(skillPath, 'utf8');
         // Match version: x.x.x in YAML frontmatter
         const updatedContent = content.replace(/^version:.*$/m, `version: ${version}`);
         if (content !== updatedContent) {
             fs.writeFileSync(skillPath, updatedContent);
-            console.log(`✓ Updated skills/${skillName}/SKILL.md`);
+            console.log(`✓ Updated ${baseDirName}/${skillName}/SKILL.md`);
         } else {
-            console.log(`- skills/${skillName}/SKILL.md is already up to date`);
+            console.log(`- ${baseDirName}/${skillName}/SKILL.md is already up to date`);
         }
     } else {
         console.warn(`! Skill not found: ${skillPath}`);
     }
 }
 
-updateSkillVersion('generate-script');
-updateSkillVersion('cli-operations');
+updateSkillVersion('generate-script', 'skills');
+updateSkillVersion('cli-operations', 'skills');
+updateSkillVersion('generate-script', '.agent/skills');
+updateSkillVersion('cli-operations', '.agent/skills');
 
 console.log('Sync complete!');
