@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import * as dotenv from 'dotenv';
 import { resolveProjectPath } from '../shared/runtime/paths';
 import { AVAILABLE_VOICES } from '../lib/voice-generator';
@@ -5,6 +6,10 @@ import { AVAILABLE_VOICES } from '../lib/voice-generator';
 const envPath = resolveProjectPath('.env');
 dotenv.config({ path: envPath });
 
+const pkgPath = resolveProjectPath('package.json');
+const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+
+export const APP_VERSION = pkg.version;
 export { AVAILABLE_VOICES };
 
 export const HOST = process.env.HOST || '127.0.0.1';

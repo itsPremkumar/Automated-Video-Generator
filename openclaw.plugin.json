@@ -1,7 +1,7 @@
 {
   "id": "automated-video-generator",
   "name": "automated-video-generator",
-  "version": "1.0.0",
+  "version": "5.0.0",
   "description": "Transform text scripts into professional videos with AI voiceovers, automated stock footage, and Remotion rendering.",
   "author": "itsPremkumar",
   "license": "MIT",
@@ -14,7 +14,9 @@
         "description": "API key for Pexels stock footage. Get one at https://www.pexels.com/api/"
       }
     },
-    "required": ["PEXELS_API_KEY"]
+    "required": [
+      "PEXELS_API_KEY"
+    ]
   },
   "skills": [
     "skills/cli-operations",

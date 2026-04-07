@@ -1,4 +1,4 @@
-import { BRAND_COLOR, PROJECT_NAME, DEFAULT_SITE_DESCRIPTION, DEFAULT_SITE_KEYWORDS } from '../constants/config';
+import { BRAND_COLOR, PROJECT_NAME, DEFAULT_SITE_DESCRIPTION, DEFAULT_SITE_KEYWORDS, APP_VERSION } from '../constants/config';
 import { HtmlOptions } from '../types/server.types';
 
 // ─── HTML Escaping Utilities ───────────────────────────────────────────────────
@@ -779,7 +779,7 @@ textarea { min-height: 250px; resize: vertical; }
             <a href="/#workspace" class="nav-link">Workspace</a>
             <a href="/#recent-videos" class="nav-link">Library</a>
             <a href="https://github.com/itsPremkumar/Automated-Video-Generator" target="_blank" class="nav-link" style="display:flex;align-items:center;">
-                GitHub <span class="nav-badge">v1.0</span>
+                GitHub <span class="nav-badge">v${APP_VERSION}</span>
             </a>
         </div>
     </div>
