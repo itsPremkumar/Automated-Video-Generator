@@ -1,6 +1,7 @@
 import { ChildProcess, spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { getDesktopLogFilePath, writeDesktopLog } from './app-logger';
 
 type ServerManagerOptions = {
     appRoot: string;
@@ -26,9 +27,11 @@ export class ServerManager {
     }
 
     hasServerProcess(): boolean {
-        const alive = this.serverProcess !== null && !this.serverProcess.killed;
+        const alive = this.serverProcess !== null
+            && !this.serverProcess.killed
+            && this.serverProcess.exitCode === null;
         console.log(logTag('hasServerProcess'), 'Server process alive:', alive, '| PID:', this.serverProcess?.pid || 'none');
-        return this.serverProcess !== null;
+        return alive;
     }
 
     getRestartCount(): number {
@@ -69,6 +72,8 @@ export class ServerManager {
 
             const env = {
                 ...process.env,
+                AUTOMATED_VIDEO_GENERATOR_DATA_ROOT: process.env.AUTOMATED_VIDEO_GENERATOR_DATA_ROOT || '',
+                AUTOMATED_VIDEO_GENERATOR_DESKTOP_LOG: getDesktopLogFilePath(),
                 PORT: String(this.options.port),
                 ELECTRON_RUN_AS_NODE: '1',
                 ELECTRON_BACKEND_SERVER: '1',
@@ -105,6 +110,14 @@ export class ServerManager {
 
             console.log(tag, 'Server process spawned with PID:', this.serverProcess.pid);
 
+            // Absorb EPIPE errors on the server's stdin pipe. When the server
+            // process dies, any pending write to its stdin will fail with EPIPE.
+            // Without this handler the error becomes an uncaught exception.
+            this.serverProcess.stdin?.on('error', (err: NodeJS.ErrnoException) => {
+                if (err.code === 'EPIPE') return;
+                console.warn(tag, 'Server stdin error:', err.message);
+            });
+
             let started = false;
             const timeout = setTimeout(() => {
                 if (!started) {
@@ -118,6 +131,7 @@ export class ServerManager {
             this.serverProcess.stdout?.on('data', (data: Buffer) => {
                 const message = data.toString();
                 console.log('[Server:stdout]', message.trimEnd());
+                writeDesktopLog('info', `[Server:stdout] ${message.trimEnd()}`);
                 if (message.includes('running on') && !started) {
                     started = true;
                     clearTimeout(timeout);
@@ -130,6 +144,7 @@ export class ServerManager {
             this.serverProcess.stderr?.on('data', (data: Buffer) => {
                 const message = data.toString();
                 console.error('[Server:stderr]', message.trimEnd());
+                writeDesktopLog('error', `[Server:stderr] ${message.trimEnd()}`);
                 this.lastErrorLog += message;
                 // Keep only the last 4000 chars to avoid memory issues
                 if (this.lastErrorLog.length > 4000) {
@@ -140,6 +155,7 @@ export class ServerManager {
             this.serverProcess.on('error', (error) => {
                 console.error(tag, 'Server process error event:', error.message);
                 console.error(tag, 'Error details:', JSON.stringify({ code: (error as any).code, errno: (error as any).errno }));
+                writeDesktopLog('error', `${tag} server process error: ${error.message}`);
                 if (!started) {
                     started = true;
                     clearTimeout(timeout);
@@ -150,9 +166,11 @@ export class ServerManager {
             this.serverProcess.on('exit', (code, signal) => {
                 const pid = this.serverProcess?.pid;
                 console.log(tag, 'Server process exited | Code:', code, '| Signal:', signal, '| PID:', pid);
+                writeDesktopLog('warn', `${tag} server exited | code=${code} signal=${signal} pid=${pid ?? 'none'}`);
 
                 const wasRunning = this.serverStartedSuccessfully;
                 this.serverProcess = null;
+                clearTimeout(timeout);
 
                 if (!started) {
                     // Crashed during startup — reject the startup promise

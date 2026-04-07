@@ -5,8 +5,8 @@ import * as fs from 'fs';
 import { execSync } from 'child_process';
 import { cleanupAssets } from './lib/cleaner';
 import { logError, logInfo, logWarn, writeProgress } from './shared/logging/runtime-logging';
-import { resolveProjectPath } from './shared/runtime/paths';
-import { createPipelineWorkspace } from './pipeline-workspace';
+import { resolveProjectPath, resolvePublicFilePath } from './shared/runtime/paths';
+import { createPipelineWorkspace, resolveAssetWorkspaceDir } from './pipeline-workspace';
 import { JobCancellationError, isJobCancellationError } from './lib/job-cancellation';
 
 const console = {
@@ -137,7 +137,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         const sceneData: SceneData = JSON.parse(fileContent);
         throwIfCancelled(shouldCancel);
         assetWorkspaceDir = sceneData.assetNamespace
-            ? resolveProjectPath('public', sceneData.assetNamespace)
+            ? resolveAssetWorkspaceDir(sceneData.assetNamespace)
             : createPipelineWorkspace(outputDir).workspaceDir;
 
         console.log(`📋 [RENDER] Loaded ${sceneData.scenes.length} scenes`);
@@ -287,7 +287,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
             try {
                 // SAFETY CHECK: Ensure visual asset exists
                 if (scene.visual && scene.visual.localPath) {
-                    const absVisualPath = resolveProjectPath('public', scene.visual.localPath);
+                    const absVisualPath = resolvePublicFilePath(scene.visual.localPath);
                     if (!fs.existsSync(absVisualPath)) {
                         console.warn(`\n   ⚠️ [WARNING] Visual asset missing: ${scene.visual.localPath}`);
                         console.warn(`   ⚠️ Switching to fallback background for this scene.`);
@@ -299,7 +299,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                 if (scene.audioPath) {
                     let absAudioPath = scene.audioPath;
                     if (!path.isAbsolute(absAudioPath)) {
-                        absAudioPath = resolveProjectPath('public', scene.audioPath);
+                        absAudioPath = resolvePublicFilePath(scene.audioPath);
                     }
 
                     if (!fs.existsSync(absAudioPath)) {

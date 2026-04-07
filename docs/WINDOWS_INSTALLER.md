@@ -26,6 +26,7 @@ The Windows app is made of these parts:
 Current desktop modules:
 
 - `electron/electron-main.ts`
+- `electron/debug-runtime.ts`
 - `electron/dependency-service.ts`
 - `electron/server-manager.ts`
 - `electron/window-manager.ts`
@@ -78,6 +79,7 @@ The desktop build now includes these protections:
 - external URLs are allowlisted
 - render Chromium web security is enabled by default
 - release verification checks for bundled runtime files before shipping
+- desktop diagnostics now capture main-process logs, Chromium logs, crash dumps, and renderer console errors
 
 If you must disable Chromium web security for debugging:
 
@@ -108,6 +110,20 @@ This checks source-side requirements such as:
 ```bash
 npm run electron:compile
 ```
+
+### 2a. Run the desktop app in full debug mode
+
+```bash
+npm run electron:debug
+```
+
+This enables:
+
+- automatic DevTools for Electron windows
+- Chromium log output to file
+- Electron crash dump collection
+- startup and failure snapshots as JSON
+- renderer `console.*`, `window.onerror`, and unhandled rejection forwarding into desktop diagnostics
 
 ### 3. Build installer
 
@@ -204,6 +220,39 @@ npm run electron:verify-release
 
 and inspect the startup error dialog if one appears.
 
+### App does not open at all
+
+Run:
+
+```bash
+npm run electron:debug
+```
+
+Then check:
+
+1. the desktop log file
+2. the Chromium log file
+3. the diagnostics JSON snapshots
+4. the crash dump folder
+
+By default these are written under:
+
+```text
+%LOCALAPPDATA%\Automated Video Generator\
+```
+
+Important subfolders:
+
+- `logs\`
+- `diagnostics\`
+- `crashDumps\`
+
+The tray menu now also includes:
+
+- `Open Desktop Log`
+- `Open Diagnostics Folder`
+- `Toggle DevTools`
+
 ### Works in dev, fails in packaged app
 
 That usually means your dev machine is using globally installed tools that are not actually bundled.
@@ -215,6 +264,7 @@ Always verify the packaged output, not just the dev environment.
 Important desktop files:
 
 - `electron/electron-main.ts`
+- `electron/debug-runtime.ts`
 - `electron/dependency-service.ts`
 - `electron/server-manager.ts`
 - `electron/window-manager.ts`

@@ -4,7 +4,7 @@ import viewRoutes from './adapters/http/view-routes';
 import fileRoutes from './adapters/http/file-routes';
 import { startJobController } from './adapters/http/jobs-controller';
 import { RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS } from './constants/config';
-import { resolveProjectPath } from './shared/runtime/paths';
+import { resolveProjectPath, resolveRuntimePublicPath } from './shared/runtime/paths';
 import { ForbiddenError } from './lib/errors';
 import { asyncHandler, validateRequest } from './lib/validation';
 import { errorHandler, notFoundHandler } from './middleware/error-handler';
@@ -153,6 +153,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 
+app.use('/jobs', express.static(resolveRuntimePublicPath('jobs')));
 app.use(express.static(resolveProjectPath('public')));
 app.use('/assets/input', express.static(resolveProjectPath('input')));
 

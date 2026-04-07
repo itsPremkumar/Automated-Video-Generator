@@ -10,7 +10,7 @@ import {
     INPUT_MUSIC_ROOT,
     resolveAssetPath,
 } from '../../lib/path-safety';
-import { resolveProjectPath } from '../../shared/runtime/paths';
+import { resolvePublicFilePath } from '../../shared/runtime/paths';
 
 const execAsync = promisify(exec);
 const MAX_DIRECTORY_ITEMS = 500;
@@ -141,7 +141,7 @@ export class LocalFilesystem {
     }
 
     getViewFile(rawPath: string, range?: string): ViewFileResult {
-        const filePath = path.isAbsolute(rawPath) ? path.resolve(rawPath) : resolveProjectPath('public', rawPath);
+        const filePath = path.isAbsolute(rawPath) ? path.resolve(rawPath) : resolvePublicFilePath(rawPath);
         if (!fs.existsSync(filePath)) {
             throw new NotFoundError('File not found.');
         }

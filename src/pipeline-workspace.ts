@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { resolveProjectPath } from './shared/runtime/paths';
+import { resolveRuntimePublicPath } from './shared/runtime/paths';
 
 export interface PipelineWorkspace {
   outputId: string;
@@ -22,12 +22,26 @@ export function sanitizeOutputId(value: string | undefined): string {
   return sanitized || 'video';
 }
 
+function normalizePreferredId(value: string | undefined, fallbackOutputDir: string): string {
+  if (!value) {
+    return path.basename(path.resolve(fallbackOutputDir));
+  }
+
+  const normalized = value.trim().replace(/\\/g, '/');
+  const namespaceMatch = /^jobs\/([a-zA-Z0-9_-]+)$/.exec(normalized);
+  if (namespaceMatch) {
+    return namespaceMatch[1];
+  }
+
+  return normalized;
+}
+
 export function createPipelineWorkspace(outputDir: string, preferredId?: string): PipelineWorkspace {
-  const derivedId = preferredId || path.basename(path.resolve(outputDir));
+  const derivedId = normalizePreferredId(preferredId, outputDir);
   const outputId = sanitizeOutputId(derivedId);
-  const publicRoot = resolveProjectPath('public');
+  const publicRoot = resolveRuntimePublicPath();
   const publicNamespace = `jobs/${outputId}`;
-  const workspaceDir = path.join(publicRoot, 'jobs', outputId);
+  const workspaceDir = resolveRuntimePublicPath('jobs', outputId);
 
   return {
     outputId,
@@ -48,11 +62,22 @@ export function ensurePipelineWorkspace(workspace: PipelineWorkspace): void {
   }
 }
 
+export function resolveAssetWorkspaceDir(assetNamespace: string): string {
+  const normalized = assetNamespace.trim().replace(/\\/g, '/');
+  const match = /^jobs\/([a-zA-Z0-9_-]+)$/.exec(normalized);
+
+  if (!match) {
+    throw new Error(`Invalid asset namespace: ${assetNamespace}`);
+  }
+
+  return resolveRuntimePublicPath('jobs', match[1]);
+}
+
 export function toPublicRelativePath(absolutePath: string): string {
-  const publicRoot = resolveProjectPath('public');
+  const publicRoot = resolveRuntimePublicPath();
   const relativePath = path.relative(publicRoot, absolutePath);
 
-  if (!relativePath || relativePath.startsWith('..')) {
+  if (!relativePath || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
     throw new Error(`Path is outside the public directory: ${absolutePath}`);
   }
 

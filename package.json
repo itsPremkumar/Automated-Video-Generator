@@ -64,6 +64,7 @@
         "electron:verify-bundle": "node scripts/verify-desktop-bundle.cjs",
         "electron:verify-release": "node scripts/verify-desktop-bundle.cjs --release release/win-unpacked",
         "electron:dev": "npm run electron:compile && electron .",
+        "electron:debug": "npm run electron:compile && node scripts/run-electron-debug.cjs",
         "electron:build": "npm run electron:verify-bundle && npm run electron:compile && electron-builder --config electron-builder.config.js && npm run electron:verify-release",
         "electron:release": "npm run electron:verify-bundle && npm run electron:compile && electron-builder --config electron-builder.config.js --publish always && npm run electron:verify-release",
         "electron:pack": "npm run electron:verify-bundle && npm run electron:compile && electron-builder --config electron-builder.config.js --dir && npm run electron:verify-release"

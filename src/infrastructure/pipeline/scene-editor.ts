@@ -3,7 +3,7 @@ import * as path from 'path';
 import { downloadMedia, fetchVisualsForScene, getVideoMetadata } from '../../lib/visual-fetcher';
 import { DEFAULT_VOICE_CONFIG, generateVoiceovers, LANGUAGE_DEFAULTS } from '../../lib/voice-generator';
 import { createPipelineWorkspace, toPublicRelativePath } from '../../pipeline-workspace';
-import { resolveProjectPath } from '../../shared/runtime/paths';
+import { resolveProjectPath, resolvePublicFilePath } from '../../shared/runtime/paths';
 
 type SceneEditorOptions = {
     voice?: string;
@@ -53,7 +53,9 @@ export async function updateSceneInJob(
         const baseVoiceConfig = { ...DEFAULT_VOICE_CONFIG, voice, language: data.language };
 
         if (scene.audioPath) {
-            const fullPath = path.resolve(outputDir, scene.audioPath);
+            const fullPath = path.isAbsolute(scene.audioPath)
+                ? path.resolve(scene.audioPath)
+                : resolvePublicFilePath(scene.audioPath);
             if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
         }
 

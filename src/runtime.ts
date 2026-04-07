@@ -1,10 +1,13 @@
 export {
+    dataRoot,
     ensureProjectRootCwd,
     inMcpRuntime,
     isElectron,
     projectRoot,
+    resolvePublicFilePath,
     resolveProjectPath,
     resolveResourcePath,
+    resolveRuntimePublicPath,
 } from './shared/runtime/paths';
 
 export {

@@ -11,6 +11,12 @@ export interface DepStatus {
     required: boolean;
 }
 
+export interface VoiceEngineRepairResult {
+    attempted: boolean;
+    detail: string;
+    repaired: boolean;
+}
+
 type DependencyServiceOptions = {
     appRoot: string;
 };
@@ -147,6 +153,36 @@ try {
         ].filter(Boolean);
         console.log(logTag('bundledRequirementsCandidates'), 'Candidates:', candidates);
         return candidates;
+    }
+
+    private isBundledPythonPath(pythonPath: string): boolean {
+        const normalized = path.resolve(pythonPath);
+        return this.bundledPythonCandidates().some((candidate) => path.resolve(candidate) === normalized);
+    }
+
+    private getCoreRuntimeStatus(): {
+        detail: string;
+        ready: boolean;
+    } {
+        const serverEntry = this.resolveApp('src', 'server.ts');
+        const tsxCli = this.resolveApp('node_modules', 'tsx', 'dist', 'cli.mjs');
+        const nodeModules = this.resolveApp('node_modules');
+
+        const missing: string[] = [];
+        if (!fs.existsSync(nodeModules)) {
+            missing.push(`node_modules missing at ${nodeModules}`);
+        }
+        if (!fs.existsSync(tsxCli)) {
+            missing.push(`tsx CLI missing at ${tsxCli}`);
+        }
+        if (!fs.existsSync(serverEntry)) {
+            missing.push(`server entry missing at ${serverEntry}`);
+        }
+
+        return {
+            ready: missing.length === 0,
+            detail: missing.length === 0 ? 'Core portal runtime is available.' : missing.join('\n'),
+        };
     }
 
     private findBundledPythonExecutable(): string | null {
@@ -526,7 +562,35 @@ try {
     }
 
     allDependenciesReady(): boolean {
-        return this.checkAllDependencies().filter((dep) => dep.required).every((dep) => dep.installed);
+        const tag = logTag('allDependenciesReady');
+        const coreRuntime = this.getCoreRuntimeStatus();
+        console.log(tag, 'Core runtime ready:', coreRuntime.ready, '| Detail:', coreRuntime.detail);
+        return coreRuntime.ready;
+    }
+
+    tryAutoRepairVoiceEngine(): VoiceEngineRepairResult {
+        const tag = logTag('tryAutoRepairVoiceEngine');
+        console.log(tag, 'Attempting automatic voice engine repair...');
+
+        const bundledPython = this.findBundledPythonExecutable();
+        if (!bundledPython) {
+            const detail = 'No bundled Python runtime is available for automatic voice-engine repair.';
+            console.log(tag, detail);
+            return { attempted: false, detail, repaired: false };
+        }
+
+        if (!this.isBundledPythonPath(bundledPython)) {
+            const detail = `Skipping automatic repair because Python is not bundled: ${bundledPython}`;
+            console.log(tag, detail);
+            return { attempted: false, detail, repaired: false };
+        }
+
+        const repaired = this.repairBundledEdgeTts();
+        const detail = repaired
+            ? `Bundled voice engine repaired successfully via ${bundledPython}`
+            : `Bundled Python was found at ${bundledPython}, but repairing edge-tts failed.`;
+        console.log(tag, detail);
+        return { attempted: true, detail, repaired };
     }
 
     private sendProgress(win: BrowserWindow | null, step: string, message: string, percent: number) {
@@ -800,7 +864,17 @@ try {
             }
 
             console.warn(tag, 'Python found but edge-tts NOT installed in it:', pythonPath);
-            return { ok: false, detail: `Python found at ${pythonPath} but edge-tts is not installed in it.` };
+            if (this.isBundledPythonPath(pythonPath)) {
+                return {
+                    ok: false,
+                    detail: `Bundled Python was found at ${pythonPath}, but edge-tts is missing. The app can still launch, and the setup flow can repair the voice engine.`,
+                };
+            }
+
+            return {
+                ok: false,
+                detail: `Python found at ${pythonPath} but edge-tts is not installed in it. The app can still launch, but voice generation will be unavailable until the package is installed.`,
+            };
         }
 
         const systemPython = this.findPythonExecutable();
@@ -814,7 +888,7 @@ try {
         }
 
         const checkedList = candidatePaths.map((candidate) => `  - ${candidate} (${fs.existsSync(candidate) ? 'exists but broken' : 'not found'})`).join('\n');
-        const detail = `No working bundled Edge-TTS runtime was found.\n\nPaths checked:\n${checkedList}\n\nSystem Python: ${systemPython || 'not found'}\nresourcesPath: ${resourcesDir || 'not set'}`;
+        const detail = `No working bundled Edge-TTS runtime was found.\n\nPaths checked:\n${checkedList}\n\nSystem Python: ${systemPython || 'not found'}\nresourcesPath: ${resourcesDir || 'not set'}\n\nThe app can still launch, but narration generation will stay disabled until a voice engine is repaired or installed.`;
         console.error(tag, '✗ Voice engine verification failed:');
         console.error(tag, detail);
         return { ok: false, detail };

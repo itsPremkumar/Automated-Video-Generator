@@ -1,5 +1,20 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { resolveProjectPath, resolveRuntimePublicPath } from '../shared/runtime/paths';
+
+function isPathWithin(parentPath: string, candidatePath: string): boolean {
+    const relative = path.relative(path.resolve(parentPath), path.resolve(candidatePath));
+    return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+function canCleanupDirectory(directory: string): boolean {
+    const allowedRoots = [
+        resolveProjectPath('tmp'),
+        resolveRuntimePublicPath('jobs'),
+    ];
+
+    return allowedRoots.some((root) => isPathWithin(root, directory));
+}
 
 /**
  * Cleans up all files in the specified directories.
@@ -11,6 +26,10 @@ export async function cleanupAssets(directories: string[]): Promise<void> {
     // console.log('╚══════════════════════════════════════════╝');
 
     for (const dir of directories) {
+        if (!canCleanupDirectory(dir)) {
+            continue;
+        }
+
         if (fs.existsSync(dir)) {
             // console.log(`🧹 Cleaning directory: ${dir}`);
             try {

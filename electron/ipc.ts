@@ -1,11 +1,16 @@
 import { app, ipcMain } from 'electron';
 import { DependencyService } from './dependency-service';
+import { DebugInfo, RendererDebugPayload } from './debug-runtime';
 
 type RegisterIpcHandlersOptions = {
     dependencyService: DependencyService;
+    getDebugInfo: () => DebugInfo;
     getSetupWindow: () => Electron.BrowserWindow | null;
-    openExternalSafely: (url: string) => Promise<void>;
     launchAfterSetup: () => Promise<void>;
+    openDesktopLog: () => Promise<string>;
+    openDiagnosticsFolder: () => Promise<string>;
+    openExternalSafely: (url: string) => Promise<void>;
+    recordRendererDebugLog: (payload: RendererDebugPayload) => void;
 };
 
 let ipcHandlersRegistered = false;
@@ -14,18 +19,24 @@ function logTag(channel: string): string {
     return `[IPC:${channel}]`;
 }
 
-function serializeError(error: any): { error: true; message: string; stack?: string } {
-    const message = error?.message || String(error) || 'Unknown error';
+function serializeError(error: unknown): { error: true; message: string; stack?: string } {
+    if (error instanceof Error) {
+        return {
+            error: true,
+            message: error.message.slice(0, 1000),
+            stack: error.stack?.slice(0, 2000),
+        };
+    }
+
     return {
         error: true,
-        message: message.slice(0, 1000),
-        stack: error?.stack?.slice(0, 2000),
+        message: String(error).slice(0, 1000),
     };
 }
 
-export function registerIpcHandlers(options: RegisterIpcHandlersOptions) {
+export function registerIpcHandlers(options: RegisterIpcHandlersOptions): void {
     if (ipcHandlersRegistered) {
-        console.log('[IPC] Handlers already registered — skipping');
+        console.log('[IPC] Handlers already registered - skipping');
         return;
     }
 
@@ -39,9 +50,8 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions) {
             const result = options.dependencyService.checkAllDependencies();
             console.log(tag, 'Returning', result.length, 'dependency statuses');
             return result;
-        } catch (error: any) {
-            console.error(tag, 'Failed:', error.message);
-            console.error(tag, 'Stack:', error.stack);
+        } catch (error) {
+            console.error(tag, 'Failed:', error);
             return serializeError(error);
         }
     });
@@ -53,9 +63,8 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions) {
             const success = await options.dependencyService.installDependency(options.getSetupWindow(), name);
             console.log(tag, 'Install result for', name, ':', success ? 'SUCCESS' : 'FAILED');
             return success;
-        } catch (error: any) {
-            console.error(tag, 'Unhandled error installing', name, ':', error.message);
-            console.error(tag, 'Stack:', error.stack);
+        } catch (error) {
+            console.error(tag, 'Unhandled error installing', name, ':', error);
             return serializeError(error);
         }
     });
@@ -66,11 +75,10 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions) {
         try {
             await options.dependencyService.installAllDependencies(options.getSetupWindow());
             const result = options.dependencyService.checkAllDependencies();
-            console.log(tag, 'Post-install check:', result.map(d => `${d.name}=${d.installed ? 'OK' : 'MISSING'}`).join(', '));
+            console.log(tag, 'Post-install check:', result.map((dep) => `${dep.name}=${dep.installed ? 'OK' : 'MISSING'}`).join(', '));
             return result;
-        } catch (error: any) {
-            console.error(tag, 'Unhandled error during install-all:', error.message);
-            console.error(tag, 'Stack:', error.stack);
+        } catch (error) {
+            console.error(tag, 'Unhandled error during install-all:', error);
             return serializeError(error);
         }
     });
@@ -80,9 +88,9 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions) {
         console.log(tag, 'Renderer requested open external URL:', url);
         try {
             await options.openExternalSafely(url);
-            console.log(tag, '✓ Opened:', url);
-        } catch (error: any) {
-            console.error(tag, 'Failed to open URL:', url, '| Error:', error.message);
+            console.log(tag, 'Opened:', url);
+        } catch (error) {
+            console.error(tag, 'Failed to open URL:', url, '| Error:', error);
             return serializeError(error);
         }
     });
@@ -93,16 +101,48 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions) {
         return version;
     });
 
+    ipcMain.handle('get-debug-info', () => {
+        const tag = logTag('get-debug-info');
+        console.log(tag, 'Renderer requested desktop debug info');
+        try {
+            return options.getDebugInfo();
+        } catch (error) {
+            console.error(tag, 'Failed:', error);
+            return serializeError(error);
+        }
+    });
+
+    ipcMain.handle('open-desktop-log', async () => {
+        const tag = logTag('open-desktop-log');
+        console.log(tag, 'Renderer requested desktop log file');
+        try {
+            return await options.openDesktopLog();
+        } catch (error) {
+            console.error(tag, 'Failed:', error);
+            return serializeError(error);
+        }
+    });
+
+    ipcMain.handle('open-diagnostics-folder', async () => {
+        const tag = logTag('open-diagnostics-folder');
+        console.log(tag, 'Renderer requested diagnostics folder');
+        try {
+            return await options.openDiagnosticsFolder();
+        } catch (error) {
+            console.error(tag, 'Failed:', error);
+            return serializeError(error);
+        }
+    });
+
     ipcMain.handle('launch-after-setup', async () => {
         const tag = logTag('launch-after-setup');
         console.log(tag, 'Renderer requested launch after setup');
         try {
             await options.launchAfterSetup();
-            console.log(tag, '✓ Launch after setup completed');
+            console.log(tag, 'Launch after setup completed');
             return { ok: true };
-        } catch (error: any) {
-            console.error(tag, 'Failed to launch after setup:', error.message);
-            console.error(tag, 'Stack:', error.stack);
+        } catch (error) {
+            console.error(tag, 'Failed to launch after setup:', error);
             return serializeError(error);
         }
     });
@@ -112,14 +152,24 @@ export function registerIpcHandlers(options: RegisterIpcHandlersOptions) {
         console.log(tag, 'Renderer requested skip setup and launch');
         try {
             await options.launchAfterSetup();
-            console.log(tag, '✓ Skip setup launch completed');
+            console.log(tag, 'Skip setup launch completed');
             return { ok: true };
-        } catch (error: any) {
-            console.error(tag, 'Failed to skip and launch:', error.message);
-            console.error(tag, 'Stack:', error.stack);
+        } catch (error) {
+            console.error(tag, 'Failed to skip and launch:', error);
             return serializeError(error);
         }
     });
 
-    console.log('[IPC] ✓ All IPC handlers registered successfully');
+    ipcMain.on('renderer-debug-log', (event, payload: RendererDebugPayload) => {
+        try {
+            options.recordRendererDebugLog({
+                ...payload,
+                href: payload.href || event.sender.getURL(),
+            });
+        } catch (error) {
+            console.error(logTag('renderer-debug-log'), 'Failed to record renderer debug log:', error);
+        }
+    });
+
+    console.log('[IPC] All IPC handlers registered successfully');
 }

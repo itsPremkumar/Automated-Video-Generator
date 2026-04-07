@@ -4,6 +4,8 @@ import app from '../../app';
 
 export { app as expressApp };
 
+let crashGuardsInstalled = false;
+
 /**
  * Install global process crash handlers to keep the server alive
  * when a video generation job throws an unhandled rejection or exception.
@@ -12,6 +14,11 @@ export { app as expressApp };
  * any async pipeline step kills the entire Node.js process.
  */
 function installCrashGuards(): void {
+    if (crashGuardsInstalled) {
+        return;
+    }
+
+    crashGuardsInstalled = true;
     let unhandledRejectionCount = 0;
     let uncaughtExceptionCount = 0;
 
@@ -20,39 +27,31 @@ function installCrashGuards(): void {
         const message = reason instanceof Error ? reason.message : String(reason);
         const stack = reason instanceof Error ? reason.stack : undefined;
 
-        console.error('[SERVER] ════════ UNHANDLED REJECTION ════════');
+        console.error('[SERVER] ======== UNHANDLED REJECTION ========');
         console.error(`[SERVER] Rejection #${unhandledRejectionCount}: ${message}`);
         if (stack) {
             console.error('[SERVER] Stack:', stack);
         }
         console.error('[SERVER] The server will continue running.');
-        console.error('[SERVER] ════════════════════════════════════');
-
-        // Do NOT call process.exit — let the server keep handling requests.
-        // The job-service will mark the individual job as failed.
+        console.error('[SERVER] ======================================');
     });
 
     process.on('uncaughtException', (error: Error, origin: string) => {
         uncaughtExceptionCount++;
 
-        console.error('[SERVER] ════════ UNCAUGHT EXCEPTION ════════');
+        console.error('[SERVER] ======== UNCAUGHT EXCEPTION ========');
         console.error(`[SERVER] Exception #${uncaughtExceptionCount} (origin: ${origin})`);
         console.error(`[SERVER] Error: ${error.message}`);
         console.error('[SERVER] Stack:', error.stack);
-        console.error('[SERVER] ════════════════════════════════════');
+        console.error('[SERVER] =====================================');
 
-        // For truly fatal exceptions (like running out of file descriptors),
-        // we should exit. For most errors (OOM in child subprocess, bad
-        // ffmpeg exit, etc.) the server can keep running.
-        const isFatal =
+        const looksSevere =
             error.message.includes('ENOMEM') ||
             error.message.includes('EMFILE') ||
             error.message.includes('Cannot allocate memory');
 
-        if (isFatal) {
-            console.error('[SERVER] This exception is classified as FATAL — process will exit.');
-            console.error('[SERVER] The Electron main process should detect the crash and offer recovery.');
-            process.exit(1);
+        if (looksSevere) {
+            console.error('[SERVER] This exception looks severe. The process will stay alive for recovery, but new work may fail until resources recover.');
         }
 
         console.error('[SERVER] The server will try to continue running.');
@@ -68,7 +67,7 @@ function installCrashGuards(): void {
         const rssMB = Math.round(usage.rss / 1024 / 1024);
 
         if (heapUsedMB > HEAP_WARN_THRESHOLD_MB) {
-            console.warn(`[SERVER] ⚠ High memory usage: heap=${heapUsedMB}MB, rss=${rssMB}MB`);
+            console.warn(`[SERVER] High memory usage: heap=${heapUsedMB}MB, rss=${rssMB}MB`);
         }
     }, MEMORY_CHECK_INTERVAL_MS).unref();
 }
