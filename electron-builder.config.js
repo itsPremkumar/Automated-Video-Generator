@@ -82,6 +82,9 @@ module.exports = {
         },
     ],
 
+    // Skip @electron/rebuild — this project has no native C++ addons
+    npmRebuild: false,
+
     // Don't use asar for easier debugging and file access  
     asar: false,
 
