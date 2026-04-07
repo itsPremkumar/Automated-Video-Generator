@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import { execSync } from 'child_process';
 import { cleanupAssets } from './lib/cleaner';
 import { logError, logInfo, logWarn, writeProgress } from './shared/logging/runtime-logging';
-import { resolveProjectPath, resolvePublicFilePath } from './shared/runtime/paths';
+import { resolveProjectPath, resolvePublicFilePath, resolveRuntimePublicPath } from './shared/runtime/paths';
 import { createPipelineWorkspace, resolveAssetWorkspaceDir } from './pipeline-workspace';
 import { JobCancellationError, isJobCancellationError } from './lib/job-cancellation';
 
@@ -162,10 +162,13 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
             throw new Error(`Entry point not found: ${entryPoint}`);
         }
 
+        const publicDir = resolveRuntimePublicPath();
         console.log('📦 [RENDER] Bundling with Webpack...');
+        console.log(`📦 [RENDER] Public directory (staticFile root): ${publicDir}`);
 
         bundleLocation = await bundle({
             entryPoint,
+            publicDir,
         });
 
         console.log(`✅ [RENDER] Bundle complete in ${Date.now() - bundleStart}ms`);
