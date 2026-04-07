@@ -1,3 +1,4 @@
+# Unnecessary Files
 .env
 .mcp-jobs.json
 .video-cache.json
@@ -19,3 +20,21 @@ REPOSITORY_GROWTH_CHECKLIST.md
 CLAWHUB_GUIDE.md
 openclaw.plugin.json
 claude-code-config.json
+
+# Build and Electron Artifacts
+release/
+portable-python/
+dist/
+dist-electron/
+stderr-test.log
+temp_voices.txt
+
+# Media files
+*.mp4
+*.mp3
+*.wav
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
