@@ -15,9 +15,6 @@ const console = {
     error: (...args: unknown[]) => logError(...args),
 };
 
-console.log('\n🎥 [RENDER] Module loaded (Segmented Mode)');
-console.log(`🎥 [RENDER] Working directory: ${process.cwd()}`);
-
 interface Scene {
     sceneNumber: number;
     duration: number;
@@ -96,6 +93,9 @@ function logMemoryUsage(label: string): void {
 export const renderVideo = async (outputDir: string = resolveProjectPath('output'), options: RenderOptions = {}) => {
     const totalStartTime = Date.now();
     const { shouldCancel } = options;
+
+    console.log('\n🎥 [RENDER] Module loaded (Segmented Mode)');
+    console.log(`🎥 [RENDER] Working directory: ${process.cwd()}`);
 
     console.log('\n');
     console.log('╔════════════════════════════════════════════════════════════════╗');

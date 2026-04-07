@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import './mcp-env-init';  // MUST be first — sets MCP flag before any other module loads
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import * as dotenv from 'dotenv';
@@ -10,8 +11,6 @@ import { registerOutputTools } from './adapters/mcp/register-output-tools';
 import { registerPrompts } from './mcp-prompts';
 import { registerResources } from './mcp-resources';
 import { ensureProjectRootCwd, projectRoot, resolveProjectPath } from './shared/runtime/paths';
-
-process.env.AUTOMATED_VIDEO_GENERATOR_MCP = '1';
 ensureProjectRootCwd();
 dotenv.config({ path: resolveProjectPath('.env') });
 
