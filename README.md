@@ -75,10 +75,10 @@ If you are searching for a free video generator, open-source AI video generator,
 <div align="center">
   <h2>🎬 See it in Action</h2>
   <a href="https://youtu.be/ryNhQd_M2G8?si=MfGNsJ_8jGvV2r8T">
-    <img src="https://img.youtube.com/vi/ryNhQd_M2G8/maxresdefault.jpg" alt="Automated Video Generator Demo" width="800" style="border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+    <img src="assets/demo-thumbnail.png" alt="Automated Video Generator Demo" width="800" style="border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
   </a>
   <br/>
-  <p><em>Example video fully generated using Automated Video Generator. Click to watch on YouTube.</em></p>
+  <p><em>Example video fully generated using Automated Video Generator. Click the image to watch on YouTube.</em></p>
 </div>
 
 ---
