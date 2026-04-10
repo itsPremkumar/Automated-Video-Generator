@@ -72,6 +72,18 @@ If you are searching for a free video generator, open-source AI video generator,
 
 > This is not a fake "free trial" generator. The project itself is completely free and MIT-licensed. There is no paid plan, no subscription, and no watermark added by this codebase. Optional third-party services such as Pexels or Pixabay may still have their own quotas or terms.
 
+<div align="center">
+  <h2>🎬 See it in Action</h2>
+  <a href="https://youtu.be/ryNhQd_M2G8?si=MfGNsJ_8jGvV2r8T">
+    <img src="https://img.youtube.com/vi/ryNhQd_M2G8/maxresdefault.jpg" alt="Automated Video Generator Demo" width="800" style="border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+  </a>
+  <br/>
+  <p><em>Example video fully generated using Automated Video Generator. Click to watch on YouTube.</em></p>
+</div>
+
+---
+
+
 ## 🧊 The "Vibe Video" Philosophy
 
 Inspired by the **Vibe Coding** movement, this project shifts you from a "manual editor" to a **Creative Director**.
