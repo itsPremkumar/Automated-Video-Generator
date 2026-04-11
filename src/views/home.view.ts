@@ -74,15 +74,6 @@ function buildMusicOptions(musicFiles: string[]): string {
     return musicFiles.map((file) => `<option value="${escapeHtml(file)}">${escapeHtml(file)}</option>`).join('');
 }
 
-function buildVoiceOptions(voicesList: Record<string, { male: string[]; female: string[] }>): string {
-    return Object.entries(voicesList).map(([lang, voices]) => {
-        const langName = LOCALE_TO_LANGUAGE_NAME[lang] || (lang.charAt(0).toUpperCase() + lang.slice(1));
-        const femaleOpts = voices.female.map(v => `<option value="${v}">${v} (Female)</option>`).join('');
-        const maleOpts = voices.male.map(v => `<option value="${v}">${v} (Male)</option>`).join('');
-        return `<optgroup label="${langName}">${femaleOpts}${maleOpts}</optgroup>`;
-    }).join('');
-}
-
 function buildLanguageOptions(voicesList: Record<string, { male: string[]; female: string[] }>): string {
     return Object.keys(voicesList).map(lang => {
         const langName = LOCALE_TO_LANGUAGE_NAME[lang] || (lang.charAt(0).toUpperCase() + lang.slice(1));
@@ -115,8 +106,18 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
     const cards = buildVideoCards(videos);
     const recentCards = buildRecentCards(videos);
     const musicOptions = buildMusicOptions(musicFiles);
-    const voiceOptions = buildVoiceOptions(voicesList);
     const languageOptions = buildLanguageOptions(voicesList);
+    const voicesJson = JSON.stringify(
+        Object.fromEntries(
+            Object.entries(voicesList).map(([lang, groups]) => [
+                lang,
+                [
+                    ...groups.female.map(n => ({ name: n, gender: 'Female' })),
+                    ...groups.male.map(n => ({ name: n, gender: 'Male' }))
+                ]
+            ])
+        )
+    );
     const setupSummary = buildSetupSummary(setup);
 
     // ─── Page Body HTML ────────────────────────────────────────────────────────
@@ -335,7 +336,6 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
                             <label for="voice">Voice</label>
                             <select id="voice">
                                 <option value="">Optional</option>
-                                ${voiceOptions}
                             </select>
                             <p id="voice-hint" class="field-help" style="font-size:11px"></p>
                         </div>
@@ -529,6 +529,7 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
 const sampleScript = ${JSON.stringify(DEMO_SCRIPT)};
 const helloWorldScript = ${JSON.stringify(HELLO_WORLD_SCRIPT)};
 const localeNames = ${JSON.stringify(LOCALE_TO_LANGUAGE_NAME)};
+let allVoices = ${voicesJson};
 
 // ─── DOM References ────────────────────────────────────────────────────────────
 const form          = document.getElementById('generate-form');
@@ -548,7 +549,7 @@ const titleField    = document.getElementById('title');
 const scriptMetrics = document.getElementById('script-metrics');
 const narratorMode  = document.getElementById('narratorMode');
 const personalAudioSelect = document.getElementById('personalAudio');
-let allVoices = {};
+
 
 // ─── Utility Functions ─────────────────────────────────────────────────────────
 
@@ -872,6 +873,7 @@ form.addEventListener('submit', async (e) => {
 
 updateScriptMetrics();
 loadSetupStatus();
+renderVoices();
 loadAllVoices();
 loadGalleryAssets();
 
