@@ -1,11 +1,30 @@
+/**
+ * Voice generation pipeline: generates MP3/WAV audio for each scene using
+ * Edge-TTS, Windows SAPI fallback, or gTTS fallback.
+ *
+ * Data    → voice-data.ts
+ * Types   → voice-types.ts
+ * Engine  → voice-engine.ts
+ */
+
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync, spawnSync } from 'child_process';
-import { Scene } from './script-parser';
+import { execSync } from 'child_process';
 import { logError, logInfo, logWarn, writeProgress } from '../runtime';
+import { Scene } from './script-parser';
 
 // @ts-ignore - ffprobe-static types
 import ffprobePath from 'ffprobe-static';
+
+import { AudioResult, VoiceConfig, VoiceEngineStatus } from './voice-types';
+import {
+  getVoiceEngineStatus,
+  getWindowsSapiStatus,
+  runEdgeTts,
+  runPowerShellEncoded,
+  readSpawnOutput,
+} from './voice-engine';
+import { GTTS_LANGUAGE_MAP, WINDOWS_SAPI_LANGUAGE_MAP } from './voice-data';
 
 const console = {
   log: (...args: unknown[]) => logInfo(...args),
@@ -13,155 +32,14 @@ const console = {
   error: (...args: unknown[]) => logError(...args),
 };
 
-/**
- * Locale to friendly language name mapping
- */
-export const LOCALE_TO_LANGUAGE_NAME: Record<string, string> = {
-  'en-US': 'English (United States)',
-  'en-GB': 'English (United Kingdom)',
-  'en-AU': 'English (Australia)',
-  'en-CA': 'English (Canada)',
-  'en-IN': 'English (India)',
-  'en-IE': 'English (Ireland)',
-  'en-NZ': 'English (New Zealand)',
-  'en-PH': 'English (Philippines)',
-  'en-ZA': 'English (South Africa)',
-  'ta-IN': 'Tamil (India)',
-  'ta-LK': 'Tamil (Sri Lanka)',
-  'hi-IN': 'Hindi (India)',
-  'te-IN': 'Telugu (India)',
-  'kn-IN': 'Kannada (India)',
-  'ml-IN': 'Malayalam (India)',
-  'gu-IN': 'Gujarati (India)',
-  'mr-IN': 'Marathi (India)',
-  'bn-IN': 'Bengali (India)',
-  'pa-IN': 'Punjabi (India)',
-  'ur-IN': 'Urdu (India)',
-  'ar-XA': 'Arabic (General)',
-  'ar-AE': 'Arabic (United Arab Emirates)',
-  'ar-BH': 'Arabic (Bahrain)',
-  'ar-DZ': 'Arabic (Algeria)',
-  'ar-EG': 'Arabic (Egypt)',
-  'ar-IQ': 'Arabic (Iraq)',
-  'ar-JO': 'Arabic (Jordan)',
-  'ar-KW': 'Arabic (Kuwait)',
-  'ar-LB': 'Arabic (Lebanon)',
-  'ar-LY': 'Arabic (Libya)',
-  'ar-MA': 'Arabic (Morocco)',
-  'ar-OM': 'Arabic (Oman)',
-  'ar-PS': 'Arabic (Palestine)',
-  'ar-QA': 'Arabic (Qatar)',
-  'ar-SA': 'Arabic (Saudi Arabia)',
-  'ar-SY': 'Arabic (Syria)',
-  'ar-TN': 'Arabic (Tunisia)',
-  'ar-YE': 'Arabic (Yemen)',
-  'bg-BG': 'Bulgarian (Bulgaria)',
-  'ca-ES': 'Catalan (Spain)',
-  'cs-CZ': 'Czech (Czech Republic)',
-  'cy-GB': 'Welsh (United Kingdom)',
-  'da-DK': 'Danish (Denmark)',
-  'de-DE': 'German (Germany)',
-  'de-AT': 'German (Austria)',
-  'de-CH': 'German (Switzerland)',
-  'el-GR': 'Greek (Greece)',
-  'es-ES': 'Spanish (Spain)',
-  'es-MX': 'Spanish (Mexico)',
-  'es-AR': 'Spanish (Argentina)',
-  'es-BO': 'Spanish (Bolivia)',
-  'es-CL': 'Spanish (Chile)',
-  'es-CO': 'Spanish (Colombia)',
-  'es-CR': 'Spanish (Costa Rica)',
-  'es-CU': 'Spanish (Cuba)',
-  'es-DO': 'Spanish (Dominican Republic)',
-  'es-EC': 'Spanish (Ecuador)',
-  'es-GQ': 'Spanish (Equatorial Guinea)',
-  'es-GT': 'Spanish (Guatemala)',
-  'es-HN': 'Spanish (Honduras)',
-  'es-NI': 'Spanish (Nicaragua)',
-  'es-PA': 'Spanish (Panama)',
-  'es-PE': 'Spanish (Peru)',
-  'es-PR': 'Spanish (Puerto Rico)',
-  'es-PY': 'Spanish (Paraguay)',
-  'es-SV': 'Spanish (El Salvador)',
-  'es-US': 'Spanish (United States)',
-  'es-UY': 'Spanish (Uruguay)',
-  'es-VE': 'Spanish (Venezuela)',
-  'et-EE': 'Estonian (Estonia)',
-  'fi-FI': 'Finnish (Finland)',
-  'fil-PH': 'Filipino (Philippines)',
-  'fr-FR': 'French (France)',
-  'fr-BE': 'French (Belgium)',
-  'fr-CA': 'French (Canada)',
-  'fr-CH': 'French (Switzerland)',
-  'ga-IE': 'Irish (Ireland)',
-  'gl-ES': 'Galician (Spain)',
-  'he-IL': 'Hebrew (Israel)',
-  'hr-HR': 'Croatian (Croatia)',
-  'hu-HU': 'Hungarian (Hungary)',
-  'id-ID': 'Indonesian (Indonesia)',
-  'is-IS': 'Icelandic (Iceland)',
-  'it-IT': 'Italian (Italy)',
-  'ja-JP': 'Japanese (Japan)',
-  'jv-ID': 'Javanese (Indonesia)',
-  'ka-GE': 'Georgian (Georgia)',
-  'kk-KZ': 'Kazakh (Kazakhstan)',
-  'km-KH': 'Khmer (Cambodia)',
-  'ko-KR': 'Korean (South Korea)',
-  'lo-LA': 'Lao (Laos)',
-  'lt-LT': 'Lithuanian (Lithuania)',
-  'lv-LV': 'Latvian (Latvia)',
-  'mk-MK': 'Macedonian (North Macedonia)',
-  'mn-MN': 'Mongolian (Mongolia)',
-  'ms-MY': 'Malay (Malaysia)',
-  'mt-MT': 'Maltese (Malta)',
-  'my-MM': 'Burmese (Myanmar)',
-  'nb-NO': 'Norwegian Bokmål (Norway)',
-  'ne-NP': 'Nepali (Nepal)',
-  'nl-NL': 'Dutch (Netherlands)',
-  'nl-BE': 'Dutch (Belgium)',
-  'pl-PL': 'Polish (Poland)',
-  'pt-BR': 'Portuguese (Brazil)',
-  'pt-PT': 'Portuguese (Portugal)',
-  'ro-RO': 'Romanian (Romania)',
-  'ru-RU': 'Russian (Russia)',
-  'si-LK': 'Sinhala (Sri Lanka)',
-  'sk-SK': 'Slovak (Slovakia)',
-  'sl-SI': 'Slovenian (Slovenia)',
-  'sq-AL': 'Albanian (Albania)',
-  'sr-RS': 'Serbian (Serbia)',
-  'sv-SE': 'Swedish (Sweden)',
-  'sw-KE': 'Swahili (Kenya)',
-  'sw-TZ': 'Swahili (Tanzania)',
-  'th-TH': 'Thai (Thailand)',
-  'tr-TR': 'Turkish (Turkey)',
-  'uk-UA': 'Ukrainian (Ukraine)',
-  'uz-UZ': 'Uzbek (Uzbekistan)',
-  'vi-VN': 'Vietnamese (Vietnam)',
-  'zh-CN': 'Chinese (Mainland)',
-  'zh-HK': 'Chinese (Hong Kong)',
-  'zh-TW': 'Chinese (Taiwan)',
-};
+// ─── Re-exports for backward compatibility ────────────────────────────────────
 
-/**
- * Metadata for an Edge-TTS voice
- */
-export interface VoiceMetadata {
-  name: string;
-  gender: 'Male' | 'Female';
-  language: string;
-  category?: string;
-  tags?: string[];
-}
+export { LOCALE_TO_LANGUAGE_NAME, AVAILABLE_VOICES, LANGUAGE_DEFAULTS } from './voice-data';
+export { getDynamicVoices } from './voice-engine';
+export { getVoiceEngineStatus } from './voice-engine';
+export type { VoiceMetadata, VoiceConfig, AudioResult, VoiceEngineStatus } from './voice-types';
 
-/**
- * Voice configuration for Edge-TTS
- */
-export interface VoiceConfig {
-  voice: string;
-  rate: string;   // e.g., '+0%', '-10%', '+20%'
-  pitch: string;  // e.g., '+0Hz', '-5Hz', '+10Hz'
-  language?: string;
-}
+// ─── Default config ───────────────────────────────────────────────────────────
 
 export const DEFAULT_VOICE_CONFIG: VoiceConfig = {
   voice: process.env.VIDEO_VOICE || 'en-US-GuyNeural',
@@ -169,10 +47,18 @@ export const DEFAULT_VOICE_CONFIG: VoiceConfig = {
   pitch: '+0Hz',
 };
 
-/**
- * Get actual audio duration using ffprobe
- * Falls back to estimation if ffprobe is not available
- */
+// ─── Retry config ─────────────────────────────────────────────────────────────
+
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 1000;
+
+// ─── Duration helpers ─────────────────────────────────────────────────────────
+
+export function estimateAudioDuration(text: string): number {
+  const words = text.split(/\s+/).filter((w) => w.length > 0).length;
+  return Math.max(3, Math.ceil(words / 2.2) + 1.5);
+}
+
 function getAudioDuration(filePath: string, text: string): number {
   try {
     const ffprobeCmd = ffprobePath.path || 'ffprobe';
@@ -181,672 +67,14 @@ function getAudioDuration(filePath: string, text: string): number {
       { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
     );
     const duration = parseFloat(result.trim());
-    if (!isNaN(duration) && duration > 0) {
-      return Math.ceil(duration);
-    }
+    if (!isNaN(duration) && duration > 0) return Math.ceil(duration);
   } catch {
-    // Fall back to text-based estimate
+    // fall through to estimate
   }
-
   return estimateAudioDuration(text);
 }
 
-/**
- * Estimate audio duration based on text length
- */
-export function estimateAudioDuration(text: string): number {
-  const words = text.split(/\s+/).filter((word) => word.length > 0).length;
-  const wordsPerSecond = 2.2;
-  return Math.max(3, Math.ceil(words / wordsPerSecond) + 1.5);
-}
-
-// Available Neural Voices grouped by language (Featured Defaults)
-export const AVAILABLE_VOICES: Record<string, { male: string[]; female: string[] }> = {
-  english: {
-    male: ['en-US-GuyNeural', 'en-US-ChristopherNeural', 'en-GB-RyanNeural', 'en-IN-PrabhatNeural'],
-    female: ['en-US-JennyNeural', 'en-US-AriaNeural', 'en-US-SaraNeural', 'en-GB-SoniaNeural'],
-  },
-  tamil: {
-    male: ['ta-IN-ValluvarNeural'],
-    female: ['ta-IN-PallaviNeural'],
-  },
-  hindi: {
-    male: ['hi-IN-MadhurNeural'],
-    female: ['hi-IN-SwaraNeural'],
-  },
-  spanish: {
-    male: ['es-ES-AlvaroNeural', 'es-MX-JorgeNeural'],
-    female: ['es-ES-ElviraNeural', 'es-MX-DaliaNeural'],
-  },
-  french: {
-    male: ['fr-FR-HenriNeural', 'fr-CA-AntoineNeural'],
-    female: ['fr-FR-DeniseNeural', 'fr-CA-SylvieNeural'],
-  },
-  german: {
-    male: ['de-DE-ConradNeural', 'de-AT-JonasNeural'],
-    female: ['de-DE-KatjaNeural', 'de-AT-IngridNeural'],
-  },
-  telugu: {
-    male: ['te-IN-MohanNeural'],
-    female: ['te-IN-ShrutiNeural'],
-  },
-  malayalam: {
-    male: ['ml-IN-MidhunNeural'],
-    female: ['ml-IN-SobhanaNeural'],
-  },
-  kannada: {
-    male: ['kn-IN-GaganNeural'],
-    female: ['kn-IN-SapnaNeural'],
-  },
-};
-
-// Internal cache for dynamic voices
-let cachedVoices: Record<string, VoiceMetadata[]> | null = null;
-
-// Default voice mapping for specific language keys
-export const LANGUAGE_DEFAULTS: Record<string, string> = {
-  tamil: 'ta-IN-PallaviNeural',
-  hindi: 'hi-IN-SwaraNeural',
-  spanish: 'es-ES-ElviraNeural',
-  french: 'fr-FR-DeniseNeural',
-  german: 'de-DE-KatjaNeural',
-  english: 'en-US-JennyNeural',
-};
-
-interface EdgeTtsRuntime {
-  command: string;
-  argsPrefix: string[];
-  label: string;
-}
-
-export interface VoiceEngineStatus {
-  activeEngine: 'edge-tts' | 'windows-sapi-fallback' | 'gtts-fallback' | 'unavailable';
-  detail: string;
-  edgeTtsReady: boolean;
-  fallbackReady: boolean;
-  generationReady: boolean;
-}
-
-interface WindowsSapiStatus {
-  ready: boolean;
-  detail: string;
-}
-
-let resolvedEdgeTtsRuntime: EdgeTtsRuntime | null = null;
-let checkedGttsAvailability: boolean | null = null;
-let cachedWindowsSapiStatus: WindowsSapiStatus | null = null;
-let loggedEdgeTtsResolutionFailure = false;
-
-const GTTS_LANGUAGE_MAP: Record<string, string> = {
-  arabic: 'ar',
-  chinese: 'zh-cn',
-  english: 'en',
-  french: 'fr',
-  german: 'de',
-  hindi: 'hi',
-  indonesian: 'id',
-  italian: 'it',
-  japanese: 'ja',
-  korean: 'ko',
-  portuguese: 'pt',
-  russian: 'ru',
-  spanish: 'es',
-  tamil: 'ta',
-  thai: 'th',
-  turkish: 'tr',
-  vietnamese: 'vi',
-};
-
-const WINDOWS_SAPI_LANGUAGE_MAP: Record<string, string> = {
-  arabic: 'ar-SA',
-  chinese: 'zh-CN',
-  english: 'en-US',
-  french: 'fr-FR',
-  german: 'de-DE',
-  hindi: 'hi-IN',
-  italian: 'it-IT',
-  japanese: 'ja-JP',
-  korean: 'ko-KR',
-  portuguese: 'pt-BR',
-  russian: 'ru-RU',
-  spanish: 'es-ES',
-  tamil: 'ta-IN',
-};
-
-function fileExists(filePath: string | undefined): boolean {
-  return Boolean(filePath && fs.existsSync(filePath));
-}
-
-function pushCandidate(
-  candidates: EdgeTtsRuntime[],
-  seen: Set<string>,
-  candidate: EdgeTtsRuntime
-): void {
-  const key = `${candidate.command}::${candidate.argsPrefix.join(' ')}`;
-  if (seen.has(key)) {
-    return;
-  }
-
-  seen.add(key);
-  candidates.push(candidate);
-}
-
-function windowsInstalledPythonDirs(): string[] {
-  if (process.platform !== 'win32') {
-    return [];
-  }
-
-  const roots = new Set<string>();
-  const localPrograms = process.env.LOCALAPPDATA
-    ? path.join(process.env.LOCALAPPDATA, 'Programs', 'Python')
-    : '';
-  const userPrograms = process.env.USERPROFILE
-    ? path.join(process.env.USERPROFILE, 'AppData', 'Local', 'Programs', 'Python')
-    : '';
-
-  if (localPrograms) {
-    roots.add(localPrograms);
-  }
-  if (userPrograms) {
-    roots.add(userPrograms);
-  }
-
-  const pythonDirs: string[] = [];
-  for (const root of roots) {
-    if (!fs.existsSync(root)) {
-      continue;
-    }
-
-    for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
-      if (entry.isDirectory() && /^Python\d+/i.test(entry.name)) {
-        pythonDirs.push(path.join(root, entry.name));
-      }
-    }
-  }
-
-  return pythonDirs.sort().reverse();
-}
-
-function edgeTtsCandidates(): EdgeTtsRuntime[] {
-  const candidates: EdgeTtsRuntime[] = [];
-  const seen = new Set<string>();
-  const configuredPath = process.env.EDGE_TTS_PATH?.trim();
-
-  if (configuredPath) {
-    pushCandidate(candidates, seen, {
-      command: configuredPath,
-      argsPrefix: [],
-      label: configuredPath,
-    });
-  }
-
-  // Check bundled portable-python in ALL possible locations (for packaged Electron app)
-  const { resolveProjectPath, resolveResourcePath } = require('../runtime');
-  const bundledPaths = [
-    resolveProjectPath('portable-python', 'python.exe'),                          // dev mode: projectRoot/portable-python/
-    resolveResourcePath('app-bundle', 'portable-python', 'python.exe'),           // packaged: resources/app-bundle/portable-python/
-    resolveResourcePath('portable-python', 'python.exe'),                         // legacy fallback: resources/portable-python/
-    path.join((process as any).resourcesPath || '', 'app-bundle', 'portable-python', 'python.exe'), // direct native path
-    path.join((process as any).resourcesPath || '', 'portable-python', 'python.exe'),               // direct native legacy
-  ];
-
-  // Deduplicate and check each candidate
-  const checkedPythonPaths = new Set<string>();
-  for (const bundledPython of bundledPaths) {
-    if (!bundledPython || checkedPythonPaths.has(bundledPython)) continue;
-    checkedPythonPaths.add(bundledPython);
-
-    if (fileExists(bundledPython)) {
-      console.log(`[VOICE-GEN] Found bundled Python at: ${bundledPython}`);
-      // Direct edge-tts.exe in Scripts folder
-      const bundledEdgeTts = path.join(path.dirname(bundledPython), 'Scripts', 'edge-tts.exe');
-      if (fileExists(bundledEdgeTts)) {
-        pushCandidate(candidates, seen, {
-          command: bundledEdgeTts,
-          argsPrefix: [],
-          label: `bundled: ${bundledEdgeTts}`,
-        });
-      }
-      // Python module fallback
-      pushCandidate(candidates, seen, {
-        command: bundledPython,
-        argsPrefix: ['-m', 'edge_tts'],
-        label: `bundled: ${bundledPython} -m edge_tts`,
-      });
-    }
-  }
-
-  pushCandidate(candidates, seen, { command: 'edge-tts', argsPrefix: [], label: 'edge-tts' });
-
-  for (const pythonDir of windowsInstalledPythonDirs()) {
-    const edgeExe = path.join(pythonDir, 'Scripts', 'edge-tts.exe');
-    if (fileExists(edgeExe)) {
-      pushCandidate(candidates, seen, {
-        command: edgeExe,
-        argsPrefix: [],
-        label: edgeExe,
-      });
-    }
-
-    const pythonExe = path.join(pythonDir, 'python.exe');
-    if (fileExists(pythonExe)) {
-      pushCandidate(candidates, seen, {
-        command: pythonExe,
-        argsPrefix: ['-m', 'edge_tts'],
-        label: `${pythonExe} -m edge_tts`,
-      });
-    }
-  }
-
-  pushCandidate(candidates, seen, { command: 'py', argsPrefix: ['-m', 'edge_tts'], label: 'py -m edge_tts' });
-  pushCandidate(candidates, seen, { command: 'python', argsPrefix: ['-m', 'edge_tts'], label: 'python -m edge_tts' });
-  pushCandidate(candidates, seen, { command: 'python3', argsPrefix: ['-m', 'edge_tts'], label: 'python3 -m edge_tts' });
-
-  return candidates;
-}
-
-function resolveEdgeTtsRuntime(): EdgeTtsRuntime | null {
-  if (resolvedEdgeTtsRuntime) {
-    return resolvedEdgeTtsRuntime;
-  }
-
-  const allCandidates = edgeTtsCandidates();
-  const diagnostics: string[] = [];
-
-  for (const candidate of allCandidates) {
-    const probe = spawnSync(candidate.command, [...candidate.argsPrefix, '--help'], {
-      encoding: 'utf-8',
-      stdio: 'pipe',
-      shell: false,
-    });
-
-    if (probe.status === 0) {
-      console.log(`[VOICE-GEN] Resolved edge-tts runtime: ${candidate.label}`);
-      resolvedEdgeTtsRuntime = candidate;
-      return candidate;
-    }
-
-    // Collect diagnostic info for failure reporting
-    const reason = probe.error
-      ? `spawn error: ${probe.error.message}`
-      : `exit code ${probe.status}`;
-    diagnostics.push(`  ✗ ${candidate.label} → ${reason}`);
-  }
-
-  if (!loggedEdgeTtsResolutionFailure) {
-    loggedEdgeTtsResolutionFailure = true;
-    // Log all diagnostic info so it shows up in error details
-  console.error('[VOICE-GEN] ═══════ EDGE-TTS RESOLUTION FAILED ═══════');
-  console.error('[VOICE-GEN] No working edge-tts runtime found.');
-  console.error('[VOICE-GEN] Candidates tried:');
-  for (const line of diagnostics) {
-    console.error(`[VOICE-GEN] ${line}`);
-  }
-  console.error(`[VOICE-GEN] ELECTRON_BACKEND_SERVER=${process.env.ELECTRON_BACKEND_SERVER || 'unset'}`);
-  console.error(`[VOICE-GEN] ELECTRON_RESOURCES_PATH=${process.env.ELECTRON_RESOURCES_PATH || 'unset'}`);
-  console.error(`[VOICE-GEN] process.resourcesPath=${(process as any).resourcesPath || 'unset'}`);
-  console.error(`[VOICE-GEN] __dirname=${__dirname}`);
-  console.error(`[VOICE-GEN] cwd=${process.cwd()}`);
-  console.error('[VOICE-GEN] ═══════════════════════════════════════════');
-
-  }
-
-  return null;
-}
-
-function canUseGttsFallback(): boolean {
-  if (checkedGttsAvailability !== null) {
-    return checkedGttsAvailability;
-  }
-
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const Gtts = require('gtts');
-    checkedGttsAvailability = typeof Gtts === 'function';
-  } catch {
-    checkedGttsAvailability = false;
-  }
-
-  return checkedGttsAvailability;
-}
-
-function runningInPackagedDesktopMode(): boolean {
-  return process.env.ELECTRON_BACKEND_SERVER === '1' || Boolean(process.env.ELECTRON_RESOURCES_PATH);
-}
-
-function buildVoiceEngineUnavailableMessage(): string {
-  if (process.platform === 'win32' && runningInPackagedDesktopMode()) {
-    return 'No working voice engine was found. Reinstall or repair the desktop app, or install at least one Windows text-to-speech voice in Settings > Time & language > Speech.';
-  }
-
-  if (runningInPackagedDesktopMode()) {
-    return 'No working voice engine was found. Reinstall or repair the desktop app, or use the setup screen to restore the bundled voice engine.';
-  }
-
-  return 'No working voice engine was found. Install edge-tts with: pip install edge-tts';
-}
-
-function encodePowerShellCommand(script: string): string {
-  return Buffer.from(script, 'utf16le').toString('base64');
-}
-
-function readSpawnOutput(output: string | Uint8Array | null | undefined): string {
-  if (!output) {
-    return '';
-  }
-
-  return typeof output === 'string'
-    ? output.trim()
-    : Buffer.from(output).toString('utf8').trim();
-}
-
-function runPowerShellEncoded(
-  script: string,
-  envOverrides: NodeJS.ProcessEnv = process.env,
-  timeout = 30000
-): ReturnType<typeof spawnSync> {
-  return spawnSync(
-    'powershell.exe',
-    ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-EncodedCommand', encodePowerShellCommand(script)],
-    {
-      encoding: 'utf-8',
-      env: envOverrides,
-      shell: false,
-      stdio: 'pipe',
-      timeout,
-      windowsHide: true,
-    }
-  );
-}
-
-function getWindowsSapiStatus(): WindowsSapiStatus {
-  if (cachedWindowsSapiStatus) {
-    return cachedWindowsSapiStatus;
-  }
-
-  if (process.platform !== 'win32') {
-    cachedWindowsSapiStatus = {
-      ready: false,
-      detail: 'Windows offline speech is only available on Windows.',
-    };
-    return cachedWindowsSapiStatus;
-  }
-
-  const probe = runPowerShellEncoded(`
-Add-Type -AssemblyName System.Speech
-$synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
-try {
-  $voices = @($synth.GetInstalledVoices() | Where-Object { $_.Enabled })
-  if ($voices.Count -le 0) {
-    throw 'No enabled Windows speech voices are installed.'
-  }
-  Write-Output $voices[0].VoiceInfo.Name
-} finally {
-  $synth.Dispose()
-}
-  `);
-
-  if (probe.status === 0) {
-    const voiceName = readSpawnOutput(probe.stdout) || 'Windows offline speech voice';
-    cachedWindowsSapiStatus = {
-      ready: true,
-      detail: `Using Windows offline speech via ${voiceName}`,
-    };
-    return cachedWindowsSapiStatus;
-  }
-
-  const detail = probe.error?.message
-    || readSpawnOutput(probe.stderr)
-    || readSpawnOutput(probe.stdout)
-    || 'Windows offline speech is unavailable.';
-  cachedWindowsSapiStatus = {
-    ready: false,
-    detail,
-  };
-  return cachedWindowsSapiStatus;
-}
-
-export function getVoiceEngineStatus(): VoiceEngineStatus {
-  const edgeRuntime = resolveEdgeTtsRuntime();
-  const windowsSapi = getWindowsSapiStatus();
-  const gttsReady = canUseGttsFallback();
-
-  if (edgeRuntime) {
-    return {
-      activeEngine: 'edge-tts',
-      detail: `Using Edge-TTS via ${edgeRuntime.label}`,
-      edgeTtsReady: true,
-      fallbackReady: windowsSapi.ready || gttsReady,
-      generationReady: true,
-    };
-  }
-
-  if (windowsSapi.ready) {
-    return {
-      activeEngine: 'windows-sapi-fallback',
-      detail: `Edge-TTS is unavailable, so the app will fall back to ${windowsSapi.detail.replace(/^Using\s+/i, '')}.`,
-      edgeTtsReady: false,
-      fallbackReady: true,
-      generationReady: true,
-    };
-  }
-
-  if (gttsReady) {
-    return {
-      activeEngine: 'gtts-fallback',
-      detail: 'Edge-TTS is unavailable, so the app will fall back to Google TTS.',
-      edgeTtsReady: false,
-      fallbackReady: true,
-      generationReady: true,
-    };
-  }
-
-  return {
-    activeEngine: 'unavailable',
-    detail: buildVoiceEngineUnavailableMessage(),
-    edgeTtsReady: false,
-    fallbackReady: false,
-    generationReady: false,
-  };
-}
-
-function runEdgeTts(args: string[], timeout = 60000): string {
-  const runtime = resolveEdgeTtsRuntime();
-  if (!runtime) {
-    throw new Error(buildVoiceEngineUnavailableMessage());
-  }
-
-  const result = spawnSync(runtime.command, [...runtime.argsPrefix, ...args], {
-    encoding: 'utf-8',
-    stdio: 'pipe',
-    shell: false,
-    timeout,
-  });
-
-  if (result.error) {
-    const cmdStr = `${runtime.command} ${runtime.argsPrefix.join(' ')} ${args.join(' ')}`;
-    throw new Error(`Failed to spawn Edge-TTS: ${result.error.message}\nCommand: ${cmdStr}`);
-  }
-
-  if (result.status !== 0) {
-    const stderr = result.stderr?.trim();
-    const stdout = result.stdout?.trim();
-    const cmdStr = `${runtime.command} ${runtime.argsPrefix.join(' ')} ${args.join(' ')}`;
-    throw new Error(`Edge-TTS failed (status ${result.status}).\nCommand: ${cmdStr}\nSTDERR: ${stderr}\nSTDOUT: ${stdout}`);
-  }
-
-  return result.stdout || '';
-}
-
-/**
- * Fetch and parse all available voices from Edge-TTS CLI
- */
-export function getDynamicVoices(): Record<string, VoiceMetadata[]> {
-  if (cachedVoices) {
-    return cachedVoices;
-  }
-
-  try {
-    const output = runEdgeTts(['--list-voices']);
-    const lines = output.split('\n');
-    const voicesByLang: Record<string, VoiceMetadata[]> = {};
-    let matchedCount = 0;
-
-    for (const line of lines) {
-      // Flexible regex to handle different spacing and potential headers
-      const match = line.match(/^(\S+)\s+(Male|Female)\s+(\S+)\s*(.*)?$/);
-      if (!match) {
-          // Alternative fallback search for voice names if the regex is too strict
-          if (line.includes('Neural') && (line.includes('Male') || line.includes('Female'))) {
-              const parts = line.trim().split(/\s+/);
-              if (parts.length >= 2) {
-                  const name = parts[0];
-                  const genderRaw = parts[1];
-                  // If second part is not gender, check other parts
-                  let gender: 'Male' | 'Female' | null = null;
-                  if (genderRaw === 'Male' || genderRaw === 'Female') gender = genderRaw;
-                  else if (parts[2] === 'Male' || parts[2] === 'Female') gender = parts[2];
-                  
-                  if (name && gender) {
-                      const locale = name.split('-').slice(0, 2).join('-');
-                      if (!voicesByLang[locale]) voicesByLang[locale] = [];
-                      voicesByLang[locale].push({
-                          name,
-                          gender,
-                          language: locale,
-                          tags: parts.slice(3)
-                      });
-                      matchedCount++;
-                  }
-              }
-          }
-        continue;
-      }
-
-      const [, name, genderRaw, category, tags] = match;
-      const gender = genderRaw.charAt(0).toUpperCase() + genderRaw.slice(1).toLowerCase() as 'Male' | 'Female';
-      const locale = name.split('-').slice(0, 2).join('-');
-      if (!voicesByLang[locale]) {
-        voicesByLang[locale] = [];
-      }
-
-      voicesByLang[locale].push({
-        name,
-        gender,
-        language: locale,
-        category,
-        tags: tags ? tags.split(',').map((tag) => tag.trim()) : [],
-      });
-      matchedCount++;
-    }
-
-    if (matchedCount === 0) {
-        console.warn('[VOICE-GEN] Edge-TTS returned output but no voices were matched. Check output format.');
-    } else {
-        console.log(`[VOICE-GEN] Successfully parsed ${matchedCount} voices from Edge-TTS.`);
-    }
-
-    cachedVoices = voicesByLang;
-    return voicesByLang;
-  } catch (error: any) {
-    console.error(`[VOICE-GEN] Failed to fetch dynamic voices: ${error.message}`);
-    const fallback = {
-      'en-US': [
-        { name: 'en-US-JennyNeural', gender: 'Female' as const, language: 'en-US' },
-        { name: 'en-US-GuyNeural', gender: 'Male' as const, language: 'en-US' },
-      ],
-      'ta-IN': [
-        { name: 'ta-IN-PallaviNeural', gender: 'Female' as const, language: 'ta-IN' },
-        { name: 'ta-IN-ValluvarNeural', gender: 'Male' as const, language: 'ta-IN' },
-      ],
-      'hi-IN': [
-          { name: 'hi-IN-SwaraNeural', gender: 'Female' as const, language: 'hi-IN' },
-          { name: 'hi-IN-MadhurNeural', gender: 'Male' as const, language: 'hi-IN' },
-      ],
-    };
-    cachedVoices = fallback;
-    return fallback;
-  }
-}
-
-// Retry configuration
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 1000;
-
-/**
- * Audio result with path and actual duration
- */
-export interface AudioResult {
-  path: string;
-  duration: number;
-}
-
-/**
- * Validate that Edge-TTS is accessible
- */
-export function validateEdgeTTS(): boolean {
-  try {
-    const runtime = resolveEdgeTtsRuntime();
-    if (!runtime) {
-      console.error(`\n[VOICE-GEN] Edge-TTS not found. ${buildVoiceEngineUnavailableMessage()}`);
-      return false;
-    }
-
-    runEdgeTts(['--help']);
-    return true;
-  } catch (error: any) {
-    console.error(`\n[VOICE-GEN] Edge-TTS validation failed: ${error.message}`);
-    return false;
-  }
-}
-
-export function isVoiceGenerationReady(): boolean {
-  return getVoiceEngineStatus().generationReady;
-}
-
-function getGttsLanguage(config: VoiceConfig): string {
-  const requested = (config.language || '').toLowerCase().trim();
-  if (requested && GTTS_LANGUAGE_MAP[requested]) {
-    return GTTS_LANGUAGE_MAP[requested];
-  }
-
-  const voicePrefix = config.voice.split('-').slice(0, 2).join('-').toLowerCase();
-  if (voicePrefix.startsWith('ta-')) return 'ta';
-  if (voicePrefix.startsWith('hi-')) return 'hi';
-  if (voicePrefix.startsWith('es-')) return 'es';
-  if (voicePrefix.startsWith('fr-')) return 'fr';
-  if (voicePrefix.startsWith('de-')) return 'de';
-  if (voicePrefix.startsWith('pt-')) return 'pt';
-  if (voicePrefix.startsWith('ja-')) return 'ja';
-  if (voicePrefix.startsWith('ko-')) return 'ko';
-  if (voicePrefix.startsWith('it-')) return 'it';
-  if (voicePrefix.startsWith('ru-')) return 'ru';
-
-  return 'en';
-}
-
-function getWindowsVoiceCulture(config: VoiceConfig): string {
-  const requested = (config.language || '').toLowerCase().trim();
-  if (requested && WINDOWS_SAPI_LANGUAGE_MAP[requested]) {
-    return WINDOWS_SAPI_LANGUAGE_MAP[requested];
-  }
-
-  const voicePrefix = config.voice.split('-').slice(0, 2).join('-');
-  if (/^[a-z]{2}-[A-Z]{2}$/.test(voicePrefix)) {
-    return voicePrefix;
-  }
-
-  return WINDOWS_SAPI_LANGUAGE_MAP.english;
-}
-
-function getWindowsSapiRate(config: VoiceConfig): number {
-  const numericRate = Number.parseInt(config.rate.replace('%', ''), 10);
-  if (!Number.isFinite(numericRate)) {
-    return 0;
-  }
-
-  return Math.max(-10, Math.min(10, Math.round(numericRate / 10)));
-}
+// ─── Text / file helpers ──────────────────────────────────────────────────────
 
 function cleanVoiceoverText(text: string): string {
   return text
@@ -860,28 +88,18 @@ function cleanVoiceoverText(text: string): string {
 }
 
 function resolveExistingAudio(outputPath: string, text: string): AudioResult | null {
-  if (!fs.existsSync(outputPath)) {
-    return null;
-  }
-
+  if (!fs.existsSync(outputPath)) return null;
   try {
     const stats = fs.statSync(outputPath);
-    if (stats.size > 1000) {
-      const duration = getAudioDuration(outputPath, text);
-      return { path: outputPath, duration };
-    }
+    if (stats.size > 1000) return { path: outputPath, duration: getAudioDuration(outputPath, text) };
   } catch {
-    // Re-generate if cached file looks broken
+    // re-generate if cached file looks broken
   }
-
   return null;
 }
 
 function assertGeneratedAudioFile(outputPath: string): void {
-  if (!fs.existsSync(outputPath)) {
-    throw new Error(`Output file not created: ${outputPath}`);
-  }
-
+  if (!fs.existsSync(outputPath)) throw new Error(`Output file not created: ${outputPath}`);
   const stats = fs.statSync(outputPath);
   if (stats.size < 1000) {
     fs.unlinkSync(outputPath);
@@ -893,9 +111,62 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Generate voiceover for all scenes using Edge-TTS
- */
+// ─── Engine-specific language helpers ────────────────────────────────────────
+
+function getGttsLanguage(config: VoiceConfig): string {
+  const requested = (config.language || '').toLowerCase().trim();
+  if (requested && GTTS_LANGUAGE_MAP[requested]) return GTTS_LANGUAGE_MAP[requested];
+
+  const voicePrefix = config.voice.split('-').slice(0, 2).join('-').toLowerCase();
+  if (voicePrefix.startsWith('ta-')) return 'ta';
+  if (voicePrefix.startsWith('hi-')) return 'hi';
+  if (voicePrefix.startsWith('es-')) return 'es';
+  if (voicePrefix.startsWith('fr-')) return 'fr';
+  if (voicePrefix.startsWith('de-')) return 'de';
+  if (voicePrefix.startsWith('pt-')) return 'pt';
+  if (voicePrefix.startsWith('ja-')) return 'ja';
+  if (voicePrefix.startsWith('ko-')) return 'ko';
+  if (voicePrefix.startsWith('it-')) return 'it';
+  if (voicePrefix.startsWith('ru-')) return 'ru';
+  return 'en';
+}
+
+function getWindowsVoiceCulture(config: VoiceConfig): string {
+  const requested = (config.language || '').toLowerCase().trim();
+  if (requested && WINDOWS_SAPI_LANGUAGE_MAP[requested]) return WINDOWS_SAPI_LANGUAGE_MAP[requested];
+
+  const voicePrefix = config.voice.split('-').slice(0, 2).join('-');
+  if (/^[a-z]{2}-[A-Z]{2}$/.test(voicePrefix)) return voicePrefix;
+  return WINDOWS_SAPI_LANGUAGE_MAP.english;
+}
+
+function getWindowsSapiRate(config: VoiceConfig): number {
+  const numericRate = Number.parseInt(config.rate.replace('%', ''), 10);
+  if (!Number.isFinite(numericRate)) return 0;
+  return Math.max(-10, Math.min(10, Math.round(numericRate / 10)));
+}
+
+// ─── Public API ───────────────────────────────────────────────────────────────
+
+export function validateEdgeTTS(): boolean {
+  try {
+    const status = getVoiceEngineStatus();
+    if (!status.edgeTtsReady) {
+      console.error(`\n[VOICE-GEN] Edge-TTS not found. ${status.detail}`);
+      return false;
+    }
+    runEdgeTts(['--help']);
+    return true;
+  } catch (error: any) {
+    console.error(`\n[VOICE-GEN] Edge-TTS validation failed: ${error.message}`);
+    return false;
+  }
+}
+
+export function isVoiceGenerationReady(): boolean {
+  return getVoiceEngineStatus().generationReady;
+}
+
 export async function generateVoiceovers(
   scenes: Scene[],
   outputDir: string,
@@ -911,17 +182,12 @@ export async function generateVoiceovers(
   console.log(`[VOICE-GEN] Detail: ${voiceEngine.detail}`);
   console.log('[VOICE-GEN] ================================================\n');
 
-  if (!voiceEngine.generationReady) {
-    throw new Error(voiceEngine.detail);
-  }
+  if (!voiceEngine.generationReady) throw new Error(voiceEngine.detail);
+
+  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
   const audioFiles = new Map<number, AudioResult>();
   const startTime = Date.now();
-
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
-  }
-
   let successCount = 0;
   let failCount = 0;
   let silentCount = 0;
@@ -932,7 +198,6 @@ export async function generateVoiceovers(
     writeProgress(`\r[VOICE-GEN] Processing scene ${i + 1}/${scenes.length}...`);
 
     try {
-      // Determine scene-specific config
       const sceneConfig = { ...config };
       if (scene.voiceConfig) {
         if (scene.voiceConfig.voice) sceneConfig.voice = scene.voiceConfig.voice;
@@ -959,12 +224,7 @@ export async function generateVoiceovers(
       console.error(`\n[VOICE-GEN] Scene ${scene.sceneNumber} failed after ${MAX_RETRIES} retries: ${error.message}`);
       failCount++;
       failedScenes.push(scene.sceneNumber);
-
-      const fallbackDuration = estimateAudioDuration(scene.voiceoverText);
-      audioFiles.set(scene.sceneNumber, {
-        path: '',
-        duration: fallbackDuration,
-      });
+      audioFiles.set(scene.sceneNumber, { path: '', duration: estimateAudioDuration(scene.voiceoverText) });
     }
   }
 
@@ -973,12 +233,8 @@ export async function generateVoiceovers(
   console.log('[VOICE-GEN] Voiceover generation complete');
   console.log(`[VOICE-GEN] Total time: ${(elapsed / 1000).toFixed(1)}s`);
   console.log(`[VOICE-GEN] Successful: ${successCount}/${scenes.length}`);
-  if (silentCount > 0) {
-    console.log(`[VOICE-GEN] Silent scenes: ${silentCount}`);
-  }
-  if (failedScenes.length > 0) {
-    console.log(`[VOICE-GEN] Failed scene numbers: ${failedScenes.join(', ')}`);
-  }
+  if (silentCount > 0) console.log(`[VOICE-GEN] Silent scenes: ${silentCount}`);
+  if (failedScenes.length > 0) console.log(`[VOICE-GEN] Failed scene numbers: ${failedScenes.join(', ')}`);
   console.log('[VOICE-GEN] ================================================\n');
 
   if (failCount > scenes.length * 0.5) {
@@ -987,6 +243,8 @@ export async function generateVoiceovers(
 
   return audioFiles;
 }
+
+// ─── Scene-level generation with retry ───────────────────────────────────────
 
 async function generateSceneVoiceoverWithRetry(
   scene: Scene,
@@ -998,20 +256,12 @@ async function generateSceneVoiceoverWithRetry(
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      if (voiceEngine.activeEngine === 'edge-tts') {
-        return await generateSceneVoiceover(scene, outputDir, config);
-      }
-
-      if (voiceEngine.activeEngine === 'windows-sapi-fallback') {
-        return await generateSceneVoiceoverWithWindowsSapi(scene, outputDir, config);
-      }
-
+      if (voiceEngine.activeEngine === 'edge-tts') return await generateSceneVoiceover(scene, outputDir, config);
+      if (voiceEngine.activeEngine === 'windows-sapi-fallback') return await generateSceneVoiceoverWithWindowsSapi(scene, outputDir, config);
       return await generateSceneVoiceoverWithGtts(scene, outputDir, config);
     } catch (error: any) {
       lastError = error;
-      if (attempt < MAX_RETRIES) {
-        await sleep(RETRY_DELAY_MS * attempt);
-      }
+      if (attempt < MAX_RETRIES) await sleep(RETRY_DELAY_MS * attempt);
     }
   }
 
@@ -1021,7 +271,6 @@ async function generateSceneVoiceoverWithRetry(
       console.log(`[VOICE-GEN] Falling back to Windows offline speech for scene ${scene.sceneNumber} after Edge-TTS retries failed.`);
       return generateSceneVoiceoverWithWindowsSapi(scene, outputDir, config);
     }
-
     console.log(`[VOICE-GEN] Falling back to Google TTS for scene ${scene.sceneNumber} after Edge-TTS retries failed.`);
     return generateSceneVoiceoverWithGtts(scene, outputDir, config);
   }
@@ -1029,25 +278,50 @@ async function generateSceneVoiceoverWithRetry(
   throw lastError || new Error('Voice generation failed after all retries');
 }
 
+// ─── Edge-TTS scene generation ────────────────────────────────────────────────
+
+async function generateSceneVoiceover(
+  scene: Scene,
+  outputDir: string,
+  config: VoiceConfig
+): Promise<AudioResult> {
+  const outputPath = path.join(outputDir, `scene_${scene.sceneNumber}_voice.mp3`);
+  const existingAudio = resolveExistingAudio(outputPath, scene.voiceoverText);
+  if (existingAudio) return existingAudio;
+
+  const cleanText = cleanVoiceoverText(scene.voiceoverText);
+  if (!cleanText) return { path: '', duration: Math.max(3, scene.duration || 3) };
+  if (cleanText.length < 2) throw new Error(`Scene ${scene.sceneNumber} has empty or invalid text`);
+
+  try {
+    runEdgeTts([
+      '--voice', config.voice,
+      `--rate=${config.rate}`,
+      `--pitch=${config.pitch}`,
+      '--text', cleanText,
+      '--write-media', outputPath,
+    ]);
+    assertGeneratedAudioFile(outputPath);
+    return { path: outputPath, duration: getAudioDuration(outputPath, scene.voiceoverText) };
+  } catch (error: any) {
+    if (fs.existsSync(outputPath)) try { fs.unlinkSync(outputPath); } catch { /* ignore */ }
+    throw new Error(`Edge-TTS failed for scene ${scene.sceneNumber}: ${error.message}`);
+  }
+}
+
+// ─── Windows SAPI scene generation ───────────────────────────────────────────
+
 async function generateSceneVoiceoverWithWindowsSapi(
   scene: Scene,
   outputDir: string,
   config: VoiceConfig
 ): Promise<AudioResult> {
-  const filename = `scene_${scene.sceneNumber}_voice.wav`;
-  const outputPath = path.join(outputDir, filename);
+  const outputPath = path.join(outputDir, `scene_${scene.sceneNumber}_voice.wav`);
   const existingAudio = resolveExistingAudio(outputPath, scene.voiceoverText);
-  if (existingAudio) {
-    return existingAudio;
-  }
+  if (existingAudio) return existingAudio;
 
   const cleanText = cleanVoiceoverText(scene.voiceoverText);
-  if (!cleanText) {
-    return {
-      path: '',
-      duration: Math.max(3, scene.duration || 3),
-    };
-  }
+  if (!cleanText) return { path: '', duration: Math.max(3, scene.duration || 3) };
 
   const inputTextPath = path.join(outputDir, `scene_${scene.sceneNumber}_voice.txt`);
 
@@ -1107,64 +381,39 @@ try {
       120000
     );
 
-    if (result.error) {
-      throw result.error;
-    }
-
+    if (result.error) throw result.error;
     if (result.status !== 0) {
       const detail = readSpawnOutput(result.stderr) || readSpawnOutput(result.stdout) || `PowerShell exited with status ${result.status}`;
       throw new Error(detail);
     }
 
     assertGeneratedAudioFile(outputPath);
-    const duration = getAudioDuration(outputPath, scene.voiceoverText);
-    return { path: outputPath, duration };
+    return { path: outputPath, duration: getAudioDuration(outputPath, scene.voiceoverText) };
   } catch (error: any) {
-    if (fs.existsSync(outputPath)) {
-      try {
-        fs.unlinkSync(outputPath);
-      } catch {
-        // Ignore cleanup failure
-      }
-    }
-
+    if (fs.existsSync(outputPath)) try { fs.unlinkSync(outputPath); } catch { /* ignore */ }
     throw new Error(`Windows offline speech failed for scene ${scene.sceneNumber}: ${error.message}`);
   } finally {
-    if (fs.existsSync(inputTextPath)) {
-      try {
-        fs.unlinkSync(inputTextPath);
-      } catch {
-        // Ignore cleanup failure
-      }
-    }
+    if (fs.existsSync(inputTextPath)) try { fs.unlinkSync(inputTextPath); } catch { /* ignore */ }
   }
 }
+
+// ─── gTTS scene generation ────────────────────────────────────────────────────
 
 async function generateSceneVoiceoverWithGtts(
   scene: Scene,
   outputDir: string,
   config: VoiceConfig
 ): Promise<AudioResult> {
-  const filename = `scene_${scene.sceneNumber}_voice.mp3`;
-  const outputPath = path.join(outputDir, filename);
+  const outputPath = path.join(outputDir, `scene_${scene.sceneNumber}_voice.mp3`);
   const existingAudio = resolveExistingAudio(outputPath, scene.voiceoverText);
-  if (existingAudio) {
-    return existingAudio;
-  }
+  if (existingAudio) return existingAudio;
 
   const cleanText = cleanVoiceoverText(scene.voiceoverText);
-
-  if (!cleanText) {
-    return {
-      path: '',
-      duration: Math.max(3, scene.duration || 3),
-    };
-  }
+  if (!cleanText) return { path: '', duration: Math.max(3, scene.duration || 3) };
 
   const language = getGttsLanguage(config);
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const Gtts = require('gtts');
     await new Promise<void>((resolve, reject) => {
       const tts = new Gtts(cleanText, language);
@@ -1173,17 +422,9 @@ async function generateSceneVoiceoverWithGtts(
       let settled = false;
 
       const finish = (error?: Error | null) => {
-        if (settled) {
-          return;
-        }
-
+        if (settled) return;
         settled = true;
-        if (error) {
-          reject(error);
-          return;
-        }
-
-        resolve();
+        error ? reject(error) : resolve();
       };
 
       inputStream.on('error', finish);
@@ -1193,67 +434,9 @@ async function generateSceneVoiceoverWithGtts(
     });
 
     assertGeneratedAudioFile(outputPath);
-    const duration = getAudioDuration(outputPath, scene.voiceoverText);
-    return { path: outputPath, duration };
+    return { path: outputPath, duration: getAudioDuration(outputPath, scene.voiceoverText) };
   } catch (error: any) {
-    if (fs.existsSync(outputPath)) {
-      try {
-        fs.unlinkSync(outputPath);
-      } catch {
-        // Ignore cleanup failure
-      }
-    }
-
+    if (fs.existsSync(outputPath)) try { fs.unlinkSync(outputPath); } catch { /* ignore */ }
     throw new Error(`Fallback Google TTS failed for scene ${scene.sceneNumber}: ${error.message}`);
-  }
-}
-
-async function generateSceneVoiceover(
-  scene: Scene,
-  outputDir: string,
-  config: VoiceConfig
-): Promise<AudioResult> {
-  const filename = `scene_${scene.sceneNumber}_voice.mp3`;
-  const outputPath = path.join(outputDir, filename);
-  const existingAudio = resolveExistingAudio(outputPath, scene.voiceoverText);
-  if (existingAudio) {
-    return existingAudio;
-  }
-
-  const cleanText = cleanVoiceoverText(scene.voiceoverText);
-
-  if (!cleanText) {
-    return {
-      path: '',
-      duration: Math.max(3, scene.duration || 3),
-    };
-  }
-
-  if (cleanText.length < 2) {
-    throw new Error(`Scene ${scene.sceneNumber} has empty or invalid text`);
-  }
-
-  try {
-    runEdgeTts([
-      '--voice', config.voice,
-      `--rate=${config.rate}`,
-      `--pitch=${config.pitch}`,
-      '--text', cleanText,
-      '--write-media', outputPath,
-    ]);
-
-    assertGeneratedAudioFile(outputPath);
-    const duration = getAudioDuration(outputPath, scene.voiceoverText);
-    return { path: outputPath, duration };
-  } catch (error: any) {
-    if (fs.existsSync(outputPath)) {
-      try {
-        fs.unlinkSync(outputPath);
-      } catch {
-        // Ignore cleanup failure
-      }
-    }
-
-    throw new Error(`Edge-TTS failed for scene ${scene.sceneNumber}: ${error.message}`);
   }
 }
