@@ -5,24 +5,37 @@ export function browserLogic(): string {
 let currentBrowserType = 'media';
 let currentParentPath = '';
 
-window.openSystemBrowser = (type) => {
+function openSystemBrowser(type) {
+    console.log('Opening browser for:', type);
     currentBrowserType = type;
-    browserModal.classList.add('open');
-    loadSidebar();
-    loadPath();
-};
-window.closeSystemBrowser = () => browserModal.classList.remove('open');
+    if (browserModal) {
+        browserModal.classList.add('open');
+        loadSidebar();
+        loadPath(currentParentPath || '');
+    } else {
+        console.error('browserModal element not found');
+    }
+}
 
-addMediaBtn?.addEventListener('click', () => window.openSystemBrowser('media'));
-browsePersonalAudioBtn?.addEventListener('click', () => window.openSystemBrowser('personalAudio'));
-browseMusicBtn?.addEventListener('click', () => window.openSystemBrowser('music'));
+function closeSystemBrowser() {
+    if (browserModal) browserModal.classList.remove('open');
+}
+
+// Export to window for access if needed, though we use listeners here
+window.openSystemBrowser = openSystemBrowser;
+window.closeSystemBrowser = closeSystemBrowser;
+
+// Attach main triggers
+addMediaBtn?.addEventListener('click', () => openSystemBrowser('media'));
+browsePersonalAudioBtn?.addEventListener('click', () => openSystemBrowser('personalAudio'));
+browseMusicBtn?.addEventListener('click', () => openSystemBrowser('music'));
 
 browserUpBtn?.addEventListener('click', () => loadPath(currentParentPath));
-browserCloseBtn?.addEventListener('click', () => window.closeSystemBrowser());
-browserCancelBtn?.addEventListener('click', () => window.closeSystemBrowser());
+browserCloseBtn?.addEventListener('click', () => closeSystemBrowser());
+browserCancelBtn?.addEventListener('click', () => closeSystemBrowser());
 browserGoBtn?.addEventListener('click', () => loadPath(browserPath.value));
 
-browserPath.addEventListener('keypress', (e) => {
+browserPath?.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') loadPath(e.target.value);
 });
 
@@ -51,10 +64,10 @@ browserList?.addEventListener('click', (e) => {
     }
 });
 
-// Event Delegation for Browser List (Video Hover Playback - CSP Compliant)
+// Video Hover Playback
 browserList?.addEventListener('mouseover', (e) => {
     const video = e.target.closest('video.browser-preview');
-    if (video) video.play();
+    if (video) video.play().catch(() => {});
 });
 browserList?.addEventListener('mouseout', (e) => {
     const video = e.target.closest('video.browser-preview');
@@ -77,17 +90,19 @@ async function loadSidebar() {
                 { name: 'Videos', path: h.videos, icon: '🎬' },
                 { name: 'Pictures', path: h.pictures, icon: '🖼️' }
             ];
-            quickAccessList.innerHTML = items.map(i => {
-                return '<div class="sidebar-item" data-path="' + i.path + '"><span>' + i.icon + '</span> ' + i.name + '</div>';
-            }).join('');
+            if (quickAccessList) {
+                quickAccessList.innerHTML = items.map(i => 
+                    '<div class="sidebar-item" data-path="' + i.path + '"><span>' + i.icon + '</span> ' + i.name + '</div>'
+                ).join('');
+            }
         }
 
         const drivesRes = await fetch('/api/fs/drives');
         const drivesJson = await drivesRes.json();
-        if (drivesJson.success) {
-            drivesList.innerHTML = drivesJson.data.map(d => {
-                return '<div class="sidebar-item" data-path="' + d + '"><span>💽</span> ' + d + ' Drive</div>';
-            }).join('');
+        if (drivesJson.success && drivesList) {
+            drivesList.innerHTML = drivesJson.data.map(d => 
+                '<div class="sidebar-item" data-path="' + d + '"><span>💽</span> ' + d + ' Drive</div>'
+            ).join('');
         }
     } catch (e) {
         console.error('Sidebar load failed', e);
@@ -95,6 +110,7 @@ async function loadSidebar() {
 }
 
 async function loadPath(path = '') {
+    if (!browserList) return;
     browserList.innerHTML = '<div class="muted" style="padding:20px">Loading...</div>';
     try {
         const res = await fetch('/api/fs/ls?path=' + encodeURIComponent(path));
@@ -102,7 +118,7 @@ async function loadPath(path = '') {
         if (!json.success) throw new Error(json.error);
 
         const data = json.data;
-        browserPath.value = data.currentPath;
+        if (browserPath) browserPath.value = data.currentPath;
         currentParentPath = data.parentPath;
         browserList.innerHTML = '';
 
@@ -115,10 +131,10 @@ async function loadPath(path = '') {
             const div = document.createElement('div');
             const isSelectable = (currentBrowserType === 'music' || currentBrowserType === 'personalAudio')
                 ? (item.ext === '.mp3' || item.ext === '.wav' || item.ext === '.m4a')
-                : ['.mp4', '.mov', '.jpg', '.png', '.jpeg'].includes(item.ext);
+                : ['.mp4', '.mov', '.jpg', '.png', '.jpeg', '.webp'].includes(item.ext.toLowerCase());
 
-            const isImage = ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(item.ext);
-            const isVideo = ['.mp4', '.mov', '.webm', '.ogg'].includes(item.ext);
+            const isImage = ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(item.ext.toLowerCase());
+            const isVideo = ['.mp4', '.mov', '.webm', '.ogg'].includes(item.ext.toLowerCase());
             const viewUrl = '/api/fs/view?path=' + encodeURIComponent(item.path);
 
             div.className = 'browser-item' + (!item.isDir && !isSelectable ? ' disabled' : '');
@@ -157,15 +173,13 @@ async function pickFile(path) {
         if (!json.success) throw new Error(json.error);
 
         if (currentBrowserType === 'music' || currentBrowserType === 'personalAudio') {
-            const opt = document.createElement('option');
-            opt.value = json.data.filename;
-            opt.textContent = json.data.filename;
-            if (currentBrowserType === 'music') {
-                musicSelect.appendChild(opt);
-                musicSelect.value = json.data.filename;
-            } else {
-                personalAudioSelect.appendChild(opt);
-                personalAudioSelect.value = json.data.filename;
+            const selectEl = currentBrowserType === 'music' ? musicSelect : personalAudioSelect;
+            if (selectEl) {
+                const opt = document.createElement('option');
+                opt.value = json.data.filename;
+                opt.textContent = json.data.filename;
+                selectEl.appendChild(opt);
+                selectEl.value = json.data.filename;
             }
         } else {
             addAssetToGallery(json.data);
@@ -177,7 +191,8 @@ async function pickFile(path) {
 }
 
 function addAssetToGallery(data) {
-    const isImage = /\\\\.(jpg|jpeg|png|gif|webp)$/i.test(data.filename);
+    if (!assetGallery) return;
+    const isImage = /\\.(jpg|jpeg|png|gif|webp)$/i.test(data.filename);
     const div = document.createElement('div');
     div.className = 'asset-item';
     
@@ -192,18 +207,19 @@ function addAssetToGallery(data) {
         '<div class="tag-copy" title="Click to insert into script">' + data.tag + '</div>' +
         '<div class="delete-btn" title="Remove asset">✕</div>';
     
-    div.querySelector('.delete-btn').addEventListener('click', (e) => {
+    div.querySelector('.delete-btn')?.addEventListener('click', (e) => {
         e.stopPropagation();
         deleteAsset(data.filename, div);
     });
     
-    div.querySelector('.tag-copy').addEventListener('click', () => {
-        const script = document.getElementById('script');
-        const pos = script.selectionStart;
-        const text = script.value;
-        script.value = text.slice(0, pos) + data.tag + text.slice(pos);
-        updateScriptMetrics();
-        script.focus();
+    div.querySelector('.tag-copy')?.addEventListener('click', () => {
+        if (scriptField) {
+            const pos = scriptField.selectionStart;
+            const text = scriptField.value;
+            scriptField.value = text.slice(0, pos) + data.tag + text.slice(pos);
+            updateScriptMetrics();
+            scriptField.focus();
+        }
     });
     
     assetGallery.appendChild(div);
