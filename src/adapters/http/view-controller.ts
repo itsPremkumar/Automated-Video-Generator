@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { homePage } from '../../views/home.view';
+import { homePage } from '../../views/home/index';
 import { watchPage } from '../../views/watch.view';
 import { jobPage } from '../../views/job-status.view';
 import { layout } from '../../views/layout.view';
