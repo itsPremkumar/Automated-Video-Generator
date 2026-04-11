@@ -1,10 +1,18 @@
 export function setupLogic(): string {
     return `
-// ─── Setup Form: Field Toggle Logic ─────────────────────────────────────────────
+// Global listener for setup field toggles (CSP compliant)
+document.addEventListener('click', (e) => {
+    const target = e.target;
+    if (target.dataset && target.dataset.toggle) {
+        toggleFieldUpdate(target.dataset.toggle);
+    }
+});
 
 function toggleFieldUpdate(id) {
     const input = document.getElementById('setup-' + id);
     const toggle = document.getElementById('setup-' + id + '-toggle');
+    if (!input || !toggle) return;
+
     if (input.hasAttribute('readonly')) {
         input.removeAttribute('readonly');
         input.value = '';
@@ -38,7 +46,7 @@ function updateFieldStatus(id, saved) {
         input.removeAttribute('readonly');
     }
 }
-window.toggleFieldUpdate = toggleFieldUpdate;
+
 
 // ─── Setup Status Board ─────────────────────────────────────────────────────────
 

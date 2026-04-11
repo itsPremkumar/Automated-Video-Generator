@@ -2,6 +2,9 @@ export function browserLogic(): string {
     return `
 // ─── File Browser Modal Logic ───────────────────────────────────────────────────
 
+let currentBrowserType = 'media';
+let currentParentPath = '';
+
 window.openSystemBrowser = (type) => {
     currentBrowserType = type;
     browserModal.classList.add('open');
@@ -23,6 +26,44 @@ browserPath.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') loadPath(e.target.value);
 });
 
+// Event Delegation for Sidebar
+[quickAccessList, drivesList].forEach(list => {
+    list?.addEventListener('click', (e) => {
+        const item = e.target.closest('.sidebar-item');
+        if (item && item.dataset.path) {
+            loadPath(item.dataset.path);
+        }
+    });
+});
+
+// Event Delegation for Browser List (Selection & Navigation)
+browserList?.addEventListener('click', (e) => {
+    const item = e.target.closest('.browser-item');
+    if (!item || item.classList.contains('disabled')) return;
+    
+    const path = item.dataset.path;
+    const isDir = item.dataset.isDir === 'true';
+    
+    if (isDir) {
+        loadPath(path);
+    } else {
+        pickFile(path);
+    }
+});
+
+// Event Delegation for Browser List (Video Hover Playback - CSP Compliant)
+browserList?.addEventListener('mouseover', (e) => {
+    const video = e.target.closest('video.browser-preview');
+    if (video) video.play();
+});
+browserList?.addEventListener('mouseout', (e) => {
+    const video = e.target.closest('video.browser-preview');
+    if (video) {
+        video.pause();
+        video.currentTime = 0;
+    }
+});
+
 async function loadSidebar() {
     try {
         const homeRes = await fetch('/api/fs/home');
@@ -36,13 +77,17 @@ async function loadSidebar() {
                 { name: 'Videos', path: h.videos, icon: '🎬' },
                 { name: 'Pictures', path: h.pictures, icon: '🖼️' }
             ];
-            quickAccessList.innerHTML = items.map(i => \`<div class="sidebar-item" onclick="loadPath('\${i.path.replace(/\\\\/g, '\\\\\\\\')}')"><span>\${i.icon}</span> \${i.name}</div>\`).join('');
+            quickAccessList.innerHTML = items.map(i => {
+                return '<div class="sidebar-item" data-path="' + i.path + '"><span>' + i.icon + '</span> ' + i.name + '</div>';
+            }).join('');
         }
 
         const drivesRes = await fetch('/api/fs/drives');
         const drivesJson = await drivesRes.json();
         if (drivesJson.success) {
-            drivesList.innerHTML = drivesJson.data.map(d => \`<div class="sidebar-item" onclick="loadPath('\${d}\\\\')"><span>💽</span> \${d} Drive</div>\`).join('');
+            drivesList.innerHTML = drivesJson.data.map(d => {
+                return '<div class="sidebar-item" data-path="' + d + '"><span>💽</span> ' + d + ' Drive</div>';
+            }).join('');
         }
     } catch (e) {
         console.error('Sidebar load failed', e);
@@ -50,7 +95,6 @@ async function loadSidebar() {
 }
 
 async function loadPath(path = '') {
-    window.loadPath = loadPath;
     browserList.innerHTML = '<div class="muted" style="padding:20px">Loading...</div>';
     try {
         const res = await fetch('/api/fs/ls?path=' + encodeURIComponent(path));
@@ -75,26 +119,26 @@ async function loadPath(path = '') {
 
             const isImage = ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(item.ext);
             const isVideo = ['.mp4', '.mov', '.webm', '.ogg'].includes(item.ext);
-            const viewUrl = \`/api/fs/view?path=\${encodeURIComponent(item.path)}\`;
+            const viewUrl = '/api/fs/view?path=' + encodeURIComponent(item.path);
 
             div.className = 'browser-item' + (!item.isDir && !isSelectable ? ' disabled' : '');
-            div.innerHTML = \`
-                <span class="browser-icon">
-                    \${isImage 
-                        ? \`<img src="\${viewUrl}" class="browser-preview">\` 
-                        : isVideo 
-                            ? \`<video src="\${viewUrl}" class="browser-preview" muted onmouseover="this.play()" onmouseout="this.pause();this.currentTime=0"></video>\`
-                            : (item.isDir ? '📁' : '📄')}
-                </span>
-                <span class="browser-name">\${item.name}</span>
-                <span class="browser-size">\${item.isDir ? '' : 'File'}</span>
-            \`;
+            div.dataset.path = item.path;
+            div.dataset.isDir = String(item.isDir);
 
-            if (item.isDir) {
-                div.onclick = () => loadPath(item.path);
-            } else if (isSelectable) {
-                div.onclick = () => pickFile(item.path);
+            let iconHtml = '';
+            if (isImage) {
+                iconHtml = '<img src="' + viewUrl + '" class="browser-preview">';
+            } else if (isVideo) {
+                iconHtml = '<video src="' + viewUrl + '" class="browser-preview" muted></video>';
+            } else {
+                iconHtml = item.isDir ? '📁' : '📄';
             }
+
+            div.innerHTML = 
+                '<span class="browser-icon">' + iconHtml + '</span>' +
+                '<span class="browser-name">' + item.name + '</span>' +
+                '<span class="browser-size">' + (item.isDir ? '' : 'File') + '</span>';
+
             browserList.appendChild(div);
         });
     } catch (e) {
@@ -133,27 +177,35 @@ async function pickFile(path) {
 }
 
 function addAssetToGallery(data) {
-    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(data.filename);
+    const isImage = /\\\\.(jpg|jpeg|png|gif|webp)$/i.test(data.filename);
     const div = document.createElement('div');
     div.className = 'asset-item';
-    div.innerHTML = \`
-        \${isImage ? \`<img src="\${data.assetUrl}" class="asset-preview" alt="\${data.filename}">\` : ''}
-        <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">\${data.filename}</div>
-        <div class="tag-copy" title="Click to insert into script">\${data.tag}</div>
-        <div class="delete-btn" title="Remove asset">✕</div>
-    \`;
-    div.querySelector('.delete-btn').onclick = (e) => {
+    
+    let previewHtml = '';
+    if (isImage) {
+        previewHtml = '<img src="' + data.assetUrl + '" class="asset-preview" alt="' + data.filename + '">';
+    }
+
+    div.innerHTML = 
+        previewHtml + 
+        '<div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + data.filename + '</div>' +
+        '<div class="tag-copy" title="Click to insert into script">' + data.tag + '</div>' +
+        '<div class="delete-btn" title="Remove asset">✕</div>';
+    
+    div.querySelector('.delete-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         deleteAsset(data.filename, div);
-    };
-    div.querySelector('.tag-copy').onclick = () => {
+    });
+    
+    div.querySelector('.tag-copy').addEventListener('click', () => {
         const script = document.getElementById('script');
         const pos = script.selectionStart;
         const text = script.value;
         script.value = text.slice(0, pos) + data.tag + text.slice(pos);
         updateScriptMetrics();
         script.focus();
-    };
+    });
+    
     assetGallery.appendChild(div);
 }
 

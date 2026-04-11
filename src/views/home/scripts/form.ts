@@ -43,6 +43,13 @@ form.addEventListener('submit', async (e) => {
 
 // ─── AI Script Generation ───────────────────────────────────────────────────────
 
+aiPromptInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        generateAiBtn.click();
+    }
+});
+
 generateAiBtn?.addEventListener('click', async () => {
     const prompt = aiPromptInput.value.trim();
     if (!prompt) return;

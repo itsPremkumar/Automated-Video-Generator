@@ -57,7 +57,7 @@ export function workspaceSection(
                 <div class="field" style="background:rgba(16,185,129,0.1); padding:12px; border-radius:8px; border:1px solid rgba(16,185,129,0.2)">
                     <label for="ai-prompt" style="color:#10b981">✨ Generate script with AI</label>
                     <div class="row" style="flex-wrap:nowrap; gap:8px">
-                        <input id="ai-prompt" placeholder="E.g. A short video about the history of space travel..." style="flex:1" onkeydown="if(event.key === 'Enter') { event.preventDefault(); document.getElementById('generate-ai').click(); }">
+                        <input id="ai-prompt" placeholder="E.g. A short video about the history of space travel..." style="flex:1">
                         <button type="button" id="generate-ai" class="secondary" style="padding:8px 16px; border-color:rgba(16,185,129,0.5); color:#10b981">Generate</button>
                     </div>
                 </div>

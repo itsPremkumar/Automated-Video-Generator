@@ -169,13 +169,13 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
     </section>
 
     <!-- Modals -->
-    <div id="media-preview" onclick="this.style.display='none'">
-        <div class="preview-box" onclick="event.stopPropagation()" id="preview-content"></div>
+    <div id="media-preview">
+        <div class="preview-box" id="preview-content"></div>
     </div>
 
     <div id="ai-modal">
         <div class="modal-body">
-            <button class="close-btn" onclick="document.getElementById('ai-modal').style.display='none'">✕</button>
+            <button class="close-btn" id="close-ai-modal">✕</button>
             <h3>✨ AI Creative Assistant</h3>
             <p class="muted">Tell the AI how to improve this scene (e.g., "Make it more exciting").</p>
             <textarea id="ai-instruction" placeholder="Enter instructions..." style="min-height:120px; margin-top:15px;"></textarea>
@@ -187,7 +187,7 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
 
     <div id="gallery-modal">
         <div class="modal-body" style="max-width: 800px;">
-            <button class="close-btn" onclick="document.getElementById('gallery-modal').style.display='none'">✕</button>
+            <button class="close-btn" id="close-gallery-modal">✕</button>
             <h3>🖼️ Video Library</h3>
             <p class="muted">Pick a different video clip or image for this scene.</p>
             <div id="gallery-grid" class="asset-gallery" style="margin-top:20px; max-height:400px; overflow-y:auto;"></div>
@@ -300,7 +300,7 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
                 const retryButton = document.createElement('button');
                 retryButton.className = 'button';
                 retryButton.textContent = 'Retry Job';
-                retryButton.onclick = () => runJobAction('/retry', retryButton, 'Retrying...', 'Retry failed');
+                retryButton.addEventListener('click', () => runJobAction('/retry', retryButton, 'Retrying...', 'Retry failed'));
                 actions.appendChild(retryButton);
             }
 
@@ -308,7 +308,7 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
                 const cancelButton = document.createElement('button');
                 cancelButton.className = 'button secondary';
                 cancelButton.textContent = 'Cancel Job';
-                cancelButton.onclick = () => runJobAction('/cancel', cancelButton, 'Cancelling...', 'Cancel failed');
+                cancelButton.addEventListener('click', () => runJobAction('/cancel', cancelButton, 'Cancelling...', 'Cancel failed'));
                 actions.appendChild(cancelButton);
             }
 
@@ -340,24 +340,24 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
                 currentJob = json.data;
                 setStatusMessage(currentJob);
                 updateEditorState(currentJob);
-                renderPrimaryActions(currentJob);
+                refreshActions(currentJob);
 
                 if (currentJob.status === 'completed' && currentJob.videoUrl && currentJob.downloadUrl) {
                     showVideo(currentJob.videoUrl, currentJob.downloadUrl);
                     window.clearInterval(timer);
                 }
             } catch (error) {
-                document.getElementById('message').textContent = 'Unable to refresh the job right now.';
-                const errorDetail = document.getElementById('error-detail');
-                errorDetail.style.display = 'block';
-                errorDetail.textContent = 'Refresh error for ' + jobId + ': ' + error.message;
                 console.error('Refresh failed:', error);
             }
         }
 
+        function refreshActions(data) {
+             renderPrimaryActions(data);
+        }
+
         async function loadScenes() {
             try {
-                const json = await requestJson(\`/api/jobs/\${jobId}/scenes\`);
+                const json = await requestJson('/api/jobs/' + jobId + '/scenes');
                 const hash = JSON.stringify(json.data);
                 if (hash !== lastSceneHash) {
                     scenes = json.data;
@@ -369,13 +369,13 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
             }
         }
 
-        document.getElementById('confirm-render').onclick = async () => {
+        document.getElementById('confirm-render').addEventListener('click', async () => {
             const btn = document.getElementById('confirm-render');
             btn.disabled = true;
             btn.textContent = 'Starting Render...';
 
             try {
-                await requestJson(\`/api/jobs/\${jobId}/confirm\`, { method: 'POST' });
+                await requestJson('/api/jobs/' + jobId + '/confirm', { method: 'POST' });
                 document.getElementById('editor-section').hidden = true;
                 await refresh();
             } catch (error) {
@@ -383,7 +383,7 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
                 btn.disabled = false;
                 btn.textContent = 'Confirm & Finalize Video';
             }
-        };
+        });
 
         function renderTimeline() {
             const canvas = document.getElementById('timeline-canvas');
@@ -405,68 +405,90 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
             card.className = 'scene-card';
             card.draggable = true;
 
-            const tbn = scene.visual && scene.visual.localPath ? \`/api/fs/view?path=\${encodeURIComponent(scene.visual.localPath)}\` : '';
-            const aud = scene.audioPath ? \`/api/fs/view?path=\${encodeURIComponent(scene.audioPath)}\` : '';
+            const tbn = scene.visual && scene.visual.localPath ? '/api/fs/view?path=' + encodeURIComponent(scene.visual.localPath) : '';
+            const aud = scene.audioPath ? '/api/fs/view?path=' + encodeURIComponent(scene.audioPath) : '';
             const isVid = scene.visual && scene.visual.type === 'video';
             const vc = scene.voiceConfig || { pitch: 0, rate: 0 };
 
-            console.log(\`[SCENE-\${idx+1}] Media URLs:\`, { tbn, aud });
+            let thumbHtml = '';
+            if (tbn) {
+               if (isVid) {
+                   thumbHtml = '<video src="' + tbn + '" muted loop></video>';
+               } else {
+                   thumbHtml = '<img src="' + tbn + '">';
+               }
+            } else {
+               thumbHtml = '<div style="padding:40px; font-size:10px">No Visual</div>';
+            }
 
-            card.innerHTML = \`
-                <div class="drag-handle">≡</div>
-                <div class="stack">
-                    <div class="row" style="justify-content:space-between; align-items:center;">
-                        <span class="eyebrow" style="background:#fff; border-color:var(--line);">SCENE #\${idx + 1}</span>
-                        <button class="button ghost small" onclick="openAI(\${idx})">✨ AI Assistant</button>
-                    </div>
+            card.innerHTML = 
+                '<div class="drag-handle">≡</div>' +
+                '<div class="stack">' +
+                    '<div class="row" style="justify-content:space-between; align-items:center;">' +
+                        '<span class="eyebrow" style="background:#fff; border-color:var(--line);">SCENE #' + (idx + 1) + '</span>' +
+                        '<button class="button ghost small trigger-ai" data-idx="' + idx + '">✨ AI Assistant</button>' +
+                    '</div>' +
                     
-                    <div class="scene-body">
-                        <div class="media-focus">
-                            <div class="scene-thumb-container" onclick="previewMedia('\${tbn}', \${isVid}, '\${aud}')">
-                                <div class="thumb-overlay"><span style="font-size:32px">▶️</span></div>
-                                \${tbn ? (isVid ? \`<video src="\${tbn}" muted loop onmouseenter="this.play()" onmouseleave="this.pause()" onerror="console.error('Video Error (Card) Scene \${idx+1}:', this.error)"></video>\` : \`<img src="\${tbn}" onerror="console.error('Image Error Scene \${idx+1}:', '\${tbn}')">\`) : '<div style="padding:40px; font-size:10px">No Visual</div>'}
-                            </div>
-                            <div class="row" style="gap:8px;">
-                                <button class="button secondary small" onclick="playAudio('\${aud}', this)" style="flex:1; border-radius:8px">🔊 Listen to Voice</button>
-                                <button class="action-icon-btn" onclick="openGallery(\${idx})" title="Swap Clip">🖼️</button>
-                            </div>
-                        </div>
+                    '<div class="scene-body">' +
+                        '<div class="media-focus">' +
+                            '<div class="scene-thumb-container trigger-preview">' +
+                                '<div class="thumb-overlay"><span style="font-size:32px">▶️</span></div>' +
+                                thumbHtml +
+                            '</div>' +
+                            '<div class="row" style="gap:8px;">' +
+                                '<button class="button secondary small trigger-audio" style="flex:1; border-radius:8px">🔊 Listen to Voice</button>' +
+                                '<button class="action-icon-btn trigger-gallery" title="Swap Clip">🖼️</button>' +
+                            '</div>' +
+                        '</div>' +
 
-                        <div class="content-focus">
-                            <div class="field-group">
-                                <label>What the narrator says</label>
-                                <textarea class="scene-input-large" data-field="script">\${escapeHtml(scene.voiceoverText || '')}</textarea>
-                            </div>
-                            <div class="field-group">
-                                <label>Video Clips & Keywords</label>
-                                <input class="scene-input" data-field="keywords" value="\${escapeHtml((scene.searchKeywords || []).join(', '))}">
-                            </div>
-                        </div>
-                    </div>
+                        '<div class="content-focus">' +
+                            '<div class="field-group">' +
+                                '<label>What the narrator says</label>' +
+                                '<textarea class="scene-input-large" data-field="script">' + escapeHtml(scene.voiceoverText || '') + '</textarea>' +
+                            '</div>' +
+                            '<div class="field-group">' +
+                                '<label>Video Clips & Keywords</label>' +
+                                '<input class="scene-input" data-field="keywords" value="' + escapeHtml((scene.searchKeywords || []).join(', ')) + '">' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
 
-                    <div class="settings-bar">
-                        <div class="voice-slider-group">
-                            <label>Voice Tone (Deep ↔ High) <span>\${vc.pitch}Hz</span></label>
-                            <input type="range" class="voice-pitch" min="-20" max="20" value="\${vc.pitch}">
-                        </div>
-                        <div class="voice-slider-group">
-                            <label>Talking Speed (Slow ↔ Fast) <span>\${vc.rate}%</span></label>
-                            <input type="range" class="voice-rate" min="-50" max="50" step="5" value="\${vc.rate}">
-                        </div>
-                        <div class="voice-slider-group">
-                            <label>Time (Seconds)</label>
-                            <input type="number" class="scene-duration" value="\${scene.duration}" style="padding:8px; border-radius:8px">
-                        </div>
-                        <div class="scene-actions">
-                            <button class="button small save-btn">Save Changes</button>
-                            <button class="action-icon-btn delete" onclick="deleteScene(\${idx})">🗑️</button>
-                        </div>
-                    </div>
-                </div>
-            \`;
+                    '<div class="settings-bar">' +
+                        '<div class="voice-slider-group">' +
+                            '<label>Voice Tone (Deep ↔ High) <span>' + vc.pitch + 'Hz</span></label>' +
+                            '<input type="range" class="voice-pitch" min="-20" max="20" value="' + vc.pitch + '">' +
+                        '</div>' +
+                        '<div class="voice-slider-group">' +
+                            '<label>Talking Speed (Slow ↔ Fast) <span>' + vc.rate + '%</span></label>' +
+                            '<input type="range" class="voice-rate" min="-50" max="50" step="5" value="' + vc.rate + '">' +
+                        '</div>' +
+                        '<div class="voice-slider-group">' +
+                            '<label>Time (Seconds)</label>' +
+                            '<input type="number" class="scene-duration" value="' + scene.duration + '" style="padding:8px; border-radius:8px">' +
+                        '</div>' +
+                        '<div class="scene-actions">' +
+                            '<button class="button small save-btn">Save Changes</button>' +
+                            '<button class="action-icon-btn delete trigger-delete">🗑️</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
 
-            // Events
-            card.querySelector('.save-btn').onclick = () => save(idx, card);
+            // Hover effects for video
+            const vid = card.querySelector('video');
+            if (vid) {
+                card.querySelector('.scene-thumb-container').addEventListener('mouseenter', () => vid.play());
+                card.querySelector('.scene-thumb-container').addEventListener('mouseleave', () => vid.pause());
+            }
+
+            // Click events
+            card.querySelector('.trigger-ai').addEventListener('click', () => openAI(idx));
+            card.querySelector('.trigger-preview').addEventListener('click', () => previewMedia(tbn, isVid, aud));
+            card.querySelector('.trigger-audio').addEventListener('click', (e) => playAudio(aud, e.currentTarget));
+            card.querySelector('.trigger-gallery').addEventListener('click', () => openGallery(idx));
+            card.querySelector('.trigger-delete').addEventListener('click', () => deleteScene(idx));
+            card.querySelector('.save-btn').addEventListener('click', () => save(idx, card));
+
+            // Drag Events
             card.addEventListener('dragstart', () => { draggedIdx = idx; card.classList.add('dragging'); });
             card.addEventListener('dragend', () => { draggedIdx = -1; card.classList.remove('dragging'); });
             card.addEventListener('dragover', (e) => e.preventDefault());
@@ -501,7 +523,7 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
             };
 
             try {
-                const json = await requestJson(\`/api/jobs/\${jobId}/scenes/\${idx}\`, {
+                const json = await requestJson('/api/jobs/' + jobId + '/scenes/' + idx, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(updates)
@@ -517,36 +539,58 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
 
         function previewMedia(url, isVid, audioUrl) {
             const box = document.getElementById('preview-content');
-            box.innerHTML = \`
-                <div style="background:#000; display:flex; flex-direction:column; align-items:center;">
-                    \${isVid ? \`<video src="\${url}" id="pv" style="width:100%"></video>\` : \`<img src="\${url}" style="width:100%">\`}
-                    <audio src="\${audioUrl}" id="pa"></audio>
-                    <div class="row" style="padding:20px; gap:20px; background:#111; width:100%; justify-content:center">
-                        <button class="button" onclick="playPreview()">▶️ Play Scene</button>
-                        <button class="button secondary" onclick="stopPreview()">⏹ Stop</button>
-                    </div>
-                </div>
-            \`;
+            
+            let previewHtml = '';
+            if (isVid) {
+                previewHtml = '<video src="' + url + '" id="pv" style="width:100%"></video>';
+            } else {
+                previewHtml = '<img src="' + url + '" style="width:100%">';
+            }
+
+            box.innerHTML = 
+                '<div style="background:#000; display:flex; flex-direction:column; align-items:center;">' +
+                    previewHtml +
+                    '<audio src="' + audioUrl + '" id="pa"></audio>' +
+                    '<div class="row" style="padding:20px; gap:20px; background:#111; width:100%; justify-content:center">' +
+                        '<button class="button" id="start-preview-btn">▶️ Play Scene</button>' +
+                        '<button class="button secondary" id="stop-preview-btn">⏹ Stop</button>' +
+                    '</div>' +
+                '</div>';
+            
+            document.getElementById('start-preview-btn').addEventListener('click', () => {
+                const v = document.getElementById('pv');
+                const a = document.getElementById('pa');
+                if(v) v.play();
+                if(a) a.play();
+            });
+            
+            document.getElementById('stop-preview-btn').addEventListener('click', () => {
+                const v = document.getElementById('pv');
+                const a = document.getElementById('pa');
+                if(v) { v.pause(); v.currentTime = 0; }
+                if(a) { a.pause(); a.currentTime = 0; }
+            });
+
             document.getElementById('media-preview').style.display = 'flex';
         }
 
-        window.playPreview = () => {
-            const v = document.getElementById('pv');
-            const a = document.getElementById('pa');
-            if(v) v.play();
-            if(a) a.play();
-        };
+        document.getElementById('media-preview').addEventListener('click', (e) => {
+            if (e.target.id === 'media-preview') {
+                e.target.style.display = 'none';
+            }
+        });
 
-        window.stopPreview = () => {
-            const v = document.getElementById('pv');
-            const a = document.getElementById('pa');
-            if(v) { v.pause(); v.currentTime = 0; }
-            if(a) { a.pause(); a.currentTime = 0; }
-        };
+        document.getElementById('close-ai-modal').addEventListener('click', () => {
+            document.getElementById('ai-modal').style.display = 'none';
+        });
+
+        document.getElementById('close-gallery-modal').addEventListener('click', () => {
+            document.getElementById('gallery-modal').style.display = 'none';
+        });
 
         async function reorder(from, to) {
             try {
-                const json = await requestJson(\`/api/jobs/\${jobId}/scenes/reorder\`, {
+                const json = await requestJson('/api/jobs/' + jobId + '/scenes/reorder', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fromIndex: from, toIndex: to })
@@ -585,8 +629,8 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
                 json.data.forEach(item => {
                     const div = document.createElement('div');
                     div.className = 'asset-item';
-                    div.innerHTML = \`<img src="\${item.assetUrl}" class="asset-preview"><span class="tag-copy">\${escapeHtml(item.filename)}</span>\`;
-                    div.onclick = () => swap(item.filename);
+                    div.innerHTML = '<img src="' + item.assetUrl + '" class="asset-preview"><span class="tag-copy">' + escapeHtml(item.filename) + '</span>';
+                    div.addEventListener('click', () => swap(item.filename));
                     grid.appendChild(div);
                 });
                 document.getElementById('gallery-modal').style.display='flex';
@@ -597,7 +641,7 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
 
         async function swap(file) {
             try {
-                const json = await requestJson(\`/api/jobs/\${jobId}/scenes/\${currentIdx}\`, {
+                const json = await requestJson('/api/jobs/' + jobId + '/scenes/' + currentIdx, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ localAsset: file })
@@ -611,8 +655,9 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
         }
 
         async function deleteScene(idx) {
+            if (!confirm('Are you sure you want to delete this scene?')) return;
             try {
-                const json = await requestJson(\`/api/jobs/\${jobId}/scenes/\${idx}\`, {
+                const json = await requestJson('/api/jobs/' + jobId + '/scenes/' + idx, {
                     method: 'DELETE'
                 });
                 scenes = json.data;
@@ -622,13 +667,13 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
             }
         }
 
-        document.getElementById('apply-ai').onclick = async () => {
+        document.getElementById('apply-ai').addEventListener('click', async () => {
             const btn = document.getElementById('apply-ai');
             const instr = document.getElementById('ai-instruction').value;
             btn.disabled = true; btn.textContent = 'Assistant thinking...';
 
             try {
-                const json = await requestJson(\`/api/jobs/\${jobId}/scenes/\${currentIdx}/refine\`, {
+                const json = await requestJson('/api/jobs/' + jobId + '/scenes/' + currentIdx + '/refine', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ instruction: instr })
@@ -641,7 +686,7 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
             } finally {
                 btn.disabled = false; btn.textContent = 'Improve Scene';
             }
-        };
+        });
 
         const timer = setInterval(refresh, 3000);
         refresh();

@@ -17,13 +17,24 @@ const scriptField   = document.getElementById('script');
 const titleField    = document.getElementById('title');
 const scriptMetrics = document.getElementById('script-metrics');
 const narratorMode  = document.getElementById('narratorMode');
-const personalAudioSelect = document.getElementById('personalAudio');
+
 const addMediaBtn    = document.getElementById('add-media-btn');
+const assetGallery   = document.getElementById('asset-gallery');
+
+const personalAudioSelect = document.getElementById('personalAudio');
 const browsePersonalAudioBtn = document.getElementById('browse-personal-audio-btn');
-const browseMusicBtn  = document.getElementById('browse-music-btn');
-const browserUpBtn    = document.getElementById('browser-up-btn');
-const browserCloseBtn = document.getElementById('browser-close-btn');
-const browserGoBtn    = document.getElementById('browser-go-btn');
-const browserCancelBtn = document.getElementById('browser-cancel-btn');
+
+const musicSelect       = document.getElementById('backgroundMusic');
+const browseMusicBtn    = document.getElementById('browse-music-btn');
+
+const browserModal      = document.getElementById('browser-modal');
+const browserList       = document.getElementById('browser-list');
+const quickAccessList   = document.getElementById('quick-access-list');
+const drivesList        = document.getElementById('drives-list');
+const browserPath       = document.getElementById('browser-path');
+const browserUpBtn      = document.getElementById('browser-up-btn');
+const browserCloseBtn   = document.getElementById('browser-close-btn');
+const browserGoBtn      = document.getElementById('browser-go-btn');
+const browserCancelBtn  = document.getElementById('browser-cancel-btn');
 `;
 }

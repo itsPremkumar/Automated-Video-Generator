@@ -25,7 +25,7 @@ export function setupSection(setupSummary: string): string {
                             <label for="setup-pexels">Pexels API key</label>
                             <div class="row">
                                 <span id="setup-pexels-status" class="status-chip warn">Checking...</span>
-                                <button type="button" id="setup-pexels-toggle" class="secondary" style="padding:4px 10px;font-size:12px;display:none" onclick="toggleFieldUpdate('pexels')">Change</button>
+                                <button type="button" id="setup-pexels-toggle" class="secondary" style="padding:4px 10px;font-size:12px;display:none" data-toggle="pexels">Change</button>
                             </div>
                         </div>
                         <input id="setup-pexels" type="password" placeholder="Recommended for stock video search">
@@ -38,7 +38,7 @@ export function setupSection(setupSummary: string): string {
                             <label for="setup-pixabay">Pixabay API key</label>
                             <div class="row">
                                 <span id="setup-pixabay-status" class="status-chip warn">Checking...</span>
-                                <button type="button" id="setup-pixabay-toggle" class="secondary" style="padding:4px 10px;font-size:12px;display:none" onclick="toggleFieldUpdate('pixabay')">Change</button>
+                                <button type="button" id="setup-pixabay-toggle" class="secondary" style="padding:4px 10px;font-size:12px;display:none" data-toggle="pixabay">Change</button>
                             </div>
                         </div>
                         <input id="setup-pixabay" type="password" placeholder="Optional backup provider">
@@ -51,7 +51,7 @@ export function setupSection(setupSummary: string): string {
                             <label for="setup-gemini">Gemini API key</label>
                             <div class="row">
                                 <span id="setup-gemini-status" class="status-chip warn">Checking...</span>
-                                <button type="button" id="setup-gemini-toggle" class="secondary" style="padding:4px 10px;font-size:12px;display:none" onclick="toggleFieldUpdate('gemini')">Change</button>
+                                <button type="button" id="setup-gemini-toggle" class="secondary" style="padding:4px 10px;font-size:12px;display:none" data-toggle="gemini">Change</button>
                             </div>
                         </div>
                         <input id="setup-gemini" type="password" placeholder="Optional AI helper">
