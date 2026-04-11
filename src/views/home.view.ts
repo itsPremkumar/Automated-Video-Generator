@@ -383,11 +383,6 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
                         <input id="showText" type="checkbox" checked onchange="document.getElementById('subtitle-config').style.display = this.checked ? '' : 'none'">
                         <div><strong>Show subtitles</strong></div>
                     </label>
-                    <label class="toggle-row" for="enableReview" style="padding:10px 12px; border: 1px solid var(--accent); border-radius: 8px; margin-top: 4px; background: rgba(var(--accent-rgb), 0.05);">
-                        <input id="enableReview" type="checkbox">
-                        <div><strong>Enable Timeline Editor (Review Mode)</strong></div>
-                    </label>
-
                     <div id="subtitle-config" class="panel soft" style="gap:12px; padding:16px; margin: 4px 0 12px;">
                         <div class="field-grid two-up" style="gap:16px">
                             <div class="field">
@@ -441,7 +436,11 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
             </div>
 
             <!-- Submit Button (spans all columns) -->
-            <div class="toolbar" style="grid-column: 1 / -1; margin-top:20px; justify-content:center">
+            <div class="toolbar" style="grid-column: 1 / -1; margin-top:20px; justify-content:center; flex-direction:column; align-items:center; gap:12px">
+                <label class="toggle-row" for="enableReview" style="padding:10px 20px; border: 1px solid var(--accent); border-radius: 8px; background: rgba(var(--accent-rgb), 0.05); cursor:pointer">
+                    <input id="enableReview" type="checkbox">
+                    <div><strong>Enable Timeline Editor (Review Mode)</strong></div>
+                </label>
                 <button type="submit" style="min-width:300px; padding:16px 32px">Start Rendering Video Studio</button>
             </div>
         </form>
