@@ -299,6 +299,14 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
                     <button type="button" id="fill-sample" class="secondary" style="font-size:13px;padding:8px 14px">Use Sample</button>
                     <button type="button" id="fill-hello" class="secondary" style="font-size:13px;padding:8px 14px">Hello World</button>
                 </div>
+
+                <div class="stack" style="margin-top:20px">
+                    <div class="row" style="justify-content:space-between;align-items:center">
+                        <strong style="font-size:14px">Local Media</strong>
+                        <button type="button" class="secondary" onclick="openSystemBrowser('media')" style="padding:6px 12px;font-size:12px">Add Library</button>
+                    </div>
+                    <div id="asset-gallery" class="asset-gallery"></div>
+                </div>
             </div>
 
             <!-- ─── Step 2: Voice & Layout ─── -->
@@ -425,14 +433,14 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
                             </div>
                         </div>
                     </div>
-                    <div class="stack" style="margin-top:4px">
-                        <div class="row" style="justify-content:space-between;align-items:center">
-                            <strong style="font-size:14px">Local Media</strong>
-                            <button type="button" class="secondary" onclick="openSystemBrowser('media')" style="padding:6px 12px;font-size:12px">Add Library</button>
-                        </div>
-                        <div id="asset-gallery" class="asset-gallery"></div>
+                        <div class="stack" style="margin-top:20px">
+                    <div class="row" style="justify-content:space-between;align-items:center">
+                        <strong style="font-size:14px">Local Media</strong>
+                        <button type="button" class="secondary" onclick="openSystemBrowser('media')" style="padding:6px 12px;font-size:12px">Add Library</button>
                     </div>
+                    <div id="asset-gallery" class="asset-gallery"></div>
                 </div>
+                    </div>
             </div>
 
             <!-- Submit Button (spans all columns) -->
