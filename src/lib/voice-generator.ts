@@ -2,14 +2,144 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execSync, spawnSync } from 'child_process';
 import { Scene } from './script-parser';
-import { logError, logInfo, writeProgress } from '../runtime';
+import { logError, logInfo, logWarn, writeProgress } from '../runtime';
 
 // @ts-ignore - ffprobe-static types
 import ffprobePath from 'ffprobe-static';
 
 const console = {
   log: (...args: unknown[]) => logInfo(...args),
+  warn: (...args: unknown[]) => logWarn(...args),
   error: (...args: unknown[]) => logError(...args),
+};
+
+/**
+ * Locale to friendly language name mapping
+ */
+export const LOCALE_TO_LANGUAGE_NAME: Record<string, string> = {
+  'en-US': 'English (United States)',
+  'en-GB': 'English (United Kingdom)',
+  'en-AU': 'English (Australia)',
+  'en-CA': 'English (Canada)',
+  'en-IN': 'English (India)',
+  'en-IE': 'English (Ireland)',
+  'en-NZ': 'English (New Zealand)',
+  'en-PH': 'English (Philippines)',
+  'en-ZA': 'English (South Africa)',
+  'ta-IN': 'Tamil (India)',
+  'ta-LK': 'Tamil (Sri Lanka)',
+  'hi-IN': 'Hindi (India)',
+  'te-IN': 'Telugu (India)',
+  'kn-IN': 'Kannada (India)',
+  'ml-IN': 'Malayalam (India)',
+  'gu-IN': 'Gujarati (India)',
+  'mr-IN': 'Marathi (India)',
+  'bn-IN': 'Bengali (India)',
+  'pa-IN': 'Punjabi (India)',
+  'ur-IN': 'Urdu (India)',
+  'ar-XA': 'Arabic (General)',
+  'ar-AE': 'Arabic (United Arab Emirates)',
+  'ar-BH': 'Arabic (Bahrain)',
+  'ar-DZ': 'Arabic (Algeria)',
+  'ar-EG': 'Arabic (Egypt)',
+  'ar-IQ': 'Arabic (Iraq)',
+  'ar-JO': 'Arabic (Jordan)',
+  'ar-KW': 'Arabic (Kuwait)',
+  'ar-LB': 'Arabic (Lebanon)',
+  'ar-LY': 'Arabic (Libya)',
+  'ar-MA': 'Arabic (Morocco)',
+  'ar-OM': 'Arabic (Oman)',
+  'ar-PS': 'Arabic (Palestine)',
+  'ar-QA': 'Arabic (Qatar)',
+  'ar-SA': 'Arabic (Saudi Arabia)',
+  'ar-SY': 'Arabic (Syria)',
+  'ar-TN': 'Arabic (Tunisia)',
+  'ar-YE': 'Arabic (Yemen)',
+  'bg-BG': 'Bulgarian (Bulgaria)',
+  'ca-ES': 'Catalan (Spain)',
+  'cs-CZ': 'Czech (Czech Republic)',
+  'cy-GB': 'Welsh (United Kingdom)',
+  'da-DK': 'Danish (Denmark)',
+  'de-DE': 'German (Germany)',
+  'de-AT': 'German (Austria)',
+  'de-CH': 'German (Switzerland)',
+  'el-GR': 'Greek (Greece)',
+  'es-ES': 'Spanish (Spain)',
+  'es-MX': 'Spanish (Mexico)',
+  'es-AR': 'Spanish (Argentina)',
+  'es-BO': 'Spanish (Bolivia)',
+  'es-CL': 'Spanish (Chile)',
+  'es-CO': 'Spanish (Colombia)',
+  'es-CR': 'Spanish (Costa Rica)',
+  'es-CU': 'Spanish (Cuba)',
+  'es-DO': 'Spanish (Dominican Republic)',
+  'es-EC': 'Spanish (Ecuador)',
+  'es-GQ': 'Spanish (Equatorial Guinea)',
+  'es-GT': 'Spanish (Guatemala)',
+  'es-HN': 'Spanish (Honduras)',
+  'es-NI': 'Spanish (Nicaragua)',
+  'es-PA': 'Spanish (Panama)',
+  'es-PE': 'Spanish (Peru)',
+  'es-PR': 'Spanish (Puerto Rico)',
+  'es-PY': 'Spanish (Paraguay)',
+  'es-SV': 'Spanish (El Salvador)',
+  'es-US': 'Spanish (United States)',
+  'es-UY': 'Spanish (Uruguay)',
+  'es-VE': 'Spanish (Venezuela)',
+  'et-EE': 'Estonian (Estonia)',
+  'fi-FI': 'Finnish (Finland)',
+  'fil-PH': 'Filipino (Philippines)',
+  'fr-FR': 'French (France)',
+  'fr-BE': 'French (Belgium)',
+  'fr-CA': 'French (Canada)',
+  'fr-CH': 'French (Switzerland)',
+  'ga-IE': 'Irish (Ireland)',
+  'gl-ES': 'Galician (Spain)',
+  'he-IL': 'Hebrew (Israel)',
+  'hr-HR': 'Croatian (Croatia)',
+  'hu-HU': 'Hungarian (Hungary)',
+  'id-ID': 'Indonesian (Indonesia)',
+  'is-IS': 'Icelandic (Iceland)',
+  'it-IT': 'Italian (Italy)',
+  'ja-JP': 'Japanese (Japan)',
+  'jv-ID': 'Javanese (Indonesia)',
+  'ka-GE': 'Georgian (Georgia)',
+  'kk-KZ': 'Kazakh (Kazakhstan)',
+  'km-KH': 'Khmer (Cambodia)',
+  'ko-KR': 'Korean (South Korea)',
+  'lo-LA': 'Lao (Laos)',
+  'lt-LT': 'Lithuanian (Lithuania)',
+  'lv-LV': 'Latvian (Latvia)',
+  'mk-MK': 'Macedonian (North Macedonia)',
+  'mn-MN': 'Mongolian (Mongolia)',
+  'ms-MY': 'Malay (Malaysia)',
+  'mt-MT': 'Maltese (Malta)',
+  'my-MM': 'Burmese (Myanmar)',
+  'nb-NO': 'Norwegian Bokmål (Norway)',
+  'ne-NP': 'Nepali (Nepal)',
+  'nl-NL': 'Dutch (Netherlands)',
+  'nl-BE': 'Dutch (Belgium)',
+  'pl-PL': 'Polish (Poland)',
+  'pt-BR': 'Portuguese (Brazil)',
+  'pt-PT': 'Portuguese (Portugal)',
+  'ro-RO': 'Romanian (Romania)',
+  'ru-RU': 'Russian (Russia)',
+  'si-LK': 'Sinhala (Sri Lanka)',
+  'sk-SK': 'Slovak (Slovakia)',
+  'sl-SI': 'Slovenian (Slovenia)',
+  'sq-AL': 'Albanian (Albania)',
+  'sr-RS': 'Serbian (Serbia)',
+  'sv-SE': 'Swedish (Sweden)',
+  'sw-KE': 'Swahili (Kenya)',
+  'sw-TZ': 'Swahili (Tanzania)',
+  'th-TH': 'Thai (Thailand)',
+  'tr-TR': 'Turkish (Turkey)',
+  'uk-UA': 'Ukrainian (Ukraine)',
+  'uz-UZ': 'Uzbek (Uzbekistan)',
+  'vi-VN': 'Vietnamese (Vietnam)',
+  'zh-CN': 'Chinese (Mainland)',
+  'zh-HK': 'Chinese (Hong Kong)',
+  'zh-TW': 'Chinese (Taiwan)',
 };
 
 /**
@@ -70,7 +200,7 @@ export function estimateAudioDuration(text: string): number {
   return Math.max(3, Math.ceil(words / wordsPerSecond) + 1.5);
 }
 
-// Available Neural Voices grouped by language
+// Available Neural Voices grouped by language (Featured Defaults)
 export const AVAILABLE_VOICES: Record<string, { male: string[]; female: string[] }> = {
   english: {
     male: ['en-US-GuyNeural', 'en-US-ChristopherNeural', 'en-GB-RyanNeural', 'en-IN-PrabhatNeural'],
@@ -80,6 +210,34 @@ export const AVAILABLE_VOICES: Record<string, { male: string[]; female: string[]
     male: ['ta-IN-ValluvarNeural'],
     female: ['ta-IN-PallaviNeural'],
   },
+  hindi: {
+    male: ['hi-IN-MadhurNeural'],
+    female: ['hi-IN-SwaraNeural'],
+  },
+  spanish: {
+    male: ['es-ES-AlvaroNeural', 'es-MX-JorgeNeural'],
+    female: ['es-ES-ElviraNeural', 'es-MX-DaliaNeural'],
+  },
+  french: {
+    male: ['fr-FR-HenriNeural', 'fr-CA-AntoineNeural'],
+    female: ['fr-FR-DeniseNeural', 'fr-CA-SylvieNeural'],
+  },
+  german: {
+    male: ['de-DE-ConradNeural', 'de-AT-JonasNeural'],
+    female: ['de-DE-KatjaNeural', 'de-AT-IngridNeural'],
+  },
+  telugu: {
+    male: ['te-IN-MohanNeural'],
+    female: ['te-IN-ShrutiNeural'],
+  },
+  malayalam: {
+    male: ['ml-IN-MidhunNeural'],
+    female: ['ml-IN-SobhanaNeural'],
+  },
+  kannada: {
+    male: ['kn-IN-GaganNeural'],
+    female: ['kn-IN-SapnaNeural'],
+  },
 };
 
 // Internal cache for dynamic voices
@@ -88,7 +246,7 @@ let cachedVoices: Record<string, VoiceMetadata[]> | null = null;
 // Default voice mapping for specific language keys
 export const LANGUAGE_DEFAULTS: Record<string, string> = {
   tamil: 'ta-IN-PallaviNeural',
-  hindi: 'hi-IN-SwararaNeural',
+  hindi: 'hi-IN-SwaraNeural',
   spanish: 'es-ES-ElviraNeural',
   french: 'fr-FR-DeniseNeural',
   german: 'de-DE-KatjaNeural',
@@ -532,14 +690,41 @@ export function getDynamicVoices(): Record<string, VoiceMetadata[]> {
     const output = runEdgeTts(['--list-voices']);
     const lines = output.split('\n');
     const voicesByLang: Record<string, VoiceMetadata[]> = {};
+    let matchedCount = 0;
 
     for (const line of lines) {
+      // Flexible regex to handle different spacing and potential headers
       const match = line.match(/^(\S+)\s+(Male|Female)\s+(\S+)\s*(.*)?$/);
       if (!match) {
+          // Alternative fallback search for voice names if the regex is too strict
+          if (line.includes('Neural') && (line.includes('Male') || line.includes('Female'))) {
+              const parts = line.trim().split(/\s+/);
+              if (parts.length >= 2) {
+                  const name = parts[0];
+                  const genderRaw = parts[1];
+                  // If second part is not gender, check other parts
+                  let gender: 'Male' | 'Female' | null = null;
+                  if (genderRaw === 'Male' || genderRaw === 'Female') gender = genderRaw;
+                  else if (parts[2] === 'Male' || parts[2] === 'Female') gender = parts[2];
+                  
+                  if (name && gender) {
+                      const locale = name.split('-').slice(0, 2).join('-');
+                      if (!voicesByLang[locale]) voicesByLang[locale] = [];
+                      voicesByLang[locale].push({
+                          name,
+                          gender,
+                          language: locale,
+                          tags: parts.slice(3)
+                      });
+                      matchedCount++;
+                  }
+              }
+          }
         continue;
       }
 
-      const [, name, gender, category, tags] = match;
+      const [, name, genderRaw, category, tags] = match;
+      const gender = genderRaw.charAt(0).toUpperCase() + genderRaw.slice(1).toLowerCase() as 'Male' | 'Female';
       const locale = name.split('-').slice(0, 2).join('-');
       if (!voicesByLang[locale]) {
         voicesByLang[locale] = [];
@@ -547,27 +732,40 @@ export function getDynamicVoices(): Record<string, VoiceMetadata[]> {
 
       voicesByLang[locale].push({
         name,
-        gender: gender as 'Male' | 'Female',
+        gender,
         language: locale,
         category,
         tags: tags ? tags.split(',').map((tag) => tag.trim()) : [],
       });
+      matchedCount++;
     }
 
-    if (Object.keys(voicesByLang).length === 0) {
-      throw new Error('Edge-TTS returned no parseable voices.');
+    if (matchedCount === 0) {
+        console.warn('[VOICE-GEN] Edge-TTS returned output but no voices were matched. Check output format.');
+    } else {
+        console.log(`[VOICE-GEN] Successfully parsed ${matchedCount} voices from Edge-TTS.`);
     }
 
     cachedVoices = voicesByLang;
     return voicesByLang;
   } catch (error: any) {
     console.error(`[VOICE-GEN] Failed to fetch dynamic voices: ${error.message}`);
-    return {
+    const fallback = {
       'en-US': [
-        { name: 'en-US-JennyNeural', gender: 'Female', language: 'en-US' },
-        { name: 'en-US-GuyNeural', gender: 'Male', language: 'en-US' },
+        { name: 'en-US-JennyNeural', gender: 'Female' as const, language: 'en-US' },
+        { name: 'en-US-GuyNeural', gender: 'Male' as const, language: 'en-US' },
+      ],
+      'ta-IN': [
+        { name: 'ta-IN-PallaviNeural', gender: 'Female' as const, language: 'ta-IN' },
+        { name: 'ta-IN-ValluvarNeural', gender: 'Male' as const, language: 'ta-IN' },
+      ],
+      'hi-IN': [
+          { name: 'hi-IN-SwaraNeural', gender: 'Female' as const, language: 'hi-IN' },
+          { name: 'hi-IN-MadhurNeural', gender: 'Male' as const, language: 'hi-IN' },
       ],
     };
+    cachedVoices = fallback;
+    return fallback;
   }
 }
 

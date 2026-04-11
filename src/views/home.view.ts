@@ -1,12 +1,13 @@
 import { Request } from 'express';
-import { 
-    PROJECT_REPOSITORY_URL, 
-    MAX_TITLE_LENGTH, 
-    DEFAULT_FALLBACK_VIDEO, 
-    DEMO_SCRIPT, 
+import {
+    PROJECT_REPOSITORY_URL,
+    MAX_TITLE_LENGTH,
+    DEFAULT_FALLBACK_VIDEO,
+    DEMO_SCRIPT,
     HELLO_WORLD_TITLE,
     HELLO_WORLD_SCRIPT,
     AVAILABLE_VOICES,
+    LOCALE_TO_LANGUAGE_NAME,
     PROJECT_NAME,
     DEFAULT_SITE_DESCRIPTION,
     DEFAULT_SITE_KEYWORDS
@@ -75,7 +76,7 @@ function buildMusicOptions(musicFiles: string[]): string {
 
 function buildVoiceOptions(voicesList: Record<string, { male: string[]; female: string[] }>): string {
     return Object.entries(voicesList).map(([lang, voices]) => {
-        const langName = lang.charAt(0).toUpperCase() + lang.slice(1);
+        const langName = LOCALE_TO_LANGUAGE_NAME[lang] || (lang.charAt(0).toUpperCase() + lang.slice(1));
         const femaleOpts = voices.female.map(v => `<option value="${v}">${v} (Female)</option>`).join('');
         const maleOpts = voices.male.map(v => `<option value="${v}">${v} (Male)</option>`).join('');
         return `<optgroup label="${langName}">${femaleOpts}${maleOpts}</optgroup>`;
@@ -84,7 +85,7 @@ function buildVoiceOptions(voicesList: Record<string, { male: string[]; female: 
 
 function buildLanguageOptions(voicesList: Record<string, { male: string[]; female: string[] }>): string {
     return Object.keys(voicesList).map(lang => {
-        const langName = lang.charAt(0).toUpperCase() + lang.slice(1);
+        const langName = LOCALE_TO_LANGUAGE_NAME[lang] || (lang.charAt(0).toUpperCase() + lang.slice(1));
         return `<option value="${lang}">${langName}</option>`;
     }).join('');
 }
@@ -331,13 +332,9 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
                             </select>
                         </div>
                         <div class="field">
-                            <label for="voice-search">Search voice</label>
-                            <input type="text" id="voice-search" class="voice-search" placeholder="Search voices...">
-                        </div>
-                        <div class="field">
-                            <label for="voice">Voice override</label>
+                            <label for="voice">Voice</label>
                             <select id="voice">
-                                <option value="">Optional Override</option>
+                                <option value="">Optional</option>
                                 ${voiceOptions}
                             </select>
                             <p id="voice-hint" class="field-help" style="font-size:11px"></p>
@@ -531,6 +528,7 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const sampleScript = ${JSON.stringify(DEMO_SCRIPT)};
 const helloWorldScript = ${JSON.stringify(HELLO_WORLD_SCRIPT)};
+const localeNames = ${JSON.stringify(LOCALE_TO_LANGUAGE_NAME)};
 
 // ─── DOM References ────────────────────────────────────────────────────────────
 const form          = document.getElementById('generate-form');
@@ -543,7 +541,6 @@ const aiPromptInput = document.getElementById('ai-prompt');
 const fillSample    = document.getElementById('fill-sample');
 const fillHello     = document.getElementById('fill-hello');
 const voiceSelect   = document.getElementById('voice');
-const voiceSearch   = document.getElementById('voice-search');
 const voiceHint     = document.getElementById('voice-hint');
 const langSelect    = document.getElementById('language');
 const scriptField   = document.getElementById('script');
@@ -663,36 +660,46 @@ async function loadSetupStatus() {
 
 // ─── Voice Management ───────────────────────────────────────────────────────────
 
-function renderVoices(filter = '') {
+function renderVoices() {
+    voiceSelect.innerHTML = '<option value="">Select Voice</option>';
+    const selectedLang = (langSelect.value || '').toLowerCase();
+    let results = 0;
+    
     if (!Object.keys(allVoices).length) {
         voiceHint.textContent = 'Using the built-in voice list. Dynamic voices were not loaded yet.';
         return;
     }
-    voiceSelect.innerHTML = '<option value="">Select Voice (Optional Override)</option>';
-    const query = filter.toLowerCase().trim();
-    let results = 0;
-    Object.entries(allVoices).forEach(([lang, voices]) => {
-        const filtered = voices.filter((v) =>
-            v.name.toLowerCase().includes(query) ||
-            lang.toLowerCase().includes(query) ||
-            v.gender.toLowerCase().includes(query)
-        );
-        if (filtered.length > 0) {
-            const group = document.createElement('optgroup');
-            group.label = lang;
-            filtered.forEach((v) => {
-                const opt = document.createElement('option');
-                opt.value = v.name;
-                opt.textContent = \`\${v.name} (\${v.gender})\`;
-                group.appendChild(opt);
-            });
-            voiceSelect.appendChild(group);
-            results += filtered.length;
-        }
-    });
+
+    Object.entries(allVoices)
+        .sort(([langA], [langB]) => (localeNames[langA] || langA).localeCompare(localeNames[langB] || langB))
+        .forEach(([lang, voices]) => {
+            const friendlyLang = (localeNames[lang] || lang).toLowerCase();
+            
+            // Filter by language if one is selected
+            if (selectedLang) {
+                const isMatch = lang.toLowerCase() === selectedLang || 
+                                lang.toLowerCase().startsWith(selectedLang.slice(0, 2)) ||
+                                friendlyLang.includes(selectedLang);
+                if (!isMatch) return;
+            }
+
+            const filtered = voices;
+            if (filtered.length > 0) {
+                const group = document.createElement('optgroup');
+                group.label = friendlyLang;
+                filtered.forEach((v) => {
+                    const opt = document.createElement('option');
+                    opt.value = v.name;
+                    opt.textContent = \`\${v.name} (\${v.gender})\`;
+                    group.appendChild(opt);
+                });
+                voiceSelect.appendChild(group);
+                results += filtered.length;
+            }
+        });
     voiceHint.textContent = results > 0
-        ? results + ' voices match your search.'
-        : 'No voices match that search yet.';
+        ? results + ' voices available for ' + (langSelect.options[langSelect.selectedIndex].text) + '.'
+        : 'No voices available for the selected language.';
 }
 
 async function loadAllVoices() {
@@ -701,15 +708,18 @@ async function loadAllVoices() {
         const json = await res.json();
         if (json.success) {
             allVoices = json.data;
-            Object.keys(allVoices).sort().forEach((lang) => {
-                const opt = document.createElement('option');
-                opt.value = lang;
-                opt.textContent = lang;
-                if (![...langSelect.options].some((o) => o.value === lang)) {
-                    langSelect.appendChild(opt);
-                }
-            });
-            renderVoices(voiceSearch.value || '');
+            Object.keys(allVoices)
+                .map(lang => ({ code: lang, name: localeNames[lang] || lang }))
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .forEach((lang) => {
+                    if (![...langSelect.options].some((o) => o.value === lang.code)) {
+                        const opt = document.createElement('option');
+                        opt.value = lang.code;
+                        opt.textContent = lang.name;
+                        langSelect.appendChild(opt);
+                    }
+                });
+            renderVoices();
             const total = Object.values(allVoices).reduce((count, list) => count + list.length, 0);
             voiceHint.textContent = total + ' dynamic voices loaded from Edge-TTS.';
         }
@@ -721,7 +731,7 @@ async function loadAllVoices() {
 
 // ─── Event Listeners ────────────────────────────────────────────────────────────
 
-voiceSearch.addEventListener('input', (e) => renderVoices(e.target.value));
+langSelect.addEventListener('change', () => renderVoices());
 scriptField.addEventListener('input', updateScriptMetrics);
 
 // Fill Sample Script
@@ -731,7 +741,7 @@ fillSample.addEventListener('click', () => {
     }
     scriptField.value = sampleScript;
     langSelect.value = 'english';
-    renderVoices(voiceSearch.value || '');
+    renderVoices();
     updateScriptMetrics();
     window.scrollTo({ top: form.offsetTop - 20, behavior: 'smooth' });
 });
@@ -741,7 +751,7 @@ fillHello.addEventListener('click', () => {
     titleField.value = 'Hello World - My First Video';
     scriptField.value = helloWorldScript;
     langSelect.value = 'english';
-    renderVoices(voiceSearch.value || '');
+    renderVoices();
     updateScriptMetrics();
     window.scrollTo({ top: form.offsetTop - 20, behavior: 'smooth' });
 });
@@ -1076,7 +1086,7 @@ async function loadGalleryAssets() {
                         '@type': 'Offer',
                         price: '0',
                         priceCurrency: 'USD',
-                        },
+                    },
                     operatingSystem: 'Windows, macOS, Linux',
                     sameAs: PROJECT_REPOSITORY_URL,
                     url: absoluteUrl(req, '/'),

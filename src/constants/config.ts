@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as dotenv from 'dotenv';
 import { resolveProjectPath } from '../shared/runtime/paths';
-import { AVAILABLE_VOICES } from '../lib/voice-generator';
+import { AVAILABLE_VOICES, LOCALE_TO_LANGUAGE_NAME } from '../lib/voice-generator';
 
 const envPath = resolveProjectPath('.env');
 dotenv.config({ path: envPath });
@@ -10,7 +10,7 @@ const pkgPath = resolveProjectPath('package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 
 export const APP_VERSION = pkg.version;
-export { AVAILABLE_VOICES };
+export { AVAILABLE_VOICES, LOCALE_TO_LANGUAGE_NAME };
 
 export const HOST = process.env.HOST || '127.0.0.1';
 export const PORT = Number(process.env.PORT || 3001);
