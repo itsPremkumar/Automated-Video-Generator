@@ -19,34 +19,33 @@ export function heroSection(totalVideos: number, totalVoices: number, setupSumma
                     <a class="button secondary" href="${PROJECT_REPOSITORY_URL}" target="_blank" rel="noreferrer">View on GitHub</a>
                     <a class="button ghost" href="/llms.txt">Read AI summary</a>
                 </div>
-                <div class="metric-grid">
+                <div class="metric-grid" style="margin-top:32px">
                     <div class="metric-card">
                         <strong>${totalVideos}</strong>
-                        <span class="muted">videos created in this portal</span>
+                        <span class="muted">videos created</span>
                     </div>
                     <div class="metric-card">
                         <strong>${totalVoices}+</strong>
-                        <span class="muted">voice presets available before dynamic loading</span>
+                        <span class="muted">voice presets</span>
                     </div>
                     <div class="metric-card">
                         <strong>3 steps</strong>
-                        <span class="muted">setup, create, watch or download</span>
+                        <span class="muted">easy flow</span>
                     </div>
                 </div>
             </div>
 
             <!-- Simple Flow Sidebar -->
-            <div class="highlight-box stack">
-                <span class="eyebrow">Simple Flow</span>
-                <h2>What users do here</h2>
-                <div class="row">${setupSummary}</div>
-                <ol class="checklist">
-                    <li>Save the API keys once for this computer.</li>
-                    <li>Paste or edit the script in the workspace below.</li>
-                    <li>choose voice, layout, music, and subtitle options.</li>
-                    <li>Start the render and wait on the live status page.</li>
-                    <li>Watch or download the MP4 from the final delivery page.</li>
-                </ol>
+            <div class="panel glass stack" style="justify-content:center;">
+                <span class="eyebrow" style="background:var(--brand); color:white; border:none">Simple Flow</span>
+                <h2 style="margin-top:12px">What users do here</h2>
+                <div class="row" style="margin-bottom:12px">${setupSummary}</div>
+                <ul class="checklist" style="list-style:none; padding:0">
+                    <li style="margin-bottom:12px; display:flex; gap:10px; font-size:14px"><span style="color:var(--brand)">✓</span> Save your API keys once.</li>
+                    <li style="margin-bottom:12px; display:flex; gap:10px; font-size:14px"><span style="color:var(--brand)">✓</span> Paste your script in the studio.</li>
+                    <li style="margin-bottom:12px; display:flex; gap:10px; font-size:14px"><span style="color:var(--brand)">✓</span> Choose voice and visual style.</li>
+                    <li style="margin-bottom:12px; display:flex; gap:10px; font-size:14px"><span style="color:var(--brand)">✓</span> Render and watch your video.</li>
+                </ul>
             </div>
         </div>
     </section>`;

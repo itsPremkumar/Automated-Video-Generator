@@ -31,44 +31,36 @@ export function watchPage(req: Request, video: VideoRecord, cspNonce?: string): 
     <!-- ═══════════════════════════════════════════════════════════════════════
          HERO: Video Summary
          ═══════════════════════════════════════════════════════════════════════ -->
-    <section class="hero-surface">
+    <section class="hero-surface" style="padding:48px">
         <div class="hero-grid">
             <div class="stack">
-                <span class="eyebrow">Video Ready</span>
+                <span class="eyebrow">Video Delivery</span>
                 <div>
-                    <h1>${escapeHtml(video.title)}</h1>
-                    <p class="lead small">
-                        Preview the result in the browser, then download the MP4 or return to the workspace to make another version.
+                    <h1 style="margin-top:12px">${escapeHtml(video.title)}</h1>
+                    <p class="lead small" style="margin-top:12px">
+                        Preview your production in the high-fidelity player, then download the master file or return to create more versions.
                     </p>
                 </div>
-                <div class="row">
-                    <span class="pill">${escapeHtml(video.orientation)}</span>
-                    ${video.durationSeconds ? `<span class="pill">${Math.round(video.durationSeconds)} sec</span>` : ''}
-                    <span class="pill">${video.fileSizeMB} MB</span>
-                    <span class="pill">${escapeHtml(new Date(video.createdAt).toLocaleString())}</span>
+                <div class="row" style="margin-top:20px; gap:12px">
+                    <span class="pill" style="background:var(--brand-soft); color:var(--brand); border:none; padding:6px 16px">${escapeHtml(video.orientation)}</span>
+                    ${video.durationSeconds ? `<span class="pill" style="background:var(--brand-soft); color:var(--brand); border:none; padding:6px 16px">${Math.round(video.durationSeconds)} sec</span>` : ''}
+                    <span class="pill" style="background:var(--slate-100); color:var(--slate-600); border:none; padding:6px 16px">${video.fileSizeMB} MB</span>
+                    <span class="pill" style="background:var(--slate-100); color:var(--slate-600); border:none; padding:6px 16px">${escapeHtml(new Date(video.createdAt).toLocaleDateString())}</span>
                 </div>
             </div>
 
             <!-- Output File Info -->
-            <div class="highlight-box stack">
-                <span class="eyebrow">Output File</span>
-                <div class="info-list">
-                    <div class="info-row">
+            <div class="panel glass stack" style="justify-content:center; padding:32px">
+                <span class="eyebrow" style="background:var(--brand); color:white; border:none">Master File</span>
+                <div class="info-list" style="margin-top:16px">
+                    <div class="info-row" style="border-bottom:1px solid var(--glass-border)">
                         <strong>Filename</strong>
-                        <span class="muted">${escapeHtml(video.videoFilename)}</span>
-                    </div>
-                    <div class="info-row">
-                        <strong>Delivery page</strong>
-                        <span class="muted">Ready for watching and download</span>
-                    </div>
-                    <div class="info-row">
-                        <strong>Generator</strong>
-                        <span class="muted">${PROJECT_NAME}</span>
+                        <span class="muted" style="font-family:monospace; font-size:12px">${escapeHtml(video.videoFilename)}</span>
                     </div>
                 </div>
-                <div class="toolbar">
-                    <a class="button" href="${video.downloadUrl}">Download MP4</a>
-                    <a class="button secondary" href="/">Back to Portal</a>
+                <div class="toolbar" style="margin-top:24px; flex-direction:column; align-items:stretch">
+                    <a class="button" href="${video.downloadUrl}" style="height:56px">Download Master MP4</a>
+                    <a class="button secondary" href="/" style="height:56px">Return to Studio</a>
                 </div>
             </div>
         </div>
@@ -89,25 +81,25 @@ export function watchPage(req: Request, video: VideoRecord, cspNonce?: string): 
         <div class="stack">
             <!-- Delivery Summary -->
             <div class="panel">
-                <span class="eyebrow">Delivery Summary</span>
-                <h2>What this output contains</h2>
-                <div class="info-list">
-                    <div class="info-row">
+                <span class="eyebrow">Delivery Data</span>
+                <h2 style="margin-top:12px">Metadata</h2>
+                <div class="info-list" style="margin-top:16px">
+                    <div class="info-row" style="border-bottom:1px solid var(--line)">
                         <strong>Orientation</strong>
                         <span class="muted">${escapeHtml(video.orientation)}</span>
                     </div>
                     ${video.durationSeconds ? `
-                    <div class="info-row">
+                    <div class="info-row" style="border-bottom:1px solid var(--line)">
                         <strong>Duration</strong>
                         <span class="muted">${Math.round(video.durationSeconds)} seconds</span>
                     </div>` : ''}
-                    <div class="info-row">
+                    <div class="info-row" style="border-bottom:1px solid var(--line)">
                         <strong>File size</strong>
                         <span class="muted">${video.fileSizeMB} MB</span>
                     </div>
                     <div class="info-row">
-                        <strong>Created</strong>
-                        <span class="muted">${escapeHtml(new Date(video.createdAt).toLocaleString())}</span>
+                        <strong>Timestamp</strong>
+                        <span class="muted" style="font-size:13px">${escapeHtml(new Date(video.createdAt).toLocaleString())}</span>
                     </div>
                 </div>
             </div>

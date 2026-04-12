@@ -11,7 +11,7 @@ export function workspaceSection(
     <!-- ═══════════════════════════════════════════════════════════════════════
          UNIFIED VIDEO STUDIO (WORKSPACE)
          ═══════════════════════════════════════════════════════════════════════ -->
-    <section id="workspace" class="stack" style="margin-top:20px">
+    <section id="workspace" class="stack" style="margin-top:40px">
         <div class="panel-head">
             <div>
                 <span class="eyebrow">Studio</span>
@@ -25,21 +25,21 @@ export function workspaceSection(
             <div id="form-status" class="status" style="grid-column:1 / -1; margin-bottom:10px" hidden></div>
 
             <!-- Progress Indicator -->
-            <div style="grid-column:1 / -1; margin-bottom:20px; padding:16px; background:rgba(99,102,241,0.05); border-radius:8px; border:1px solid rgba(99,102,241,0.15)">
-                <div class="row" style="justify-content:space-around; align-items:center; flex-wrap:wrap; gap:12px">
-                    <div class="row" style="gap:8px; align-items:center">
-                        <div style="width:32px; height:32px; border-radius:50%; background:#6366f1; color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px">1</div>
-                        <span style="font-weight:600; font-size:14px">Script & Media</span>
+            <div style="grid-column:1 / -1; margin-bottom:32px; padding:24px; background:var(--brand-soft); border-radius:var(--radius-lg); border:1px solid rgba(79, 70, 229, 0.1)">
+                <div class="row" style="justify-content:space-around; align-items:center; flex-wrap:wrap; gap:24px">
+                    <div class="row" style="gap:12px; align-items:center">
+                        <div style="width:36px; height:36px; border-radius:50%; background:var(--brand); color:white; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px">1</div>
+                        <span style="font-weight:700; font-size:15px; letter-spacing:-0.01em">Script & Media</span>
                     </div>
-                    <div style="width:40px; height:2px; background:rgba(99,102,241,0.3)"></div>
-                    <div class="row" style="gap:8px; align-items:center">
-                        <div style="width:32px; height:32px; border-radius:50%; background:#6366f1; color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px">2</div>
-                        <span style="font-weight:600; font-size:14px">Voice & Layout</span>
+                    <div style="width:60px; height:2px; background:rgba(79, 70, 229, 0.2)"></div>
+                    <div class="row" style="gap:12px; align-items:center">
+                        <div style="width:36px; height:36px; border-radius:50%; background:var(--brand); color:white; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px">2</div>
+                        <span style="font-weight:700; font-size:15px; letter-spacing:-0.01em">Voice & Layout</span>
                     </div>
-                    <div style="width:40px; height:2px; background:rgba(99,102,241,0.3)"></div>
-                    <div class="row" style="gap:8px; align-items:center">
-                        <div style="width:32px; height:32px; border-radius:50%; background:#6366f1; color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px">3</div>
-                        <span style="font-weight:600; font-size:14px">Style & Render</span>
+                    <div style="width:60px; height:2px; background:rgba(79, 70, 229, 0.2)"></div>
+                    <div class="row" style="gap:12px; align-items:center">
+                        <div style="width:36px; height:36px; border-radius:50%; background:var(--brand); color:white; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px">3</div>
+                        <span style="font-weight:700; font-size:15px; letter-spacing:-0.01em">Style & Render</span>
                     </div>
                 </div>
             </div>
@@ -54,11 +54,11 @@ export function workspaceSection(
                     </div>
                 </div>
 
-                <div class="field" style="background:rgba(16,185,129,0.1); padding:12px; border-radius:8px; border:1px solid rgba(16,185,129,0.2)">
-                    <label for="ai-prompt" style="color:#10b981">✨ Generate script with AI</label>
-                    <div class="row" style="flex-wrap:nowrap; gap:8px">
+                <div class="field" style="background:var(--success-soft); padding:20px; border-radius:var(--radius-md); border:1px solid rgba(16, 185, 129, 0.15)">
+                    <label for="ai-prompt" style="color:var(--success); font-weight:800; font-size:13px; text-transform:uppercase; letter-spacing:0.05em">✨ Generate script with AI</label>
+                    <div class="row" style="flex-wrap:nowrap; gap:12px; margin-top:8px">
                         <input id="ai-prompt" placeholder="E.g. A short video about the history of space travel..." style="flex:1">
-                        <button type="button" id="generate-ai" class="secondary" style="padding:8px 16px; border-color:rgba(16,185,129,0.5); color:#10b981">Generate</button>
+                        <button type="button" id="generate-ai" class="secondary" style="color:var(--success); border-color:rgba(16, 185, 129, 0.3)">Generate</button>
                     </div>
                 </div>
 
@@ -87,13 +87,13 @@ export function workspaceSection(
                     <button type="button" id="fill-hello" class="secondary" style="font-size:13px;padding:8px 14px">Hello World</button>
                 </div>
 
-                <div class="stack" style="margin-top:20px; padding:16px; background:rgba(99,102,241,0.08); border-radius:8px; border:1px solid rgba(99,102,241,0.2)">
+                <div class="stack" style="margin-top:32px; padding:24px; background:var(--brand-soft); border-radius:var(--radius-lg); border:1px solid rgba(79, 70, 229, 0.1)">
                     <div class="row" style="justify-content:space-between;align-items:center">
                         <div>
-                            <strong style="font-size:14px; color:#6366f1">📁 Local Media Library</strong>
-                            <p class="field-help" style="margin:4px 0 0 0; font-size:11px">Add your own images/videos. Click tags to insert into script above.</p>
+                            <strong style="font-size:15px; color:var(--brand); letter-spacing:-0.01em">📁 Local Media Library</strong>
+                            <p class="field-help" style="margin:4px 0 0 0; font-size:12px">Add your own images/videos. Click tags to insert into script above.</p>
                         </div>
-                        <button type="button" id="add-media-btn" class="secondary" style="padding:8px 16px;font-size:13px; border-color:rgba(99,102,241,0.5)">+ Add Media</button>
+                        <button type="button" id="add-media-btn" class="secondary" style="padding:8px 20px; border-color:rgba(79, 70, 229, 0.3)">+ Add Media</button>
                     </div>
                     <div id="asset-gallery" class="asset-gallery"></div>
                 </div>
@@ -233,13 +233,13 @@ export function workspaceSection(
             </div>
 
             <!-- Submit Button (spans all columns) -->
-            <div class="toolbar" style="grid-column: 1 / -1; margin-top:30px; padding:24px; background:linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(168,85,247,0.08) 100%); border-radius:12px; border:2px solid rgba(99,102,241,0.2); justify-content:center; flex-direction:column; align-items:center; gap:16px">
-                <label class="toggle-row" for="enableReview" style="padding:12px 24px; border: 1px solid var(--accent); border-radius: 8px; background: rgba(var(--accent-rgb), 0.05); cursor:pointer">
-                    <input id="enableReview" type="checkbox">
-                    <div><strong>🔍 Enable Timeline Editor (Review Mode)</strong></div>
+            <div class="toolbar" style="grid-column: 1 / -1; margin-top:40px; padding:40px; background:var(--slate-900); border-radius:var(--radius-xl); justify-content:center; flex-direction:column; align-items:center; gap:24px; color:white; box-shadow:var(--shadow-xl)">
+                <label class="toggle-row" for="enableReview" style="padding:16px 32px; border: 1px solid var(--slate-700); border-radius: var(--radius-lg); background: var(--slate-800); cursor:pointer">
+                    <input id="enableReview" type="checkbox" style="width:20px; height:20px">
+                    <div style="margin-left:12px"><strong style="font-size:15px">🔍 Enable Timeline Editor (Review Mode)</strong></div>
                 </label>
-                <button type="submit" style="min-width:320px; padding:18px 40px; font-size:16px; font-weight:700; background:linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); box-shadow:0 4px 12px rgba(99,102,241,0.3)">🎬 Start Rendering Video</button>
-                <p class="muted" style="font-size:12px; text-align:center">Your video will be processed and you'll be redirected to the status page</p>
+                <button type="submit" style="min-width:380px; padding:20px 48px; font-size:18px; font-weight:800; background:var(--brand); border-radius:var(--radius-lg); box-shadow:0 20px 50px rgba(79, 70, 229, 0.4)">🎬 Start Rendering Video</button>
+                <p class="muted" style="font-size:13px; text-align:center; color:var(--slate-400)">Your video will be processed and you'll be redirected to the status page</p>
             </div>
         </form>
     </section>`;

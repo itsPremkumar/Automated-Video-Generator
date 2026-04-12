@@ -25,7 +25,7 @@ export const PROJECT_REPOSITORY_URL = 'https://github.com/itsPremkumar/Automated
 export const PROJECT_LICENSE_URL = 'https://opensource.org/licenses/MIT';
 export const DEFAULT_SITE_DESCRIPTION = 'Free and open-source AI text-to-video generator built with Remotion, Edge-TTS, stock footage APIs, and a local web portal for YouTube Shorts, TikTok videos, explainers, and marketing content.';
 export const DEFAULT_SITE_KEYWORDS = 'free video generator, open-source video generator, ai video generator, text to video, remotion video generator, self-hosted video generator, youtube shorts generator, tiktok video generator, mcp video automation';
-export const BRAND_COLOR = '#3b82f6';
+export const BRAND_COLOR = '#4F46E5';
 
 export const HELLO_WORLD_TITLE = 'Hello World - My First Video';
 

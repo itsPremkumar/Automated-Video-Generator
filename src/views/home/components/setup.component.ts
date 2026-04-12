@@ -5,27 +5,27 @@ export function setupSection(setupSummary: string): string {
          ═══════════════════════════════════════════════════════════════════════ -->
     <section class="layout-split">
         <!-- Setup Status Panel -->
-        <div class="panel tint stack">
+        <div class="panel glass stack">
             <div>
                 <span class="eyebrow">One-Time Setup</span>
                 <h2>Prepare this device once</h2>
                 <p class="muted">Most users only need a Pexels API key. Save it here and the browser portal becomes the main way to use the project.</p>
             </div>
-            <div class="row">${setupSummary}</div>
-            <div id="setup-readiness" class="status-board"></div>
+            <div class="row" style="margin:8px 0">${setupSummary}</div>
+            <div id="setup-readiness" class="status-board" style="gap:16px"></div>
         </div>
 
         <!-- Setup Form Panel -->
         <div class="panel">
             <form id="setup-form" class="form">
-                <div class="field-grid two-up">
+                <div class="field-grid two-up" style="gap:24px">
                     <!-- Pexels Key -->
                     <div class="field">
-                        <div class="row" style="justify-content:space-between">
+                        <div class="row" style="justify-content:space-between; margin-bottom:8px">
                             <label for="setup-pexels">Pexels API key</label>
-                            <div class="row">
+                            <div class="row" style="gap:8px">
                                 <span id="setup-pexels-status" class="status-chip warn">Checking...</span>
-                                <button type="button" id="setup-pexels-toggle" class="secondary" style="padding:4px 10px;font-size:12px;display:none" data-toggle="pexels">Change</button>
+                                <button type="button" id="setup-pexels-toggle" class="secondary" style="padding:4px 12px;font-size:11px;display:none" data-toggle="pexels">Change</button>
                             </div>
                         </div>
                         <input id="setup-pexels" type="password" placeholder="Recommended for stock video search">
@@ -33,12 +33,12 @@ export function setupSection(setupSummary: string): string {
                     </div>
 
                     <!-- Pixabay Key -->
-                    <div class="field">
-                        <div class="row" style="justify-content:space-between">
+                    <div class="field" style="opacity: 0.8">
+                        <div class="row" style="justify-content:space-between; margin-bottom:8px">
                             <label for="setup-pixabay">Pixabay API key</label>
-                            <div class="row">
+                            <div class="row" style="gap:8px">
                                 <span id="setup-pixabay-status" class="status-chip warn">Checking...</span>
-                                <button type="button" id="setup-pixabay-toggle" class="secondary" style="padding:4px 10px;font-size:12px;display:none" data-toggle="pixabay">Change</button>
+                                <button type="button" id="setup-pixabay-toggle" class="secondary" style="padding:4px 12px;font-size:11px;display:none" data-toggle="pixabay">Change</button>
                             </div>
                         </div>
                         <input id="setup-pixabay" type="password" placeholder="Optional backup provider">
@@ -46,12 +46,12 @@ export function setupSection(setupSummary: string): string {
                     </div>
 
                     <!-- Gemini Key -->
-                    <div class="field">
-                        <div class="row" style="justify-content:space-between">
+                    <div class="field" style="opacity: 0.8">
+                        <div class="row" style="justify-content:space-between; margin-bottom:8px">
                             <label for="setup-gemini">Gemini API key</label>
-                            <div class="row">
+                            <div class="row" style="gap:8px">
                                 <span id="setup-gemini-status" class="status-chip warn">Checking...</span>
-                                <button type="button" id="setup-gemini-toggle" class="secondary" style="padding:4px 10px;font-size:12px;display:none" data-toggle="gemini">Change</button>
+                                <button type="button" id="setup-gemini-toggle" class="secondary" style="padding:4px 12px;font-size:11px;display:none" data-toggle="gemini">Change</button>
                             </div>
                         </div>
                         <input id="setup-gemini" type="password" placeholder="Optional AI helper">

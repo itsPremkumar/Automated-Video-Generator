@@ -12,98 +12,231 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
 
     const styles = `
     <style>
-        .job-progress-shell { display:grid; gap:10px; }
+        .job-progress-shell { display:grid; gap:12px; }
         .job-progress-meta { display:flex; justify-content:space-between; align-items:center; font-weight:700; color:var(--muted); font-size:14px; }
         .job-progress-meta strong { color: var(--ink); }
         .job-progress-label { color: var(--brand); font-weight: 800; }
-        .studio-header { margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
-        .studio-header h2 { margin: 0; font-size: 2.2rem; }
         
-        #timeline-canvas { display: grid; gap: 24px; padding-bottom: 40px; }
+        .studio-header { 
+            margin-bottom: 40px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-end; 
+            padding: 0 8px;
+        }
+        .studio-header h2 { margin: 0; font-size: 2.5rem; letter-spacing: -0.04em; }
+        
+        #timeline-canvas { display: grid; gap: 32px; padding-bottom: 60px; }
 
         .scene-card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
+            background: var(--surface);
             border: 1px solid var(--line);
-            border-radius: var(--radius-lg);
-            padding: 24px;
+            border-radius: var(--radius-xl);
+            padding: 32px;
             display: grid;
-            grid-template-columns: 40px 1fr;
-            gap: 20px;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.04);
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            grid-template-columns: 48px 1fr;
+            gap: 24px;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
         }
-        .scene-card:hover { border-color: var(--brand); transform: translateY(-2px); box-shadow: 0 20px 50px rgba(202,106,43,0.08); }
+        .scene-card:hover { 
+            border-color: var(--brand); 
+            transform: translateY(-4px); 
+            box-shadow: var(--shadow-xl); 
+        }
         .scene-card.dragging { opacity: 0.2; border: 2px dashed var(--brand); }
         .scene-card.updating { opacity: 0.5; pointer-events: none; }
 
         .drag-handle { 
-            cursor: grab; display: flex; align-items: center; justify-content: center; 
-            color: var(--line-strong); font-size: 22px; 
+            cursor: grab; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: var(--line-strong); 
+            font-size: 24px;
+            transition: color 0.2s;
         }
+        .scene-card:hover .drag-handle { color: var(--brand); }
 
         /* 2-Column Scene Body */
-        .scene-body { display: grid; grid-template-columns: 320px 1fr; gap: 30px; }
+        .scene-body { display: grid; grid-template-columns: 360px 1fr; gap: 40px; }
         
         /* Media Section (Left) */
-        .media-focus { display: flex; flex-direction: column; gap: 12px; }
+        .media-focus { display: flex; flex-direction: column; gap: 16px; }
         .scene-thumb-container {
-            width: 100%; aspect-ratio: 16/9; border-radius: 14px; overflow: hidden;
-            position: relative; border: 1px solid var(--line); background: #eee;
+            width: 100%; 
+            aspect-ratio: 16/9; 
+            border-radius: var(--radius-lg); 
+            overflow: hidden;
+            position: relative; 
+            border: 1px solid var(--line); 
+            background: var(--surface-soft);
+            box-shadow: var(--shadow-sm);
         }
         .scene-thumb-container img, .scene-thumb-container video { width: 100%; height: 100%; object-fit: cover; }
         .thumb-overlay { 
-            position: absolute; inset: 0; background: rgba(0,0,0,0.3); 
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0; transition: opacity 0.2s; cursor: pointer;
+            position: absolute; 
+            inset: 0; 
+            background: rgba(0,0,0,0.4); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            opacity: 0; 
+            transition: opacity 0.3s; 
+            cursor: pointer;
+            backdrop-filter: blur(4px);
         }
         .scene-thumb-container:hover .thumb-overlay { opacity: 1; }
 
         /* Content Section (Right) */
-        .content-focus { display: flex; flex-direction: column; gap: 16px; }
-        .field-group { display: flex; flex-direction: column; gap: 6px; }
-        .field-group label { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--brand); letter-spacing: 0.05em; }
+        .content-focus { display: flex; flex-direction: column; gap: 24px; }
+        .field-group { display: flex; flex-direction: column; gap: 8px; }
+        .field-group label { 
+            font-size: 11px; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            color: var(--brand); 
+            letter-spacing: 0.1em; 
+        }
         
         .scene-input-large { 
-            min-height: 100px; padding: 14px; border-radius: 12px; font-size: 15px; line-height:1.5;
-            background: #fff; border: 1px solid var(--line); color: var(--ink);
+            min-height: 120px; 
+            padding: 16px; 
+            border-radius: var(--radius-md); 
+            font-size: 15px; 
+            line-height: 1.6;
+            background: var(--surface); 
+            border: 1px solid var(--line); 
+            color: var(--ink);
+            transition: all 0.2s;
+        }
+        .scene-input-large:focus {
+            border-color: var(--brand);
+            box-shadow: 0 0 0 4px var(--brand-soft);
+            outline: none;
         }
 
         /* Settings Bar (Bottom) */
         .settings-bar {
-            grid-column: 1 / -1; margin-top: 10px; padding-top: 20px;
-            border-top: 1px solid var(--line); display: grid; 
-            grid-template-columns: 1fr 1fr 150px auto; gap: 30px; align-items: center;
+            grid-column: 1 / -1; 
+            margin-top: 20px; 
+            padding-top: 32px;
+            border-top: 1px solid var(--line); 
+            display: grid; 
+            grid-template-columns: 1.2fr 1.2fr 180px auto; 
+            gap: 40px; 
+            align-items: start;
         }
 
-        .voice-slider-group { display: flex; flex-direction: column; gap: 8px; }
-        .voice-slider-group label { font-size: 11px; font-weight: 700; color: var(--muted); display: flex; justify-content: space-between; }
+        .voice-slider-group { display: flex; flex-direction: column; gap: 10px; }
+        .voice-slider-group label { 
+            font-size: 12px; 
+            font-weight: 700; 
+            color: var(--muted); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+        }
+        .voice-slider-group label span {
+            background: var(--brand-soft);
+            color: var(--brand);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+        }
         
         /* Interaction Buttons */
-        .scene-actions { display: flex; gap: 12px; align-items: center; }
+        .scene-actions { display: flex; gap: 16px; align-items: center; }
         .action-icon-btn { 
-            background: #fff; border: 1px solid var(--line); border-radius: 10px; 
-            width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; 
-            cursor: pointer; transition: all 0.2s;
+            background: var(--surface); 
+            border: 1px solid var(--line); 
+            border-radius: var(--radius-md); 
+            width: 48px; 
+            height: 48px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            transition: all 0.2s;
+            font-size: 20px;
         }
-        .action-icon-btn:hover { border-color: var(--brand); color: var(--brand); background: var(--surface-soft); }
-        .action-icon-btn.delete:hover { border-color: #e53e3e; color: #e53e3e; background: #fff5f5; }
+        .action-icon-btn:hover { 
+            border-color: var(--brand); 
+            color: var(--brand); 
+            background: var(--brand-soft);
+            transform: translateY(-1px);
+        }
+        .action-icon-btn.delete:hover { 
+            border-color: var(--error); 
+            color: var(--error); 
+            background: rgba(239, 68, 68, 0.1); 
+        }
 
-        .btn-premium {
-            padding: 12px 24px; border-radius: 12px; font-weight: 700; border: 0;
-            cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
-            background: linear-gradient(135deg, var(--brand), var(--brand-strong)); color: #white;
+        .save-btn {
+            background: var(--brand);
+            color: white;
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: var(--shadow);
+        }
+        .save-btn:hover {
+            background: var(--brand-strong);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
         }
 
         /* Modal Redesign */
         #media-preview, #ai-modal, #gallery-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(23,32,51,0.85); backdrop-filter: blur(10px); 
-            z-index: 5000; display: none; align-items: center; justify-content: center; padding: 40px;
+            background: rgba(2, 6, 23, 0.85); 
+            backdrop-filter: blur(12px); 
+            z-index: 5000; 
+            display: none; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 40px;
         }
-        .preview-box { background: #000; border-radius: 20px; overflow: hidden; max-width: 90vw; }
-        .modal-body { background: #fff; padding: 30px; border-radius: 20px; width: 100%; max-width: 500px; position: relative; }
+        .preview-box { 
+            background: #000; 
+            border-radius: var(--radius-xl); 
+            overflow: hidden; 
+            max-width: 90vw; 
+            box-shadow: var(--shadow-xl);
+        }
+        .modal-body { 
+            background: var(--surface); 
+            padding: 40px; 
+            border-radius: var(--radius-xl); 
+            width: 100%; 
+            max-width: 550px; 
+            position: relative; 
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--line);
+        }
+        .close-btn {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid var(--line);
+            background: var(--surface-soft);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .close-btn:hover {
+            background: var(--line);
+            transform: rotate(90deg);
+        }
     </style>
     `;
 
@@ -147,19 +280,19 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
         </div>
     </section>
 
-    <section id="editor-section" class="panel" hidden style="background: linear-gradient(180deg, #fffcf8, #fff); border: 2px solid var(--brand); padding: 32px;">
+    <section id="editor-section" class="panel glass" hidden style="border: 2px solid var(--brand); padding: 48px; margin-top: 40px">
         <div class="studio-header">
             <div>
-                <span class="eyebrow" style="background:#fff7ee; color:var(--brand);">Video Production Studio</span>
-                <h2>Planning & Timeline</h2>
+                <span class="eyebrow">Video Production Studio</span>
+                <h2 style="margin-top:12px">Planning & Timeline</h2>
                 <p class="muted">Edit the narrator's script, swap visuals, or adjust the voice personality.</p>
             </div>
-            <div class="row">
-                <div class="metric-card" style="padding:10px 20px; border-radius:12px; background:white;">
-                    <span class="muted" style="font-size:11px">ESTIMATED LENGTH</span>
-                    <strong id="total-duration-display" style="font-size:18px">0s</strong>
+            <div class="row" style="gap:24px">
+                <div class="metric-card" style="padding:12px 24px; border-radius:var(--radius-md); background:var(--surface);">
+                    <span class="muted" style="font-size:11px; text-transform:uppercase; letter-spacing:0.05em">ESTIMATED LENGTH</span>
+                    <strong id="total-duration-display" style="font-size:22px; margin:0">0s</strong>
                 </div>
-                <button id="confirm-render" class="button accent" style="height:56px; padding: 0 32px;">Confirm & Finalize Video</button>
+                <button id="confirm-render" class="button" style="height:64px; padding: 0 40px; font-size:16px; font-weight:800; border-radius:var(--radius-lg)">Confirm & Finalize Video</button>
             </div>
         </div>
 
