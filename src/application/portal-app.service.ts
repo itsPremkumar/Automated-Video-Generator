@@ -8,11 +8,13 @@ export class PortalAppService {
         videos: ReturnType<typeof mediaAppService.listPublishedVideoRecords>;
         setupStatus: SetupStatus;
         musicFiles: string[];
+        voiceFiles: string[];
     } {
         return {
             videos: mediaAppService.listPublishedVideoRecords(req),
             setupStatus: setupService.getSetupStatus(),
             musicFiles: mediaAppService.listMusicFiles(),
+            voiceFiles: mediaAppService.listVoiceFiles(),
         };
     }
 

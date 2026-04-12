@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import { getJobData, getVideo, listMusicFiles, listVideos, publicVideo } from '../services/video.service';
+import { getJobData, getVideo, listMusicFiles, listVoiceFiles, listVideos, publicVideo } from '../services/video.service';
 import { JobStatus } from '../shared/contracts/job.contract';
 import { NotFoundError } from '../lib/errors';
 
@@ -43,6 +43,10 @@ export class MediaAppService {
 
     listMusicFiles() {
         return listMusicFiles();
+    }
+
+    listVoiceFiles() {
+        return listVoiceFiles();
     }
 }
 

@@ -5,6 +5,7 @@ export function workspaceSection(
     defaultTitle: string,
     defaultScript: string,
     musicOptions: string,
+    voiceOptions: string,
     languageOptions: string
 ): string {
     return `
@@ -146,8 +147,7 @@ export function workspaceSection(
                             <label for="personalAudio">Audio Recording</label>
                             <div class="row" style="flex-wrap:nowrap">
                                 <select id="personalAudio" style="font-size:13px">
-                                    <option value="">Select an audio file</option>
-                                    ${musicOptions}
+                                    ${voiceOptions}
                                 </select>
                                 <button type="button" id="browse-personal-audio-btn" class="secondary" style="padding:8px 12px;font-size:13px">Browse</button>
                             </div>
@@ -171,7 +171,6 @@ export function workspaceSection(
                         <label for="backgroundMusic">Background music</label>
                         <div class="row" style="flex-wrap:nowrap">
                             <select id="backgroundMusic" style="font-size:13px">
-                                <option value="">No music</option>
                                 ${musicOptions}
                             </select>
                             <button type="button" id="browse-music-btn" class="secondary" style="padding:8px 12px;font-size:13px">Browse</button>

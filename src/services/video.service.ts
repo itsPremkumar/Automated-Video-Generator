@@ -110,10 +110,27 @@ export function getVideo(publicId: string, req: Request): VideoRecord | null {
 export function listMusicFiles(): string[] {
     const musicDir = resolveProjectPath('input', 'music');
     if (!fs.existsSync(musicDir)) {
+        fs.mkdirSync(musicDir, { recursive: true });
         return [];
     }
 
-    return fs.readdirSync(musicDir).filter((name) => name.toLowerCase().endsWith('.mp3'));
+    return fs.readdirSync(musicDir).filter((name) => {
+        const ext = name.toLowerCase().split('.').pop();
+        return ext === 'mp3' || ext === 'wav' || ext === 'm4a';
+    });
+}
+
+export function listVoiceFiles(): string[] {
+    const voiceDir = resolveProjectPath('input', 'voice');
+    if (!fs.existsSync(voiceDir)) {
+        fs.mkdirSync(voiceDir, { recursive: true });
+        return [];
+    }
+
+    return fs.readdirSync(voiceDir).filter((name) => {
+        const ext = name.toLowerCase().split('.').pop();
+        return ext === 'mp3' || ext === 'wav' || ext === 'm4a';
+    });
 }
 
 export function listVideos(req: Request): VideoRecord[] {

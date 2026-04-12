@@ -9,8 +9,8 @@ import { absoluteUrl } from '../../shared/http/public-url';
 import { resolveProjectPath } from '../../shared/runtime/paths';
 
 export const renderHome = (req: Request, res: Response) => {
-    const { videos, setupStatus, musicFiles } = portalAppService.getHomePageData(req);
-    res.type('html').send(homePage(req, videos, setupStatus, musicFiles, res.locals.cspNonce));
+    const { videos, setupStatus, musicFiles, voiceFiles } = portalAppService.getHomePageData(req);
+    res.type('html').send(homePage(req, videos, setupStatus, musicFiles, voiceFiles, res.locals.cspNonce));
 };
 
 export const renderWatch = (req: Request, res: Response) => {

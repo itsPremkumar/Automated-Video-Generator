@@ -16,6 +16,7 @@ import {
     buildVideoCards,
     buildRecentCards,
     buildMusicOptions,
+    buildVoiceOptions,
     buildLanguageOptions,
     buildSetupSummary
 } from './helpers';
@@ -29,7 +30,7 @@ import { browserModalComponent } from './components/browser-modal.component';
 
 import { assembleHomeScript } from './scripts/index';
 
-export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus, musicFiles: string[], cspNonce?: string): string {
+export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus, musicFiles: string[], voiceFiles: string[], cspNonce?: string): string {
     const defaultOgImage = absoluteUrl(req, '/og-image.svg');
     const voicesList = AVAILABLE_VOICES as Record<string, { male: string[]; female: string[] }>;
     const totalVoicePresets = Object.values(voicesList).reduce((count, group) => count + group.male.length + group.female.length, 0);
@@ -40,6 +41,7 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
     const cards = buildVideoCards(videos);
     const recentCards = buildRecentCards(videos);
     const musicOptions = buildMusicOptions(musicFiles);
+    const voiceOptions = buildVoiceOptions(voiceFiles);
     const languageOptions = buildLanguageOptions(voicesList);
     const voicesJson = JSON.stringify(
         Object.fromEntries(
@@ -58,7 +60,7 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
     const body = `
         ${heroSection(videos.length, totalVoicePresets, setupSummary)}
         ${setupSection(setupSummary)}
-        ${workspaceSection(defaultTitle, defaultScript, musicOptions, languageOptions)}
+        ${workspaceSection(defaultTitle, defaultScript, musicOptions, voiceOptions, languageOptions)}
         ${tipsSection(recentCards)}
         ${librarySection(cards)}
         ${browserModalComponent()}

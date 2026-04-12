@@ -54,10 +54,27 @@ export function buildRecentCards(videos: VideoRecord[]): string {
 // ─── Helper: Build select options ──────────────────────────────────────────────
 
 export function buildMusicOptions(musicFiles: string[]): string {
+    const options = ['<option value="">No music</option>'];
     if (musicFiles.length === 0) {
-        return '<option value="">No music found in input/music</option>';
+        options.push('<option value="" disabled>No music found in input/music</option>');
+        return options.join('');
     }
-    return musicFiles.map((file) => `<option value="${escapeHtml(file)}">${escapeHtml(file)}</option>`).join('');
+    musicFiles.forEach(file => {
+        options.push(`<option value="${escapeHtml(file)}">${escapeHtml(file)}</option>`);
+    });
+    return options.join('');
+}
+
+export function buildVoiceOptions(voiceFiles: string[]): string {
+    const options = ['<option value="">Select an audio file</option>'];
+    if (voiceFiles.length === 0) {
+        options.push('<option value="" disabled>No recordings found in input/voice</option>');
+        return options.join('');
+    }
+    voiceFiles.forEach(file => {
+        options.push(`<option value="${escapeHtml(file)}">${escapeHtml(file)}</option>`);
+    });
+    return options.join('');
 }
 
 export function buildLanguageOptions(voicesList: Record<string, { male: string[]; female: string[] }>): string {
