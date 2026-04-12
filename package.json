@@ -48,7 +48,7 @@
         "automated-video-generator": "bin/mcp.js"
     },
     "scripts": {
-        "dev": "tsx src/server.ts",
+        "dev": "tsx watch src/server.ts",
         "build": "npm run generate",
         "generate": "tsx src/cli.ts",
         "resume": "tsx src/cli.ts --resume",
