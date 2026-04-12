@@ -558,7 +558,7 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
                 '<div class="drag-handle">≡</div>' +
                 '<div class="stack">' +
                     '<div class="row" style="justify-content:space-between; align-items:center;">' +
-                        '<span class="eyebrow" style="background:#fff; border-color:var(--line);">SCENE #' + (idx + 1) + '</span>' +
+                        '<span class="eyebrow" style="background:var(--surface); border-color:var(--line);">SCENE #' + (idx + 1) + '</span>' +
                         '<button class="button ghost small trigger-ai" data-idx="' + idx + '">✨ AI Assistant</button>' +
                     '</div>' +
                     

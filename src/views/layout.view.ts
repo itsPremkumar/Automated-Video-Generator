@@ -89,6 +89,16 @@ export function layout(title: string, body: string, options: HtmlOptions = {}, s
     ${canonical}
     ${jsonLd}
 
+    <!-- Theme Initialization Script -->
+    <script${nonceAttribute}>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            const theme = savedTheme || systemTheme;
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+
 <style>
 /* ═══════════════════════════════════════════════════════════════════════════
    DESIGN TOKENS
@@ -151,8 +161,12 @@ export function layout(title: string, body: string, options: HtmlOptions = {}, s
     --line-strong: var(--slate-700);
     --ink: var(--slate-100);
     --muted: var(--slate-400);
-    --glass-bg: rgba(15, 23, 42, 0.8);
-    --glass-border: rgba(51, 65, 85, 0.5);
+    --glass-bg: rgba(2, 6, 23, 0.8);
+    --glass-border: rgba(30, 41, 59, 0.5);
+    
+    /* Dark mode specific radial gradients */
+    --radial-1: rgba(79, 70, 229, 0.15);
+    --radial-2: rgba(16, 185, 129, 0.1);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -174,8 +188,8 @@ body {
     color: var(--ink);
     background-color: var(--shell);
     background-image: 
-        radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.05) 0px, transparent 50%),
-        radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+        radial-gradient(at 0% 0%, var(--radial-1, rgba(79, 70, 229, 0.05)) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, var(--radial-2, rgba(16, 185, 129, 0.05)) 0px, transparent 50%);
     min-height: 100vh;
 }
 
@@ -845,12 +859,30 @@ textarea { min-height: 250px; resize: vertical; }
             <a href="https://github.com/itsPremkumar/Automated-Video-Generator" target="_blank" class="nav-link" style="display:flex;align-items:center;">
                 GitHub <span class="nav-badge">v${APP_VERSION}</span>
             </a>
+            <button id="theme-toggle" class="button secondary small" style="padding: 8px 12px; border-radius: 999px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 18px;" aria-label="Toggle Theme">
+                <span class="theme-icon">🌓</span>
+            </button>
         </div>
     </div>
 </nav>
 
 <!-- ─── Page Content ─── -->
 <main>${body}</main>
+
+<!-- Global Theme Controller -->
+<script${nonceAttribute}>
+    (function() {
+        const toggle = document.getElementById('theme-toggle');
+        if (!toggle) return;
+
+        toggle.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme');
+            const target = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', target);
+            localStorage.setItem('theme', target);
+        });
+    })();
+</script>
 
 ${script ? `<script${nonceAttribute}>${script}</script>` : ''}
 </body>

@@ -11,7 +11,7 @@ export function setupSection(setupSummary: string): string {
                 <h2>Prepare this device once</h2>
                 <p class="muted">Most users only need a Pexels API key. Save it here and the browser portal becomes the main way to use the project.</p>
             </div>
-            <div class="row" style="margin:8px 0">${setupSummary}</div>
+            <div class="row" style="margin:8px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:12px 0">${setupSummary}</div>
             <div id="setup-readiness" class="status-board" style="gap:16px"></div>
         </div>
 

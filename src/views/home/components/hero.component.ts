@@ -37,7 +37,7 @@ export function heroSection(totalVideos: number, totalVoices: number, setupSumma
 
             <!-- Simple Flow Sidebar -->
             <div class="panel glass stack" style="justify-content:center;">
-                <span class="eyebrow" style="background:var(--brand); color:white; border:none">Simple Flow</span>
+                <span class="eyebrow" style="background:var(--brand); color:#fff; border:none">Simple Flow</span>
                 <h2 style="margin-top:12px">What users do here</h2>
                 <div class="row" style="margin-bottom:12px">${setupSummary}</div>
                 <ul class="checklist" style="list-style:none; padding:0">

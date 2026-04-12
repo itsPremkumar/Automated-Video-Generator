@@ -25,20 +25,20 @@ export function workspaceSection(
             <div id="form-status" class="status" style="grid-column:1 / -1; margin-bottom:10px" hidden></div>
 
             <!-- Progress Indicator -->
-            <div style="grid-column:1 / -1; margin-bottom:32px; padding:24px; background:var(--brand-soft); border-radius:var(--radius-lg); border:1px solid rgba(79, 70, 229, 0.1)">
+            <div style="grid-column:1 / -1; margin-bottom:32px; padding:24px; background:var(--brand-soft); border-radius:var(--radius-lg); border:1px solid var(--glass-border)">
                 <div class="row" style="justify-content:space-around; align-items:center; flex-wrap:wrap; gap:24px">
                     <div class="row" style="gap:12px; align-items:center">
-                        <div style="width:36px; height:36px; border-radius:50%; background:var(--brand); color:white; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px">1</div>
+                        <div style="width:36px; height:36px; border-radius:50%; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px">1</div>
                         <span style="font-weight:700; font-size:15px; letter-spacing:-0.01em">Script & Media</span>
                     </div>
-                    <div style="width:60px; height:2px; background:rgba(79, 70, 229, 0.2)"></div>
+                    <div style="width:60px; height:2px; background:var(--line)"></div>
                     <div class="row" style="gap:12px; align-items:center">
-                        <div style="width:36px; height:36px; border-radius:50%; background:var(--brand); color:white; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px">2</div>
+                        <div style="width:36px; height:36px; border-radius:50%; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px">2</div>
                         <span style="font-weight:700; font-size:15px; letter-spacing:-0.01em">Voice & Layout</span>
                     </div>
-                    <div style="width:60px; height:2px; background:rgba(79, 70, 229, 0.2)"></div>
+                    <div style="width:60px; height:2px; background:var(--line)"></div>
                     <div class="row" style="gap:12px; align-items:center">
-                        <div style="width:36px; height:36px; border-radius:50%; background:var(--brand); color:white; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px">3</div>
+                        <div style="width:36px; height:36px; border-radius:50%; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px">3</div>
                         <span style="font-weight:700; font-size:15px; letter-spacing:-0.01em">Style & Render</span>
                     </div>
                 </div>
@@ -54,11 +54,11 @@ export function workspaceSection(
                     </div>
                 </div>
 
-                <div class="field" style="background:var(--success-soft); padding:20px; border-radius:var(--radius-md); border:1px solid rgba(16, 185, 129, 0.15)">
+                <div class="field" style="background:var(--success-soft); padding:20px; border-radius:var(--radius-md); border:1px solid var(--success-soft)">
                     <label for="ai-prompt" style="color:var(--success); font-weight:800; font-size:13px; text-transform:uppercase; letter-spacing:0.05em">✨ Generate script with AI</label>
                     <div class="row" style="flex-wrap:nowrap; gap:12px; margin-top:8px">
                         <input id="ai-prompt" placeholder="E.g. A short video about the history of space travel..." style="flex:1">
-                        <button type="button" id="generate-ai" class="secondary" style="color:var(--success); border-color:rgba(16, 185, 129, 0.3)">Generate</button>
+                        <button type="button" id="generate-ai" class="secondary" style="color:var(--success); border-color:var(--success-soft)">Generate</button>
                     </div>
                 </div>
 
@@ -87,13 +87,13 @@ export function workspaceSection(
                     <button type="button" id="fill-hello" class="secondary" style="font-size:13px;padding:8px 14px">Hello World</button>
                 </div>
 
-                <div class="stack" style="margin-top:32px; padding:24px; background:var(--brand-soft); border-radius:var(--radius-lg); border:1px solid rgba(79, 70, 229, 0.1)">
+                <div class="stack" style="margin-top:32px; padding:24px; background:var(--brand-soft); border-radius:var(--radius-lg); border:1px solid var(--glass-border)">
                     <div class="row" style="justify-content:space-between;align-items:center">
                         <div>
                             <strong style="font-size:15px; color:var(--brand); letter-spacing:-0.01em">📁 Local Media Library</strong>
                             <p class="field-help" style="margin:4px 0 0 0; font-size:12px">Add your own images/videos. Click tags to insert into script above.</p>
                         </div>
-                        <button type="button" id="add-media-btn" class="secondary" style="padding:8px 20px; border-color:rgba(79, 70, 229, 0.3)">+ Add Media</button>
+                        <button type="button" id="add-media-btn" class="secondary" style="padding:8px 20px; border-color:var(--brand-soft)">+ Add Media</button>
                     </div>
                     <div id="asset-gallery" class="asset-gallery"></div>
                 </div>

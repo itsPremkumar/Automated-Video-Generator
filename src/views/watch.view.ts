@@ -44,14 +44,14 @@ export function watchPage(req: Request, video: VideoRecord, cspNonce?: string): 
                 <div class="row" style="margin-top:20px; gap:12px">
                     <span class="pill" style="background:var(--brand-soft); color:var(--brand); border:none; padding:6px 16px">${escapeHtml(video.orientation)}</span>
                     ${video.durationSeconds ? `<span class="pill" style="background:var(--brand-soft); color:var(--brand); border:none; padding:6px 16px">${Math.round(video.durationSeconds)} sec</span>` : ''}
-                    <span class="pill" style="background:var(--slate-100); color:var(--slate-600); border:none; padding:6px 16px">${video.fileSizeMB} MB</span>
-                    <span class="pill" style="background:var(--slate-100); color:var(--slate-600); border:none; padding:6px 16px">${escapeHtml(new Date(video.createdAt).toLocaleDateString())}</span>
+                    <span class="pill" style="background:var(--slate-800); color:var(--slate-100); border:none; padding:6px 16px">${video.fileSizeMB} MB</span>
+                    <span class="pill" style="background:var(--slate-800); color:var(--slate-100); border:none; padding:6px 16px">${escapeHtml(new Date(video.createdAt).toLocaleDateString())}</span>
                 </div>
             </div>
 
             <!-- Output File Info -->
             <div class="panel glass stack" style="justify-content:center; padding:32px">
-                <span class="eyebrow" style="background:var(--brand); color:white; border:none">Master File</span>
+                <span class="eyebrow" style="background:var(--brand); color:#fff; border:none">Master File</span>
                 <div class="info-list" style="margin-top:16px">
                     <div class="info-row" style="border-bottom:1px solid var(--glass-border)">
                         <strong>Filename</strong>
