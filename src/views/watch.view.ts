@@ -31,36 +31,48 @@ export function watchPage(req: Request, video: VideoRecord, cspNonce?: string): 
     <!-- ═══════════════════════════════════════════════════════════════════════
          HERO: Video Summary
          ═══════════════════════════════════════════════════════════════════════ -->
-    <section class="hero-surface" style="padding:48px">
+    <section class="hero-surface" style="padding:56px">
         <div class="hero-grid">
-            <div class="stack">
-                <span class="eyebrow">Video Delivery</span>
-                <div>
-                    <h1 style="margin-top:12px">${escapeHtml(video.title)}</h1>
-                    <p class="lead small" style="margin-top:12px">
+            <div class="stack" style="gap:24px">
+                <div class="stack" style="gap:12px">
+                    <span class="eyebrow"><i data-lucide="check-circle" style="width:12px;height:12px;margin-right:2px"></i> Video Generation Complete</span>
+                    <h1 style="margin:4px 0">${escapeHtml(video.title)}</h1>
+                    <p class="lead" style="color:var(--muted)">
                         Preview your production in the high-fidelity player, then download the master file or return to create more versions.
                     </p>
                 </div>
-                <div class="row" style="margin-top:20px; gap:12px">
-                    <span class="pill" style="background:var(--brand-soft); color:var(--brand); border:none; padding:6px 16px">${escapeHtml(video.orientation)}</span>
-                    ${video.durationSeconds ? `<span class="pill" style="background:var(--brand-soft); color:var(--brand); border:none; padding:6px 16px">${Math.round(video.durationSeconds)} sec</span>` : ''}
-                    <span class="pill" style="background:var(--slate-800); color:var(--slate-100); border:none; padding:6px 16px">${video.fileSizeMB} MB</span>
-                    <span class="pill" style="background:var(--slate-800); color:var(--slate-100); border:none; padding:6px 16px">${escapeHtml(new Date(video.createdAt).toLocaleDateString())}</span>
+                <div class="row" style="gap:12px">
+                    <span class="pill" style="background:var(--brand-soft); color:var(--brand); border:1px solid hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.1); padding:8px 20px; font-weight:700">
+                        <i data-lucide="layers" style="width:14px;height:14px;margin-right:6px;vertical-align:middle"></i>${escapeHtml(video.orientation)}
+                    </span>
+                    ${video.durationSeconds ? `<span class="pill" style="background:var(--success-soft); color:var(--success); border:1px solid hsla(142, 70%, 45%, 0.1); padding:8px 20px; font-weight:700">
+                        <i data-lucide="clock" style="width:14px;height:14px;margin-right:6px;vertical-align:middle"></i>${Math.round(video.durationSeconds)} sec
+                    </span>` : ''}
+                    <span class="pill" style="background:var(--surface-soft); color:var(--ink); border:1px solid var(--line); padding:8px 20px; font-weight:700">
+                        <i data-lucide="hard-drive" style="width:14px;height:14px;margin-right:6px;vertical-align:middle"></i>${video.fileSizeMB} MB
+                    </span>
+                    <span class="pill" style="background:var(--surface-soft); color:var(--ink); border:1px solid var(--line); padding:8px 20px; font-weight:700">
+                        <i data-lucide="calendar" style="width:14px;height:14px;margin-right:6px;vertical-align:middle"></i>${escapeHtml(new Date(video.createdAt).toLocaleDateString())}
+                    </span>
                 </div>
             </div>
 
             <!-- Output File Info -->
-            <div class="panel glass stack" style="justify-content:center; padding:32px">
-                <span class="eyebrow" style="background:var(--brand); color:#fff; border:none">Master File</span>
-                <div class="info-list" style="margin-top:16px">
-                    <div class="info-row" style="border-bottom:1px solid var(--glass-border)">
-                        <strong>Filename</strong>
-                        <span class="muted" style="font-family:monospace; font-size:12px">${escapeHtml(video.videoFilename)}</span>
+            <div class="panel glass stack" style="justify-content:center; padding:40px; border-radius:var(--radius-xl); box-shadow:var(--shadow-lg)">
+                <span class="eyebrow" style="background:var(--brand); color:#fff; border:none; padding:4px 12px">Master Production</span>
+                <div class="info-list" style="margin-top:20px">
+                    <div class="info-row" style="border-bottom:1px solid var(--glass-border); padding:12px 0">
+                        <strong style="font-family:'Outfit'; font-size:14px">Filename</strong>
+                        <span class="muted" style="font-family:monospace; font-size:12px; opacity:0.8">${escapeHtml(video.videoFilename)}</span>
                     </div>
                 </div>
-                <div class="toolbar" style="margin-top:24px; flex-direction:column; align-items:stretch">
-                    <a class="button" href="${video.downloadUrl}" style="height:56px">Download Master MP4</a>
-                    <a class="button secondary" href="/" style="height:56px">Return to Studio</a>
+                <div class="toolbar" style="margin-top:28px; flex-direction:column; align-items:stretch; gap:12px">
+                    <a class="button" href="${video.downloadUrl}" style="height:56px; gap:12px">
+                        <i data-lucide="download-cloud" style="width:20px;height:20px"></i> Download Master MP4
+                    </a>
+                    <a class="button secondary" href="/" style="height:56px; gap:12px">
+                        <i data-lucide="arrow-left" style="width:20px;height:20px"></i> Return to Studio
+                    </a>
                 </div>
             </div>
         </div>
@@ -78,27 +90,27 @@ export function watchPage(req: Request, video: VideoRecord, cspNonce?: string): 
         </div>
 
         <!-- Details Sidebar -->
-        <div class="stack">
+        <div class="stack" style="gap:24px">
             <!-- Delivery Summary -->
-            <div class="panel">
-                <span class="eyebrow">Delivery Data</span>
-                <h2 style="margin-top:12px">Metadata</h2>
-                <div class="info-list" style="margin-top:16px">
-                    <div class="info-row" style="border-bottom:1px solid var(--line)">
-                        <strong>Orientation</strong>
+            <div class="panel glass" style="border-radius:var(--radius-xl)">
+                <span class="eyebrow">Production Details</span>
+                <h2 style="margin:12px 0; font-size:1.5rem">Metadata</h2>
+                <div class="info-list" style="gap:12px">
+                    <div class="info-row" style="border-bottom:1px solid var(--glass-border); padding:10px 0">
+                        <strong style="font-family:'Outfit'; font-size:14px"><i data-lucide="layers" style="width:14px;height:14px;margin-right:8px;vertical-align:middle"></i>Orientation</strong>
                         <span class="muted">${escapeHtml(video.orientation)}</span>
                     </div>
                     ${video.durationSeconds ? `
-                    <div class="info-row" style="border-bottom:1px solid var(--line)">
-                        <strong>Duration</strong>
+                    <div class="info-row" style="border-bottom:1px solid var(--glass-border); padding:10px 0">
+                        <strong style="font-family:'Outfit'; font-size:14px"><i data-lucide="clock" style="width:14px;height:14px;margin-right:8px;vertical-align:middle"></i>Duration</strong>
                         <span class="muted">${Math.round(video.durationSeconds)} seconds</span>
                     </div>` : ''}
-                    <div class="info-row" style="border-bottom:1px solid var(--line)">
-                        <strong>File size</strong>
+                    <div class="info-row" style="border-bottom:1px solid var(--glass-border); padding:10px 0">
+                        <strong style="font-family:'Outfit'; font-size:14px"><i data-lucide="hard-drive" style="width:14px;height:14px;margin-right:8px;vertical-align:middle"></i>File Size</strong>
                         <span class="muted">${video.fileSizeMB} MB</span>
                     </div>
-                    <div class="info-row">
-                        <strong>Timestamp</strong>
+                    <div class="info-row" style="padding:10px 0">
+                        <strong style="font-family:'Outfit'; font-size:14px"><i data-lucide="calendar" style="width:14px;height:14px;margin-right:8px;vertical-align:middle"></i>Created At</strong>
                         <span class="muted" style="font-size:13px">${escapeHtml(new Date(video.createdAt).toLocaleString())}</span>
                     </div>
                 </div>
@@ -106,22 +118,22 @@ export function watchPage(req: Request, video: VideoRecord, cspNonce?: string): 
 
             ${video.description ? `
             <!-- Video Description -->
-            <div class="panel soft">
-                <span class="eyebrow">Video Details</span>
-                <h2>Notes and description</h2>
-                <p>${escapeHtml(video.description).replace(/\n/g, '<br>')}</p>
+            <div class="panel soft" style="border-radius:var(--radius-xl)">
+                <span class="eyebrow">Project Notes</span>
+                <h2 style="margin:12px 0; font-size:1.5rem">Notes & Description</h2>
+                <p style="opacity:0.9; font-size:15px">${escapeHtml(video.description).replace(/\n/g, '<br>')}</p>
             </div>` : ''}
 
             <!-- Next Step -->
-            <div class="panel">
-                <span class="eyebrow">Next Step</span>
-                <h2>Create another version</h2>
+            <div class="panel" style="border-radius:var(--radius-xl)">
+                <span class="eyebrow">Up Next</span>
+                <h2 style="margin:12px 0; font-size:1.5rem">Iterate Production</h2>
                 <p class="muted footer-note">
                     Return to the portal if you want to change the script, voice, orientation, music, or subtitle settings and render a new MP4.
                 </p>
-                <div class="toolbar">
-                    <a class="button secondary" href="/">Open Workspace</a>
-                    <a class="button ghost" href="${PROJECT_REPOSITORY_URL}" target="_blank" rel="noreferrer">Project Repository</a>
+                <div class="toolbar" style="margin-top:20px; gap:12px">
+                    <a class="button secondary" href="/" style="flex:1; gap:8px"><i data-lucide="terminal" style="width:18px;height:18px"></i> Open Studio</a>
+                    <a class="button ghost" href="${PROJECT_REPOSITORY_URL}" target="_blank" rel="noreferrer" style="flex:1; gap:8px"><i data-lucide="github" style="width:18px;height:18px"></i> Source</a>
                 </div>
             </div>
         </div>

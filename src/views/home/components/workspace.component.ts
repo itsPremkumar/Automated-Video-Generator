@@ -25,21 +25,21 @@ export function workspaceSection(
             <div id="form-status" class="status" style="grid-column:1 / -1; margin-bottom:10px" hidden></div>
 
             <!-- Progress Indicator -->
-            <div style="grid-column:1 / -1; margin-bottom:32px; padding:24px; background:var(--brand-soft); border-radius:var(--radius-lg); border:1px solid var(--glass-border)">
-                <div class="row" style="justify-content:space-around; align-items:center; flex-wrap:wrap; gap:24px">
-                    <div class="row" style="gap:12px; align-items:center">
-                        <div style="width:36px; height:36px; border-radius:50%; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px">1</div>
-                        <span style="font-weight:700; font-size:15px; letter-spacing:-0.01em">Script & Media</span>
+            <div style="grid-column:1 / -1; margin-bottom:32px; padding:28px; background:var(--surface-soft); border-radius:var(--radius-xl); border:1px solid var(--glass-border); box-shadow:var(--shadow)">
+                <div class="row" style="justify-content:space-around; align-items:center; flex-wrap:wrap; gap:32px">
+                    <div class="row" style="gap:16px; align-items:center">
+                        <div style="width:40px; height:40px; border-radius:12px; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Outfit'; font-weight:800; font-size:16px; box-shadow: 0 4px 12px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.3)">1</div>
+                        <span style="font-family:'Outfit'; font-weight:700; font-size:16px; letter-spacing:-0.02em">Script & Media</span>
                     </div>
-                    <div style="width:60px; height:2px; background:var(--line)"></div>
-                    <div class="row" style="gap:12px; align-items:center">
-                        <div style="width:36px; height:36px; border-radius:50%; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px">2</div>
-                        <span style="font-weight:700; font-size:15px; letter-spacing:-0.01em">Voice & Layout</span>
+                    <div style="width:40px; height:2px; background:var(--line-strong); opacity:0.3"></div>
+                    <div class="row" style="gap:16px; align-items:center">
+                        <div style="width:40px; height:40px; border-radius:12px; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Outfit'; font-weight:800; font-size:16px; box-shadow: 0 4px 12px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.3)">2</div>
+                        <span style="font-family:'Outfit'; font-weight:700; font-size:16px; letter-spacing:-0.02em">Voice & Layout</span>
                     </div>
-                    <div style="width:60px; height:2px; background:var(--line)"></div>
-                    <div class="row" style="gap:12px; align-items:center">
-                        <div style="width:36px; height:36px; border-radius:50%; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px">3</div>
-                        <span style="font-weight:700; font-size:15px; letter-spacing:-0.01em">Style & Render</span>
+                    <div style="width:40px; height:2px; background:var(--line-strong); opacity:0.3"></div>
+                    <div class="row" style="gap:16px; align-items:center">
+                        <div style="width:40px; height:40px; border-radius:12px; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Outfit'; font-weight:800; font-size:16px; box-shadow: 0 4px 12px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.3)">3</div>
+                        <span style="font-family:'Outfit'; font-weight:700; font-size:16px; letter-spacing:-0.02em">Style & Render</span>
                     </div>
                 </div>
             </div>
@@ -49,16 +49,16 @@ export function workspaceSection(
                 <div class="panel-head">
                     <div>
                         <span class="eyebrow">Step 1 of 3</span>
-                        <h2>📝 Script & Media</h2>
+                        <h2 style="display:flex; align-items:center; gap:12px"><i data-lucide="pen-tool" style="width:24px;height:24px;color:var(--brand)"></i> Script & Media</h2>
                         <p class="muted small">Write your story and add local media. Use <strong>[Visual: ...]</strong> tags for visuals.</p>
                     </div>
                 </div>
 
-                <div class="field" style="background:var(--success-soft); padding:20px; border-radius:var(--radius-md); border:1px solid var(--success-soft)">
-                    <label for="ai-prompt" style="color:var(--success); font-weight:800; font-size:13px; text-transform:uppercase; letter-spacing:0.05em">✨ Generate script with AI</label>
-                    <div class="row" style="flex-wrap:nowrap; gap:12px; margin-top:8px">
+                <div class="field" style="background:var(--success-soft); padding:20px; border-radius:var(--radius-lg); border:1px solid hsla(142, 70%, 45%, 0.15)">
+                    <label for="ai-prompt" style="color:var(--success); font-weight:800; font-size:12px; text-transform:uppercase; letter-spacing:0.08em; display:flex; align-items:center; gap:6px"><i data-lucide="sparkles" style="width:14px;height:14px"></i> Generate script with AI</label>
+                    <div class="row" style="flex-wrap:nowrap; gap:12px; margin-top:10px">
                         <input id="ai-prompt" placeholder="E.g. A short video about the history of space travel..." style="flex:1">
-                        <button type="button" id="generate-ai" class="secondary" style="color:var(--success); border-color:var(--success-soft)">Generate</button>
+                        <button type="button" id="generate-ai" class="secondary" style="color:var(--success); border-color:hsla(142, 70%, 45%, 0.2)">Generate</button>
                     </div>
                 </div>
 
@@ -104,7 +104,7 @@ export function workspaceSection(
                 <div class="panel-head">
                     <div>
                         <span class="eyebrow">Step 2 of 3</span>
-                        <h2>🎤 Voice & Layout</h2>
+                        <h2 style="display:flex; align-items:center; gap:12px"><i data-lucide="mic" style="width:24px;height:24px;color:var(--brand)"></i> Voice & Layout</h2>
                         <p class="muted small">Choose AI voice or upload your own audio. Select video orientation.</p>
                     </div>
                 </div>
@@ -162,7 +162,7 @@ export function workspaceSection(
                 <div class="panel-head">
                     <div>
                         <span class="eyebrow">Step 3 of 3</span>
-                        <h2>🎨 Style & Output</h2>
+                        <h2 style="display:flex; align-items:center; gap:12px"><i data-lucide="palette" style="width:24px;height:24px;color:var(--brand)"></i> Style & Output</h2>
                         <p class="muted small">Add music, customize subtitles, and configure final output settings.</p>
                     </div>
                 </div>
@@ -233,13 +233,15 @@ export function workspaceSection(
             </div>
 
             <!-- Submit Button (spans all columns) -->
-            <div class="toolbar" style="grid-column: 1 / -1; margin-top:40px; padding:40px; background:var(--slate-900); border-radius:var(--radius-xl); justify-content:center; flex-direction:column; align-items:center; gap:24px; color:white; box-shadow:var(--shadow-xl)">
-                <label class="toggle-row" for="enableReview" style="padding:16px 32px; border: 1px solid var(--slate-700); border-radius: var(--radius-lg); background: var(--slate-800); cursor:pointer">
+            <div class="toolbar" style="grid-column: 1 / -1; margin-top:40px; padding:48px; background:var(--surface-soft); border-radius:var(--radius-xl); justify-content:center; flex-direction:column; align-items:center; gap:24px; border:1px solid var(--glass-border); box-shadow:var(--shadow-xl)">
+                <label class="toggle-row" for="enableReview" style="padding:16px 32px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); cursor:pointer">
                     <input id="enableReview" type="checkbox" style="width:20px; height:20px">
-                    <div style="margin-left:12px"><strong style="font-size:15px">🔍 Enable Timeline Editor (Review Mode)</strong></div>
+                    <div style="margin-left:12px; display:flex; align-items:center; gap:8px"><i data-lucide="monitor" style="width:18px;height:18px;color:var(--brand)"></i> <strong style="font-size:15px">Enable Timeline Editor (Review Mode)</strong></div>
                 </label>
-                <button type="submit" style="min-width:380px; padding:20px 48px; font-size:18px; font-weight:800; background:var(--brand); border-radius:var(--radius-lg); box-shadow:0 20px 50px rgba(79, 70, 229, 0.4)">🎬 Start Rendering Video</button>
-                <p class="muted" style="font-size:13px; text-align:center; color:var(--slate-400)">Your video will be processed and you'll be redirected to the status page</p>
+                <button type="submit" style="min-width:380px; padding:20px 48px; font-size:1.1rem; font-weight:800; background:var(--brand); border-radius:var(--radius-lg); box-shadow:0 12px 32px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.4); border:none; color:#fff">
+                    <i data-lucide="play" style="width:20px;height:20px;margin-right:8px"></i> Start Rendering Video
+                </button>
+                <p class="muted" style="font-size:13px; text-align:center">Your video will be processed and you'll be redirected to the status page</p>
             </div>
         </form>
     </section>`;

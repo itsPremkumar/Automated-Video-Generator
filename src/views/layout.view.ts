@@ -62,7 +62,8 @@ export function layout(title: string, body: string, options: HtmlOptions = {}, s
     <link rel="icon" type="image/png" href="/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- SEO Meta -->
     <meta name="description" content="${escapeHtml(description)}">
@@ -93,8 +94,7 @@ export function layout(title: string, body: string, options: HtmlOptions = {}, s
     <script${nonceAttribute}>
         (function() {
             const savedTheme = localStorage.getItem('theme');
-            const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            const theme = savedTheme || systemTheme;
+            const theme = savedTheme || 'dark';
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
@@ -105,18 +105,22 @@ export function layout(title: string, body: string, options: HtmlOptions = {}, s
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-    /* Brand Colors */
-    --brand: ${BRAND_COLOR};
-    --brand-strong: #4338CA;
-    --brand-soft: rgba(79, 70, 229, 0.1);
+    /* Brand HSL */
+    --brand-h: 263;
+    --brand-s: 70%;
+    --brand-l: 50%;
     
-    /* Functional Colors */
-    --success: #10B981;
-    --success-soft: rgba(16, 185, 129, 0.1);
-    --warning: #F59E0B;
-    --error: #EF4444;
+    --brand: hsl(var(--brand-h), var(--brand-s), var(--brand-l));
+    --brand-strong: hsl(var(--brand-h), var(--brand-s), 40%);
+    --brand-soft: hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.1);
     
-    /* Light Mode Surfaces */
+    /* Functional */
+    --success: hsl(142, 70%, 45%);
+    --success-soft: hsla(142, 70%, 45%, 0.1);
+    --warning: hsl(38, 92%, 50%);
+    --error: hsl(0, 72%, 51%);
+    
+    /* Surfaces */
     --slate-50: #F8FAFC;
     --slate-100: #F1F5F9;
     --slate-200: #E2E8F0;
@@ -129,7 +133,6 @@ export function layout(title: string, body: string, options: HtmlOptions = {}, s
     --slate-900: #0F172A;
     --slate-950: #020617;
 
-    /* Semantic Variables */
     --shell: var(--slate-50);
     --surface: #FFFFFF;
     --surface-soft: var(--slate-100);
@@ -138,42 +141,39 @@ export function layout(title: string, body: string, options: HtmlOptions = {}, s
     --ink: var(--slate-900);
     --muted: var(--slate-500);
     
-    /* Shadows & Glass */
     --glass-bg: rgba(255, 255, 255, 0.7);
-    --glass-border: rgba(226, 232, 240, 0.6);
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --card-border: rgba(0, 0, 0, 0.05);
     
-    /* Radius */
-    --radius-xl: 24px;
-    --radius-lg: 16px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 12px 24px rgba(0,0,0,0.12);
+    
+    --radius-xl: 28px;
+    --radius-lg: 18px;
     --radius-md: 12px;
     --radius-sm: 8px;
 
-    /* Semantic Surface Variants */
-    --surface-gradient: linear-gradient(180deg, #fffdf8, #fff5e9);
-    --card-bg: rgba(255, 253, 248, 0.92);
+    --surface-gradient: linear-gradient(135deg, #ffffff, #f8faff);
 }
 
 [data-theme="dark"] {
-    --shell: var(--slate-950);
-    --surface: var(--slate-900);
-    --surface-soft: var(--slate-800);
-    --line: var(--slate-800);
-    --line-strong: var(--slate-700);
-    --ink: var(--slate-100);
-    --muted: var(--slate-400);
-    --glass-bg: rgba(2, 6, 23, 0.8);
-    --glass-border: rgba(30, 41, 59, 0.5);
+    --brand-l: 60%;
+    --shell: #040711;
+    --surface: #0a0f1d;
+    --surface-soft: #121829;
+    --line: #1e293b;
+    --line-strong: #334155;
+    --ink: #f8fafc;
+    --muted: #94a3b8;
+    --glass-bg: rgba(10, 15, 29, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --card-border: rgba(255, 255, 255, 0.04);
     
-    /* Dark mode specific radial gradients */
-    --radial-1: rgba(79, 70, 229, 0.15);
-    --radial-2: rgba(16, 185, 129, 0.1);
+    --radial-1: hsla(var(--brand-h), 80%, 60%, 0.15);
+    --radial-2: hsla(142, 70%, 45%, 0.1);
 
-    --surface-gradient: linear-gradient(180deg, var(--slate-900), #020617);
-    --card-bg: var(--slate-900);
+    --surface-gradient: linear-gradient(135deg, #0a0f1d, #040711);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -195,8 +195,8 @@ body {
     color: var(--ink);
     background-color: var(--shell);
     background-image: 
-        radial-gradient(at 0% 0%, var(--radial-1, rgba(79, 70, 229, 0.05)) 0px, transparent 50%),
-        radial-gradient(at 100% 0%, var(--radial-2, rgba(16, 185, 129, 0.05)) 0px, transparent 50%);
+        radial-gradient(at 20% 0%, var(--radial-1, rgba(263, 70, 50, 0.05)) 0px, transparent 40%),
+        radial-gradient(at 80% 10%, var(--radial-2, rgba(16, 185, 129, 0.05)) 0px, transparent 40%);
     min-height: 100vh;
 }
 
@@ -206,10 +206,10 @@ body::before {
     position: fixed;
     inset: 0;
     background-image:
-        linear-gradient(rgba(255,255,255,.18) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px);
+        linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
     background-size: 64px 64px;
-    opacity: .16;
+    opacity: 1;
     pointer-events: none;
 }
 
@@ -219,14 +219,14 @@ body::before {
 
 .top-nav {
     background: var(--glass-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--glass-border);
     position: sticky;
     top: 0;
     z-index: 100;
-    padding: 12px 24px;
-    box-shadow: var(--shadow-sm);
+    padding: 10px 24px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
 }
 
 .nav-content {
@@ -292,12 +292,13 @@ a { color: inherit; }
 
 h1, h2, h3 {
     margin: 0 0 12px;
-    font-weight: 800;
-    letter-spacing: -0.04em;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.03em;
     line-height: 1.1;
     color: var(--ink);
 }
-h1 { font-size: clamp(2.5rem, 5vw, 4.5rem); }
+h1 { font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 800; }
 h2 { font-size: clamp(1.75rem, 3vw, 2.5rem); }
 h3 { font-size: 1.25rem; }
 p  { margin: 0 0 10px; }
@@ -400,17 +401,17 @@ p  { margin: 0 0 10px; }
     font-weight: 600;
     cursor: pointer;
     text-decoration: none;
-    box-shadow: var(--shadow);
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 14px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.3);
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
 }
 .button:hover, button:hover {
     background: var(--brand-strong);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.4);
 }
 .button.secondary, button.secondary {
     background: var(--surface-soft);
@@ -420,12 +421,16 @@ p  { margin: 0 0 10px; }
 }
 .button.secondary:hover, button.secondary:hover {
     background: var(--line);
+    border-color: var(--line-strong);
 }
 .button.ghost {
     background: transparent;
     color: var(--ink);
     border: 1px solid var(--line-strong);
     box-shadow: none;
+}
+.button.ghost:hover {
+    background: var(--surface-soft);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -474,10 +479,16 @@ p  { margin: 0 0 10px; }
     display: block;
     text-decoration: none;
     color: inherit;
-    border: 1px solid var(--line);
-    border-radius: 22px;
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-xl);
     overflow: hidden;
-    background: var(--card-bg);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+.card:hover {
+    transform: translateY(-6px);
+    border-color: hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.2);
     box-shadow: var(--shadow-lg);
 }
 .thumb       { aspect-ratio: 9/16; background: #e9edf3 center/cover no-repeat; }
@@ -577,34 +588,39 @@ textarea { min-height: 250px; resize: vertical; }
 
 .timeline-step {
     display: flex;
-    gap: 12px;
+    gap: 16px;
     align-items: flex-start;
-    padding: 14px 16px;
-    border-radius: 18px;
+    padding: 16px 20px;
+    border-radius: var(--radius-lg);
     background: var(--surface);
     border: 1px solid var(--line);
-    transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 }
 .timeline-step span {
     display: grid;
     place-items: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     background: var(--surface-soft);
-    font-weight: 800;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
     color: var(--muted);
     flex: 0 0 auto;
 }
 .timeline-step.active {
     border-color: var(--brand);
-    background: var(--brand-soft);
-    transform: translateX(4px);
+    background: hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.05);
+    transform: translateX(6px);
     box-shadow: var(--shadow-lg);
 }
-.timeline-step.active span { background: var(--brand); color: #fff; }
-.timeline-step.done        { border-color: var(--success); background: var(--success-soft); }
-.timeline-step.done span   { background: var(--success); color: #fff; }
+.timeline-step.active span { 
+    background: var(--brand); 
+    color: #fff; 
+    box-shadow: 0 4px 12px hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.3);
+}
+.timeline-step.done { border-color: var(--success); background: var(--success-soft); }
+.timeline-step.done span { background: var(--success); color: #fff; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    VIDEO PLAYER
@@ -862,14 +878,15 @@ textarea { min-height: 250px; resize: vertical; }
             Automated Video Gen
         </a>
         <div class="nav-links">
-            <a href="/" class="nav-link">Home</a>
-            <a href="/#workspace" class="nav-link">Workspace</a>
-            <a href="/#recent-videos" class="nav-link">Library</a>
+            <a href="/" class="nav-link"><i data-lucide="home" style="width:18px;height:18px;vertical-align:middle;margin-right:4px;"></i> Home</a>
+            <a href="/#workspace" class="nav-link"><i data-lucide="plus-circle" style="width:18px;height:18px;vertical-align:middle;margin-right:4px;"></i> Workspace</a>
+            <a href="/#recent-videos" class="nav-link"><i data-lucide="library" style="width:18px;height:18px;vertical-align:middle;margin-right:4px;"></i> Library</a>
             <a href="https://github.com/itsPremkumar/Automated-Video-Generator" target="_blank" class="nav-link" style="display:flex;align-items:center;">
-                GitHub <span class="nav-badge">v${APP_VERSION}</span>
+                <i data-lucide="github" style="width:18px;height:18px;margin-right:6px;"></i> GitHub <span class="nav-badge">v${APP_VERSION}</span>
             </a>
-            <button id="theme-toggle" class="button secondary small" style="padding: 8px 12px; border-radius: 999px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 18px;" aria-label="Toggle Theme">
-                <span class="theme-icon">🌓</span>
+            <button id="theme-toggle" class="button secondary" style="padding: 0; border-radius: 50%; width: 40px; height: 40px;" aria-label="Toggle Theme">
+                <i data-lucide="sun" id="theme-icon-light" style="display:none; width:20px; height:20px;"></i>
+                <i data-lucide="moon" id="theme-icon-dark" style="display:block; width:20px; height:20px;"></i>
             </button>
         </div>
     </div>
@@ -881,14 +898,36 @@ textarea { min-height: 250px; resize: vertical; }
 <!-- Global Theme Controller -->
 <script${nonceAttribute}>
     (function() {
+        // Initialize Lucide
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
         const toggle = document.getElementById('theme-toggle');
+        const iconLight = document.getElementById('theme-icon-light');
+        const iconDark = document.getElementById('theme-icon-dark');
+        
         if (!toggle) return;
+
+        function updateIcons(theme) {
+            if (theme === 'dark') {
+                if (iconLight) iconLight.style.display = 'none';
+                if (iconDark) iconDark.style.display = 'block';
+            } else {
+                if (iconLight) iconLight.style.display = 'block';
+                if (iconDark) iconDark.style.display = 'none';
+            }
+        }
+
+        const initialTheme = document.documentElement.getAttribute('data-theme');
+        updateIcons(initialTheme);
 
         toggle.addEventListener('click', () => {
             const current = document.documentElement.getAttribute('data-theme');
             const target = current === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', target);
             localStorage.setItem('theme', target);
+            updateIcons(target);
         });
     })();
 </script>
