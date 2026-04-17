@@ -879,6 +879,7 @@ textarea { min-height: 250px; resize: vertical; }
         </a>
         <div class="nav-links">
             <a href="/" class="nav-link"><i data-lucide="home" style="width:18px;height:18px;vertical-align:middle;margin-right:4px;"></i> Home</a>
+            <a href="/video-download" class="nav-link"><i data-lucide="download" style="width:18px;height:18px;vertical-align:middle;margin-right:4px;"></i> Video Download</a>
             <a href="/#workspace" class="nav-link"><i data-lucide="plus-circle" style="width:18px;height:18px;vertical-align:middle;margin-right:4px;"></i> Workspace</a>
             <a href="/#recent-videos" class="nav-link"><i data-lucide="library" style="width:18px;height:18px;vertical-align:middle;margin-right:4px;"></i> Library</a>
             <a href="https://github.com/itsPremkumar/Automated-Video-Generator" target="_blank" class="nav-link" style="display:flex;align-items:center;">

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { homePage } from '../../views/home/index';
 import { watchPage } from '../../views/watch.view';
 import { jobPage } from '../../views/job-status.view';
+import { videoDownloadPage } from '../../views/video-download.view';
 import { layout } from '../../views/layout.view';
 import { portalAppService } from '../../application/portal-app.service';
 import { PROJECT_NAME, BRAND_COLOR } from '../../constants/config';
@@ -29,6 +30,10 @@ export const renderWatch = (req: Request, res: Response) => {
 
 export const renderJob = (req: Request, res: Response) => {
     res.type('html').send(jobPage(req, String(req.params.jobId), res.locals.cspNonce));
+};
+
+export const renderVideoDownload = (req: Request, res: Response) => {
+    res.type('html').send(videoDownloadPage(req, res.locals.cspNonce));
 };
 
 export const renderRobots = (req: Request, res: Response) => {

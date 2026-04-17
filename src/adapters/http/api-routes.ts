@@ -9,6 +9,7 @@ import * as JobsController from './jobs-controller';
 import * as ScenesController from './scenes-controller';
 import * as SetupController from './setup-controller';
 import * as VideosController from './videos-controller';
+import * as VideoDownloadController from './video-download-controller';
 import {
     assetFilenameParamsSchema,
     generateScriptBodySchema,
@@ -46,6 +47,7 @@ router.post('/jobs/:jobId/cancel', validateRequest({ params: jobIdParamsSchema }
 router.post('/jobs/:jobId/retry', validateRequest({ params: jobIdParamsSchema }), asyncHandler(JobsController.retryJobController));
 router.post('/jobs', createJobLimiter, validateRequest({ body: startJobBodySchema }), asyncHandler(JobsController.startJobController));
 router.post('/ai/generate-script', aiLimiter, validateRequest({ body: generateScriptBodySchema }), asyncHandler(AiController.generateScriptAI));
+router.post('/video-download/process', asyncHandler(VideoDownloadController.processDownloadRequest));
 router.get('/fs/ls', requireLocalAccess, validateRequest({ query: listFilesQuerySchema }), asyncHandler(FilesController.listFiles));
 router.post('/fs/pick', requireLocalAccess, validateRequest({ body: pickFileBodySchema }), asyncHandler(FilesController.pickFile));
 router.get('/fs/drives', requireLocalAccess, asyncHandler(FilesController.listDrives));

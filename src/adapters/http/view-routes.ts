@@ -4,6 +4,7 @@ import * as ViewController from './view-controller';
 const router = Router();
 
 router.get('/', ViewController.renderHome);
+router.get('/video-download', ViewController.renderVideoDownload);
 router.get('/videos/:videoId', ViewController.renderWatch);
 router.get('/jobs/:jobId', ViewController.renderJob);
 router.get('/robots.txt', ViewController.renderRobots);
