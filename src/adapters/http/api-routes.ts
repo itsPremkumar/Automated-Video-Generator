@@ -10,6 +10,7 @@ import * as ScenesController from './scenes-controller';
 import * as SetupController from './setup-controller';
 import * as VideosController from './videos-controller';
 import * as VideoDownloadController from './video-download-controller';
+import * as SocialDownloadController from './social-download-controller';
 import {
     assetFilenameParamsSchema,
     generateScriptBodySchema,
@@ -48,6 +49,7 @@ router.post('/jobs/:jobId/retry', validateRequest({ params: jobIdParamsSchema })
 router.post('/jobs', createJobLimiter, validateRequest({ body: startJobBodySchema }), asyncHandler(JobsController.startJobController));
 router.post('/ai/generate-script', aiLimiter, validateRequest({ body: generateScriptBodySchema }), asyncHandler(AiController.generateScriptAI));
 router.post('/video-download/process', asyncHandler(VideoDownloadController.processDownloadRequest));
+router.post('/social-download/process', asyncHandler(SocialDownloadController.processSocialDownloadRequest));
 router.get('/fs/ls', requireLocalAccess, validateRequest({ query: listFilesQuerySchema }), asyncHandler(FilesController.listFiles));
 router.post('/fs/pick', requireLocalAccess, validateRequest({ body: pickFileBodySchema }), asyncHandler(FilesController.pickFile));
 router.get('/fs/drives', requireLocalAccess, asyncHandler(FilesController.listDrives));

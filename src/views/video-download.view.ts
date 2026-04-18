@@ -72,6 +72,33 @@ export function videoDownloadPage(req: Request, cspNonce?: string): string {
             </div>
         </div>
 
+        <!-- NEW: Social Media Downloader Section -->
+        <div class="panel stack" style="margin-top: 24px;">
+            <div class="panel-head">
+                <div class="stack" style="gap:4px;">
+                    <h3><i data-lucide="share-2" style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i> Method 2: Social Media Downloader</h3>
+                    <p class="field-help">Download videos from YouTube, Instagram, Twitter/X, and more by pasting the URL.</p>
+                </div>
+            </div>
+
+            <div class="field-grid" style="grid-template-columns: 1fr auto;">
+                <div class="field">
+                    <input type="text" id="social-url" placeholder="https://www.youtube.com/watch?v=..." style="padding: 14px;">
+                </div>
+                <button id="process-social" class="button" style="height: 48px;">
+                    <i data-lucide="download-cloud"></i> Download Video
+                </button>
+            </div>
+
+            <div id="social-results" class="stack" style="margin-top: 10px;">
+                <!-- Social results will appear here -->
+            </div>
+            
+            <div id="social-status" class="status-chip" style="display:none; width: fit-content;">
+                <i data-lucide="loader-2" class="spin" style="width:14px;height:14px;margin-right:6px;"></i> <span id="social-status-text">Processing...</span>
+            </div>
+        </div>
+
         <style>
             .spin { animation: spin 2s linear infinite; }
             @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -113,7 +140,7 @@ export function videoDownloadPage(req: Request, cspNonce?: string): string {
             }
         </style>
 
-        <script>
+        <script nonce="${cspNonce}">
             (function() {
                 const btn = document.getElementById('process-download');
                 const scriptInput = document.getElementById('download-script');
@@ -122,7 +149,10 @@ export function videoDownloadPage(req: Request, cspNonce?: string): string {
                 const resultsContainer = document.getElementById('download-results');
                 const statusIndicator = document.getElementById('processing-status');
 
-                if (!btn) return;
+                if (!btn) {
+                    console.error('[VIDEO-DOWNLOAD] Process button not found!');
+                    return;
+                }
 
                 btn.addEventListener('click', async () => {
                     const script = scriptInput.value.trim();
@@ -131,6 +161,7 @@ export function videoDownloadPage(req: Request, cspNonce?: string): string {
                         return;
                     }
 
+                    console.log('[VIDEO-DOWNLOAD] Starting analysis for script:', script.substring(0, 50) + '...');
                     btn.disabled = true;
                     statusIndicator.style.display = 'inline-flex';
                     resultsContainer.innerHTML = '<div class="stack" style="text-align:center;padding:40px;"><div class="spin" style="font-size:32px;margin-bottom:12px;">⏳</div><h3>AI is analyzing your script...</h3><p class="muted">Fetching best matching assets from stock libraries.</p></div>';
@@ -147,6 +178,7 @@ export function videoDownloadPage(req: Request, cspNonce?: string): string {
                         });
 
                         const result = await response.json();
+                        console.log('[VIDEO-DOWNLOAD] API Response:', result);
                         
                         if (result.success) {
                             renderResults(result.data, orientationSelect.value);
@@ -155,12 +187,82 @@ export function videoDownloadPage(req: Request, cspNonce?: string): string {
                         }
                     } catch (err) {
                         resultsContainer.innerHTML = '<div class="status error">Failed to process request. Check console for details.</div>';
-                        console.error(err);
+                        console.error('[VIDEO-DOWNLOAD] Fetch error:', err);
                     } finally {
                         btn.disabled = false;
                         statusIndicator.style.display = 'none';
                     }
                 });
+
+                // --- Social Media Downloader Logic ---
+                const socialBtn = document.getElementById('process-social');
+                const socialUrl = document.getElementById('social-url');
+                const socialResults = document.getElementById('social-results');
+                const socialStatus = document.getElementById('social-status');
+                const socialStatusText = document.getElementById('social-status-text');
+
+                if (socialBtn) {
+                    console.log('[SOCIAL-DOWNLOAD] Controller initialized.');
+                    socialBtn.addEventListener('click', async () => {
+                        const url = socialUrl.value.trim();
+                        if (!url) {
+                            alert('Please enter a video URL.');
+                            return;
+                        }
+
+                        console.log('[SOCIAL-DOWNLOAD] User requested download for URL:', url);
+                        socialBtn.disabled = true;
+                        socialStatus.style.display = 'inline-flex';
+                        socialStatusText.innerText = 'Initializing engine...';
+                        socialResults.innerHTML = '';
+
+                        try {
+                            console.log('[SOCIAL-DOWNLOAD] Calling API /api/social-download/process...');
+                            const response = await fetch('/api/social-download/process', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ url })
+                            });
+
+                            if (!response.ok) {
+                                throw new Error('Server responded with ' + response.status + ': ' + response.statusText);
+                            }
+
+                            const result = await response.json();
+                            console.log('[SOCIAL-DOWNLOAD] API response received:', result);
+                            
+                            if (result.success) {
+                                console.log('[SOCIAL-DOWNLOAD] Success! Filename:', result.data.filename);
+                                socialResults.innerHTML = '<div class="status success stack" style="gap: 12px; padding: 20px;">' +
+                                    '<div class="row" style="justify-content: space-between; align-items: center;">' +
+                                        '<div>' +
+                                            '<h4 style="margin:0;">✅ Download Success!</h4>' +
+                                            '<p style="margin:4px 0 0; font-size: 14px; color: var(--muted);">' + result.data.filename + '</p>' +
+                                        '</div>' +
+                                        '<a href="' + result.data.localPath + '" download class="button small">' +
+                                            '<i data-lucide="download"></i> Download to Device' +
+                                        '</a>' +
+                                    '</div>' +
+                                    '<div class="video-stage" style="background: #000; border-radius: var(--radius-md); overflow: hidden; display: flex; justify-content: center;">' +
+                                        '<video src="' + result.data.localPath + '" controls style="max-height: 400px; max-width: 100%;"></video>' +
+                                    '</div>' +
+                                '</div>';
+                            } else {
+                                console.warn('[SOCIAL-DOWNLOAD] API reported failure:', result.error);
+                                socialResults.innerHTML = '<div class="status error">Error: ' + result.error + '</div>';
+                            }
+                        } catch (err) {
+                            console.error('[SOCIAL-DOWNLOAD] Exception during process:', err);
+                            socialResults.innerHTML = '<div class="status error">Failed to download video. ' + err.message + '</div>';
+                        } finally {
+                            socialBtn.disabled = false;
+                            socialStatus.style.display = 'none';
+                            if (typeof lucide !== 'undefined') lucide.createIcons();
+                        }
+                    });
+                } else {
+                    console.error('[SOCIAL-DOWNLOAD] Button "process-social" not found in DOM.');
+                }
 
                 function renderResults(data, orientation) {
                     if (data.scenes.length === 0) {

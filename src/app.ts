@@ -90,7 +90,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
         "img-src 'self' data: blob:",
         "media-src 'self' data: blob:",
         "font-src 'self' data: https://fonts.gstatic.com",
-        "connect-src 'self'",
+        "connect-src 'self' https://unpkg.com",
         "object-src 'none'",
         "base-uri 'self'",
         "frame-ancestors 'none'",
