@@ -221,6 +221,27 @@ export class LocalFilesystem {
             videos: path.join(home, 'Videos'),
         };
     }
+
+    copyFileTo(sourcePath: string, targetDirectory: string) {
+        if (!fs.existsSync(sourcePath)) {
+            throw new NotFoundError('Source file not found.');
+        }
+
+        if (!fs.existsSync(targetDirectory)) {
+            throw new NotFoundError('Target directory not found.');
+        }
+
+        const stats = fs.statSync(targetDirectory);
+        if (!stats.isDirectory()) {
+            throw new BadRequestError('Target must be a directory.');
+        }
+
+        const filename = path.basename(sourcePath);
+        const targetPath = path.join(targetDirectory, filename);
+
+        fs.copyFileSync(sourcePath, targetPath);
+        return { success: true, targetPath };
+    }
 }
 
 export const localFilesystem = new LocalFilesystem();

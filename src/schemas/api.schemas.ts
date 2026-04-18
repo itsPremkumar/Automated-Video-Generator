@@ -86,3 +86,13 @@ export const viewFileQuerySchema = z.object({
 export const assetFilenameParamsSchema = z.object({
     filename: safeFilenameSchema,
 }).strict();
+
+export const saveToBodySchema = z.object({
+    sourcePath: z.string().trim().min(1).max(2048),
+    targetDirectory: z.string().trim().min(1).max(2048),
+}).strict();
+
+export const socialDownloadBodySchema = z.object({
+    url: z.string().trim().url().min(1).max(2048),
+    mode: z.enum(['both', 'video', 'audio']).default('both'),
+}).strict();

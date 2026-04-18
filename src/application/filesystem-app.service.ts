@@ -28,6 +28,10 @@ export class FilesystemAppService {
     getHomeDirs() {
         return localFilesystem.getHomeDirs();
     }
+
+    copyFileTo(sourcePath: string, targetDirectory: string) {
+        return localFilesystem.copyFileTo(sourcePath, targetDirectory);
+    }
 }
 
 export const filesystemAppService = new FilesystemAppService();

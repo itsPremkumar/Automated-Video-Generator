@@ -48,3 +48,8 @@ export const listDrives = async (_req: Request, res: Response) => {
 export const getHomeDirs = (_req: Request, res: Response) => {
     res.json({ success: true, data: filesystemAppService.getHomeDirs() });
 };
+
+export const saveTo = (req: Request, res: Response) => {
+    const { sourcePath, targetDirectory } = req.body as { sourcePath: string; targetDirectory: string };
+    res.json(filesystemAppService.copyFileTo(sourcePath, targetDirectory));
+};

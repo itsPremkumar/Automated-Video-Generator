@@ -25,6 +25,8 @@ import {
     updateSceneBodySchema,
     videoIdParamsSchema,
     viewFileQuerySchema,
+    saveToBodySchema,
+    socialDownloadBodySchema,
 } from '../../schemas/api.schemas';
 
 const router = Router();
@@ -49,9 +51,11 @@ router.post('/jobs/:jobId/retry', validateRequest({ params: jobIdParamsSchema })
 router.post('/jobs', createJobLimiter, validateRequest({ body: startJobBodySchema }), asyncHandler(JobsController.startJobController));
 router.post('/ai/generate-script', aiLimiter, validateRequest({ body: generateScriptBodySchema }), asyncHandler(AiController.generateScriptAI));
 router.post('/video-download/process', asyncHandler(VideoDownloadController.processDownloadRequest));
-router.post('/social-download/process', asyncHandler(SocialDownloadController.processSocialDownloadRequest));
+router.post('/social-download/process', validateRequest({ body: socialDownloadBodySchema }), asyncHandler(SocialDownloadController.processSocialDownloadRequest));
+
 router.get('/fs/ls', requireLocalAccess, validateRequest({ query: listFilesQuerySchema }), asyncHandler(FilesController.listFiles));
 router.post('/fs/pick', requireLocalAccess, validateRequest({ body: pickFileBodySchema }), asyncHandler(FilesController.pickFile));
+router.post('/fs/save-to', requireLocalAccess, validateRequest({ body: saveToBodySchema }), asyncHandler(FilesController.saveTo));
 router.get('/fs/drives', requireLocalAccess, asyncHandler(FilesController.listDrives));
 router.get('/fs/home', requireLocalAccess, asyncHandler(FilesController.getHomeDirs));
 router.get('/fs/assets', requireLocalAccess, asyncHandler(FilesController.listGalleryAssets));

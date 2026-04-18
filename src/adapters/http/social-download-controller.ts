@@ -6,14 +6,14 @@ import { socialDownloadAppService } from '../../application/social-download-app.
  */
 export const processSocialDownloadRequest = async (req: Request, res: Response) => {
     try {
-        const { url } = req.body as { url: string };
+        const { url, mode } = req.body as { url: string; mode: 'both' | 'video' | 'audio' };
 
         if (!url) {
             return res.status(400).json({ success: false, error: 'URL is required' });
         }
 
         // For now we don't stream progress back via SSE, just await the final result
-        const data = await socialDownloadAppService.processSocialDownload(url);
+        const data = await socialDownloadAppService.processSocialDownload(url, mode || 'both');
         
         res.json({ success: true, data });
     } catch (error: any) {

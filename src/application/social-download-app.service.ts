@@ -9,8 +9,8 @@ export class SocialDownloadAppService {
     /**
      * Process a social media video download request.
      */
-    async processSocialDownload(url: string, onProgress?: (p: DownloadProgress) => void): Promise<{ localPath: string; filename: string }> {
-        logInfo(`[SOCIAL-SERVICE] Processing social download for: ${url}`);
+    async processSocialDownload(url: string, mode: 'both' | 'video' | 'audio' = 'both', onProgress?: (p: DownloadProgress) => void): Promise<{ localPath: string; filename: string; absolutePath: string }> {
+        logInfo(`[SOCIAL-SERVICE] Processing social download (${mode}) for: ${url}`);
         
         const outputDir = resolveProjectPath('output', 'downloads', 'social');
         if (!fs.existsSync(outputDir)) {
@@ -18,7 +18,7 @@ export class SocialDownloadAppService {
         }
 
         try {
-            let absolutePath = await videoDownloaderService.download(url, outputDir, onProgress);
+            let absolutePath = await videoDownloaderService.download(url, outputDir, mode, onProgress);
             
             // Fallback: If absolutePath is empty or doesn't exist, try to find the most recent file in outputDir
             if (!absolutePath || !fs.existsSync(absolutePath)) {
@@ -56,7 +56,8 @@ export class SocialDownloadAppService {
 
             return {
                 localPath: `/jobs/${sessionId}/${filename}`,
-                filename: filename
+                filename: filename,
+                absolutePath: absolutePath
             };
         } catch (err: any) {
             logError(`[SOCIAL-SERVICE] Download failed: ${err.message}`);

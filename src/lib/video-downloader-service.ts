@@ -15,7 +15,7 @@ export class VideoDownloaderService {
     /**
      * Download a video using yt-dlp.
      */
-    async download(url: string, outputDir: string, onProgress?: (p: DownloadProgress) => void): Promise<string> {
+    async download(url: string, outputDir: string, mode: 'both' | 'video' | 'audio' = 'both', onProgress?: (p: DownloadProgress) => void): Promise<string> {
         const python = getPythonExecutable();
         if (!python) {
             throw new Error('Python runtime not found.');
@@ -28,16 +28,23 @@ export class VideoDownloaderService {
         // Output format: %(title)s.%(ext)s
         const outputTemplate = path.join(outputDir, '%(title)s.%(ext)s');
 
+        // Logic for format selection:
+        // - video: best video in mp4 or any best video
+        // - audio: best audio in m4a/mp3 or any best audio
+        // - both: formats with BOTH video and audio tracks (ensures one file when ffmpeg is missing)
+        let formatStr = 'best[ext=mp4][vcodec!=none][acodec!=none]/best[vcodec!=none][acodec!=none]/best';
+        if (mode === 'video') formatStr = 'bestvideo[ext=mp4]/bestvideo/best';
+        if (mode === 'audio') formatStr = 'bestaudio[ext=m4a]/bestaudio/best';
+
         return new Promise((resolve, reject) => {
-            logInfo(`[DOWNLOADER] Starting download for: ${url}`);
+            logInfo(`[DOWNLOADER] Starting download (${mode}) for: ${url}`);
             
             const args = [
                 '-m', 'yt_dlp',
                 '--no-playlist',
                 '--restrict-filenames',
                 '--no-mtime',
-                '--format', 'bestvideo+bestaudio/best',
-                '--merge-output-format', 'mp4',
+                '--format', formatStr,
                 '-o', outputTemplate,
                 '--newline',
                 url

@@ -1,6 +1,6 @@
 # Dependencies
 node_modules/
-
+.npm/
 
 # Build and Output
 dist/
@@ -10,6 +10,8 @@ output/
 .remotion/
 *.remotion
 public/visuals/
+public/jobs/
+public/audio/
 
 # Environment Variables
 .env
@@ -19,12 +21,21 @@ public/visuals/
 *.mp4
 *.mp3
 *.wav
+*.webm
+*.avi
+*.mov
 *.log
-input/input-assests/
-input/music/
+logs.txt
+temp_voices.txt
+voices_output.txt
+voices_output_utf8.txt
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Application Input
+input/input-assests/
+input/music/
 
 # OS and IDE files
 .DS_Store
@@ -36,6 +47,7 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+**/desktop.ini
 
 # Cache and Temp
 .video-cache.json
@@ -45,13 +57,6 @@ Thumbs.db
 tmp/
 temp/
 .cache/
-public/audio/
-public/visuals/
-**/desktop.ini
-
-# Electron Build Output
-dist-electron/
-release/
 
 # Portable Runtime
 portable-python/
