@@ -6,6 +6,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logError, logInfo } from './shared/logging/runtime-logging';
 import { resolveProjectPath } from './shared/runtime/paths';
+import { INPUT_ASSET_ROOT } from './lib/path-safety';
+
 import { createPipelineWorkspace, ensurePipelineWorkspace, toPublicRelativePath } from './pipeline-workspace';
 import { JobCancellationError } from './lib/job-cancellation';
 
@@ -132,7 +134,8 @@ export async function generateVideo(
         const step1Start = Date.now();
         reportProgress('validate', 5, 'Validating script');
 
-        validateScript(script);
+        validateScript(script, !!personalAudio);
+
         throwIfCancelled(shouldCancel);
 
         const step1Time = Date.now() - step1Start;
@@ -151,30 +154,70 @@ export async function generateVideo(
         const parsed = await parseScript(script);
         throwIfCancelled(shouldCancel);
 
-        // Fallback: If no scenes were parsed but we have a personal audio file,
-        // create a single dummy scene that spans the entire duration of the audio.
-        if (parsed.scenes.length === 0 && personalAudio) {
-            console.log('⚠️ [STEP 2] No scenes parsed, but personal audio is present. Using single-scene fallback.');
+        // Fallback: If no scenes were parsed (or only a minimal title) and we have personal audio,
+        // create dynamic scenes based on the total duration of the audio.
+        const hasManualVisuals = parsed.scenes.some(s => s.localAsset);
+        const isMinimalScript = parsed.scenes.length === 0 || 
+                               (!hasManualVisuals && parsed.scenes.every(s => s.voiceoverText.length < 50));
+
+        if (isMinimalScript && personalAudio) {
+            console.log('⚠️ [STEP 2] Minimal script detected with personal audio. Using dynamic asset discovery.');
+            
             const personalAudioPath = resolveProjectPath('input', 'music', personalAudio);
-            let duration = 30; // Default fallback duration
+
+            let totalDuration = 30; // Default fallback duration
+
             if (fs.existsSync(personalAudioPath)) {
                 try {
-                    duration = await getAudioDuration(personalAudioPath);
+                    totalDuration = await getAudioDuration(personalAudioPath);
                 } catch (e) {
                     console.warn('⚠️ [STEP 2] Failed to get audio duration, using 30s default');
                 }
             }
-
             
-            parsed.scenes.push({
-                sceneNumber: 1,
-                duration: duration,
-                visualDescription: title || 'Main Scene',
-                voiceoverText: '', // No subtitles for fallback scene
-                searchKeywords: [title || 'video'],
-            });
-            parsed.totalDuration = duration;
+            // Look for local assets to create a slideshow
+            const mediaExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.mp4', '.mov', '.webm', '.gif'];
+            let foundAssets: string[] = [];
+            
+            if (fs.existsSync(INPUT_ASSET_ROOT)) {
+                foundAssets = fs.readdirSync(INPUT_ASSET_ROOT)
+                    .filter(file => mediaExtensions.includes(path.extname(file).toLowerCase()))
+                    .sort();
+            }
+
+            if (foundAssets.length > 0) {
+                console.log(`📸 [STEP 2] Found ${foundAssets.length} assets. Creating a slideshow.`);
+                
+                // Clear the minimal "title" scene since we have actual assets to show
+                parsed.scenes = [];
+                
+                const durationPerScene = totalDuration / foundAssets.length;
+                
+                foundAssets.forEach((asset, index) => {
+                    parsed.scenes.push({
+                        sceneNumber: index + 1,
+                        duration: durationPerScene,
+                        visualDescription: `Slideshow: ${asset}`,
+                        voiceoverText: '', // No subtitles for auto-slideshow
+                        searchKeywords: [asset],
+                        localAsset: asset
+                    });
+                });
+            } else if (parsed.scenes.length === 0) {
+                // If script was truly empty AND no assets found, create one fallback scene
+                parsed.scenes.push({
+                    sceneNumber: 1,
+                    duration: totalDuration,
+                    visualDescription: title || 'Main Scene',
+                    voiceoverText: '',
+                    searchKeywords: [title || 'video'],
+                });
+            }
+            
+            parsed.totalDuration = totalDuration;
         }
+
+
 
         if (parsed.scenes.length === 0) {
             throw new Error('No scenes could be parsed from the script. Please ensure you have narration text or visual tags.');

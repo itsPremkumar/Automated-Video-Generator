@@ -47,15 +47,8 @@ const STOP_WORDS = new Set([
  * Simple, fast, no API calls required
  */
 export async function parseScript(script: string): Promise<ParsedScript> {
-    // console.log('\n📝 [PARSER] Starting script parsing...');
-    // console.log(`📝 [PARSER] Script length: ${script.length} characters`);
-    // console.log(`📝 [PARSER] Script preview: "${script.substring(0, 100)}..."`);
-
     const startTime = Date.now();
     const result = parseScriptLocally(script);
-    const elapsed = Date.now() - startTime;
-
-    // console.log(`📝 [PARSER] Parsing completed in ${elapsed}ms`);
     return result;
 }
 
@@ -64,24 +57,16 @@ export async function parseScript(script: string): Promise<ParsedScript> {
  * Breaks text by newlines/periods and extracts keywords
  */
 function parseScriptLocally(script: string): ParsedScript {
-    // console.log('📝 [PARSER] Splitting script by sentences...');
-
-    // Split by newlines first, then by periods ONLY if followed by space or end
-    // This prevents splitting URLs like "example.com"
     const rawLines: string[] = [];
 
-    // First split by double newlines (paragraphs)
+    // First split by paragraphs
     const paragraphs = script.split(/\n\s*\n/);
 
     for (const para of paragraphs) {
         // Split by single newlines
         const lines = para.split('\n');
         for (const line of lines) {
-            // Split by periods/questions/exclamations followed by space or end (sentence boundaries)
-            // But NOT punctuation in the middle of words (URLs, abbreviations)
-            // Split by periods/questions/exclamations followed by space or end (sentence boundaries)
-            // But NOT punctuation in the middle of words (URLs, abbreviations)
-            // And NOT punctuation inside [Visual: ...] or other bracketed tags
+            // Split by sentence boundaries, but respect bracketed tags
             const sentences = line.split(/(?<=[.?!])\s+(?![^\[]*\])/);
             for (const sentence of sentences) {
                 const trimmed = sentence.trim();
@@ -92,37 +77,61 @@ function parseScriptLocally(script: string): ParsedScript {
         }
     }
 
-    // console.log(`📝 [PARSER] Raw sentences found: ${rawLines.length}`);
-
-    const lines = rawLines.filter(s => s.length > 5); // Ignore very short fragments
-
-    // console.log(`📝 [PARSER] Valid lines after filtering (>10 chars): ${lines.length}`);
-    // console.log('📝 [PARSER] Processing each line into scenes...\n');
+    const lines = rawLines.filter(s => s.length > 3); // Slightly lower threshold for short scripts
 
     const scenes: Scene[] = [];
     let pendingVisualCue = '';
 
     for (const line of lines) {
-        // console.log(`  📝 [SCENE ${scenes.length + 1}] Processing: "${line.substring(0, 50)}..."`);
-
-        const inlineVisualMatch = line.match(/\[Visual:?\s*(.*?)\]/is);
-        let visualCue = inlineVisualMatch?.[1]?.trim() || '';
-        
         const inlineTextMatch = line.match(/\[Text:?\s*(on|off)\]/is);
         const sceneShowText = inlineTextMatch ? inlineTextMatch[1].toLowerCase() === 'on' : undefined;
 
-        let cleanText = line
+        const cleanText = line
             .replace(/\[Visual:?\s*.*?\]/gis, '')
             .replace(/\[Text:?\s*.*?\]/gis, '')
             .trim();
 
-        if (!visualCue && pendingVisualCue) {
-            visualCue = pendingVisualCue;
+        // Find all visual matches in the line
+        const visualMatches = [...line.matchAll(/\[Visual:?\s*(.*?)\]/gis)];
+        
+        // FEATURE: If we have multiple visual tags on one line and NO text, split them evenly
+        if (visualMatches.length > 1 && !cleanText) {
+            for (const match of visualMatches) {
+                const tag = match[1].trim();
+                const keywords = tag.toLowerCase().split(/\s+/).filter(Boolean);
+                scenes.push({
+                    sceneNumber: scenes.length + 1,
+                    duration: 5,
+                    visualDescription: `Visual for: ${tag}`,
+                    voiceoverText: '',
+                    searchKeywords: keywords,
+                    localAsset: fs.existsSync(resolveProjectPath('input', 'input-assests', tag)) ? tag : undefined,
+                    showText: false
+                });
+            }
             pendingVisualCue = '';
+            continue;
         }
 
-        // Support the common Claude-style format where a visual tag is on its own line
-        // and the narration appears on the following line.
+        const visualCue = visualMatches[0]?.[1]?.trim() || '';
+
+        // If we have a visual cue but no text, and we already HAD a pending visual cue,
+        // it means the previous tag was also on its own line. Let's make it a scene.
+        if (!cleanText && visualCue && pendingVisualCue) {
+            const keywords = pendingVisualCue.toLowerCase().split(/\s+/).filter(Boolean);
+            scenes.push({
+                sceneNumber: scenes.length + 1,
+                duration: 5,
+                visualDescription: `Visual for: ${pendingVisualCue}`,
+                voiceoverText: '',
+                searchKeywords: keywords,
+                localAsset: fs.existsSync(resolveProjectPath('input', 'input-assests', pendingVisualCue)) ? pendingVisualCue : undefined,
+                showText: false
+            });
+            pendingVisualCue = visualCue;
+            continue;
+        }
+
         if (!cleanText) {
             if (visualCue) {
                 pendingVisualCue = visualCue;
@@ -130,39 +139,30 @@ function parseScriptLocally(script: string): ParsedScript {
             continue;
         }
 
-        // Better keyword extraction with stop words filter
-        const allWords = cleanText
-            .toLowerCase()
-            .replace(/[.,?!#+'%]/g, '')
-            .split(/\s+/);
-
+        // Scene generation from text and visual cue
+        const allWords = cleanText.toLowerCase().replace(/[.,?!#+'%]/g, '').split(/\s+/);
         const filteredWords = allWords.filter(w => w.length > 3 && !STOP_WORDS.has(w));
 
-        // Strategy: Use Visual Cue if present, otherwise use keywords
         let keywords: string[] = [];
         let visualDescription = '';
         let localAsset: string | undefined = undefined;
 
-        if (visualCue) {
-            keywords = visualCue.toLowerCase().split(/\s+/).filter(Boolean);
-            visualDescription = `Visual for: ${visualCue}`;
+        const effectiveVisual = visualCue || pendingVisualCue;
 
-            if (fs.existsSync(resolveProjectPath('input', 'input-assests', visualCue))) {
-                localAsset = visualCue;
+        if (effectiveVisual) {
+            keywords = effectiveVisual.toLowerCase().split(/\s+/).filter(Boolean);
+            visualDescription = `Visual for: ${effectiveVisual}`;
+            if (fs.existsSync(resolveProjectPath('input', 'input-assests', effectiveVisual))) {
+                localAsset = effectiveVisual;
             }
+            pendingVisualCue = ''; 
         } else {
             keywords = filteredWords.slice(0, 4);
-            if (keywords.length === 0) {
-                keywords.push('business', 'professional');
-            }
+            if (keywords.length === 0) keywords.push('business', 'professional');
             visualDescription = `Visual for: ${keywords.join(' ')}`;
         }
 
         const duration = Math.max(3, Math.ceil(cleanText.length / 15));
-
-        // console.log(`  📝 [SCENE ${scenes.length + 1}] Keywords: [${keywords.join(', ')}]`);
-        // console.log(`  📝 [SCENE ${scenes.length + 1}] Duration: ${duration}s (based on ${cleanText.length} chars)`);
-        // console.log('');
 
         scenes.push({
             sceneNumber: scenes.length + 1,
@@ -175,8 +175,7 @@ function parseScriptLocally(script: string): ParsedScript {
         });
     }
 
-    // If there is a visual cue at the end of the script with no narration,
-    // add it as its own scene with a default duration.
+    // Handle remaining pending visual cue
     if (pendingVisualCue) {
         const keywords = pendingVisualCue.toLowerCase().split(/\s+/).filter(Boolean);
         const visualDescription = `Visual for: ${pendingVisualCue}`;
@@ -188,7 +187,7 @@ function parseScriptLocally(script: string): ParsedScript {
 
         scenes.push({
             sceneNumber: scenes.length + 1,
-            duration: 5, // Default duration for ending visual-only scene
+            duration: 5,
             visualDescription,
             voiceoverText: '',
             searchKeywords: keywords,
@@ -197,15 +196,7 @@ function parseScriptLocally(script: string): ParsedScript {
         });
     }
 
-
     const totalDuration = scenes.reduce((acc, s) => acc + s.duration, 0);
-
-    // console.log('📝 [PARSER] ═══════════════════════════════════════');
-    // console.log(`📝 [PARSER] ✅ Parsing Summary:`);
-    // console.log(`📝 [PARSER]    Total scenes: ${scenes.length}`);
-    // console.log(`📝 [PARSER]    Total duration: ${totalDuration}s`);
-    // console.log(`📝 [PARSER]    Avg scene duration: ${(totalDuration / scenes.length).toFixed(1)}s`);
-    // console.log('📝 [PARSER] ═══════════════════════════════════════\n');
 
     return {
         scenes,
@@ -217,31 +208,20 @@ function parseScriptLocally(script: string): ParsedScript {
 /**
  * Validate that a script has the minimum required content
  */
-export function validateScript(script: string): void {
-    // console.log('\n📋 [VALIDATOR] Starting script validation...');
-    // console.log(`📋 [VALIDATOR] Input type: ${typeof script}`);
-    // console.log(`📋 [VALIDATOR] Input length: ${script?.length || 0} characters`);
-
+export function validateScript(script: string, allowEmpty: boolean = false): void {
     if (!script || script.trim().length === 0) {
-        // console.error('📋 [VALIDATOR] ❌ FAILED: Script is empty');
+        if (allowEmpty) return;
         throw new Error('Script cannot be empty');
     }
-    // console.log('📋 [VALIDATOR] ✓ Script is not empty');
 
     const trimmedLength = script.trim().length;
-    // console.log(`📋 [VALIDATOR] Trimmed length: ${trimmedLength} characters`);
 
     if (trimmedLength < 10) {
-        // console.error(`📋 [VALIDATOR] ❌ FAILED: Script too short (${trimmedLength} < 10)`);
+        if (allowEmpty || script.includes('[Visual:')) return;
         throw new Error('Script is too short (minimum 10 characters)');
     }
-    // console.log('📋 [VALIDATOR] ✓ Script length >= 10 characters');
 
     if (trimmedLength > 5000) {
-        // console.error(`📋 [VALIDATOR] ❌ FAILED: Script too long (${trimmedLength} > 5000)`);
         throw new Error('Script is too long (maximum 5000 characters)');
     }
-    // console.log('📋 [VALIDATOR] ✓ Script length <= 5000 characters');
-
-    // console.log('📋 [VALIDATOR] ✅ Script validation PASSED\n');
 }
