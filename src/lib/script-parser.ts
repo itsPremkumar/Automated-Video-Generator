@@ -175,6 +175,29 @@ function parseScriptLocally(script: string): ParsedScript {
         });
     }
 
+    // If there is a visual cue at the end of the script with no narration,
+    // add it as its own scene with a default duration.
+    if (pendingVisualCue) {
+        const keywords = pendingVisualCue.toLowerCase().split(/\s+/).filter(Boolean);
+        const visualDescription = `Visual for: ${pendingVisualCue}`;
+        let localAsset: string | undefined = undefined;
+        
+        if (fs.existsSync(resolveProjectPath('input', 'input-assests', pendingVisualCue))) {
+            localAsset = pendingVisualCue;
+        }
+
+        scenes.push({
+            sceneNumber: scenes.length + 1,
+            duration: 5, // Default duration for ending visual-only scene
+            visualDescription,
+            voiceoverText: '',
+            searchKeywords: keywords,
+            localAsset,
+            showText: false
+        });
+    }
+
+
     const totalDuration = scenes.reduce((acc, s) => acc + s.duration, 0);
 
     // console.log('📝 [PARSER] ═══════════════════════════════════════');

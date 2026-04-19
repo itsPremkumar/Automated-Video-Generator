@@ -11,8 +11,10 @@ import { JobCancellationError } from './lib/job-cancellation';
 
 const console = {
     log: (...args: unknown[]) => logInfo(...args),
+    warn: (...args: unknown[]) => logInfo('[WARNING]', ...args),
     error: (...args: unknown[]) => logError(...args),
 };
+
 
 interface GenerationResult {
     success: boolean;
@@ -148,6 +150,36 @@ export async function generateVideo(
 
         const parsed = await parseScript(script);
         throwIfCancelled(shouldCancel);
+
+        // Fallback: If no scenes were parsed but we have a personal audio file,
+        // create a single dummy scene that spans the entire duration of the audio.
+        if (parsed.scenes.length === 0 && personalAudio) {
+            console.log('⚠️ [STEP 2] No scenes parsed, but personal audio is present. Using single-scene fallback.');
+            const personalAudioPath = resolveProjectPath('input', 'music', personalAudio);
+            let duration = 30; // Default fallback duration
+            if (fs.existsSync(personalAudioPath)) {
+                try {
+                    duration = await getAudioDuration(personalAudioPath);
+                } catch (e) {
+                    console.warn('⚠️ [STEP 2] Failed to get audio duration, using 30s default');
+                }
+            }
+
+            
+            parsed.scenes.push({
+                sceneNumber: 1,
+                duration: duration,
+                visualDescription: title || 'Main Scene',
+                voiceoverText: '', // No subtitles for fallback scene
+                searchKeywords: [title || 'video'],
+            });
+            parsed.totalDuration = duration;
+        }
+
+        if (parsed.scenes.length === 0) {
+            throw new Error('No scenes could be parsed from the script. Please ensure you have narration text or visual tags.');
+        }
+
 
         const step2Time = Date.now() - step2Start;
         // console.log(`✅ [STEP 2] Created ${parsed.scenes.length} scenes in ${step2Time}ms`);

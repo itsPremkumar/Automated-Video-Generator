@@ -203,7 +203,13 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
 
         if (!fs.existsSync(thumbnailLocation)) {
             throwIfCancelled(shouldCancel);
+
+            if (!sceneData.scenes || sceneData.scenes.length === 0) {
+                throw new Error('No scenes found in scene-data.json. Cannot render video.');
+            }
+
             const firstScene = sceneData.scenes[0];
+
             const thumbnailComposition = await selectComposition({
                 serveUrl: bundleLocation,
                 id: 'SingleScene',
