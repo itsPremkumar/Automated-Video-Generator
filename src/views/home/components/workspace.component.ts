@@ -17,7 +17,13 @@ export function workspaceSection(
             <div>
                 <span class="eyebrow">Studio</span>
                 <h2>Unified Video Studio</h2>
-                <p class="muted">All your script and design controls in one place. Optimized for pro creation flow.</p>
+                <div class="row" style="justify-content:space-between; align-items:center; width:100%">
+                    <p class="muted">All your script and design controls in one place. Optimized for pro creation flow.</p>
+                    <span class="muted small" style="display:flex; align-items:center; gap:4px">
+                        <span style="color:var(--brand); font-weight:800">*</span> Required fields
+                    </span>
+                </div>
+
             </div>
         </div>
 
@@ -64,13 +70,15 @@ export function workspaceSection(
                 </div>
 
                 <div class="field">
-                    <label for="title">Video title</label>
+                    <label for="title">Video title <span style="color:var(--brand)">*</span></label>
+
                     <input id="title" value="${escapeHtml(defaultTitle)}" placeholder="How AI Is Changing Everyday Life" maxlength="${MAX_TITLE_LENGTH}" required>
                     <p class="field-help">Used for output page and filename.</p>
                 </div>
 
                 <div class="field">
-                    <label for="script">Input script</label>
+                    <label for="script">Input script <span style="color:var(--brand)">*</span></label>
+
                     <div class="script-shell">
                         <div class="script-toolbar">
                             <span class="muted small">Editable input area</span>
@@ -144,7 +152,8 @@ export function workspaceSection(
 
                     <div id="personal-audio-settings" class="stack" style="gap:12px; display:none">
                         <div class="field">
-                            <label for="personalAudio">Audio Recording</label>
+                            <label for="personalAudio">Audio Recording <span style="color:var(--brand)">*</span></label>
+
                             <div class="row" style="flex-wrap:nowrap">
                                 <select id="personalAudio" style="font-size:13px">
                                     ${voiceOptions}
