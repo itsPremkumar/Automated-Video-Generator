@@ -256,6 +256,17 @@ function buildVoiceEngineUnavailableMessage(): string {
 }
 
 export function getVoiceEngineStatus(): VoiceEngineStatus {
+  const provider = (process.env.TTS_PROVIDER || '').toLowerCase().trim();
+  if (provider === 'voicebox' || provider === 'xtts' || provider === 'openai-local') {
+    return {
+      activeEngine: provider as any,
+      detail: `Using custom local API provider: ${provider}`,
+      edgeTtsReady: false,
+      fallbackReady: true,
+      generationReady: true,
+    };
+  }
+
   const edgeRuntime = resolveEdgeTtsRuntime();
   const windowsSapi = getWindowsSapiStatus();
   const gttsReady = canUseGttsFallback();

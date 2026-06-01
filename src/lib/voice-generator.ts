@@ -12,6 +12,11 @@ import * as path from 'path';
 import { execSync } from 'child_process';
 import { logError, logInfo, logWarn, writeProgress } from '../runtime';
 import { Scene } from './script-parser';
+import {
+  generateVoiceoverWithVoicebox,
+  generateVoiceoverWithXtts,
+  generateVoiceoverWithLocalOpenAI
+} from './api-tts-provider';
 
 // @ts-ignore - ffprobe-static types
 import ffprobePath from 'ffprobe-static';
@@ -244,6 +249,74 @@ export async function generateVoiceovers(
   return audioFiles;
 }
 
+// ─── Custom API Providers ──────────────────────────────────────────────────
+async function generateSceneVoiceoverWithVoiceboxWrapper(
+  scene: Scene,
+  outputDir: string,
+  config: VoiceConfig
+): Promise<AudioResult> {
+  const outputPath = path.join(outputDir, `scene_${scene.sceneNumber}_voice.wav`);
+  const existingAudio = resolveExistingAudio(outputPath, scene.voiceoverText);
+  if (existingAudio) return existingAudio;
+
+  const cleanText = cleanVoiceoverText(scene.voiceoverText);
+  if (!cleanText) return { path: '', duration: Math.max(3, scene.duration || 3) };
+
+  try {
+    const language = config.language || 'en';
+    await generateVoiceoverWithVoicebox(cleanText, outputPath, language);
+    assertGeneratedAudioFile(outputPath);
+    return { path: outputPath, duration: getAudioDuration(outputPath, scene.voiceoverText) };
+  } catch (error: any) {
+    if (fs.existsSync(outputPath)) try { fs.unlinkSync(outputPath); } catch { /* ignore */ }
+    throw new Error(`Voicebox failed for scene ${scene.sceneNumber}: ${error.message}`);
+  }
+}
+
+async function generateSceneVoiceoverWithXttsWrapper(
+  scene: Scene,
+  outputDir: string,
+  config: VoiceConfig
+): Promise<AudioResult> {
+  const outputPath = path.join(outputDir, `scene_${scene.sceneNumber}_voice.wav`);
+  const existingAudio = resolveExistingAudio(outputPath, scene.voiceoverText);
+  if (existingAudio) return existingAudio;
+
+  const cleanText = cleanVoiceoverText(scene.voiceoverText);
+  if (!cleanText) return { path: '', duration: Math.max(3, scene.duration || 3) };
+
+  try {
+    const language = config.language || 'en';
+    await generateVoiceoverWithXtts(cleanText, outputPath, language);
+    assertGeneratedAudioFile(outputPath);
+    return { path: outputPath, duration: getAudioDuration(outputPath, scene.voiceoverText) };
+  } catch (error: any) {
+    if (fs.existsSync(outputPath)) try { fs.unlinkSync(outputPath); } catch { /* ignore */ }
+    throw new Error(`XTTS failed for scene ${scene.sceneNumber}: ${error.message}`);
+  }
+}
+
+async function generateSceneVoiceoverWithLocalOpenAIWrapper(
+  scene: Scene,
+  outputDir: string
+): Promise<AudioResult> {
+  const outputPath = path.join(outputDir, `scene_${scene.sceneNumber}_voice.mp3`);
+  const existingAudio = resolveExistingAudio(outputPath, scene.voiceoverText);
+  if (existingAudio) return existingAudio;
+
+  const cleanText = cleanVoiceoverText(scene.voiceoverText);
+  if (!cleanText) return { path: '', duration: Math.max(3, scene.duration || 3) };
+
+  try {
+    await generateVoiceoverWithLocalOpenAI(cleanText, outputPath);
+    assertGeneratedAudioFile(outputPath);
+    return { path: outputPath, duration: getAudioDuration(outputPath, scene.voiceoverText) };
+  } catch (error: any) {
+    if (fs.existsSync(outputPath)) try { fs.unlinkSync(outputPath); } catch { /* ignore */ }
+    throw new Error(`OpenAI-Local TTS failed for scene ${scene.sceneNumber}: ${error.message}`);
+  }
+}
+
 // ─── Scene-level generation with retry ───────────────────────────────────────
 
 async function generateSceneVoiceoverWithRetry(
@@ -252,6 +325,27 @@ async function generateSceneVoiceoverWithRetry(
   config: VoiceConfig,
   voiceEngine: VoiceEngineStatus
 ): Promise<AudioResult> {
+  const provider = (process.env.TTS_PROVIDER || '').toLowerCase().trim();
+  
+  if (provider === 'voicebox' || provider === 'xtts' || provider === 'openai-local') {
+    let lastError: Error | null = null;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        if (provider === 'voicebox') {
+          return await generateSceneVoiceoverWithVoiceboxWrapper(scene, outputDir, config);
+        } else if (provider === 'xtts') {
+          return await generateSceneVoiceoverWithXttsWrapper(scene, outputDir, config);
+        } else {
+          return await generateSceneVoiceoverWithLocalOpenAIWrapper(scene, outputDir);
+        }
+      } catch (error: any) {
+        lastError = error;
+        if (attempt < MAX_RETRIES) await sleep(RETRY_DELAY_MS * attempt);
+      }
+    }
+    throw lastError || new Error(`Custom TTS provider '${provider}' failed after all retries`);
+  }
+
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {

@@ -59,7 +59,21 @@ Security teams also use AI to detect unusual behavior, respond to threats faster
 [Visual: diverse team discussing ethics in office]
 The next challenge is not only building more powerful systems, but using them responsibly, transparently, and in ways that genuinely improve human life.`;
 
-export const EDITABLE_ENV_KEYS = ['PEXELS_API_KEY', 'PIXABAY_API_KEY', 'GEMINI_API_KEY', 'PUBLIC_BASE_URL'] as const;
+export const EDITABLE_ENV_KEYS = [
+    'PEXELS_API_KEY',
+    'PIXABAY_API_KEY',
+    'GEMINI_API_KEY',
+    'PUBLIC_BASE_URL',
+    'TTS_PROVIDER',
+    'VOICEBOX_API_URL',
+    'VOICEBOX_PROFILE_ID',
+    'XTTS_API_URL',
+    'XTTS_SPEAKER_WAV',
+    'XTTS_LANGUAGE',
+    'OPENAI_LOCAL_TTS_URL',
+    'OPENAI_LOCAL_TTS_VOICE',
+    'OPENAI_LOCAL_TTS_MODEL'
+] as const;
 
 export const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 export const RATE_LIMIT_MAX = 10;
