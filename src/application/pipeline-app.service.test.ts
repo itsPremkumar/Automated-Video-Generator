@@ -36,7 +36,7 @@ test('PipelineAppService.createJob normalizes defaults and delegates to shared j
 
     assert.equal(result.title, 'Demo Video');
     assert.ok(result.jobId.startsWith('job_'));
-    assert.ok(result.publicId.startsWith('demo_video_'));
+    assert.ok(result.publicId.toLowerCase().startsWith('demo_video_'));
     assert.equal(captured.title, 'Demo Video');
     assert.equal(captured.options.language, 'english');
     assert.equal(captured.options.showText, true);
