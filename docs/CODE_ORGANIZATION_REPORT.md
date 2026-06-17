@@ -1,3 +1,7 @@
+---
+title: Code Organization Report — Automated Video Generator
+description: Detailed code organization report for Automated Video Generator. Module structure, dependencies, and code quality analysis.
+---
 # Code Organization Report
 
 Date: 2026-04-06

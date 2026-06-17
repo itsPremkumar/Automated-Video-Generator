@@ -1,3 +1,7 @@
+---
+title: Installation Guide — Automated Video Generator
+description: How to install and run the Automated Video Generator on Windows, macOS, and Linux. Includes standalone installer, one-click launcher, manual setup, and Docker.
+---
 # Installation Guide
 
 How to install and run the Automated Video Generator on Windows, macOS, and Linux.
@@ -28,5 +32,11 @@ Open `http://localhost:3001/` in your browser.
 ```bash
 docker compose up -d
 ```
+
+## Next Steps
+
+- [Usage Guide](usage) — Learn how to generate videos
+- [Configuration](configuration) — Set up voices, API keys, and output settings
+- [Troubleshooting](troubleshooting) — Fix common issues
 
 See [SETUP.md](./SETUP.md) for detailed instructions.

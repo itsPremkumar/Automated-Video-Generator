@@ -1,3 +1,7 @@
+---
+title: Setup Guide — Automated Video Generator
+description: Complete setup guide for Automated Video Generator. Development environment, local rendering, desktop packaging, and runtime configuration.
+---
 # Setup Guide
 
 This document explains how to set up the project for development, local rendering, and desktop packaging.

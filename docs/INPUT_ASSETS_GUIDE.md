@@ -1,4 +1,8 @@
-# 🖼️ Local Asset Support Guide
+---
+title: Input Assets Guide — Automated Video Generator
+description: How to use local images, videos, and custom assets with Automated Video Generator. Input format, folder structure, and asset configuration.
+---
+# Local Asset Support Guide
 
 This document explains how to use your own images and videos in the video generation pipeline.
 

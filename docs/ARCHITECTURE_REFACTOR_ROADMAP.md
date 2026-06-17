@@ -1,3 +1,7 @@
+---
+title: Architecture Refactor Roadmap — Automated Video Generator
+description: Architecture refactor roadmap and implementation status for Automated Video Generator. Multi-runtime refactor and code organization changes.
+---
 # Architecture Refactor Roadmap
 
 Status: the main refactor described here has now been implemented in the codebase.

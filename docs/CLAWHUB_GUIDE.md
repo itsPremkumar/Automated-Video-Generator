@@ -1,4 +1,8 @@
-# 🦀 ClawHub Skill Publishing Guide
+---
+title: ClawHub Guide — Automated Video Generator
+description: Publish and maintain video generator skills on the ClawHub registry. OpenClaw ecosystem integration and skill publishing workflow.
+---
+# ClawHub Skill Publishing Guide
 
 This guide explains how to publish and maintain your video generator's skills on the **ClawHub** registry (part of the OpenClaw ecosystem).
 

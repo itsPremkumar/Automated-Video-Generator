@@ -1,3 +1,7 @@
+---
+title: Crash Troubleshooting — Automated Video Generator
+description: Fix crashes and runtime errors in Automated Video Generator. Memory issues, dependency problems, and recovery steps.
+---
 # Desktop App Crash Troubleshooting Guide
 
 > A comprehensive guide for diagnosing and fixing crashes in the Automated Video Generator Windows desktop app.

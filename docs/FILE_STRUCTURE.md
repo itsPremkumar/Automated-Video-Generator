@@ -1,3 +1,7 @@
+---
+title: File Structure — Automated Video Generator
+description: Complete file structure and directory layout of Automated Video Generator. Source code organization and project structure.
+---
 # File Structure
 
 Date: 2026-04-06

@@ -1,3 +1,7 @@
+---
+title: Roadmap — Automated Video Generator
+description: Project roadmap for Automated Video Generator. Planned features, improvements, and development timeline.
+---
 # Roadmap
 
 This roadmap keeps the project focused on the work most likely to improve reliability, adoption, and contributor momentum.

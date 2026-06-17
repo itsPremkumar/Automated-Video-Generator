@@ -1,3 +1,7 @@
+---
+title: Architecture — Automated Video Generator
+description: Technical architecture of Automated Video Generator. Code organization, runtime refactor, multi-adapter design, and system components.
+---
 # Architecture
 
 This document describes the current code organization of the project after the multi-runtime refactor.

@@ -1,3 +1,7 @@
+---
+title: Windows Installer — Automated Video Generator
+description: Build, test, and distribute the Windows .exe installer for Automated Video Generator. Electron, NSIS, and release workflow.
+---
 # Windows Desktop App and Installer Guide
 
 This document explains how the Windows desktop app works, how it is packaged, and how to verify that releases are safe to ship.

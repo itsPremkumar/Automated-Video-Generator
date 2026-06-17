@@ -1,3 +1,7 @@
+---
+title: Claude MCP Setup — Automated Video Generator
+description: Set up Claude Desktop and Claude Code MCP integration for Automated Video Generator. One-command AI agent video generation.
+---
 # Claude MCP Setup And Latest Process
 
 This document explains the current Claude/Desktop/Claude Code integration for the latest version of the Automated Video Generator.

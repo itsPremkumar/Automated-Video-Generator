@@ -5,10 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Automated Video Generator — Free & Open-Source AI Text-to-Video Pipeline</title>
   <meta name="description" content="Free and open-source AI text-to-video generator built with Remotion, Edge-TTS, and stock media. Generate YouTube Shorts, TikTok videos, and marketing content from text scripts. Self-hosted, no watermark, MIT licensed.">
-  <meta name="keywords" content="automated video generator, free video generator, open-source video generator, text-to-video, ai video generator, remotion, edge-tts, youtube shorts generator, tiktok video generator, faceless youtube, self-hosted, mcp server, model context protocol, video automation, content automation">
+  <meta name="keywords" content="automated video generator, free video generator, open-source video generator, text-to-video, ai video generator, remotion, edge-tts, youtube shorts generator, tiktok video generator, faceless youtube, self-hosted, mcp server, model context protocol, video automation, content automation, batch video generation, voiceover generator, stock media, pexels, pixabay">
   <meta name="robots" content="index, follow">
   <meta name="author" content="Premkumar">
   <link rel="canonical" href="https://itspremkumar.github.io/Automated-Video-Generator/">
+  <link rel="alternate" hreflang="en" href="https://itspremkumar.github.io/Automated-Video-Generator/">
+  <link rel="alternate" hreflang="es" href="https://itspremkumar.github.io/Automated-Video-Generator/?lang=es">
+  <link rel="alternate" hreflang="hi" href="https://itspremkumar.github.io/Automated-Video-Generator/?lang=hi">
+  <link rel="alternate" hreflang="ta" href="https://itspremkumar.github.io/Automated-Video-Generator/?lang=ta">
+  <link rel="alternate" hreflang="x-default" href="https://itspremkumar.github.io/Automated-Video-Generator/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://itspremkumar.github.io/Automated-Video-Generator/">
   <meta property="og:title" content="Automated Video Generator — Free & Open-Source AI Text-to-Video Pipeline">
@@ -16,30 +21,115 @@
   <meta property="og:image" content="https://raw.githubusercontent.com/itsPremkumar/Automated-Video-Generator/main/assets/github-social-preview.svg">
   <meta property="og:image:width" content="1280">
   <meta property="og:image:height" content="640">
+  <meta property="og:site_name" content="Automated Video Generator">
+  <meta property="og:locale" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Automated Video Generator — Free & Open-Source AI Text-to-Video">
   <meta name="twitter:description" content="Turn text into frame-perfect videos with AI, Automation, and Remotion. Free, self-hosted, no watermark.">
   <meta name="twitter:image" content="https://raw.githubusercontent.com/itsPremkumar/Automated-Video-Generator/main/assets/github-social-preview.svg">
+  <link rel="preconnect" href="https://raw.githubusercontent.com">
+  <link rel="preconnect" href="https://img.shields.io">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "SoftwareSourceCode",
-    "name": "Automated Video Generator",
-    "description": "Free and open-source self-hosted AI text-to-video generator built with Remotion, Edge-TTS, stock media fetching, batch rendering, a local web portal, and MCP integration.",
-    "url": "https://github.com/itsPremkumar/Automated-Video-Generator",
-    "author": {
-      "@type": "Person",
-      "name": "Premkumar"
-    },
-    "license": "https://opensource.org/licenses/MIT",
-    "programmingLanguage": "TypeScript",
-    "operatingSystem": "Windows, macOS, Linux",
-    "applicationCategory": "Multimedia",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    }
+    "@graph": [
+      {
+        "@type": "SoftwareSourceCode",
+        "name": "Automated Video Generator",
+        "description": "Free and open-source self-hosted AI text-to-video generator built with Remotion, Edge-TTS, stock media fetching, batch rendering, a local web portal, and MCP integration.",
+        "url": "https://github.com/itsPremkumar/Automated-Video-Generator",
+        "author": {
+          "@type": "Person",
+          "name": "Premkumar"
+        },
+        "license": "https://opensource.org/licenses/MIT",
+        "programmingLanguage": "TypeScript",
+        "operatingSystem": "Windows, macOS, Linux",
+        "applicationCategory": "Multimedia",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Is Automated Video Generator really free?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. The project itself is completely free and MIT-licensed. There is no paid plan, no subscription, and no watermark. Optional third-party services like Pexels may have their own quotas."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I use it for YouTube Shorts and TikTok?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. The generator supports both portrait (9:16) and landscape (16:9) output, making it ideal for YouTube Shorts, TikTok, Instagram Reels, and other short-form video platforms."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What voices and languages are supported?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Over 400 voices across all major languages including English, Tamil, Hindi, Spanish, French, German, Portuguese, Japanese, and many more. Voice generation uses Edge-TTS with Windows offline speech fallback."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does it work on Windows, macOS, and Linux?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. The project runs on all three platforms. Windows users can download a standalone .exe installer with bundled runtime. macOS and Linux users can use the manual setup or Docker."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does the MCP integration work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The built-in Model Context Protocol server lets Claude Desktop, Claude Code, and other MCP clients generate videos with a single command. No additional setup required."
+            }
+          }
+        ]
+      },
+      {
+        "@type": "HowTo",
+        "name": "How to generate a video with Automated Video Generator",
+        "description": "Step-by-step guide to generate AI-powered videos from text scripts",
+        "step": [
+          {
+            "@type": "HowToStep",
+            "name": "Clone the repository",
+            "text": "git clone https://github.com/itsPremkumar/Automated-Video-Generator.git && cd Automated-Video-Generator"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Install dependencies",
+            "text": "npm install && py -m pip install -r requirements.txt"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Configure environment",
+            "text": "cp .env.example .env and add your PEXELS_API_KEY"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Start the portal",
+            "text": "npm run dev and open http://localhost:3001/"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "Generate video",
+            "text": "Enter your script, choose voice and settings, click Generate Video"
+          }
+        ]
+      }
+    ]
   }
   </script>
   <style>
@@ -70,6 +160,13 @@
     code { background: #161b22; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; color: #f0f6fc; }
     pre { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; overflow-x: auto; margin: 10px 0; }
     pre code { background: none; padding: 0; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #21262d; }
+    th { color: #f0f6fc; font-weight: 600; background: #161b22; }
+    td { color: #8b949e; }
+    .faq-item { margin-bottom: 16px; }
+    .faq-item h3 { font-size: 1.05em; margin-bottom: 8px; }
+    .faq-item p { color: #8b949e; }
     .footer { text-align: center; padding: 40px 0; color: #484f58; font-size: 0.9em; border-top: 1px solid #21262d; }
     .footer a { color: #58a6ff; text-decoration: none; }
     @media (max-width: 600px) {
@@ -82,23 +179,24 @@
 <body>
   <div class="container">
     <header>
-      <img src="https://raw.githubusercontent.com/itsPremkumar/Automated-Video-Generator/main/assets/logo-automation.png" alt="Automated Video Generator Logo" loading="lazy">
+      <img src="https://raw.githubusercontent.com/itsPremkumar/Automated-Video-Generator/main/assets/logo-automation.png" alt="Automated Video Generator Logo — free open-source AI text-to-video tool" width="120" height="120" loading="eager">
       <h1>Automated Video Generator</h1>
       <p>Turn text into frame-perfect videos with AI, Automation, and Remotion. Free, open-source, self-hosted.</p>
     </header>
 
     <div class="badges">
-      <img src="https://img.shields.io/github/stars/itsPremkumar/Automated-Video-Generator?style=for-the-badge" alt="GitHub stars">
-      <img src="https://img.shields.io/github/license/itsPremkumar/Automated-Video-Generator?style=for-the-badge" alt="MIT license">
-      <img src="https://img.shields.io/github/actions/workflow/status/itsPremkumar/Automated-Video-Generator/ci.yml?branch=main&style=for-the-badge&label=CI" alt="CI status">
-      <img src="https://img.shields.io/badge/Node.js-18%2B-2f7d32?style=for-the-badge" alt="Node.js 18+">
-      <img src="https://img.shields.io/badge/Price-Free-0a7f5a?style=for-the-badge" alt="Free to use">
-      <img src="https://img.shields.io/npm/v/automated-video-generator?style=for-the-badge&color=cb0000" alt="NPM version">
+      <img src="https://img.shields.io/github/stars/itsPremkumar/Automated-Video-Generator?style=for-the-badge" alt="GitHub stars" loading="lazy">
+      <img src="https://img.shields.io/github/license/itsPremkumar/Automated-Video-Generator?style=for-the-badge" alt="MIT license" loading="lazy">
+      <img src="https://img.shields.io/github/actions/workflow/status/itsPremkumar/Automated-Video-Generator/ci.yml?branch=main&style=for-the-badge&label=CI" alt="CI status" loading="lazy">
+      <img src="https://img.shields.io/badge/Node.js-18%2B-2f7d32?style=for-the-badge" alt="Node.js 18+" loading="lazy">
+      <img src="https://img.shields.io/badge/Price-Free-0a7f5a?style=for-the-badge" alt="Free to use" loading="lazy">
+      <img src="https://img.shields.io/npm/v/automated-video-generator?style=for-the-badge&color=cb0000" alt="NPM version" loading="lazy">
     </div>
 
     <div class="cta">
-      <a href="https://github.com/itsPremkumar/Automated-Video-Generator/releases/latest">⬇ Download Windows App</a>
+      <a href="https://github.com/itsPremkumar/Automated-Video-Generator/releases/latest">Download Windows App</a>
       <a href="https://github.com/itsPremkumar/Automated-Video-Generator" class="github">View on GitHub</a>
+      <a href="https://www.npmjs.com/package/automated-video-generator" class="github">Install via NPM</a>
     </div>
 
     <section>
@@ -158,6 +256,25 @@
     </section>
 
     <section>
+      <h2>Free vs Paid — What You Get</h2>
+      <table>
+        <thead>
+          <tr><th>Feature</th><th>This Project</th><th>Other Tools</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Price</td><td>Free forever (MIT)</td><td>$20-$100/month</td></tr>
+          <tr><td>Watermark</td><td>None</td><td>Usually yes</td></tr>
+          <tr><td>Source Code</td><td>Open-source</td><td>Closed</td></tr>
+          <tr><td>Self-hosted</td><td>Yes</td><td>Cloud only</td></tr>
+          <tr><td>Voice Languages</td><td>400+ voices, all languages</td><td>Limited</td></tr>
+          <tr><td>MCP Integration</td><td>Built-in</td><td>Not available</td></tr>
+          <tr><td>Batch Generation</td><td>Yes</td><td>Pay-per-video</td></tr>
+          <tr><td>Data Privacy</td><td>100% local</td><td>Uploaded to cloud</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
       <h2>Quick Start</h2>
       <p>Clone the repository and start generating:</p>
       <pre><code>git clone https://github.com/itsPremkumar/Automated-Video-Generator.git
@@ -167,6 +284,7 @@ py -m pip install -r requirements.txt
 cp .env.example .env
 npm run dev</code></pre>
       <p>Then open <code>http://localhost:3001/</code> in your browser.</p>
+      <p style="margin-top:12px; color:#58a6ff;">See the full <a href="installation" style="color:#58a6ff;">Installation Guide</a> for Windows, macOS, Linux, and Docker.</p>
     </section>
 
     <section>
@@ -176,19 +294,60 @@ npm run dev</code></pre>
     </section>
 
     <section>
+      <h2>Languages &amp; Voices</h2>
+      <p>Supports <strong>400+ voices</strong> across all major languages including:</p>
+      <p><strong>English</strong> (US, UK, AU, IN) &bull; <strong>Spanish</strong> &bull; <strong>French</strong> &bull; <strong>German</strong> &bull; <strong>Italian</strong> &bull; <strong>Portuguese</strong> &bull; <strong>Japanese</strong> &bull; <strong>Korean</strong> &bull; <strong>Chinese</strong> &bull; <strong>Hindi</strong> &bull; <strong>Tamil</strong> &bull; <strong>Telugu</strong> &bull; <strong>Arabic</strong> &bull; <strong>Russian</strong> &bull; <strong>Dutch</strong> &bull; <strong>Turkish</strong> &bull; <strong>Polish</strong> &bull; <strong>Swedish</strong> &bull; <strong>Norwegian</strong> &bull; <strong>Danish</strong> &bull; <strong>Finnish</strong> &bull; <strong>Czech</strong> &bull; <strong>Romanian</strong> &bull; <strong>Thai</strong> &bull; <strong>Indonesian</strong> &bull; <strong>Malay</strong> &bull; <strong>Vietnamese</strong> &bull; <strong>Greek</strong> &bull; <strong>Hungarian</strong> &bull; <strong>Hebrew</strong></p>
+      <p style="margin-top:12px; color:#58a6ff;">Read the <a href="configuration" style="color:#58a6ff;">Configuration Guide</a> to set up voices.</p>
+    </section>
+
+    <section>
+      <h2>Frequently Asked Questions</h2>
+      <div class="faq-item">
+        <h3>Is Automated Video Generator really free?</h3>
+        <p>Yes. The project itself is completely free and MIT-licensed. There is no paid plan, no subscription, and no watermark. Optional third-party services like Pexels may have their own quotas.</p>
+      </div>
+      <div class="faq-item">
+        <h3>Can I use it for YouTube Shorts and TikTok?</h3>
+        <p>Yes. The generator supports both portrait (9:16) and landscape (16:9) output, making it ideal for YouTube Shorts, TikTok, Instagram Reels, and other short-form video platforms.</p>
+      </div>
+      <div class="faq-item">
+        <h3>What voices and languages are supported?</h3>
+        <p>Over 400 voices across all major languages including English, Tamil, Hindi, Spanish, French, German, Portuguese, Japanese, and many more. Voice generation uses Edge-TTS with Windows offline speech fallback.</p>
+      </div>
+      <div class="faq-item">
+        <h3>Does it work on Windows, macOS, and Linux?</h3>
+        <p>Yes. The project runs on all three platforms. Windows users can download a standalone .exe installer with bundled runtime. macOS and Linux users can use the manual setup or Docker.</p>
+      </div>
+      <div class="faq-item">
+        <h3>How does the MCP integration work?</h3>
+        <p>The built-in Model Context Protocol server lets Claude Desktop, Claude Code, and other MCP clients generate videos with a single command. No additional setup required.</p>
+      </div>
+    </section>
+
+    <section>
       <h2>Documentation</h2>
       <ul>
-        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/docs/SETUP.md">Setup Guide</a></li>
-        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/docs/ARCHITECTURE.md">Architecture</a></li>
-        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/docs/INPUT_ASSETS_GUIDE.md">Input Assets Guide</a></li>
-        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/docs/CRASH-TROUBLESHOOTING.md">Troubleshooting</a></li>
-        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/docs/ROADMAP.md">Roadmap</a></li>
-        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/CONTRIBUTING.md">Contributing</a></li>
+        <li><a href="installation" style="color:#58a6ff;">Installation Guide</a></li>
+        <li><a href="usage" style="color:#58a6ff;">Usage Guide</a></li>
+        <li><a href="configuration" style="color:#58a6ff;">Configuration</a></li>
+        <li><a href="troubleshooting" style="color:#58a6ff;">Troubleshooting</a></li>
+        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/docs/ARCHITECTURE.md" style="color:#58a6ff;">Architecture</a></li>
+        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/docs/ROADMAP.md" style="color:#58a6ff;">Roadmap</a></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Community</h2>
+      <ul>
+        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/issues" style="color:#58a6ff;">Report Issues</a></li>
+        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/pulls" style="color:#58a6ff;">Pull Requests Welcome</a></li>
+        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/discussions" style="color:#58a6ff;">GitHub Discussions</a></li>
+        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/CONTRIBUTING.md" style="color:#58a6ff;">Contributing Guide</a></li>
       </ul>
     </section>
 
     <div class="footer">
-      <p>Automated Video Generator — MIT License — <a href="https://github.com/itsPremkumar/Automated-Video-Generator">GitHub Repository</a></p>
+      <p>Automated Video Generator &mdash; MIT License &mdash; <a href="https://github.com/itsPremkumar/Automated-Video-Generator">GitHub</a> &bull; <a href="https://www.npmjs.com/package/automated-video-generator">NPM</a></p>
       <p>Built with Remotion, React, Express, Node.js, and Edge-TTS</p>
     </div>
   </div>

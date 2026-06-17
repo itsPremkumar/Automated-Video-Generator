@@ -1,3 +1,7 @@
+---
+title: Voice Cloning Guide — Automated Video Generator
+description: Set up local voice cloning and realistic TTS engines in Automated Video Generator. Free, private, high-quality voice synthesis.
+---
 # Local Voice Cloning & Realistic TTS Integration Guide
 
 This guide covers setting up, configuring, and running high-quality, completely free, and local voice cloning/realistic Text-to-Speech (TTS) engines within the **Automated Video Generator**.

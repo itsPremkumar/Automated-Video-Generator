@@ -1,3 +1,7 @@
+---
+title: Configuration Guide — Automated Video Generator
+description: Configure Automated Video Generator environment variables, voices, video output, API keys, and background music settings.
+---
 # Configuration Guide
 
 How to configure Automated Video Generator for your workflow.
@@ -25,5 +29,11 @@ Copy `.env.example` to `.env` and configure:
 | Background Music | Configurable with volume control |
 | Subtitles | Auto-generated subtitle overlays |
 | Thumbnails | Auto-generated for completed videos |
+
+## Next Steps
+
+- [Usage Guide](usage) — Learn how to generate videos
+- [Installation](installation) — Set up on a new machine
+- [Troubleshooting](troubleshooting) — Fix common issues
 
 See [SETUP.md](./SETUP.md) for full setup instructions.

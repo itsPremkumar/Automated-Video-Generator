@@ -1,3 +1,7 @@
+---
+title: Production Hardening — Automated Video Generator
+description: Production-readiness guide for Automated Video Generator. API, job pipeline, rendering flow, and Windows desktop app hardening.
+---
 # Production and Desktop Hardening Guide
 
 This document summarizes the production-readiness work implemented across the API, job pipeline, rendering flow, and Windows desktop app.
