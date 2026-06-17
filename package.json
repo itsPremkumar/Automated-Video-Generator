@@ -12,7 +12,7 @@
     "bugs": {
         "url": "https://github.com/itsPremkumar/Automated-Video-Generator/issues"
     },
-    "homepage": "https://github.com/itsPremkumar/Automated-Video-Generator#readme",
+    "homepage": "https://itspremkumar.github.io/Automated-Video-Generator",
     "keywords": [
         "free-video-generator",
         "open-source-video-generator",
@@ -31,7 +31,14 @@
         "marketing-video-generator",
         "mcp-server",
         "model-context-protocol",
-        "open-source"
+        "open-source",
+        "video-automation",
+        "batch-video-generator",
+        "voiceover-generator",
+        "stock-media",
+        "react-video",
+        "typescript-video",
+        "ai-agent"
     ],
     "openclaw": {
         "extensions": [

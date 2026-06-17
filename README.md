@@ -1,7 +1,11 @@
+<!--
+Keywords: automated video generator, free video generator, open source video generator, ai video generator, text to video, remotion, edge tts, youtube shorts generator, tiktok video generator, faceless youtube, content automation, video automation, self hosted video generator, mcp server, model context protocol, ai agent video, stock media, pexels, pixabay, video pipeline, react video, nodejs video, typescript video, batch video generation, voiceover, text to speech, video creator, marketing video, explainer video, shorts automation, reels generator, open source, MIT license, video production, programmatic video
+-->
+
 # Automated Video Generator
 
 <div align="center">
-  <img src="assets/logo-automation.png" alt="Automated Video Generator Logo" width="200" style="border-radius: 20px;">
+  <img src="assets/logo-automation.png" alt="Automated Video Generator Logo — free open-source AI text-to-video tool" width="200" style="border-radius: 20px;">
   <p align="center">
     <strong>Turn text into frame-perfect videos with AI, Automation, and Remotion.</strong>
   </p>

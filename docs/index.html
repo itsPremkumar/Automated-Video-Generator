@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Automated Video Generator — Free & Open-Source AI Text-to-Video Pipeline</title>
+  <meta name="description" content="Free and open-source AI text-to-video generator built with Remotion, Edge-TTS, and stock media. Generate YouTube Shorts, TikTok videos, and marketing content from text scripts. Self-hosted, no watermark, MIT licensed.">
+  <meta name="keywords" content="automated video generator, free video generator, open-source video generator, text-to-video, ai video generator, remotion, edge-tts, youtube shorts generator, tiktok video generator, faceless youtube, self-hosted, mcp server, model context protocol, video automation, content automation">
+  <meta name="robots" content="index, follow">
+  <meta name="author" content="Premkumar">
+  <link rel="canonical" href="https://itspremkumar.github.io/Automated-Video-Generator/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://itspremkumar.github.io/Automated-Video-Generator/">
+  <meta property="og:title" content="Automated Video Generator — Free & Open-Source AI Text-to-Video Pipeline">
+  <meta property="og:description" content="Turn text into frame-perfect videos with AI, Automation, and Remotion. Free, self-hosted, no watermark, MIT licensed.">
+  <meta property="og:image" content="https://raw.githubusercontent.com/itsPremkumar/Automated-Video-Generator/main/assets/github-social-preview.svg">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Automated Video Generator — Free & Open-Source AI Text-to-Video">
+  <meta name="twitter:description" content="Turn text into frame-perfect videos with AI, Automation, and Remotion. Free, self-hosted, no watermark.">
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/itsPremkumar/Automated-Video-Generator/main/assets/github-social-preview.svg">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "name": "Automated Video Generator",
+    "description": "Free and open-source self-hosted AI text-to-video generator built with Remotion, Edge-TTS, stock media fetching, batch rendering, a local web portal, and MCP integration.",
+    "url": "https://github.com/itsPremkumar/Automated-Video-Generator",
+    "author": {
+      "@type": "Person",
+      "name": "Premkumar"
+    },
+    "license": "https://opensource.org/licenses/MIT",
+    "programmingLanguage": "TypeScript",
+    "operatingSystem": "Windows, macOS, Linux",
+    "applicationCategory": "Multimedia",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; background: #0d1117; color: #c9d1d9; line-height: 1.6; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 20px; }
+    header { text-align: center; padding: 60px 0 40px; }
+    header img { width: 120px; border-radius: 20px; margin-bottom: 20px; }
+    header h1 { font-size: 2.5em; color: #f0f6fc; margin-bottom: 10px; }
+    header p { font-size: 1.2em; color: #8b949e; max-width: 600px; margin: 0 auto; }
+    .badges { text-align: center; padding: 20px 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+    .badges img { height: 28px; border-radius: 4px; }
+    .cta { text-align: center; padding: 30px 0; }
+    .cta a { display: inline-block; background: #238636; color: #fff; padding: 14px 32px; border-radius: 6px; font-size: 1.1em; font-weight: 600; text-decoration: none; margin: 5px; transition: background 0.2s; }
+    .cta a:hover { background: #2ea043; }
+    .cta a.github { background: #21262d; border: 1px solid #30363d; }
+    .cta a.github:hover { background: #30363d; }
+    section { padding: 40px 0; border-top: 1px solid #21262d; }
+    section h2 { font-size: 1.5em; color: #f0f6fc; margin-bottom: 20px; }
+    section h3 { font-size: 1.2em; color: #f0f6fc; margin: 20px 0 10px; }
+    .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .feature { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; }
+    .feature h3 { margin-top: 0; }
+    .feature p { color: #8b949e; font-size: 0.95em; }
+    ul { list-style: none; padding: 0; }
+    ul li { padding: 6px 0; color: #8b949e; }
+    ul li::before { content: "✓ "; color: #3fb950; font-weight: bold; }
+    code { background: #161b22; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; color: #f0f6fc; }
+    pre { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; overflow-x: auto; margin: 10px 0; }
+    pre code { background: none; padding: 0; }
+    .footer { text-align: center; padding: 40px 0; color: #484f58; font-size: 0.9em; border-top: 1px solid #21262d; }
+    .footer a { color: #58a6ff; text-decoration: none; }
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.8em; }
+      .features { grid-template-columns: 1fr; }
+      .container { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="https://raw.githubusercontent.com/itsPremkumar/Automated-Video-Generator/main/assets/logo-automation.png" alt="Automated Video Generator Logo" loading="lazy">
+      <h1>Automated Video Generator</h1>
+      <p>Turn text into frame-perfect videos with AI, Automation, and Remotion. Free, open-source, self-hosted.</p>
+    </header>
+
+    <div class="badges">
+      <img src="https://img.shields.io/github/stars/itsPremkumar/Automated-Video-Generator?style=for-the-badge" alt="GitHub stars">
+      <img src="https://img.shields.io/github/license/itsPremkumar/Automated-Video-Generator?style=for-the-badge" alt="MIT license">
+      <img src="https://img.shields.io/github/actions/workflow/status/itsPremkumar/Automated-Video-Generator/ci.yml?branch=main&style=for-the-badge&label=CI" alt="CI status">
+      <img src="https://img.shields.io/badge/Node.js-18%2B-2f7d32?style=for-the-badge" alt="Node.js 18+">
+      <img src="https://img.shields.io/badge/Price-Free-0a7f5a?style=for-the-badge" alt="Free to use">
+      <img src="https://img.shields.io/npm/v/automated-video-generator?style=for-the-badge&color=cb0000" alt="NPM version">
+    </div>
+
+    <div class="cta">
+      <a href="https://github.com/itsPremkumar/Automated-Video-Generator/releases/latest">⬇ Download Windows App</a>
+      <a href="https://github.com/itsPremkumar/Automated-Video-Generator" class="github">View on GitHub</a>
+    </div>
+
+    <section>
+      <h2>What is Automated Video Generator?</h2>
+      <p>Automated Video Generator is a <strong>free and open-source AI text-to-video pipeline</strong> for developers, creators, and AI agents. Give it a script and it can fetch stock visuals, generate voiceovers with 400+ voices, render scenes with Remotion, and export a ready-to-share MP4 video.</p>
+      <p>If you are searching for a <strong>free video generator</strong>, <strong>open-source AI video generator</strong>, <strong>Remotion video generator</strong>, <strong>YouTube Shorts generator</strong>, <strong>TikTok video generator</strong>, or <strong>self-hosted text-to-video tool</strong>, this project is built for that workflow.</p>
+    </section>
+
+    <section>
+      <h2>Best Use Cases</h2>
+      <ul>
+        <li>YouTube Shorts automation</li>
+        <li>TikTok and Reels content pipelines</li>
+        <li>Faceless YouTube channels</li>
+        <li>Marketing videos and product promos</li>
+        <li>Explainer videos and tutorials</li>
+        <li>Programmatic content generation for AI agents</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Core Features</h2>
+      <div class="features">
+        <div class="feature">
+          <h3>Script-Driven Generation</h3>
+          <p>Generate videos from plain text or JSON scripts. Director mode with <code>[Visual: ...]</code> tags for exact control.</p>
+        </div>
+        <div class="feature">
+          <h3>400+ AI Voices</h3>
+          <p>Multi-language voiceovers with Edge-TTS, Windows offline speech fallback, and support for Tamil, Hindi, Spanish, French, German, and more.</p>
+        </div>
+        <div class="feature">
+          <h3>Stock Media Integration</h3>
+          <p>Automatic media fetching from Pexels and Pixabay. Also supports local images and videos as input assets.</p>
+        </div>
+        <div class="feature">
+          <h3>Remotion Rendering</h3>
+          <p>Frame-perfect video rendering with React and Remotion. Portrait and landscape output, background music, and subtitle overlays.</p>
+        </div>
+        <div class="feature">
+          <h3>Local Web Portal</h3>
+          <p>Browser-based UI for generating, previewing, and downloading videos. Live status tracking with cancel, retry, and restart support.</p>
+        </div>
+        <div class="feature">
+          <h3>MCP Server</h3>
+          <p>Built-in Model Context Protocol server for Claude Desktop, Claude Code, and other MCP clients. One-command AI agent integration.</p>
+        </div>
+        <div class="feature">
+          <h3>Batch Generation</h3>
+          <p>Generate multiple videos in a single run with resumable segmented rendering. Cancel and resume without losing progress.</p>
+        </div>
+        <div class="feature">
+          <h3>Windows Desktop App</h3>
+          <p>Standalone .exe installer with bundled runtime. No manual Node.js or Python setup required for Windows users.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Quick Start</h2>
+      <p>Clone the repository and start generating:</p>
+      <pre><code>git clone https://github.com/itsPremkumar/Automated-Video-Generator.git
+cd Automated-Video-Generator
+npm install
+py -m pip install -r requirements.txt
+cp .env.example .env
+npm run dev</code></pre>
+      <p>Then open <code>http://localhost:3001/</code> in your browser.</p>
+    </section>
+
+    <section>
+      <h2>Connect with Claude (MCP)</h2>
+      <p>Use the one-command MCP setup for AI agent integration:</p>
+      <pre><code>claude mcp add automated-video-generator -- npx automated-video-generator</code></pre>
+    </section>
+
+    <section>
+      <h2>Documentation</h2>
+      <ul>
+        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/docs/SETUP.md">Setup Guide</a></li>
+        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/docs/ARCHITECTURE.md">Architecture</a></li>
+        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/docs/INPUT_ASSETS_GUIDE.md">Input Assets Guide</a></li>
+        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/docs/CRASH-TROUBLESHOOTING.md">Troubleshooting</a></li>
+        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/docs/ROADMAP.md">Roadmap</a></li>
+        <li><a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/CONTRIBUTING.md">Contributing</a></li>
+      </ul>
+    </section>
+
+    <div class="footer">
+      <p>Automated Video Generator — MIT License — <a href="https://github.com/itsPremkumar/Automated-Video-Generator">GitHub Repository</a></p>
+      <p>Built with Remotion, React, Express, Node.js, and Edge-TTS</p>
+    </div>
+  </div>
+</body>
+</html>
