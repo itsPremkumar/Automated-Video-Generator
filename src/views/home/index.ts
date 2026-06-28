@@ -91,6 +91,11 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
                     operatingSystem: 'Windows, macOS, Linux',
                     sameAs: PROJECT_REPOSITORY_URL,
                     url: absoluteUrl(req, '/'),
+                    author: {
+                        '@type': 'Person',
+                        name: 'Premkumar',
+                        url: 'https://github.com/itsPremkumar',
+                    },
                 },
                 {
                     '@context': 'https://schema.org',
@@ -101,6 +106,19 @@ export function homePage(req: Request, videos: VideoRecord[], setup: SetupStatus
                     name: PROJECT_NAME,
                     programmingLanguage: ['TypeScript', 'React'],
                     runtimePlatform: 'Node.js',
+                    author: {
+                        '@type': 'Person',
+                        name: 'Premkumar',
+                        url: 'https://github.com/itsPremkumar',
+                    },
+                },
+                {
+                    '@context': 'https://schema.org',
+                    '@type': 'Organization',
+                    name: PROJECT_NAME,
+                    url: absoluteUrl(req, '/'),
+                    sameAs: PROJECT_REPOSITORY_URL,
+                    description: DEFAULT_SITE_DESCRIPTION,
                 },
             ],
             keywords: DEFAULT_SITE_KEYWORDS,

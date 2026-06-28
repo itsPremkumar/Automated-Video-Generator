@@ -672,7 +672,7 @@ These files make the project easier for AI tools and answer engines to understan
 
 If you want more GitHub discovery, set repo topics like:
 
-`free-video-generator`, `open-source-video-generator`, `text-to-video`, `ai-video-generator`, `remotion`, `edge-tts`, `youtube-shorts`, `tiktok-video-generator`, `self-hosted`, `mcp-server`
+`free-video-generator`, `open-source-video-generator`, `text-to-video`, `ai-video-generator`, `remotion`, `edge-tts`, `youtube-shorts`, `tiktok-video-generator`, `self-hosted`, `mcp-server`, `no-api-key`, `openverse`, `creative-commons-images`, `stock-footage`, `video-pipeline`
 
 ## Contributing
 

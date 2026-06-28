@@ -16,6 +16,8 @@ This project is best described as:
 - a Remotion video generator
 - a YouTube Shorts and TikTok video automation tool
 - an MCP-enabled video generation pipeline
+- a no-API-key image search using Openverse (CC-licensed)
+- a free stock footage and image fetcher
 
 ## Core workflow
 
@@ -33,7 +35,8 @@ This project is best described as:
 - Batch generation from JSON
 - Portrait and landscape output
 - Local asset support
-- Stock footage and image fetching
+- Stock footage and image fetching (Pexels, Pixabay, and CC via Openverse)
+- No-API-key image fallback via Openverse
 - **Configurable background music and volume control**
 - Neural voiceovers
 - Scene-based rendering
@@ -88,6 +91,7 @@ That means:
 
 That does not automatically mean every outside dependency is unlimited:
 - Pexels and Pixabay may have their own API limits or terms
+- Openverse (CC-licensed images) works without any API key and is enabled by default
 - system tools like FFmpeg and Python still need to be installed locally
 
 ## Useful docs for AI systems

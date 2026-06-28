@@ -42,11 +42,13 @@ export const renderRobots = (req: Request, res: Response) => {
 
 export const renderSitemap = (req: Request, res: Response) => {
     const videos = portalAppService.listSitemapVideos(req);
-    const items = [
-        { changefreq: 'daily', lastmod: videos[0]?.createdAt || new Date().toISOString(), loc: absoluteUrl(req, '/'), priority: '1.0' },
-        ...videos.map((video) => ({ changefreq: 'weekly', lastmod: video.createdAt, loc: video.watchUrl, priority: '0.8' })),
-    ];
+    const now = new Date().toISOString();
     const xmlEscape = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+    const items = [
+        { changefreq: 'daily' as const, lastmod: videos[0]?.createdAt || now, loc: absoluteUrl(req, '/'), priority: '1.0' },
+        { changefreq: 'weekly' as const, lastmod: now, loc: absoluteUrl(req, '/video-download'), priority: '0.6' },
+        ...videos.map((video) => ({ changefreq: 'weekly' as const, lastmod: video.createdAt, loc: video.watchUrl, priority: '0.8' })),
+    ];
     const urls = items.map((item) => `<url><loc>${xmlEscape(item.loc)}</loc><lastmod>${xmlEscape(item.lastmod)}</lastmod><changefreq>${item.changefreq}</changefreq><priority>${item.priority}</priority></url>`).join('');
     res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`);
 };

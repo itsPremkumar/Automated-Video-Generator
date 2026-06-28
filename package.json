@@ -38,7 +38,13 @@
         "stock-media",
         "react-video",
         "typescript-video",
-        "ai-agent"
+        "ai-agent",
+        "openverse",
+        "creative-commons",
+        "free-stock-images",
+        "no-api-key",
+        "text-to-video-pipeline",
+        "programmatic-video"
     ],
     "openclaw": {
         "extensions": [

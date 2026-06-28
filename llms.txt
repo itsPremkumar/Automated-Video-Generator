@@ -1,6 +1,6 @@
 # Automated Video Generator
 
-> Free and open-source self-hosted AI text-to-video generator built with Remotion, Edge-TTS, stock media APIs, a local web portal, and MCP integration.
+> Free and open-source self-hosted AI text-to-video generator built with Remotion, Edge-TTS, stock media APIs (Pexels, Pixabay, Openverse), a local web portal, and MCP integration.
 
 Project URL: https://github.com/itsPremkumar/Automated-Video-Generator
 NPM Package: https://www.npmjs.com/package/automated-video-generator
@@ -13,7 +13,7 @@ Automated Video Generator turns scripts into finished MP4 videos.
 
 It can:
 - Parse scripts into scenes
-- Fetch stock visuals from Pexels and Pixabay
+- Fetch stock visuals from Pexels, Pixabay, and Openverse (CC-licensed images, no API key required)
 - Use local assets from input/input-assests/
 - **Support for configurable background music and volume control**
 - Generate neural voiceovers with Edge-TTS
@@ -32,6 +32,9 @@ It can:
 - TikTok video generator
 - self-hosted video generator
 - MCP video automation
+- free stock images
+- no API key required
+- CC-licensed images
 
 ## Important docs
 
@@ -56,3 +59,4 @@ It can:
 
 The codebase is completely free and MIT-licensed.
 Third-party providers such as Pexels and Pixabay may still enforce their own quotas or terms.
+Openverse provides CC-licensed images without any API key and is enabled by default.
