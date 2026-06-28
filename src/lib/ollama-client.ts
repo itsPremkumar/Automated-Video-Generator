@@ -55,17 +55,33 @@ export async function generateContent(
     prompt: string,
     format?: 'json',
 ): Promise<string> {
+    return generateContentWithImage(systemInstruction, prompt, undefined, format);
+}
+
+export async function generateContentWithImage(
+    systemInstruction: string,
+    prompt: string,
+    base64Image?: string,
+    format?: 'json',
+): Promise<string> {
+    const body: Record<string, unknown> = {
+        model: OLLAMA_MODEL,
+        prompt,
+        system: systemInstruction,
+        stream: false,
+    };
+    if (format === 'json') {
+        body.format = 'json';
+    }
+    if (base64Image) {
+        body.images = [base64Image];
+    }
+
     for (let attempt = 1; attempt <= OLLAMA_MAX_RETRIES; attempt += 1) {
         try {
             const response = await axios.post<OllamaGenerateResponse>(
                 `${OLLAMA_BASE_URL}/api/generate`,
-                {
-                    model: OLLAMA_MODEL,
-                    prompt,
-                    system: systemInstruction,
-                    stream: false,
-                    ...(format === 'json' ? { format: 'json' } : {}),
-                },
+                body,
                 {
                     timeout: OLLAMA_TIMEOUT_MS,
                     headers: { 'Content-Type': 'application/json' },

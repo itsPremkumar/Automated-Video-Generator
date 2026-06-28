@@ -37,6 +37,7 @@ const OLLAMA_MAX_CONCURRENCY = Math.max(1, Number.parseInt(process.env.OLLAMA_MA
 const AI_PROVIDER = process.env.AI_PROVIDER?.trim().toLowerCase() || 'ollama';
 
 const OPENVERSE_ENABLED = process.env.OPENVERSE_ENABLED !== 'false';
+const MEDIA_VERIFICATION_ENABLED = process.env.MEDIA_VERIFICATION_ENABLED !== 'false';
 
 const BASE_URL = 'https://api.pexels.com/v1';
 const CACHE_FILE = resolveProjectPath('.video-cache.json');

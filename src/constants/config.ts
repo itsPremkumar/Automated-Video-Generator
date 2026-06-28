@@ -62,6 +62,8 @@ The next challenge is not only building more powerful systems, but using them re
 
 export const EDITABLE_ENV_KEYS = [
     'OPENVERSE_ENABLED',
+    'MEDIA_VERIFICATION_ENABLED',
+    'MEDIA_VERIFICATION_CONFIDENCE',
     'PEXELS_API_KEY',
     'PIXABAY_API_KEY',
     'GEMINI_API_KEY',

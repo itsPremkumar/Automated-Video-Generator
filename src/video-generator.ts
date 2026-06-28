@@ -2,6 +2,7 @@ import { parseScript, validateScript } from './lib/script-parser';
 import { fetchVisualsForScene, downloadMedia, getVideoMetadata, invalidateCachedVisual } from './lib/visual-fetcher';
 import { generateVoiceovers, DEFAULT_VOICE_CONFIG, LANGUAGE_DEFAULTS } from './lib/voice-generator';
 import { getAudioDuration, splitAudioFile, generateSilence, applyAutoDucking } from './lib/audio-processor';
+import { verifyMedia, verificationPasses, MEDIA_VERIFICATION_ENABLED } from './lib/media-verifier';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logError, logInfo } from './shared/logging/runtime-logging';
@@ -324,6 +325,16 @@ export async function generateVideo(
                             // console.log(`✅ [SCENE ${i + 1}] Saved: ${filename}`);
                             if (downloadResult.videoDuration) {
                                 // console.log(`⏱️ [SCENE ${i + 1}] Video duration: ${downloadResult.videoDuration.toFixed(2)}s`);
+                            }
+
+                            if (MEDIA_VERIFICATION_ENABLED) {
+                                const verification = await verifyMedia(downloadResult.path, scene.searchKeywords);
+                                if (!verificationPasses(verification)) {
+                                    console.log(`🧐 [SCENE ${i + 1}] Visual rejected by AI verifier (confidence: ${verification.confidence}/10) — ${verification.reason}`);
+                                    invalidateCachedVisual(scene.searchKeywords, orientation);
+                                    try { fs.unlinkSync(downloadResult.path); } catch {}
+                                    throw new Error(`Visual verification failed for ${filename}`);
+                                }
                             }
                         } catch (err: any) {
                             // console.error(`⚠️ [SCENE ${i + 1}] Download failed: ${err.message}`);
