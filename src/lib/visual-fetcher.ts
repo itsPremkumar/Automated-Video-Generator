@@ -4,6 +4,7 @@ import * as path from 'path';
 import { config } from 'dotenv';
 import { execSync } from 'child_process';
 import { logInfo, resolveProjectPath } from '../runtime';
+import { generateContent as ollamaGenerateContent } from './ollama-client';
 
 // @ts-ignore - ffprobe-static types
 import ffprobePath from 'ffprobe-static';
@@ -30,6 +31,9 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-flash';
 const GEMINI_TIMEOUT_MS = Math.max(5000, Number.parseInt(process.env.GEMINI_TIMEOUT_MS || '30000', 10) || 30000);
 const GEMINI_MAX_RETRIES = Math.max(1, Number.parseInt(process.env.GEMINI_MAX_RETRIES || '3', 10) || 3);
 const GEMINI_MAX_CONCURRENCY = Math.max(1, Number.parseInt(process.env.GEMINI_MAX_CONCURRENCY || '2', 10) || 2);
+
+const OLLAMA_MAX_CONCURRENCY = Math.max(1, Number.parseInt(process.env.OLLAMA_MAX_CONCURRENCY || '2', 10) || 2);
+const AI_PROVIDER = process.env.AI_PROVIDER?.trim().toLowerCase() || 'ollama';
 
 const BASE_URL = 'https://api.pexels.com/v1';
 const CACHE_FILE = resolveProjectPath('.video-cache.json');
@@ -389,6 +393,23 @@ async function withGeminiSlot<T>(task: () => Promise<T>): Promise<T> {
     }
 }
 
+let activeOllamaRequests = 0;
+const ollamaWaitQueue: Array<() => void> = [];
+
+async function withOllamaSlot<T>(task: () => Promise<T>): Promise<T> {
+    if (activeOllamaRequests >= OLLAMA_MAX_CONCURRENCY) {
+        await new Promise<void>((resolve) => ollamaWaitQueue.push(resolve));
+    }
+
+    activeOllamaRequests += 1;
+    try {
+        return await task();
+    } finally {
+        activeOllamaRequests = Math.max(0, activeOllamaRequests - 1);
+        ollamaWaitQueue.shift()?.();
+    }
+}
+
 function normalizeKeywordList(value: unknown): string[] {
     if (!Array.isArray(value)) {
         return [];
@@ -527,6 +548,49 @@ Only return the JSON array, no other text or formatting. DO NOT wrap with \`\`\`
             }
 
             console.log(`[AI-DIRECTOR] Error optimizing keywords: ${formatGeminiError(error)}`);
+        }
+    }
+
+    return defaultKeywords;
+}
+
+async function optimizeKeywordsWithOllamaInternal(
+    sceneText: string,
+    defaultKeywords: string[]
+): Promise<string[]> {
+    const systemInstruction = `You are an expert AI video director. Return a JSON array of up to 3 search query strings.`;
+
+    const prompt = `I have this voiceover text for a video scene: "${sceneText}"
+
+Return a JSON array of up to 3 highly optimized, cinematic search queries (strings) to find the best matching B-roll footage on Pexels or Pixabay.
+The queries should be concise but descriptive (e.g. "cinematic dark moody rain window", "aerial drone city sunset").
+Only return the JSON array, no other text or formatting. DO NOT wrap with \`\`\`json.`;
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+            const responseText = await withOllamaSlot(() =>
+                ollamaGenerateContent(systemInstruction, prompt)
+            );
+
+            const optimizedKeywords = parseGeminiKeywordResponse(responseText);
+
+            if (optimizedKeywords.length > 0) {
+                console.log(`\n[AI-DIRECTOR] Ollama optimized keywords for scene: "${sceneText.substring(0, 50)}..."`);
+                console.log(`[AI-DIRECTOR] Generated queries:`, optimizedKeywords);
+                return optimizedKeywords;
+            }
+
+            console.log('[AI-DIRECTOR] Ollama returned no usable keyword array, using default query');
+            return defaultKeywords;
+        } catch (error) {
+            if (attempt < 3) {
+                const retryDelay = attempt * 1500;
+                console.log(`[AI-DIRECTOR] Ollama retry ${attempt}/3 after ${retryDelay}ms: ${error}`);
+                await sleep(retryDelay);
+                continue;
+            }
+
+            console.log(`[AI-DIRECTOR] Ollama error optimizing keywords: ${error}`);
         }
     }
 
@@ -769,52 +833,24 @@ export async function searchPixabayVideos(
 }
 
 /**
- * Use Gemini AI to optimize search keywords based on scene text.
- * Falls back to default keywords if API key is missing or on error.
+ * Use AI to optimize search keywords based on scene text.
+ * Supports both Gemini and Ollama providers based on AI_PROVIDER env var.
+ * Falls back to default keywords on error.
  */
 export async function optimizeKeywordsWithGemini(
     sceneText: string,
     defaultKeywords: string[]
 ): Promise<string[]> {
+    if (AI_PROVIDER === 'ollama') {
+        return optimizeKeywordsWithOllamaInternal(sceneText, defaultKeywords);
+    }
+
     const geminiApiKey = getGeminiApiKey();
     if (!geminiApiKey) {
         return defaultKeywords;
     }
 
     return optimizeKeywordsWithGeminiInternal(sceneText, defaultKeywords);
-
-    try {
-        const prompt = `You are an expert AI video director.
-I have this voiceover text for a video scene: "${sceneText}"
-
-Return a JSON array of up to 3 highly optimized, cinematic search queries (strings) to find the best matching B-roll footage on Pexels or Pixabay.
-The queries should be concise but descriptive (e.g. "cinematic dark moody rain window", "aerial drone city sunset").
-Only return the JSON array, no other text or formatting. DO NOT wrap with \`\`\`json.`;
-
-        const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
-            {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7 }
-            },
-            { timeout: 10000 }
-        );
-
-        let responseText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        if (!responseText) return defaultKeywords;
-
-        responseText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-
-        const optimizedKeywords = JSON.parse(responseText);
-        if (Array.isArray(optimizedKeywords) && optimizedKeywords.length > 0) {
-            console.log(`\n🧠 [AI-DIRECTOR] Optimized keywords for scene: "${sceneText.substring(0, 50)}..."`);
-            console.log(`🧠 [AI-DIRECTOR] Generated queries:`, optimizedKeywords);
-            return optimizedKeywords;
-        }
-    } catch (error: any) {
-        console.log(`🧠 [AI-DIRECTOR] ❌ Error optimizing keywords: ${error.message}`);
-    }
-    return defaultKeywords;
 }
 
 /**
