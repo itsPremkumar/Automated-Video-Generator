@@ -35,6 +35,13 @@ It can:
 - free stock images
 - no API key required
 - CC-licensed images
+- AI image verification
+- visual content validation
+- Ollama vision model
+- Gemini Vision integration
+- Openverse image search
+- free API alternative
+- stock footage fallback
 
 ## Important docs
 
@@ -45,6 +52,23 @@ It can:
 - docs/INPUT_ASSETS_GUIDE.md: local asset usage
 - docs/ROADMAP.md: planned product and community direction
 - CONTRIBUTING.md: contribution workflow
+
+## Openverse (No-API-Key Images)
+
+Openverse fetches CC-licensed images from api.openverse.engineering without any API key.
+- src/lib/openverse-fetcher.ts: API client
+- src/lib/visual-fetcher.ts: fallback integration (lines 940-975)
+- Config: OPENVERSE_ENABLED=true (default)
+- docs/OPENVERSE.md: full reference
+
+## AI Visual Media Verification
+
+After downloading, verifies images/videos match scene keywords using AI vision models.
+- src/lib/media-verifier.ts: verifyMedia(), verificationPasses()
+- src/lib/ollama-client.ts: generateContentWithImage() for vision
+- src/video-generator.ts: pipeline integration (lines 331-345)
+- Config: MEDIA_VERIFICATION_ENABLED=true, MEDIA_VERIFICATION_CONFIDENCE=6
+- docs/MEDIA_VERIFICATION.md: full reference
 
 ## Important entry points
 

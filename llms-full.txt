@@ -43,6 +43,10 @@ This project is best described as:
 - Render resume support
 - Browser portal for video creation and playback
 - MCP server for AI agents
+- AI visual media verification (Ollama moondream or Gemini Vision)
+- FFmpeg-based video frame extraction for verification
+- Configurable confidence threshold for media acceptance
+- Graceful AI failure handling (passes through on error)
 
 ## Tech stack
 
@@ -53,6 +57,11 @@ This project is best described as:
 - Express
 - Edge-TTS
 - FFmpeg / ffprobe
+- Ollama (moondream vision model, optional)
+- Gemini Vision API (optional)
+- Openverse API (CC image search, no key required)
+- Pexels API
+- Pixabay API
 
 ## Important files
 
@@ -60,6 +69,8 @@ This project is best described as:
 - QUICKSTART.md: onboarding
 - docs/SETUP.md: installation details
 - docs/CLAUDE_MCP_SETUP.md: MCP setup notes
+- docs/OPENVERSE.md: Openverse CC image integration reference
+- docs/MEDIA_VERIFICATION.md: AI visual verification reference
 - docs/ROADMAP.md: current project direction
 - CONTRIBUTING.md: contribution workflow
 - src/cli.ts: CLI entry point
@@ -68,7 +79,10 @@ This project is best described as:
 - src/video-generator.ts: orchestration logic
 - src/render.ts: video rendering pipeline
 - src/lib/script-parser.ts: scene parsing
-- src/lib/visual-fetcher.ts: stock media fetching
+- src/lib/visual-fetcher.ts: stock media fetching (Pexels, Pixabay, Openverse)
+- src/lib/openverse-fetcher.ts: Openverse API client (no key required)
+- src/lib/media-verifier.ts: AI visual verification logic
+- src/lib/ollama-client.ts: Ollama client with vision support
 - src/lib/voice-generator.ts: Edge-TTS handling
 - remotion/MainVideo.tsx: rendered composition
 
@@ -97,6 +111,8 @@ That does not automatically mean every outside dependency is unlimited:
 ## Useful docs for AI systems
 
 - llms.txt: short machine-readable summary
+- docs/OPENVERSE.md: Openverse CC image search reference (SEO/AEO/GEO)
+- docs/MEDIA_VERIFICATION.md: AI visual verification reference (SEO/AEO/GEO)
 - docs/INPUT_ASSETS_GUIDE.md: local media workflow
 - input/INPUT_FORMAT.md: script format reference
 - docs/CLAWHUB_GUIDE.md: plugin-related usage notes

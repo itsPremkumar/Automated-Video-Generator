@@ -138,6 +138,47 @@ The Automated Video Generator project is officially available on ClawHub. You ca
 - Browser portal for generation, status tracking, playback, and downloads
 - Windows desktop installer with setup wizard, bundled runtime checks, and release verification
 - MCP tool interface for agentic workflows
+- **AI visual media verification** — checks downloaded images/videos against scene keywords using Ollama moondream or Gemini Vision
+- **No-API-key image fallback** — Openverse integration fetches CC-licensed images without any registration or key
+
+## Openverse — Free CC-Licensed Image Search (No API Key)
+
+The pipeline includes a built-in Openverse image search that requires **no API key, no registration, and no token**. Openverse provides access to over 600 million Creative Commons and public domain images.
+
+**When it activates:**
+- If Pexels video search returns no results, Openverse images are tried as fallback
+- If Pexels image search returns no results, Openverse is the last image source
+- **No API keys configured at all?** Set `OPENVERSE_ENABLED=true` (default) and the pipeline runs entirely on CC images
+
+**Config:**
+```env
+OPENVERSE_ENABLED=true
+```
+
+**Docs:** [docs/OPENVERSE.md](docs/OPENVERSE.md) — SEO/AEO/GEO-optimized reference
+**Source:** `src/lib/openverse-fetcher.ts`
+**API:** `api.openverse.engineering/v1/images/`
+
+## AI Visual Media Verification
+
+After downloading media from any stock provider, the pipeline runs an AI vision model to check whether the image or video frame actually matches the scene keywords. Low-confidence results are rejected and the pipeline falls back to the next source.
+
+**How it works:**
+1. Image is converted to base64 (or a video frame is extracted via FFmpeg)
+2. Sent to Ollama (`moondream`) or Gemini Vision with a JSON verdict prompt
+3. If confidence is below `MEDIA_VERIFICATION_CONFIDENCE` (default: 6/10), the download is rejected, cached as invalid, and the file is deleted
+4. If the AI provider is unreachable, verification passes through gracefully
+
+**Config:**
+```env
+MEDIA_VERIFICATION_ENABLED=true
+MEDIA_VERIFICATION_CONFIDENCE=6
+AI_PROVIDER=ollama
+```
+
+**Docs:** [docs/MEDIA_VERIFICATION.md](docs/MEDIA_VERIFICATION.md) — SEO/AEO/GEO-optimized reference
+**Source:** `src/lib/media-verifier.ts`
+**Providers:** Ollama (default, no key) or Gemini Vision (requires `GEMINI_API_KEY`)
 
 ## Quick start
 
@@ -656,6 +697,8 @@ These files make the project easier for AI tools and answer engines to understan
 - [`SETUP.md`](./docs/SETUP.md)
 - [`PRODUCTION_HARDENING.md`](./docs/PRODUCTION_HARDENING.md)
 - [`CLAUDE_MCP_SETUP.md`](./docs/CLAUDE_MCP_SETUP.md)
+- [`OPENVERSE.md`](./docs/OPENVERSE.md) — Free CC images, no API key (SEO/AEO/GEO)
+- [`MEDIA_VERIFICATION.md`](./docs/MEDIA_VERIFICATION.md) — AI visual verification (SEO/AEO/GEO)
 
 ## Roadmap and contributing
 
@@ -672,7 +715,7 @@ These files make the project easier for AI tools and answer engines to understan
 
 If you want more GitHub discovery, set repo topics like:
 
-`free-video-generator`, `open-source-video-generator`, `text-to-video`, `ai-video-generator`, `remotion`, `edge-tts`, `youtube-shorts`, `tiktok-video-generator`, `self-hosted`, `mcp-server`, `no-api-key`, `openverse`, `creative-commons-images`, `stock-footage`, `video-pipeline`
+`free-video-generator`, `open-source-video-generator`, `text-to-video`, `ai-video-generator`, `remotion`, `edge-tts`, `youtube-shorts`, `tiktok-video-generator`, `self-hosted`, `mcp-server`, `no-api-key`, `openverse`, `creative-commons-images`, `stock-footage`, `video-pipeline`, `ai-image-verification`, `ollama-vision`, `gemini-vision`, `ffmpeg-frame-extraction`, `cc-licensed-images`, `visual-content-validation`
 
 ## Contributing
 
