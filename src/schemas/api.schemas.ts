@@ -25,6 +25,7 @@ export const startJobBodySchema = pipelineJobRequestSchema.omit({
 });
 
 export const updateEnvBodySchema = z.object({
+    OPENVERSE_ENABLED: z.enum(['true', 'false']).optional(),
     PEXELS_API_KEY: z.string().trim().max(300).optional(),
     PIXABAY_API_KEY: z.string().trim().max(300).optional(),
     GEMINI_API_KEY: z.string().trim().max(300).optional(),

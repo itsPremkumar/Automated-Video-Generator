@@ -243,6 +243,7 @@ export function registerResources(server: McpServer) {
         voice: env.VIDEO_VOICE || 'en-US-JennyNeural',
         pexelsEnabled: !!env.PEXELS_API_KEY,
         pixabayEnabled: !!env.PIXABAY_API_KEY,
+        openverseEnabled: env.OPENVERSE_ENABLED !== 'false',
       };
 
       return {

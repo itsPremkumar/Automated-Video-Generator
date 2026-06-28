@@ -18,6 +18,7 @@ export const OUTPUT_ROOT = resolveProjectPath('output');
 export const ENV_FILE = resolveProjectPath('.env');
 export const DEFAULT_TITLE = 'Generated Video';
 export const DEFAULT_VOICE = 'en-US-JennyNeural';
+export const OPENVERSE_ENABLED = process.env.OPENVERSE_ENABLED !== 'false';
 export const DEFAULT_FALLBACK_VIDEO = 'default.mp4';
 export const MAX_TITLE_LENGTH = 80;
 export const PROJECT_NAME = 'Automated Video Generator';
@@ -60,6 +61,7 @@ Security teams also use AI to detect unusual behavior, respond to threats faster
 The next challenge is not only building more powerful systems, but using them responsibly, transparently, and in ways that genuinely improve human life.`;
 
 export const EDITABLE_ENV_KEYS = [
+    'OPENVERSE_ENABLED',
     'PEXELS_API_KEY',
     'PIXABAY_API_KEY',
     'GEMINI_API_KEY',

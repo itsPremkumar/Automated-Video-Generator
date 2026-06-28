@@ -5,6 +5,7 @@ import { config } from 'dotenv';
 import { execSync } from 'child_process';
 import { logInfo, resolveProjectPath } from '../runtime';
 import { generateContent as ollamaGenerateContent } from './ollama-client';
+import { searchOpenverseImages } from './openverse-fetcher';
 
 // @ts-ignore - ffprobe-static types
 import ffprobePath from 'ffprobe-static';
@@ -34,6 +35,8 @@ const GEMINI_MAX_CONCURRENCY = Math.max(1, Number.parseInt(process.env.GEMINI_MA
 
 const OLLAMA_MAX_CONCURRENCY = Math.max(1, Number.parseInt(process.env.OLLAMA_MAX_CONCURRENCY || '2', 10) || 2);
 const AI_PROVIDER = process.env.AI_PROVIDER?.trim().toLowerCase() || 'ollama';
+
+const OPENVERSE_ENABLED = process.env.OPENVERSE_ENABLED !== 'false';
 
 const BASE_URL = 'https://api.pexels.com/v1';
 const CACHE_FILE = resolveProjectPath('.video-cache.json');
@@ -935,6 +938,18 @@ export async function fetchVisualsForScene(
                     console.log(`🎨 [FETCH] ⚠️ No video for "${q}" at orientation "${orient}"`);
                 }
             }
+
+            // If no videos found, try Openverse images as fallback
+            if (OPENVERSE_ENABLED) {
+                console.log(`🎨 [FETCH] 🔄 No videos found, trying Openverse images for "${query}"...`);
+                const openverseImages = await searchOpenverseImages(query, 3);
+                if (openverseImages.length > 0) {
+                    console.log(`🎨 [FETCH] ✅ Found image on Openverse: ${openverseImages[0].url} (${openverseImages[0].width}x${openverseImages[0].height})`);
+                    cache[cacheKey] = openverseImages[0];
+                    saveCache(cache);
+                    return openverseImages[0];
+                }
+            }
             return null;
         }
 
@@ -945,6 +960,18 @@ export async function fetchVisualsForScene(
             cache[cacheKey] = images[0];
             saveCache(cache);
             return images[0];
+        }
+
+        // Openverse image fallback (no API key required)
+        if (OPENVERSE_ENABLED) {
+            console.log(`🎨 [FETCH] 🔄 Trying Openverse images for "${query}"...`);
+            const openverseImages = await searchOpenverseImages(query, 3);
+            if (openverseImages.length > 0) {
+                console.log(`🎨 [FETCH] ✅ Found image on Openverse: ${openverseImages[0].url} (${openverseImages[0].width}x${openverseImages[0].height})`);
+                cache[cacheKey] = openverseImages[0];
+                saveCache(cache);
+                return openverseImages[0];
+            }
         }
 
         // console.log('🎨 [FETCH] ⚠️ No visuals found for this query');
