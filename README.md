@@ -74,7 +74,7 @@ Automated Video Generator is a self-hosted text-to-video pipeline for developers
 
 If you are searching for a free video generator, open-source AI video generator, Remotion video generator, YouTube Shorts generator, TikTok video generator, or self-hosted text-to-video tool, this repo is built for that workflow.
 
-> This is not a fake "free trial" generator. The project itself is completely free and MIT-licensed. There is no paid plan, no subscription, and no watermark added by this codebase. Optional third-party services such as Pexels or Pixabay may still have their own quotas or terms.
+> This is not a fake "free trial" generator. The project itself is completely free and MIT-licensed. There is no paid plan, no subscription, and no watermark added by this codebase. Optional third-party services such as Pexels or Pixabay may still have their own quotas or terms. Openverse (CC-licensed images) works without any API key and is enabled by default.
 
 <div align="center">
   <h2>🎬 See it in Action</h2>
@@ -109,7 +109,7 @@ The Automated Video Generator project is officially available on ClawHub. You ca
 - Text-to-video pipeline with Remotion and React
 - **Multi-language support including Tamil, Hindi, Spanish, French, and German**
 - Edge-TTS voiceovers with Windows desktop fallback support for fresh installs
-- Stock media fetching from Pexels and Pixabay
+- Stock media fetching from Pexels, Pixabay, and Openverse (CC-licensed images, no API key required)
 - Local asset support for your own images and videos
 - **Configurable background music with volume control**
 - Batch generation for multiple videos in one run
@@ -401,6 +401,9 @@ pip install -r requirements.txt
 Copy `.env.example` to `.env` and add your keys.
 
 ```env
+# Free stock media — Openverse (CC images, no key required, enabled by default)
+OPENVERSE_ENABLED=true
+
 # Free stock media API keys
 PEXELS_API_KEY=your_key_here
 PIXABAY_API_KEY=your_key_here
@@ -414,7 +417,8 @@ VIDEO_ORIENTATION=portrait
 VIDEO_VOICE=en-US-GuyNeural
 ```
 
-`PEXELS_API_KEY` is the main one to start with, and Pexels offers a free API key.
+`PEXELS_API_KEY` is the main one to start with, and Pexels offers a free API key.  
+**No API keys?** Set `OPENVERSE_ENABLED=true` (it's the default) and the pipeline will fall back to CC-licensed images from Openverse when Pexels/Pixabay aren't configured or return no results.
 
 ## Generate a video
 
