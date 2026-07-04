@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 // @ts-ignore
 import ffmpeg from 'ffmpeg-static';
 // @ts-ignore
@@ -16,6 +16,22 @@ const console = {
 const FFMPEG_PATH = typeof ffmpeg === 'string' ? ffmpeg : (ffmpeg as any)?.path;
 const FFPROBE_PATH = typeof ffprobe === 'string' ? ffprobe : (ffprobe as any)?.path;
 
+function runFfmpeg(args: string[]): string {
+  const cmd = FFMPEG_PATH || 'ffmpeg';
+  const result = spawnSync(cmd, args, { encoding: 'utf-8', stdio: 'pipe' });
+  if (result.error) throw new Error(`FFmpeg error: ${result.error.message}`);
+  if (result.status !== 0) throw new Error(`FFmpeg failed (exit ${result.status}): ${result.stderr?.trim() || result.stdout?.trim()}`);
+  return result.stdout || '';
+}
+
+function runFfprobe(args: string[]): string {
+  const cmd = FFPROBE_PATH || 'ffprobe';
+  const result = spawnSync(cmd, args, { encoding: 'utf-8', stdio: 'pipe' });
+  if (result.error) throw new Error(`FFprobe error: ${result.error.message}`);
+  if (result.status !== 0) throw new Error(`FFprobe failed (exit ${result.status}): ${result.stderr?.trim() || result.stdout?.trim()}`);
+  return result.stdout || '';
+}
+
 /**
  * Get accurate audio duration using ffprobe
  */
@@ -25,8 +41,7 @@ export async function getAudioDuration(filePath: string): Promise<number> {
   }
 
   try {
-    const cmd = `"${FFPROBE_PATH}" -v quiet -show_entries format=duration -of csv=p=0 "${filePath}"`;
-    const result = execSync(cmd, { encoding: 'utf-8' });
+    const result = runFfprobe(['-v', 'quiet', '-show_entries', 'format=duration', '-of', 'csv=p=0', filePath]);
     const duration = parseFloat(result.trim());
     
     if (isNaN(duration)) {
@@ -60,9 +75,7 @@ export async function splitAudioFile(
     const duration = durations[i];
     const outputPath = path.join(outputDir, `scene_${sceneNumber}.mp3`);
 
-    // Extract segment
-    const cmd = `"${FFMPEG_PATH}" -y -i "${filePath}" -ss ${currentTime} -t ${duration} -ac 1 -ar 44100 -b:a 128k "${outputPath}"`;
-    execSync(cmd, { stdio: 'ignore' });
+    runFfmpeg(['-y', '-i', filePath, '-ss', String(currentTime), '-t', String(duration), '-ac', '1', '-ar', '44100', '-b:a', '128k', outputPath]);
 
     audioFiles.set(sceneNumber, { path: outputPath, duration });
     currentTime += duration;
@@ -85,9 +98,7 @@ export async function generateSilence(
 
   const outputPath = path.join(outputDir, `silence_${sceneNumber}.mp3`);
   
-  // Create silence using lavfi anullsrc
-  const cmd = `"${FFMPEG_PATH}" -y -f lavfi -i anullsrc=r=44100:cl=mono -t ${duration} -acodec libmp3lame -b:a 128k "${outputPath}"`;
-  execSync(cmd, { stdio: 'ignore' });
+  runFfmpeg(['-y', '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=mono', '-t', String(duration), '-acodec', 'libmp3lame', '-b:a', '128k', outputPath]);
 
   return outputPath;
 }
@@ -109,26 +120,28 @@ export async function applyAutoDucking(
 
   try {
     // 1. Combine all voiceover tracks into one continuous track
-    const inputArgs = voicePaths.map(p => `-i "${p}"`).join(' ');
+    const concatInputArgs: string[] = ['-y'];
+    for (const p of voicePaths) {
+      concatInputArgs.push('-i', p);
+    }
     const filterParts = voicePaths.map((_, i) => `[${i}:a]`).join('');
     const concatFilter = `${filterParts}concat=n=${voicePaths.length}:v=0:a=1[out]`;
-    
-    execSync(`"${FFMPEG_PATH}" -y ${inputArgs} -filter_complex "${concatFilter}" -map "[out]" "${tempCombinedVoice}"`, { stdio: 'ignore' });
+    concatInputArgs.push('-filter_complex', concatFilter, '-map', '[out]', tempCombinedVoice);
+    runFfmpeg(concatInputArgs);
 
     // 2. Apply sidechain compression (ducking)
     const duckingFilter = `[1:a]asplit[sc][voice];[0:a][sc]sidechaincompress=threshold=0.03:ratio=20:attack=100:release=1000[bg];[bg][voice]amix=inputs=2:duration=first[mix]`;
-    
-    execSync(`"${FFMPEG_PATH}" -y -i "${musicPath}" -i "${tempCombinedVoice}" -filter_complex "${duckingFilter}" -map "[mix]" -b:a 192k "${outputPath}"`, { stdio: 'ignore' });
+    runFfmpeg(['-y', '-i', musicPath, '-i', tempCombinedVoice, '-filter_complex', duckingFilter, '-map', '[mix]', '-b:a', '192k', outputPath]);
 
-  } catch (error: any) {
-    logError(`[AUDIO-PROC] Sidechain ducking failed: ${error.message}`);
-    // Fallback: Just mix them normally if ducking fails
-    try {
-      execSync(`"${FFMPEG_PATH}" -y -i "${musicPath}" -i "${tempCombinedVoice}" -filter_complex "amix=inputs=2:duration=first" -b:a 192k "${outputPath}"`, { stdio: 'ignore' });
-    } catch (fallbackError: any) {
-      logError(`[AUDIO-PROC] Fallback mix also failed: ${fallbackError.message}`);
-      throw fallbackError;
-    }
+    } catch (error: any) {
+      logError(`[AUDIO-PROC] Sidechain ducking failed: ${error.message}`);
+      // Fallback: Just mix them normally if ducking fails
+      try {
+        runFfmpeg(['-y', '-i', musicPath, '-i', tempCombinedVoice, '-filter_complex', 'amix=inputs=2:duration=first', '-b:a', '192k', outputPath]);
+      } catch (fallbackError: any) {
+        logError(`[AUDIO-PROC] Fallback mix also failed: ${fallbackError.message}`);
+        throw fallbackError;
+      }
   } finally {
     if (fs.existsSync(tempCombinedVoice)) {
       try { fs.unlinkSync(tempCombinedVoice); } catch (e) {}

@@ -23,9 +23,8 @@ jobs:
                   node-version: 20
                   cache: npm
             - run: npm ci
-            - run: npx tsc --noEmit
-            - run: npx prettier --check "src/**/*.ts" "remotion/**/*.tsx" "*.json"
-              continue-on-error: true
+            - run: npm run lint
+            - run: npm run format:check
 
     typecheck:
         name: TypeScript Check
@@ -53,18 +52,6 @@ jobs:
                   cache: npm
             - run: npm ci
             - run: npm run test:unit
-
-    build:
-        name: Build Check
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-            - uses: actions/setup-node@v4
-              with:
-                  node-version: 20
-                  cache: npm
-            - run: npm ci
-            - run: npm run typecheck
 
     docker:
         name: Docker Build

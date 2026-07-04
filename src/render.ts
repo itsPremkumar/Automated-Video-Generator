@@ -2,12 +2,14 @@ import { bundle } from '@remotion/bundler';
 import { renderMedia, selectComposition, renderStill } from '@remotion/renderer';
 import * as path from 'path';
 import * as fs from 'fs';
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 import { cleanupAssets } from './lib/cleaner';
 import { logError, logInfo, logWarn, writeProgress } from './shared/logging/runtime-logging';
 import { resolveProjectPath, resolvePublicFilePath, resolveRuntimePublicPath } from './shared/runtime/paths';
 import { createPipelineWorkspace, resolveAssetWorkspaceDir } from './pipeline-workspace';
 import { JobCancellationError, isJobCancellationError } from './lib/job-cancellation';
+
+const _require: any = typeof require !== 'undefined' ? require : undefined;
 
 const console = {
     log: (...args: unknown[]) => logInfo(...args),
@@ -447,7 +449,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         // Detect FFmpeg path - try to use ffmpeg-static
         let ffmpegPath = 'ffmpeg';
         try {
-            const ffmpegStatic = require('ffmpeg-static');
+            const ffmpegStatic = _require('ffmpeg-static');
             if (ffmpegStatic) ffmpegPath = ffmpegStatic;
         } catch (e) {
             console.log('⚠️ [RENDER] Could not resolve ffmpeg-static, falling back to global command');
@@ -455,22 +457,20 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
 
         console.log(`   🛠️  Using FFmpeg: ${ffmpegPath}`);
 
-        const ffmpegCmd = `"${ffmpegPath}" -y -f concat -safe 0 -i "${concatListPath}" -c copy "${finalOutput}"`;
+        const concatArgs = ['-y', '-f', 'concat', '-safe', '0', '-i', concatListPath, '-c', 'copy', finalOutput];
 
         try {
-            execSync(ffmpegCmd, {
-                stdio: 'pipe'
-            });
+            const result = spawnSync(ffmpegPath, concatArgs, { stdio: 'pipe', encoding: 'utf-8' });
+            if (result.status !== 0) throw new Error(result.stderr?.trim() || 'FFmpeg concat failed');
         } catch (ffmpegError: any) {
             // Try with re-encoding if concat copy fails
             console.log('⚠️ [RENDER] Lossless concat failed, trying with re-encode...');
             throwIfCancelled(shouldCancel);
-            const ffmpegReencodeCmd = `"${ffmpegPath}" -y -f concat -safe 0 -i "${concatListPath}" -c:v libx264 -crf 18 -c:a aac "${finalOutput}"`;
+            const reencodeArgs = ['-y', '-f', 'concat', '-safe', '0', '-i', concatListPath, '-c:v', 'libx264', '-crf', '18', '-c:a', 'aac', finalOutput];
 
             try {
-                execSync(ffmpegReencodeCmd, {
-                    stdio: 'pipe'
-                });
+                const result = spawnSync(ffmpegPath, reencodeArgs, { stdio: 'pipe', encoding: 'utf-8' });
+                if (result.status !== 0) throw new Error(result.stderr?.trim() || 'FFmpeg re-encode failed');
             } catch (reencodeError: any) {
                 console.error(`❌ [RENDER] FFmpeg failed: ${reencodeError.message}`);
                 throw reencodeError;

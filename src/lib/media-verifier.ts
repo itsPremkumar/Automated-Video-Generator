@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 import axios from 'axios';
 import { generateContentWithImage as ollamaGenerateWithImage } from './ollama-client';
 import { logInfo } from '../runtime';
@@ -18,7 +18,15 @@ const MEDIA_VERIFICATION_CONFIDENCE = Math.max(1, Math.min(10,
 
 export const MEDIA_VERIFICATION_ENABLED = process.env.MEDIA_VERIFICATION_ENABLED !== 'false';
 
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+function runFfmpeg(args: string[]): Buffer | null {
+  try {
+    const result = spawnSync('ffmpeg', args, { stdio: 'pipe', timeout: 15000 });
+    if (result.status !== 0 || result.error) return null;
+    return result.stdout;
+  } catch {
+    return null;
+  }
+}
 
 export interface VerificationResult {
     passes: boolean;
@@ -30,10 +38,7 @@ function extractVideoFrame(videoPath: string, outputDir: string): string | null 
     const framePath = path.join(outputDir, `verify_frame_${path.basename(videoPath)}.jpg`);
     if (fs.existsSync(framePath)) return framePath;
     try {
-        execSync(
-            `ffmpeg -y -i "${videoPath}" -vframes 1 -q:v 3 "${framePath}"`,
-            { stdio: 'ignore', timeout: 15000 }
-        );
+        runFfmpeg(['-y', '-i', videoPath, '-vframes', '1', '-q:v', '3', framePath]);
         return fs.existsSync(framePath) ? framePath : null;
     } catch {
         return null;
@@ -73,7 +78,7 @@ async function verifyWithGemini(base64Image: string, keywords: string, mimeType:
 Answer ONLY with a JSON object: {"passes": true/false, "confidence": 0-10, "reason": "short reason"}`;
 
     const { data } = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
         {
             contents: [{
                 parts: [
@@ -84,7 +89,10 @@ Answer ONLY with a JSON object: {"passes": true/false, "confidence": 0-10, "reas
             generationConfig: { temperature: 0.1, maxOutputTokens: 100 },
         },
         {
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': GEMINI_API_KEY,
+            },
             timeout: 30000,
         }
     );

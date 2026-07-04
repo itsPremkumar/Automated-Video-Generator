@@ -11,10 +11,17 @@ import {
     INPUT_MUSIC_ROOT,
     resolveAssetPath,
 } from '../../lib/path-safety';
-import { resolvePublicFilePath } from '../../shared/runtime/paths';
+import { projectRoot, resolvePublicFilePath } from '../../shared/runtime/paths';
 
 const execAsync = promisify(exec);
 const MAX_DIRECTORY_ITEMS = 500;
+
+function assertPathWithinProject(filePath: string): void {
+  const resolved = path.resolve(filePath);
+  if (!resolved.startsWith(projectRoot)) {
+    throw new BadRequestError(`Access denied: path is outside the project directory (${projectRoot})`);
+  }
+}
 const STREAMABLE_EXTENSIONS = ['.m4a', '.mov', '.mp3', '.mp4', '.ogg', '.wav', '.webm'];
 const VIEWABLE_EXTENSIONS = ['.gif', '.jpeg', '.jpg', '.m4a', '.mov', '.mp3', '.mp4', '.ogg', '.png', '.wav', '.webm', '.webp'];
 
@@ -57,6 +64,7 @@ export type ViewFileResult =
 export class LocalFilesystem {
     listFiles(rawPath?: string) {
         const queryPath = rawPath ? path.resolve(rawPath) : process.cwd();
+        assertPathWithinProject(queryPath);
         if (!fs.existsSync(queryPath)) {
             throw new NotFoundError('Path not found.');
         }
@@ -143,6 +151,7 @@ export class LocalFilesystem {
 
     getViewFile(rawPath: string, range?: string): ViewFileResult {
         const filePath = path.isAbsolute(rawPath) ? path.resolve(rawPath) : resolvePublicFilePath(rawPath);
+        assertPathWithinProject(filePath);
         if (!fs.existsSync(filePath)) {
             throw new NotFoundError('File not found.');
         }
@@ -228,6 +237,7 @@ export class LocalFilesystem {
             throw new NotFoundError('Source file not found.');
         }
 
+        assertPathWithinProject(targetDirectory);
         if (!fs.existsSync(targetDirectory)) {
             throw new NotFoundError('Target directory not found.');
         }

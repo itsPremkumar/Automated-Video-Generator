@@ -9,9 +9,19 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 import { logError, logInfo, logWarn, writeProgress } from '../runtime';
 import { Scene } from './script-parser';
+
+const _require: any = typeof require !== 'undefined' ? require : undefined;
+
+function runFfprobe(args: string[]): string {
+  const ffprobeCmd = ffprobePath.path || 'ffprobe';
+  const result = spawnSync(ffprobeCmd, args, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+  if (result.error) throw new Error(`FFprobe error: ${result.error.message}`);
+  if (result.status !== 0) throw new Error(`FFprobe failed (exit ${result.status})`);
+  return result.stdout || '';
+}
 import {
   generateVoiceoverWithVoicebox,
   generateVoiceoverWithXtts,
@@ -66,11 +76,7 @@ export function estimateAudioDuration(text: string): number {
 
 function getAudioDuration(filePath: string, text: string): number {
   try {
-    const ffprobeCmd = ffprobePath.path || 'ffprobe';
-    const result = execSync(
-      `"${ffprobeCmd}" -v quiet -show_entries format=duration -of csv=p=0 "${filePath}"`,
-      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
-    );
+    const result = runFfprobe(['-v', 'quiet', '-show_entries', 'format=duration', '-of', 'csv=p=0', filePath]);
     const duration = parseFloat(result.trim());
     if (!isNaN(duration) && duration > 0) return Math.ceil(duration);
   } catch {
@@ -508,7 +514,7 @@ async function generateSceneVoiceoverWithGtts(
   const language = getGttsLanguage(config);
 
   try {
-    const Gtts = require('gtts');
+    const Gtts = _require('gtts');
     await new Promise<void>((resolve, reject) => {
       const tts = new Gtts(cleanText, language);
       const outputStream = fs.createWriteStream(outputPath);

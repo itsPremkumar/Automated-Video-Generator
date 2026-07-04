@@ -1,3 +1,4 @@
+import * as path from 'path';
 import { MediaAsset } from '../visual-fetcher.js';
 import { VideoResult } from './models.js';
 import { WikimediaProvider } from './providers/wikimedia.js';
@@ -60,8 +61,8 @@ export class FreeVideoAdapter {
             publicPath = toPublicRelativePath(localPath);
         } catch {
             // Fallback: just return the filename relative to workspace
-            publicPath = `jobs/${require('path').relative(
-                require('path').resolve(process.cwd(), 'public'),
+            publicPath = `jobs/${path.relative(
+                path.resolve(process.cwd(), 'public'),
                 localPath
             ).replace(/\\/g, '/')}`;
         }

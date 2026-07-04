@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
 import { config } from 'dotenv';
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 import { logInfo, resolveProjectPath } from '../runtime';
 import { generateContent as ollamaGenerateContent } from './ollama-client';
 import { searchOpenverseImages } from './openverse-fetcher';
@@ -250,11 +250,14 @@ export function getVideoMetadata(
 ): VideoMetadata {
     try {
         const ffprobeCmd = ffprobePath.path || 'ffprobe';
-        const result = execSync(
-            `"${ffprobeCmd}" -v quiet -count_frames -print_format json -show_entries format=duration:stream=codec_type,duration,avg_frame_rate,r_frame_rate,nb_frames,nb_read_frames "${filePath}"`,
-            { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
-        );
-        const parsed = JSON.parse(result) as {
+        const probe = spawnSync(ffprobeCmd, [
+            '-v', 'quiet', '-count_frames', '-print_format', 'json',
+            '-show_entries', 'format=duration:stream=codec_type,duration,avg_frame_rate,r_frame_rate,nb_frames,nb_read_frames',
+            filePath
+        ], { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+        if (probe.error) throw probe.error;
+        if (probe.status !== 0) throw new Error(probe.stderr?.trim() || 'FFprobe failed');
+        const parsed = JSON.parse(probe.stdout) as {
             format?: { duration?: string };
             streams?: Array<{
                 codec_type?: string;
@@ -949,7 +952,7 @@ export async function fetchVisualsForScene(
                         const freeResults = await provider.search({ keyword: q, count: 3, maxDurationSeconds: 30, minResolutionHeight: MIN_WIDTH });
                         if (freeResults.length > 0) {
                             const best = freeResults[0];
-                            const videosDir = path.dirname(require('path').resolve(process.cwd(), 'public/jobs'));
+                            const videosDir = path.dirname(path.resolve(process.cwd(), 'public/jobs'));
                             const dlResults = await freeVideoDownloader.downloadAll([best], videosDir);
                             if (dlResults.length > 0 && dlResults[0].success && dlResults[0].localPath) {
                                 const asset: MediaAsset = {

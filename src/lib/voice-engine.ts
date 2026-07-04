@@ -6,13 +6,15 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { spawnSync } from 'child_process';
-import { logError, logInfo, logWarn } from '../runtime';
+import { logError, logInfo, logWarn, resolveProjectPath, resolveResourcePath } from '../runtime';
 import {
   EdgeTtsRuntime,
   VoiceEngineStatus,
   VoiceMetadata,
   WindowsSapiStatus,
 } from './voice-types';
+
+const _require: any = typeof require !== 'undefined' ? require : undefined;
 
 const console = {
   log: (...args: unknown[]) => logInfo(...args),
@@ -112,7 +114,6 @@ function edgeTtsCandidates(): EdgeTtsRuntime[] {
     pushCandidate(candidates, seen, { command: configuredPath, argsPrefix: [], label: configuredPath });
   }
 
-  const { resolveProjectPath, resolveResourcePath } = require('../runtime');
   const bundledPaths = [
     resolveProjectPath('portable-python', 'python.exe'),
     resolveResourcePath('app-bundle', 'portable-python', 'python.exe'),
@@ -199,7 +200,7 @@ export function resolveEdgeTtsRuntime(): EdgeTtsRuntime | null {
 export function canUseGttsFallback(): boolean {
   if (checkedGttsAvailability !== null) return checkedGttsAvailability;
   try {
-    const Gtts = require('gtts');
+    const Gtts = _require('gtts');
     checkedGttsAvailability = typeof Gtts === 'function';
   } catch {
     checkedGttsAvailability = false;
