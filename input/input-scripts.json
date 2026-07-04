@@ -1,8 +1,18 @@
 [
   {
-    "id": "test-default-subtitles2552",
-    "title": "1. Default Subtitles46636",
-    "script": "[Visual: modern office] This video uses the standard subtitle style (Fade, Bottom, White).",
+    "id": "free-video-test-space",
+    "title": "Space Exploration Free Sources",
+    "script": "[Visual: space nebula stars galaxy cosmos] The vast expanse of space holds countless mysteries. Nebulas glow with vibrant colors across light-years of distance. Stars are born and die in spectacular fashion. Our exploration of the cosmos continues to reveal the wonders of the universe.",
+    "orientation": "landscape",
+    "language": "english",
+    "showText": true
+  },
+  {
+    "id": "free-video-test-nature",
+    "title": "Nature & Wildlife Free Sources",
+    "script": "[Visual: cat animal nature wildlife forest] The natural world is full of fascinating creatures. From domestic animals to wild beasts, each has adapted to its environment in remarkable ways. Their behaviors and habitats tell the story of evolution and survival.",
+    "orientation": "portrait",
+    "language": "english",
     "showText": true
   }
 ]
