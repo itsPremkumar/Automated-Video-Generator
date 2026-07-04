@@ -6,6 +6,7 @@ import { execSync } from 'child_process';
 import { logInfo, resolveProjectPath } from '../runtime';
 import { generateContent as ollamaGenerateContent } from './ollama-client';
 import { searchOpenverseImages } from './openverse-fetcher';
+import { wikiProvider, archiveProvider, freeVideoDownloader } from './free-video/index';
 
 // @ts-ignore - ffprobe-static types
 import ffprobePath from 'ffprobe-static';
@@ -937,6 +938,38 @@ export async function fetchVisualsForScene(
                         return pixabayVideos[0];
                     }
                     console.log(`🎨 [FETCH] ⚠️ No video for "${q}" at orientation "${orient}"`);
+                }
+            }
+
+            // Try free video sources (Wikimedia Commons + Internet Archive) before Openverse fallback
+            for (const q of queriesToTry) {
+                console.log(`🎨 [FETCH] 🆓 Trying free sources for: "${q}"...`);
+                for (const provider of [wikiProvider, archiveProvider]) {
+                    try {
+                        const freeResults = await provider.search({ keyword: q, count: 3, maxDurationSeconds: 30, minResolutionHeight: MIN_WIDTH });
+                        if (freeResults.length > 0) {
+                            const best = freeResults[0];
+                            const videosDir = path.dirname(require('path').resolve(process.cwd(), 'public/jobs'));
+                            const dlResults = await freeVideoDownloader.downloadAll([best], videosDir);
+                            if (dlResults.length > 0 && dlResults[0].success && dlResults[0].localPath) {
+                                const asset: MediaAsset = {
+                                    type: 'video',
+                                    url: best.downloadUrl,
+                                    width: best.resolution ? parseInt(best.resolution.split('x')[0] ?? '1080', 10) : 1080,
+                                    height: best.resolution ? parseInt(best.resolution.split('x')[1] ?? '1920', 10) : 1920,
+                                    photographer: best.creator,
+                                    localPath: dlResults[0].localPath,
+                                    videoDuration: best.durationSeconds ?? undefined,
+                                };
+                                cache[cacheKey] = asset;
+                                saveCache(cache);
+                                console.log(`🎨 [FETCH] ✅ Found free video from ${provider.name}: ${best.title}`);
+                                return asset;
+                            }
+                        }
+                    } catch (err: any) {
+                        console.log(`🎨 [FETCH] ⚠️ Free provider ${provider.name} error: ${err.message}`);
+                    }
                 }
             }
 

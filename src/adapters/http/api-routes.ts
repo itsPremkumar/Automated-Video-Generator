@@ -11,6 +11,7 @@ import * as SetupController from './setup-controller';
 import * as VideosController from './videos-controller';
 import * as VideoDownloadController from './video-download-controller';
 import * as SocialDownloadController from './social-download-controller';
+import * as FreeVideoController from './free-video-controller';
 import {
     assetFilenameParamsSchema,
     generateScriptBodySchema,
@@ -52,6 +53,10 @@ router.post('/jobs', createJobLimiter, validateRequest({ body: startJobBodySchem
 router.post('/ai/generate-script', aiLimiter, validateRequest({ body: generateScriptBodySchema }), asyncHandler(AiController.generateScriptAI));
 router.post('/video-download/process', asyncHandler(VideoDownloadController.processDownloadRequest));
 router.post('/social-download/process', validateRequest({ body: socialDownloadBodySchema }), asyncHandler(SocialDownloadController.processSocialDownloadRequest));
+
+router.get('/free-video/sources', asyncHandler(FreeVideoController.sources));
+router.get('/free-video/search', asyncHandler(FreeVideoController.search));
+router.post('/free-video/download', asyncHandler(FreeVideoController.download));
 
 router.get('/fs/ls', requireLocalAccess, validateRequest({ query: listFilesQuerySchema }), asyncHandler(FilesController.listFiles));
 router.post('/fs/pick', requireLocalAccess, validateRequest({ body: pickFileBodySchema }), asyncHandler(FilesController.pickFile));

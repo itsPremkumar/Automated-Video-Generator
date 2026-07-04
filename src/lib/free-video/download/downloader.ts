@@ -1,0 +1,132 @@
+import * as fs from 'fs';
+import * as path from 'path';
+import { createHttpClient, headContentLength } from '../http-client.js';
+import { withRetry, getAvailablePath, getExistingFileSize, sanitizeFilename } from '../utils.js';
+import { VideoResult, DownloadResult } from '../models.js';
+
+export class FreeDownloadManager {
+    private readonly client;
+    private readonly concurrentDownloads: number;
+    private readonly retryCount: number;
+    private readonly retryBaseDelayMs: number;
+
+    constructor(options?: { concurrentDownloads?: number; retryCount?: number; retryBaseDelayMs?: number }) {
+        this.client = createHttpClient(60000);
+        this.concurrentDownloads = options?.concurrentDownloads ?? 3;
+        this.retryCount = options?.retryCount ?? 3;
+        this.retryBaseDelayMs = options?.retryBaseDelayMs ?? 2000;
+    }
+
+    public async downloadAll(videos: VideoResult[], outputDir: string): Promise<DownloadResult[]> {
+        if (videos.length === 0) return [];
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
+
+        const usedBaseNames = new Set<string>();
+        const results: DownloadResult[] = [];
+
+        // Process with concurrency limit
+        const queue = [...videos];
+        const inProgress: Promise<DownloadResult | void>[] = [];
+
+        while (queue.length > 0 || inProgress.length > 0) {
+            while (queue.length > 0 && inProgress.length < this.concurrentDownloads) {
+                const video = queue.shift()!;
+                const p = this.downloadOne(video, outputDir, usedBaseNames)
+                    .then(r => { results.push(r); })
+                    .catch(err => {
+                        results.push({
+                            video, success: false, localPath: null,
+                            error: err.message, bytesDownloaded: 0, resumed: false,
+                        });
+                    });
+                inProgress.push(p);
+            }
+            if (inProgress.length > 0) {
+                await Promise.race(inProgress);
+                inProgress.splice(0, inProgress.length, ...inProgress.filter(p => {
+                    try { return typeof (p as any).then === 'function'; } catch { return false; }
+                }));
+            }
+        }
+        await Promise.all(inProgress);
+        return results;
+    }
+
+    private async downloadOne(
+        video: VideoResult,
+        outputDir: string,
+        usedBaseNames: Set<string>,
+    ): Promise<DownloadResult> {
+        const baseName = this.reserveBaseName(video, usedBaseNames);
+        const extension = video.format !== 'unknown' ? video.format : this.guessExtension(video.downloadUrl);
+        const targetPath = await getAvailablePath(outputDir, baseName, extension);
+        const partPath = `${targetPath}.part`;
+        const existingBytes = await getExistingFileSize(partPath);
+        const resuming = existingBytes > 0;
+
+        try {
+            const bytesWritten = await withRetry(
+                () => this.streamToFile(video.downloadUrl, partPath, existingBytes),
+                { retries: this.retryCount, baseDelayMs: this.retryBaseDelayMs, label: `download:${baseName}` },
+            );
+
+            if (fs.existsSync(partPath)) {
+                fs.renameSync(partPath, targetPath);
+            }
+
+            return {
+                video, success: true, localPath: targetPath,
+                error: null, bytesDownloaded: bytesWritten, resumed: resuming,
+            };
+        } catch (err: any) {
+            if (fs.existsSync(partPath)) {
+                try { fs.unlinkSync(partPath); } catch { }
+            }
+            return {
+                video, success: false, localPath: null,
+                error: err.message, bytesDownloaded: existingBytes, resumed: resuming,
+            };
+        }
+    }
+
+    private async streamToFile(url: string, partPath: string, resumeFromBytes: number): Promise<number> {
+        const headers: Record<string, string> = {};
+        if (resumeFromBytes > 0) {
+            headers.Range = `bytes=${resumeFromBytes}-`;
+        }
+
+        const response = await this.client.get(url, { responseType: 'stream', headers });
+        const supportsResume = response.status === 206;
+        const writeStream = fs.createWriteStream(partPath, { flags: supportsResume ? 'a' : 'w' });
+        let downloadedThisSession = supportsResume ? resumeFromBytes : 0;
+
+        return new Promise<number>((resolve, reject) => {
+            response.data.on('data', (chunk: Buffer) => { downloadedThisSession += chunk.length; });
+            response.data.on('error', (err: Error) => { writeStream.destroy(); reject(err); });
+            writeStream.on('error', (err: Error) => reject(err));
+            writeStream.on('finish', () => resolve(downloadedThisSession || 1));
+            response.data.pipe(writeStream);
+        });
+    }
+
+    private reserveBaseName(video: VideoResult, usedBaseNames: Set<string>): string {
+        let base = sanitizeFilename(video.title);
+        let suffix = 1;
+        const original = base;
+        while (usedBaseNames.has(base)) {
+            base = `${original}_${suffix}`;
+            suffix += 1;
+        }
+        usedBaseNames.add(base);
+        return base;
+    }
+
+    private guessExtension(url: string): string {
+        try {
+            const ext = path.extname(new URL(url).pathname).replace('.', '').toLowerCase();
+            return ['mp4', 'webm', 'ogg', 'ogv'].includes(ext) ? ext : 'mp4';
+        } catch { return 'mp4'; }
+    }
+}

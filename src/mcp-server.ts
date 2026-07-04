@@ -8,6 +8,7 @@ import { registerAdminTools } from './adapters/mcp/register-admin-tools';
 import { registerInputTools } from './adapters/mcp/register-input-tools';
 import { registerJobTools } from './adapters/mcp/register-job-tools';
 import { registerOutputTools } from './adapters/mcp/register-output-tools';
+import { registerFreeVideoTools } from './adapters/mcp/register-free-video-tools';
 import { registerPrompts } from './mcp-prompts';
 import { registerResources } from './mcp-resources';
 import { ensureProjectRootCwd, projectRoot, resolveProjectPath } from './shared/runtime/paths';
@@ -25,6 +26,7 @@ registerInputTools(server);
 registerOutputTools(server);
 registerJobTools(server);
 registerAdminTools(server);
+registerFreeVideoTools(server);
 
 async function main() {
     const transport = new StdioServerTransport();

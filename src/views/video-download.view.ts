@@ -107,6 +107,70 @@ export function videoDownloadPage(req: Request, cspNonce?: string): string {
             </div>
         </div>
 
+        <!-- NEW: Free Sources Section -->
+        <div class="panel stack" style="margin-top: 24px;">
+            <div class="panel-head">
+                <div class="stack" style="gap:4px;">
+                    <h3><i data-lucide="globe" style="width:18px;height:18px;vertical-align:middle;margin-right:8px;"></i> Method 3: Free Sources (No API Keys)</h3>
+                    <p class="field-help">Search CC-licensed videos from Wikimedia Commons and Internet Archive. No API keys required.</p>
+                </div>
+            </div>
+
+            <div class="field-grid" style="grid-template-columns: 1fr 200px auto;">
+                <div class="field">
+                    <input type="text" id="free-video-keyword" placeholder="Search keyword (e.g., 'space', 'nature', 'cities')" style="padding: 14px;">
+                </div>
+                <div class="field">
+                    <select id="free-video-source" style="height: 48px;">
+                        <option value="all" selected>All Sources</option>
+                        <option value="wikimedia">Wikimedia Commons</option>
+                        <option value="archive">Internet Archive</option>
+                    </select>
+                </div>
+                <button id="process-free-video" class="button" style="height: 48px;">
+                    <i data-lucide="search"></i> Search
+                </button>
+            </div>
+
+            <div id="free-video-filters" class="field-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 8px;">
+                <div class="field">
+                    <label style="font-size:12px;color:var(--muted);">Max Results</label>
+                    <select id="free-video-count" style="height: 36px; font-size: 13px;">
+                        <option value="3">3</option>
+                        <option value="5" selected>5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label style="font-size:12px;color:var(--muted);">Max Duration</label>
+                    <select id="free-video-duration" style="height: 36px; font-size: 13px;">
+                        <option value="">Any</option>
+                        <option value="30" selected>30s</option>
+                        <option value="60">60s</option>
+                        <option value="120">2 min</option>
+                        <option value="300">5 min</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label style="font-size:12px;color:var(--muted);">Sort By</label>
+                    <select id="free-video-sort" style="height: 36px; font-size: 13px;">
+                        <option value="relevance" selected>Relevance</option>
+                        <option value="newest">Newest</option>
+                        <option value="resolution">Resolution</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="free-video-results" class="stack" style="margin-top: 10px;">
+                <!-- Free video results appear here -->
+            </div>
+
+            <div id="free-video-status" class="status-chip" style="display:none; width: fit-content;">
+                <i data-lucide="loader-2" class="spin" style="width:14px;height:14px;margin-right:6px;"></i> <span id="free-video-status-text">Searching...</span>
+            </div>
+        </div>
+
         ${browserModalComponent()}
 
         <style>
@@ -318,6 +382,156 @@ export function videoDownloadPage(req: Request, cspNonce?: string): string {
                     });
                 } else {
                     console.error('[SOCIAL-DOWNLOAD] Button "process-social" not found in DOM.');
+                }
+
+                // --- Free Video Search Logic ---
+                const freeBtn = document.getElementById('process-free-video');
+                const freeKeyword = document.getElementById('free-video-keyword');
+                const freeSource = document.getElementById('free-video-source');
+                const freeCount = document.getElementById('free-video-count');
+                const freeDuration = document.getElementById('free-video-duration');
+                const freeSort = document.getElementById('free-video-sort');
+                const freeResults = document.getElementById('free-video-results');
+                const freeStatus = document.getElementById('free-video-status');
+                const freeStatusText = document.getElementById('free-video-status-text');
+
+                if (freeBtn) {
+                    console.log('[FREE-VIDEO] Controller initialized.');
+                    freeBtn.addEventListener('click', async () => {
+                        const keyword = freeKeyword.value.trim();
+                        if (!keyword) {
+                            alert('Please enter a search keyword.');
+                            return;
+                        }
+
+                        freeBtn.disabled = true;
+                        freeStatus.style.display = 'inline-flex';
+                        freeStatusText.innerText = 'Searching free sources...';
+                        freeResults.innerHTML = '';
+
+                        try {
+                            const params = new URLSearchParams({
+                                keyword,
+                                source: freeSource.value,
+                                count: freeCount.value,
+                                sortBy: freeSort.value,
+                            });
+                            if (freeDuration.value) {
+                                params.set('maxDuration', freeDuration.value);
+                            }
+
+                            const response = await fetch('/api/free-video/search?' + params.toString());
+                            const result = await response.json();
+
+                            if (result.success) {
+                                renderFreeResults(result.data);
+                            } else {
+                                freeResults.innerHTML = '<div class="status error">Error: ' + result.error + '</div>';
+                            }
+                        } catch (err) {
+                            freeResults.innerHTML = '<div class="status error">Failed to search. Check console for details.</div>';
+                            console.error('[FREE-VIDEO] Fetch error:', err);
+                        } finally {
+                            freeBtn.disabled = false;
+                            freeStatus.style.display = 'none';
+                            if (typeof lucide !== 'undefined') lucide.createIcons();
+                        }
+                    });
+                } else {
+                    console.error('[FREE-VIDEO] Button "process-free-video" not found in DOM.');
+                }
+
+                function renderFreeResults(data) {
+                    if (!data || data.length === 0) {
+                        freeResults.innerHTML = '<div class="empty-state" style="text-align:center;padding:40px;"><p class="muted">No videos found for your keyword. Try a different search term.</p></div>';
+                        return;
+                    }
+
+                    let html = '';
+                    for (const sourceGroup of data) {
+                        const sourceIcon = sourceGroup.source === 'wikimedia' ? '🔤' : '📚';
+                        const sourceLabel = sourceGroup.source === 'wikimedia' ? 'Wikimedia Commons' : 'Internet Archive';
+                        html += '<h4 style="margin:16px 0 8px;">' + sourceIcon + ' ' + sourceLabel + ' (' + sourceGroup.results.length + ' results)</h4>';
+                        html += '<div class="stack" style="gap:12px;">';
+
+                        for (const video of sourceGroup.results) {
+                            const duration = video.durationSeconds ? Math.round(video.durationSeconds) + 's' : 'Unknown';
+                            const resolution = video.resolution || 'Unknown';
+                            const fileSize = video.fileSizeBytes ? (video.fileSizeBytes / 1024 / 1024).toFixed(1) + ' MB' : 'Unknown';
+                            const thumbnail = video.thumbnailUrl || '';
+
+                            html += '<div class="scene-result-card">';
+                            html += '  <div class="scene-preview-container landscape" style="width:160px;">';
+                            if (thumbnail) {
+                                html += '    <img src="' + thumbnail + '" alt="' + video.title.replace(/"/g, '&quot;') + '" style="object-fit:cover;width:100%;height:100%;">';
+                            } else {
+                                html += '    <div class="stack" style="justify-content:center;align-items:center;height:100%;color:var(--muted);font-size:32px;">🎬</div>';
+                            }
+                            html += '  </div>';
+                            html += '  <div class="scene-info">';
+                            html += '    <div class="row" style="justify-content:space-between;align-items:flex-start;">';
+                            html += '      <strong>' + video.title + '</strong>';
+                            html += '      <button class="button secondary small btn-free-download" data-url="' + video.downloadUrl.replace(/"/g, '&quot;') + '" data-title="' + video.title.replace(/"/g, '&quot;') + '" data-creator="' + video.creator.replace(/"/g, '&quot;') + '" data-license="' + video.license.replace(/"/g, '&quot;') + '" data-format="' + video.format + '" style="padding:6px 12px;font-size:13px;"><i data-lucide="download"></i> Download</button>';
+                            html += '    </div>';
+                            html += '    <p style="font-size:13px;color:var(--muted);">By ' + video.creator + ' &middot; ' + video.license + '</p>';
+                            html += '    <div style="display:flex;gap:12px;font-size:12px;color:var(--muted);margin-top:4px;">';
+                            html += '      <span>⏱ ' + duration + '</span>';
+                            html += '      <span>📐 ' + resolution + '</span>';
+                            html += '      <span>💾 ' + fileSize + '</span>';
+                            html += '      <span>📄 ' + video.format.toUpperCase() + '</span>';
+                            html += '    </div>';
+                            html += '    <a href="' + video.sourcePageUrl + '" target="_blank" style="font-size:12px;color:var(--brand);margin-top:8px;display:inline-block;">View source page →</a>';
+                            html += '  </div>';
+                            html += '</div>';
+                        }
+
+                        html += '</div>';
+                    }
+
+                    freeResults.innerHTML = html;
+
+                    // Add click handlers for download buttons
+                    freeResults.querySelectorAll('.btn-free-download').forEach(btn => {
+                        btn.addEventListener('click', async (e) => {
+                            const url = btn.dataset.url;
+                            const title = btn.dataset.title;
+                            const creator = btn.dataset.creator;
+                            const license = btn.dataset.license;
+                            const format = btn.dataset.format;
+
+                            btn.disabled = true;
+                            btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Downloading...';
+
+                            try {
+                                const response = await fetch('/api/free-video/download', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ url, title, creator, license, format })
+                                });
+                                const result = await response.json();
+
+                                if (result.success) {
+                                    const d = result.data;
+                                    btn.innerHTML = '<i data-lucide="check"></i> Saved';
+                                    btn.style.borderColor = '#22c55e';
+                                    btn.style.color = '#22c55e';
+
+                                    // Show player inline
+                                    const card = btn.closest('.scene-result-card');
+                                    const preview = card.querySelector('.scene-preview-container');
+                                    preview.innerHTML = '<video src="/' + d.publicPath + '" controls style="width:100%;height:100%;object-fit:contain;background:#000;"></video>';
+                                } else {
+                                    btn.innerHTML = '<i data-lucide="alert-circle"></i> Error';
+                                    console.error('[FREE-VIDEO] Download error:', result.error);
+                                }
+                            } catch (err) {
+                                btn.innerHTML = '<i data-lucide="alert-circle"></i> Failed';
+                                console.error('[FREE-VIDEO] Download fetch error:', err);
+                            } finally {
+                                if (typeof lucide !== 'undefined') lucide.createIcons();
+                            }
+                        });
+                    });
                 }
 
                 // --- Browser Logic ---
