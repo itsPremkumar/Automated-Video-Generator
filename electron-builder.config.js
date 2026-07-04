@@ -26,7 +26,7 @@ module.exports = {
         'docs/**/*',
         'public/**/*',
         'bin/**/*',
-        '!input/input-assests/**/*',
+        '!input/input-assets/**/*',
         '!input/music/**/*',
         '!output/**/*',
         '!.env',

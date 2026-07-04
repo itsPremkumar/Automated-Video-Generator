@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { deleteInputScript, readInputScripts, validateScriptFormat, videoScriptSchema, writeInputScript } from './input-store';
 import { assertSafeMutationAllowed } from '../../shared/capabilities';
 import { resolveProjectPath } from '../../shared/runtime/paths';
+import { inputAssetPath, INPUT_ASSETS_DIR } from '../../lib/path-safety';
 import { errorResponse, textResponse } from './responses';
 
 export function registerInputTools(server: McpServer) {
@@ -65,12 +66,12 @@ export function registerInputTools(server: McpServer) {
         'upload_asset',
         {
             title: 'Upload Asset',
-            description: 'Upload a base64 encoded file to input/input-assests/',
+            description: `Upload a base64 encoded file to ${INPUT_ASSETS_DIR}/`,
             inputSchema: z.object({ filename: z.string(), base64Data: z.string() }) as any,
         },
         async ({ filename, base64Data }: any) => {
             assertSafeMutationAllowed('mcp', 'upload local assets');
-            const assetsDir = resolveProjectPath('input', 'input-assests');
+            const assetsDir = inputAssetPath();
             if (!fs.existsSync(assetsDir)) {
                 fs.mkdirSync(assetsDir, { recursive: true });
             }
@@ -89,12 +90,12 @@ export function registerInputTools(server: McpServer) {
         'delete_asset',
         {
             title: 'Delete Asset',
-            description: 'Delete a file from input/input-assests/',
+            description: `Delete a file from ${INPUT_ASSETS_DIR}/`,
             inputSchema: z.object({ filename: z.string() }) as any,
         },
         async ({ filename }: any) => {
             assertSafeMutationAllowed('mcp', 'delete local assets');
-            const assetPath = resolveProjectPath('input', 'input-assests', filename);
+            const assetPath = inputAssetPath(filename);
             if (!fs.existsSync(assetPath)) {
                 return errorResponse(`Asset "${filename}" not found.`);
             }

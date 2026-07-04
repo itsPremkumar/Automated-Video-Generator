@@ -14,4 +14,4 @@ Use `input/input-scripts.json` only when you want batch jobs or developer-style 
 
 `npm run generate`
 
-You can still use `[Visual: ...]` tags in scripts to guide stock footage searches or reference local files from `input/input-assests/`.
+You can still use `[Visual: ...]` tags in scripts to guide stock footage searches or reference local files from `input/input-assets/`.

@@ -62,7 +62,7 @@ The MCP server creates:
 The parser:
 - breaks narration into scenes
 - extracts `[Visual: ...]` tags
-- supports local assets from `input/input-assests/`
+- supports local assets from `input/input-assets/`
 - merges standalone `[Visual: ...]` lines into the following narration scene
 
 This matters for Claude-generated scripts, because agents often place `[Visual: ...]` tags on their own lines.
@@ -162,7 +162,7 @@ Persistent state remains in:
 ```text
 input/
   input-scripts.json
-  input-assests/
+  input-assets/
   INPUT_FORMAT.md
 
 output/

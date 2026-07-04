@@ -4,6 +4,7 @@ import { downloadMedia, fetchVisualsForScene, getVideoMetadata } from '../../lib
 import { DEFAULT_VOICE_CONFIG, generateVoiceovers, LANGUAGE_DEFAULTS } from '../../lib/voice-generator';
 import { createPipelineWorkspace, toPublicRelativePath } from '../../pipeline-workspace';
 import { resolveProjectPath, resolvePublicFilePath } from '../../shared/runtime/paths';
+import { inputAssetPath } from '../../lib/path-safety';
 
 type SceneEditorOptions = {
     voice?: string;
@@ -78,7 +79,7 @@ export async function updateSceneInJob(
 
         let visual: any = null;
         if (scene.localAsset) {
-            const assetsDir = resolveProjectPath('input', 'input-assests');
+            const assetsDir = inputAssetPath();
             const sourcePath = path.join(assetsDir, scene.localAsset);
             const targetPath = path.join(visualsDir, scene.localAsset);
             if (fs.existsSync(sourcePath)) {

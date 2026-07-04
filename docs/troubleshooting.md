@@ -1,41 +1,40 @@
----
-title: Troubleshooting — Automated Video Generator
-description: Common issues and solutions for Automated Video Generator. Fix FFmpeg errors, voice generation failures, portal issues, and type errors.
----
 # Troubleshooting
 
-Common issues and solutions for Automated Video Generator.
+## Common Issues
 
-## FFmpeg Not Found
+### "py" command not found on Windows
+Try `python` instead of `py`, or install Python from [python.org](https://python.org).
 
-The project bundles `ffmpeg-static` and `ffprobe-static`. If they fail to load, ensure your system has FFmpeg installed globally:
+### Edge-TTS voice generation fails
+- Ensure Python dependencies are installed: `pip install -r requirements.txt`
+- Check that `edge-tts` is installed: `python -m edge_tts --help`
+- On Windows, the desktop app can fall back to offline speech synthesis
 
-- **Windows**: `winget install FFmpeg`
-- **macOS**: `brew install ffmpeg`
-- **Linux**: `sudo apt install ffmpeg`
+### No visuals found for scenes
+- Check your `PEXELS_API_KEY` is set correctly in `.env`
+- Ensure `OPENVERSE_ENABLED=true` for CC image fallback (no key required)
+- Add local assets to `input/input-assets/` as a fallback
 
-## Voice Generation Fails
+### Remotion rendering hangs or crashes
+- Ensure sufficient memory is available
+- Check that FFmpeg is accessible (the project bundles `ffmpeg-static`)
+- For Docker: ensure Chromium is installed
 
-Ensure Python dependencies are installed:
+### Portal doesn't open
+- Check the terminal for errors
+- Ensure port 3001 is not in use
+- Try `http://localhost:3001/health` to verify the server is running
 
-```bash
-pip install -r requirements.txt
-```
+### TypeScript type errors
+- Run `npx tsc --noEmit` for detailed error output
+- Ensure you're using Node.js 18+
 
-On Windows, the desktop app falls back to offline Windows speech synthesis automatically.
+## Debugging
 
-## Portal Not Loading
+Enable verbose logging by checking the terminal output. The project logs to stdout and `logs.txt`.
 
-Check that port 3001 is not in use. Set `PORT=3002` in `.env` to change it.
+## Getting Help
 
-## Type Errors
-
-Run `npm run typecheck` to verify TypeScript compilation.
-
-## Next Steps
-
-- [Usage Guide](usage) — Learn how to generate videos
-- [Configuration](configuration) — Set up voices, API keys, and output settings
-- [Installation](installation) — Reinstall or set up on a new machine
-
-For crash troubleshooting, see [CRASH-TROUBLESHOOTING.md](./CRASH-TROUBLESHOOTING.md).
+- Search [existing issues](https://github.com/itsPremkumar/Automated-Video-Generator/issues)
+- Open a [new issue](https://github.com/itsPremkumar/Automated-Video-Generator/issues/new/choose)
+- Check the [FAQ](./faq.md)

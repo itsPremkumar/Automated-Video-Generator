@@ -1,0 +1,17 @@
+[
+    {
+        "id": "text-styles-demo",
+        "title": "Custom Text Styles",
+        "orientation": "portrait",
+        "language": "english",
+        "textConfig": {
+            "color": "#ffffff",
+            "fontSize": 28,
+            "position": "center",
+            "animation": "fade",
+            "background": "glass",
+            "glow": true
+        },
+        "script": "This video shows custom text styling options.\n\n[Visual: beautiful mountain landscape]\nYou can customize the text color, size, position, and animation.\n\n[Visual: ocean waves at sunset]\nOptions include fade, slide, zoom, typewriter, and pop animations.\n\n[Visual: forest path with sunlight]\nBackground options: none, box, or glass effect.\n\n[Visual: starry night sky]\nEnable glow for a cinematic text effect."
+    }
+]

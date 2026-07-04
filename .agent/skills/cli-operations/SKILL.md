@@ -79,6 +79,6 @@ When editing `input/input-scripts.json`, agents can use these newer properties:
 | Property | Type | Description |
 | :--- | :--- | :--- |
 | `showText` | Boolean | Set to `false` to disable on-screen subtitles. |
-| `defaultVideo` | String | Filename in `input/input-assests/` to use as a visual fallback. |
+| `defaultVideo` | String | Filename in `input/input-assets/` to use as a visual fallback. |
 | `orientation` | String | `portrait` or `landscape`. |
 | `voice` | String | AI voice ID (e.g., `en-US-JennyNeural`). |

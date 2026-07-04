@@ -1,41 +1,42 @@
-name: Release
+name: Desktop Release
 
 on:
-  workflow_dispatch:
-  # push:
-  #   tags:
-  #     - 'v*'
+    workflow_dispatch:
+        inputs:
+            version:
+                description: 'Release version (e.g., 5.1.0)'
+                required: true
+                type: string
+    push:
+        tags:
+            - 'desktop-v*'
+
+permissions:
+    contents: write
 
 jobs:
-  release:
-    runs-on: windows-latest
-    permissions:
-      contents: write
+    build-windows:
+        name: Build Windows Desktop App
+        runs-on: windows-latest
+        steps:
+            - uses: actions/checkout@v4
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: npm
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
+            - name: Install dependencies
+              run: npm ci
 
-      - name: Install dependencies
-        run: npm ci
+            - name: Build desktop app
+              run: npm run electron:build
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Set up Portable Python
-        run: node scripts/setup-portable-python.cjs
-
-      - name: Compile and Build Desktop App
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          npm run electron:compile
-          npm run electron:release
+            - name: Upload installer
+              uses: actions/upload-artifact@v4
+              with:
+                  name: windows-installer
+                  path: release/
+                  compression-level: 0

@@ -14,7 +14,7 @@ Automated Video Generator turns scripts into finished MP4 videos.
 It can:
 - Parse scripts into scenes
 - Fetch stock visuals from Pexels, Pixabay, and Openverse (CC-licensed images, no API key required)
-- Use local assets from input/input-assests/
+- Use local assets from input/input-assets/
 - **Support for configurable background music and volume control**
 - Generate neural voiceovers with Edge-TTS
 - Render video scenes with Remotion

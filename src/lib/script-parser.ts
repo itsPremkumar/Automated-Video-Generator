@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import { resolveProjectPath } from '../runtime';
+import { inputAssetPath } from './path-safety';
 
 export interface Scene {
     sceneNumber: number;
@@ -105,7 +106,7 @@ function parseScriptLocally(script: string): ParsedScript {
                     visualDescription: `Visual for: ${tag}`,
                     voiceoverText: '',
                     searchKeywords: keywords,
-                    localAsset: fs.existsSync(resolveProjectPath('input', 'input-assests', tag)) ? tag : undefined,
+                    localAsset: fs.existsSync(inputAssetPath(tag)) ? tag : undefined,
                     showText: false
                 });
             }
@@ -125,7 +126,7 @@ function parseScriptLocally(script: string): ParsedScript {
                 visualDescription: `Visual for: ${pendingVisualCue}`,
                 voiceoverText: '',
                 searchKeywords: keywords,
-                localAsset: fs.existsSync(resolveProjectPath('input', 'input-assests', pendingVisualCue)) ? pendingVisualCue : undefined,
+                localAsset: fs.existsSync(inputAssetPath(pendingVisualCue)) ? pendingVisualCue : undefined,
                 showText: false
             });
             pendingVisualCue = visualCue;
@@ -152,7 +153,7 @@ function parseScriptLocally(script: string): ParsedScript {
         if (effectiveVisual) {
             keywords = effectiveVisual.toLowerCase().split(/\s+/).filter(Boolean);
             visualDescription = `Visual for: ${effectiveVisual}`;
-            if (fs.existsSync(resolveProjectPath('input', 'input-assests', effectiveVisual))) {
+            if (fs.existsSync(inputAssetPath(effectiveVisual))) {
                 localAsset = effectiveVisual;
             }
             pendingVisualCue = ''; 
@@ -181,7 +182,7 @@ function parseScriptLocally(script: string): ParsedScript {
         const visualDescription = `Visual for: ${pendingVisualCue}`;
         let localAsset: string | undefined = undefined;
         
-        if (fs.existsSync(resolveProjectPath('input', 'input-assests', pendingVisualCue))) {
+        if (fs.existsSync(inputAssetPath(pendingVisualCue))) {
             localAsset = pendingVisualCue;
         }
 

@@ -1,0 +1,23 @@
+[
+    {
+        "id": "tamil-video",
+        "title": "தமிழ் வீடியோ",
+        "orientation": "portrait",
+        "language": "tamil",
+        "script": "வணக்கம்! இன்று நாம் செயற்கை நுண்ணறிவு பற்றி பேச போகிறோம்.\n\n[Visual: robot working with laptop]\nசெயற்கை நுண்ணறிவு தொழில்நுட்பம் உலகையே மாற்றிக்கொண்டிருக்கிறது.\n\n[Visual: futuristic city with technology]\nஇது நமது அன்றாட வாழ்வில் பல மாற்றங்களை ஏற்படுத்துகிறது."
+    },
+    {
+        "id": "hindi-video",
+        "title": "हिंदी वीडियो",
+        "orientation": "portrait",
+        "language": "hindi",
+        "script": "नमस्ते! आज हम बात करेंगे टेक्नोलॉजी के बारे में।\n\n[Visual: person using smartphone]\nटेक्नोलॉजी ने हमारी जिंदगी को आसान बना दिया है।\n\n[Visual: people working with computers]\nहर दिन नई चीज़ें सीखने को मिल रही हैं।"
+    },
+    {
+        "id": "spanish-video",
+        "title": "Video en Español",
+        "orientation": "portrait",
+        "language": "spanish",
+        "script": "¡Hola! Hoy vamos a hablar sobre tecnología.\n\n[Visual: person using virtual reality headset]\nLa inteligencia artificial está cambiando el mundo.\n\n[Visual: modern office with digital displays]\nCada día hay nuevas innovaciones que nos sorprenden."
+    }
+]

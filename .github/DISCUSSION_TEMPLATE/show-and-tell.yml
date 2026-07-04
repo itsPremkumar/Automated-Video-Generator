@@ -1,0 +1,13 @@
+title: "Show and Tell"
+labels: ["show-and-tell"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share what you've built with Automated Video Generator!
+  - type: textarea
+    attributes:
+      label: Your Project
+      description: Tell us about the videos you've created.
+    validations:
+      required: true

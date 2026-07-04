@@ -1,0 +1,13 @@
+title: "Ideas"
+labels: ["ideas"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share your ideas for improving the project.
+  - type: textarea
+    attributes:
+      label: Idea
+      description: Describe your idea and how it would help.
+    validations:
+      required: true

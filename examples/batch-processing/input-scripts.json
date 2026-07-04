@@ -1,0 +1,16 @@
+[
+    {
+        "id": "batch-video-1",
+        "title": "Video One: Morning Routine",
+        "orientation": "portrait",
+        "language": "english",
+        "script": "Start your morning right with these three simple habits.\n\n[Visual: peaceful morning sunrise over mountains]\nWake up at the same time every day. Your body thrives on routine.\n\n[Visual: person drinking water in the morning]\nDrink a full glass of water before coffee. You have been dehydrated for eight hours.\n\n[Visual: person stretching or doing yoga]\nMove your body for at least 10 minutes. Stretch, walk, or do yoga. Just get moving."
+    },
+    {
+        "id": "batch-video-2",
+        "title": "Video Two: Evening Wind Down",
+        "orientation": "portrait",
+        "language": "english",
+        "script": "How you end your day matters just as much as how you start it.\n\n[Visual: calm evening sunset over ocean]\nPut your phone away one hour before bed. Blue light disrupts your sleep cycle.\n\n[Visual: notebook and pen on desk]\nWrite down three things you are grateful for. Gratitude rewires your brain for happiness.\n\n[Visual: person sleeping peacefully]\nRead a physical book for 20 minutes. It signals your brain that it is time to rest."
+    }
+]

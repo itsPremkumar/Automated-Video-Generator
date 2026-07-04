@@ -6,6 +6,7 @@ import { pipelineAppService } from '../../application/pipeline-app.service';
 import { assertSafeMutationAllowed } from '../../shared/capabilities';
 import { getSystemInfo, readEnvConfig, updateEnvConfig } from './env-tools';
 import { projectRoot, resolveProjectPath } from '../../shared/runtime/paths';
+import { inputAssetPath, INPUT_ASSETS_DIR } from '../../lib/path-safety';
 import { errorResponse, textResponse } from './responses';
 
 export function registerAdminTools(server: McpServer) {
@@ -64,7 +65,7 @@ export function registerAdminTools(server: McpServer) {
             projectRoot,
             inputDir: resolveProjectPath('input'),
             inputScriptsFile: resolveProjectPath('input', 'input-scripts.json'),
-            inputAssetsDir: resolveProjectPath('input', 'input-assests'),
+            inputAssetsDir: inputAssetPath(),
             outputDir: resolveProjectPath('output'),
             publicDir: resolveProjectPath('public'),
             publicJobsDir: resolveProjectPath('public', 'jobs'),
@@ -130,9 +131,9 @@ export function registerAdminTools(server: McpServer) {
 
     server.tool(
         'list_local_assets',
-        'List all local media files available in the input/input-assests/ directory.',
+        `List all local media files available in the ${INPUT_ASSETS_DIR}/ directory.`,
         async () => {
-            const assetsDir = resolveProjectPath('input', 'input-assests');
+            const assetsDir = inputAssetPath();
             if (!fs.existsSync(assetsDir)) {
                 return textResponse('Assets directory not found.');
             }

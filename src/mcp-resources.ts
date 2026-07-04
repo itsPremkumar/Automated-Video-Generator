@@ -2,6 +2,7 @@ import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mc
 import * as fs from 'fs';
 import * as path from 'path';
 import { projectRoot, resolveProjectPath } from './shared/runtime/paths';
+import { inputAssetPath, INPUT_ASSETS_DIR } from './lib/path-safety';
 import { readInputScripts } from './adapters/mcp/input-store';
 import { listOutputVideos, readOutputFile } from './adapters/mcp/output-store';
 import { readEnvConfig } from './adapters/mcp/env-tools';
@@ -31,7 +32,7 @@ function buildTree(dir: string): Record<string, unknown> {
 }
 
 function listInputAssets(): Array<{ name: string; sizeBytes: number }> {
-  const assetsDir = resolveProjectPath('input', 'input-assests');
+    const assetsDir = inputAssetPath();
   if (!fs.existsSync(assetsDir)) {
     return [];
   }
@@ -62,7 +63,7 @@ export function registerResources(server: McpServer) {
           projectRoot,
           inputDir: resolveProjectPath('input'),
           inputScriptsFile: resolveProjectPath('input', 'input-scripts.json'),
-          inputAssetsDir: resolveProjectPath('input', 'input-assests'),
+            inputAssetsDir: inputAssetPath(),
           outputDir: resolveProjectPath('output'),
           publicDir: resolveProjectPath('public'),
           publicJobsDir: resolveProjectPath('public', 'jobs'),
@@ -96,7 +97,7 @@ export function registerResources(server: McpServer) {
     'input://assets',
     {
       title: 'Input Assets',
-      description: 'Files available in input/input-assests/.',
+      description: `Files available in ${INPUT_ASSETS_DIR}/.`,
     },
     async (uri) => ({
       contents: [{

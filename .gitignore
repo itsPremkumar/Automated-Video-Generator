@@ -12,10 +12,12 @@ output/
 public/visuals/
 public/jobs/
 public/audio/
+coverage/
 
 # Environment Variables
 .env
-.env.*
+.env.local
+.env.*.local
 
 # Media and Logs
 *.mp4
@@ -34,7 +36,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Application Input
-input/input-assests/
+input/input-assets/
 input/music/
 
 # OS and IDE files
@@ -60,3 +62,9 @@ temp/
 
 # Portable Runtime
 portable-python/
+
+# TypeScript
+*.tsbuildinfo
+
+# Docker
+.docker/

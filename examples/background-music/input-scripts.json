@@ -1,0 +1,11 @@
+[
+    {
+        "id": "music-demo",
+        "title": "Background Music Demo",
+        "orientation": "portrait",
+        "language": "english",
+        "backgroundMusic": "upbeat.mp3",
+        "musicVolume": 0.3,
+        "script": "This video demonstrates background music with auto-ducking.\n\n[Visual: musician playing guitar in studio]\nThe music automatically gets quieter when the voiceover is speaking.\n\n[Visual: audio mixing equipment in recording studio]\nThis is called auto-ducking, and it makes your videos sound professional.\n\n[Visual: happy person listening to music with headphones]\nPlace your music file in input/music/ and reference it in your script.\n\n[Visual: waveform visualization on screen]\nThe pipeline handles the rest."
+    }
+]

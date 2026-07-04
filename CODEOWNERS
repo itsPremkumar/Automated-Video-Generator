@@ -1,0 +1,27 @@
+# Global owners
+* @itsPremkumar
+
+# Core source code
+/src/ @itsPremkumar
+
+# Documentation
+/docs/ @itsPremkumar
+/docs/**/*.md @itsPremkumar
+README.md @itsPremkumar
+
+# CI/CD configuration
+/.github/ @itsPremkumar
+/.github/workflows/ @itsPremkumar
+
+# Configuration files
+package.json @itsPremkumar
+tsconfig.json @itsPremkumar
+Dockerfile @itsPremkumar
+docker-compose.yml @itsPremkumar
+
+# Community health files
+CODE_OF_CONDUCT.md @itsPremkumar
+CONTRIBUTING.md @itsPremkumar
+SECURITY.md @itsPremkumar
+CHANGELOG.md @itsPremkumar
+ROADMAP.md @itsPremkumar

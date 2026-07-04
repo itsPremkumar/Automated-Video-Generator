@@ -1,15 +1,13 @@
-# Base image: Node.js 18 on Debian Bullseye
-# We use full Debian (not Alpine) for better compatibility with Python/Edge-TTS/Remotion
-FROM node:18-bullseye
+FROM node:20-bullseye
 
-# Set working directory
+LABEL org.opencontainers.image.title="Automated Video Generator"
+LABEL org.opencontainers.image.description="Free and open-source AI text-to-video pipeline"
+LABEL org.opencontainers.image.url="https://github.com/itsPremkumar/Automated-Video-Generator"
+LABEL org.opencontainers.image.source="https://github.com/itsPremkumar/Automated-Video-Generator"
+LABEL org.opencontainers.image.licenses="MIT"
+
 WORKDIR /app
 
-# 1. Install System Dependencies
-# - python3 & pip: for edge-tts
-# - ffmpeg: for media processing
-# - chromium: for Remotion rendering
-# - fonts: for better text rendering
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
@@ -19,31 +17,22 @@ RUN apt-get update && apt-get install -y \
     fonts-noto-color-emoji \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Install Python Dependencies (Edge-TTS)
-# We specifically need edge-tts for voice generation
 RUN pip3 install edge-tts
 
-# 3. Install Node Dependencies
-# Copy package files first to leverage Docker cache
 COPY package*.json ./
-RUN npm install
+RUN npm ci --only=production && npm cache clean --force
 
-# 4. Copy Source Code
 COPY . .
 
-# 5. Environment Configuration
-# Set Puppeteer executable path for Remotion
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-
-# Configurable environment variables (defaults)
-ENV PORT=3000
+ENV PORT=3001
 ENV VIDEO_ORIENTATION=landscape
-ENV VIDEO_VOICE=en-US-JennyNeural
+ENV VIDEO_VOICE=en-US-GuyNeural
+ENV NODE_ENV=production
 
-# 6. Build/Prepare
-# (Optional: if we had a build step, we'd run it here. 
-# Since it's TS executed via tsx, we just ensure permissions)
+EXPOSE 3001
 
-# 7. Start Command
-# Default to running the batch generator
-CMD ["npm", "run", "generate"]
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3001/health', r => {process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))"
+
+CMD ["npm", "run", "dev"]

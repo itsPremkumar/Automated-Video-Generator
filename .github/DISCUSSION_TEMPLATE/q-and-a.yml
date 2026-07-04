@@ -1,0 +1,17 @@
+title: "Q&A"
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ask the community for help.
+  - type: textarea
+    attributes:
+      label: Question
+      description: What do you need help with?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Environment
+      description: OS, Node.js version, relevant config

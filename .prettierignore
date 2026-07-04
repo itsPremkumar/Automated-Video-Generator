@@ -1,0 +1,11 @@
+node_modules/
+dist/
+dist-electron/
+output/
+public/
+.tmp/
+tmp/
+*.log
+coverage/
+.video-cache.json
+package-lock.json

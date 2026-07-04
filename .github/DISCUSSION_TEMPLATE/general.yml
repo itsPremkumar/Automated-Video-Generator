@@ -1,0 +1,13 @@
+title: "General"
+labels: ["general"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Start a general discussion about the project.
+  - type: textarea
+    attributes:
+      label: Topic
+      description: What would you like to discuss?
+    validations:
+      required: true

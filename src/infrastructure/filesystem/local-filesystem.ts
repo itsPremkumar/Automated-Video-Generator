@@ -7,6 +7,7 @@ import {
     buildUniqueFilePath,
     ensureAllowedExtension,
     INPUT_ASSET_ROOT,
+    INPUT_ASSETS_DIR,
     INPUT_MUSIC_ROOT,
     resolveAssetPath,
 } from '../../lib/path-safety';
@@ -106,7 +107,7 @@ export class LocalFilesystem {
         const targetPath = buildUniqueFilePath(targetDir, filename);
         fs.copyFileSync(sourcePath, targetPath);
         const savedFilename = path.basename(targetPath);
-        const folderName = mediaType === 'audio' ? 'music' : 'input-assests';
+        const folderName = mediaType === 'audio' ? 'music' : INPUT_ASSETS_DIR;
 
         return {
             filename: savedFilename,
@@ -125,7 +126,7 @@ export class LocalFilesystem {
             .filter((entry) => !entry.isDirectory())
             .map((entry) => ({
                 filename: entry.name,
-                assetUrl: `/assets/input/input-assests/${encodeURIComponent(entry.name)}`,
+                assetUrl: `/assets/input/${INPUT_ASSETS_DIR}/${encodeURIComponent(entry.name)}`,
                 tag: `[Visual: ${entry.name}]`,
             }))
             .sort((left, right) => left.filename.localeCompare(right.filename));

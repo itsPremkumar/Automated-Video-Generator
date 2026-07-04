@@ -59,7 +59,7 @@ You can choose from several high-quality neural voices. Specify these in the `vo
 | `orientation` | String | `landscape` (16:9) or `portrait` (9:16). |
 | `voice` | String | Use one of the Voice IDs from the table above. |
 | `showText` | Boolean | (Optional) Set to `false` to hide captions. |
-| `defaultVideo` | String | (Optional) Local filename for fallback (in `input-assests/`). |
+| `defaultVideo` | String | (Optional) Local filename for fallback (in `input-assets/`). |
 | `script` | String | The content to be spoken, including `[Visual: ...]` tags. |
 
 ### 5. Script Writing Rules

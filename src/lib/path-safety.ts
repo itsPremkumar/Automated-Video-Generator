@@ -4,9 +4,22 @@ import { BadRequestError } from './errors';
 import { resolveProjectPath } from '../shared/runtime/paths';
 
 /**
- * Root directory for user-uploaded assets (images/videos)
+ * The canonical asset directory name.
  */
-export const INPUT_ASSET_ROOT = resolveProjectPath('input', 'input-assests');
+export const INPUT_ASSETS_DIR = 'input-assets';
+
+/**
+ * Root directory for user-uploaded assets (images/videos).
+ */
+export const INPUT_ASSET_ROOT: string = resolveProjectPath('input', INPUT_ASSETS_DIR);
+
+/**
+ * Resolve a relative path under the input-assets directory.
+ * Use this instead of hardcoding resolveProjectPath('input', 'input-assets', ...).
+ */
+export function inputAssetPath(...segments: string[]): string {
+    return resolveProjectPath('input', INPUT_ASSETS_DIR, ...segments);
+}
 
 /**
  * Root directory for user-uploaded music/audio

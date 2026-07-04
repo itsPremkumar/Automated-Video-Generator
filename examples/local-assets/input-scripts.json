@@ -1,0 +1,8 @@
+[
+    {
+        "id": "local-assets-demo",
+        "title": "My Local Asset Video",
+        "orientation": "landscape",
+        "script": "[Visual: my-image.jpg]\nThis scene uses a local image from input/input-assets/\n\n[Visual: my-video.mp4]\nThis scene uses a local video file\n\nHere is a scene without a visual tag, so it will fetch from stock media.\n\nThe pipeline will download visuals from Pexels or Openverse for this one."
+    }
+]
