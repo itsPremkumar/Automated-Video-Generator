@@ -1,0 +1,26 @@
+{
+  "name": "free-music-module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Free music download (FreeMusicLab) and generation (ACE-Step) module for Automated Video Generator",
+  "type": "module",
+  "scripts": {
+    "test": "npx tsx src/test.ts",
+    "test:search": "npx tsx src/test.ts search",
+    "test:download": "npx tsx src/test.ts download",
+    "test:ace": "npx tsx src/test.ts ace",
+    "test:genres": "npx tsx src/test.ts genres",
+    "test:all": "npx tsx src/test.ts all"
+  },
+  "dependencies": {
+    "@codepenguin/fma-scraper": "^1.1.6",
+    "@ichbinsoftware/everything-is-free": "^1.0.2",
+    "axios": "^1.7.0",
+    "cheerio": "^1.2.0",
+    "nocopyrightsounds-api": "^3.0.2"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
