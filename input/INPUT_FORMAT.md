@@ -140,4 +140,18 @@ You can include your own media by placing it in:
 `input/input-assests/`
 
 Refer to the filename in your script: `[Visual: your-file.jpg]`. The system will automatically handle the layout and duration.
+
+---
+
+## 🆓 Free Video Sources (No API Key)
+
+The pipeline can fetch CC-licensed videos from **Wikimedia Commons** and **Internet Archive** without any API key. This happens automatically when Pexels and Pixabay return no results (or when no API keys are configured).
+
+**How it works in batch jobs:**
+1. Write your script normally (e.g., `input/input-scripts.json`)
+2. Run `npm run generate`
+3. The pipeline tries Pexels → Pixabay → **Free Sources** → Openverse images
+4. If free sources find a matching video, it's used as the scene asset
+
+**For scripts about topics like nature, space, history, science, and animals**, free sources have excellent coverage. See [docs/FREE_VIDEO.md](../docs/FREE_VIDEO.md) for details.
 ```

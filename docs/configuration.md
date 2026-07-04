@@ -12,10 +12,25 @@ Copy `.env.example` to `.env` and configure:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `PEXELS_API_KEY` | Yes | API key for stock video/images |
+| `PEXELS_API_KEY` | No* | API key for stock video/images |
 | `PIXABAY_API_KEY` | No | Alternative stock media source |
+| `OPENVERSE_ENABLED` | No | CC-licensed image fallback (default: `true`) |
 | `PORT` | No | Web portal port (default: 3001) |
 | `OUTPUT_DIR` | No | Custom output directory |
+
+*`PEXELS_API_KEY` is recommended but not required. Without any API keys, the pipeline falls back to **free video sources** (Wikimedia Commons + Internet Archive) and **Openverse images** — both work with zero registration.
+
+## Free Sources (Zero API Keys)
+
+| Source | Content | License | Config |
+|--------|---------|---------|--------|
+| Wikimedia Commons | 90M+ videos (educational, nature, science) | CC BY-SA, CC0, Public Domain | None needed |
+| Internet Archive | Documentaries, news, public domain films | Public Domain, CC BY | None needed |
+| Openverse | 600M+ CC images | Various CC | `OPENVERSE_ENABLED=true` |
+
+These sources are always available and require no environment variables. They activate automatically in the pipeline fallback chain.
+
+**Docs:** [docs/FREE_VIDEO.md](FREE_VIDEO.md) — full reference
 
 ## Voice Settings
 

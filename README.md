@@ -159,6 +159,47 @@ OPENVERSE_ENABLED=true
 **Source:** `src/lib/openverse-fetcher.ts`
 **API:** `api.openverse.engineering/v1/images/`
 
+## Free Video Sources — Wikimedia Commons + Internet Archive (No API Key)
+
+The pipeline includes a **free video search and download system** that requires **no API key, no registration, and no token**. Videos are sourced from Wikimedia Commons (CC-licensed) and Internet Archive (public domain).
+
+**When it activates:**
+- After Pexels and Pixabay return no results (free sources are the last video fallback tier)
+- If no API keys are configured at all, free sources serve as the primary video source
+- Always reachable via dedicated HTTP API, MCP tools, or frontend UI regardless of pipeline state
+
+**Usage:**
+
+```env
+# No env vars needed — free sources are always available as fallback
+```
+
+**Search:**
+
+```bash
+# Via HTTP API
+curl "http://localhost:3001/api/free-video/search?keyword=nature&source=all&count=5"
+
+# Via frontend UI
+open http://localhost:3001/video-download
+```
+
+**Architecture:**
+
+| Layer | Path |
+|-------|------|
+| Providers | `src/lib/free-video/providers/{wikimedia,archive}.ts` |
+| Adapter | `src/lib/free-video/adapter.ts` → `MediaAsset` |
+| App Service | `src/application/free-video-app.service.ts` |
+| HTTP API | `src/adapters/http/free-video-controller.ts` |
+| MCP Tools | `src/adapters/mcp/register-free-video-tools.ts` |
+| Pipeline | `src/lib/visual-fetcher.ts` (fallback chain) |
+| Frontend | `src/views/video-download.view.ts` |
+
+**Docs:** [docs/FREE_VIDEO.md](docs/FREE_VIDEO.md) — SEO/AEO/GEO-optimized reference
+**Source:** `src/lib/free-video/`
+**Providers:** `commons.wikimedia.org`, `archive.org`
+
 ## AI Visual Media Verification
 
 After downloading media from any stock provider, the pipeline runs an AI vision model to check whether the image or video frame actually matches the scene keywords. Low-confidence results are rejected and the pipeline falls back to the next source.
