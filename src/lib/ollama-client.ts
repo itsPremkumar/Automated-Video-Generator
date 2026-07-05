@@ -9,7 +9,7 @@ export interface OllamaGenerateResponse {
     context?: number[];
 }
 
-const OLLAMA_BASE_URL = (process.env.OLLAMA_BASE_URL || 'http://localhost:11434').replace(/\/+$/, '');
+const OLLAMA_BASE_URL = (process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434').replace(/\/+$/, '');
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL?.trim() || 'moondream:latest';
 const OLLAMA_TIMEOUT_MS = Math.max(5000, Number.parseInt(process.env.OLLAMA_TIMEOUT_MS || '120000', 10) || 120000);
 const OLLAMA_MAX_RETRIES = Math.max(1, Number.parseInt(process.env.OLLAMA_MAX_RETRIES || '2', 10) || 2);
