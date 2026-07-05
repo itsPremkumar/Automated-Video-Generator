@@ -398,7 +398,7 @@ export async function generateVideo(
         reportProgress('metadata', 95, 'Generating metadata');
 
         const sentences = parsed.scenes.map(s => s.voiceoverText).join(' ').split('. ');
-        const description = sentences.slice(0, 3).join('. ') + (sentences.length > 3 ? '.' : '');
+        let description = sentences.slice(0, 3).join('. ') + (sentences.length > 3 ? '.' : '');
 
         const uniqueKeywords = new Set<string>();
         parsed.scenes.forEach(scene => {
@@ -408,7 +408,17 @@ export async function generateVideo(
         uniqueKeywords.add('future');
         uniqueKeywords.add('technology');
 
-        const hashtags = Array.from(uniqueKeywords).map(k => `#${k}`).join(' ');
+        let hashtags = Array.from(uniqueKeywords).map(k => `#${k}`).join(' ');
+
+        try {
+            const { generateMetadataAI } = await import('./services/ai.service.js');
+            const aiMeta = await generateMetadataAI(title || 'Video', parsed.scenes);
+            if (aiMeta.description) description = aiMeta.description;
+            if (aiMeta.hashtags) hashtags = aiMeta.hashtags;
+        } catch {
+            // AI unavailable — fall back to the mechanical defaults above
+        }
+
         const metadataContent = `${title || 'Video'}\n\n${description}\n\n${hashtags}`;
         const safeTitle = (title || 'video').replace(/[<>:"/\\|?*]/g, '').trim();
         const metadataPath = path.join(outputDir, `${safeTitle} details.txt`);

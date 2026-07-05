@@ -139,8 +139,9 @@ export async function generateScriptFromPrompt(prompt: string): Promise<ScriptGe
     const useOllama = AI_PROVIDER === 'ollama';
 
     if (useOllama) {
-        const systemInstruction = 'You are a video script writer. Keep responses concise and well-structured.';
-        const userPrompt = `Write a short video script about: ${prompt}
+        try {
+            const systemInstruction = 'You are a video script writer. Keep responses concise and well-structured.';
+            const userPrompt = `Write a short video script about: ${prompt}
 
 The script must include:
 - [Visual: ...] tags before each scene (short 3-6 word descriptions like "cinematic drone city sunset")
@@ -157,21 +158,28 @@ Staying hydrated is essential for your health.
 [Visual: glowing skin closeup]
 Water helps keep your skin healthy and radiant.`;
 
-        const content = await generateViaOllama(systemInstruction, userPrompt);
-        const lines = content.split('\n');
-        let title = 'Untitled AI Script';
-        const scriptLines: string[] = [];
-        for (const line of lines) {
-            if (line.startsWith('TITLE:')) {
-                title = line.replace('TITLE:', '').trim();
-            } else {
-                scriptLines.push(line);
+            const content = await generateViaOllama(systemInstruction, userPrompt);
+            const lines = content.split('\n');
+            let title = 'Untitled AI Script';
+            const scriptLines: string[] = [];
+            for (const line of lines) {
+                if (line.startsWith('TITLE:')) {
+                    title = line.replace('TITLE:', '').trim();
+                } else {
+                    scriptLines.push(line);
+                }
             }
+            return { title, script: scriptLines.join('\n').trim() };
+        } catch {
+            return {
+                title: prompt.slice(0, 60) || 'Untitled',
+                script: `[Visual: ${prompt.slice(0, 80)}]\n${prompt}`,
+            };
         }
-        return { title, script: scriptLines.join('\n').trim() };
     }
 
-    const systemInstruction = `You are an expert video script director. Turn the user's prompt into a highly detailed, engaging, and comprehensive video script.
+    try {
+        const systemInstruction = `You are an expert video script director. Turn the user's prompt into a highly detailed, engaging, and comprehensive video script.
 Follow these rules exactly:
 1. Divide the video into scenes. Include [Visual: ...] tags at the start of scenes to describe what we see.
 2. The spoken text must follow the visual tags.
@@ -180,14 +188,68 @@ Follow these rules exactly:
 5. Respond with ONLY a valid JSON object matching this schema: {"title": "A short video title", "script": "The full detailed script with visual tags... "}.
 6. Do NOT include markdown blocks like \`\`\`json. Return just the raw JSON.`;
 
-    const content = await generateGeminiContent(systemInstruction, prompt);
+        const content = await generateGeminiContent(systemInstruction, prompt);
 
-    try {
-        const parsed = parseJsonPayload<{ script?: string; title?: string }>(content, '');
-        return { title: parsed.title || 'Untitled AI Script', script: parsed.script || content };
+        try {
+            const parsed = parseJsonPayload<{ script?: string; title?: string }>(content, '');
+            return { title: parsed.title || 'Untitled AI Script', script: parsed.script || content };
+        } catch {
+            return { title: 'Untitled AI Script', script: content };
+        }
     } catch {
-        return { title: 'Untitled AI Script', script: content };
+        return {
+            title: prompt.slice(0, 60) || 'Untitled',
+            script: `[Visual: ${prompt.slice(0, 80)}]\n${prompt}`,
+        };
     }
+}
+
+export async function generateMetadataAI(
+    title: string,
+    scenes: { voiceoverText: string; searchKeywords: string[] }[],
+): Promise<{ description: string; hashtags: string }> {
+    const useOllama = AI_PROVIDER === 'ollama';
+    const sceneText = scenes.map(s => s.voiceoverText).join('\n');
+    const allKeywords = [...new Set(scenes.flatMap(s => s.searchKeywords))];
+
+    if (useOllama) {
+        const systemInstruction = 'You are a social media content creator. Generate a compelling video description and relevant hashtags.';
+        const prompt = `Video title: "${title}"
+Scene voiceovers:
+${sceneText}
+
+Search keywords: ${allKeywords.join(', ')}
+
+Generate a short engaging video description (2-3 sentences) and 10-15 relevant hashtags based on the content.
+Return ONLY a JSON object with "description" and "hashtags" fields. Hashtags should be space-separated with # prefix. Do not include markdown or extra text.`;
+
+        const content = await generateViaOllama(systemInstruction, prompt);
+        try {
+            const parsed = JSON.parse(content) as { description?: string; hashtags?: string };
+            return {
+                description: parsed.description?.trim() || '',
+                hashtags: parsed.hashtags?.trim() || '',
+            };
+        } catch {
+            throw new ServiceUnavailableError('Failed to parse metadata from Ollama response.');
+        }
+    }
+
+    const systemInstruction = `You are a social media content creator. Generate a compelling video description and relevant hashtags.
+Return ONLY a valid JSON object: {"description": "2-3 sentence description", "hashtags": "#tag1 #tag2 #tag3"}.
+Hashtags should be 10-15 relevant tags, space-separated with # prefix. Do NOT include markdown formatting.`;
+
+    const prompt = `Video title: "${title}"
+Scene voiceovers:
+${sceneText}
+
+Search keywords: ${allKeywords.join(', ')}`;
+
+    const content = await generateGeminiContent(systemInstruction, prompt);
+    return parseJsonPayload<{ description: string; hashtags: string }>(
+        content,
+        'Failed to generate metadata with AI.',
+    );
 }
 
 export async function refineSceneAI(
@@ -198,46 +260,54 @@ export async function refineSceneAI(
     const useOllama = AI_PROVIDER === 'ollama';
 
     if (useOllama) {
-        const systemInstruction = 'You are a helpful video editor. Keep responses concise.';
-        const prompt = `Current scene text: "${text}"
+        try {
+            const systemInstruction = 'You are a helpful video editor. Keep responses concise.';
+            const prompt = `Current scene text: "${text}"
 Current search keywords: ${JSON.stringify(keywords)}
 User instruction: "${instruction}"
 
 Return ONLY the updated scene text (the spoken narration). Do not include any JSON or extra text.`;
 
-        const content = await generateViaOllama(systemInstruction, prompt);
-        return {
-            voiceoverText: content.trim() || text,
-            searchKeywords: keywords,
-        };
+            const content = await generateViaOllama(systemInstruction, prompt);
+            return {
+                voiceoverText: content.trim() || text,
+                searchKeywords: keywords,
+            };
+        } catch {
+            return { voiceoverText: text, searchKeywords: keywords };
+        }
     }
 
-    const systemInstruction = `You are a video script editor. Refine the provided scene based on the user's instructions.
+    try {
+        const systemInstruction = `You are a video script editor. Refine the provided scene based on the user's instructions.
 Return ONLY a valid JSON object: {"voiceoverText": "Updated text", "searchKeywords": ["word1", "word2"]}.
 Keep keywords concise (3-6 words). Do NOT include markdown formatting.`;
 
-    const prompt = `
+        const prompt = `
 Current Scene Text: "${text}"
 Current Keywords: ${JSON.stringify(keywords)}
 User Instruction: "${instruction}"
 `;
 
-    const content = await generateGeminiContent(systemInstruction, prompt);
+        const content = await generateGeminiContent(systemInstruction, prompt);
 
-    try {
-        return parseJsonPayload<{ voiceoverText: string; searchKeywords: string[] }>(
-            content,
-            'Failed to refine scene with AI.',
-        );
-    } catch {
         try {
-            const fallback = parseJsonPayload<{ text: string; keywords?: string[] }>(content, '');
-            return {
-                voiceoverText: fallback.text || text,
-                searchKeywords: fallback.keywords || keywords,
-            };
+            return parseJsonPayload<{ voiceoverText: string; searchKeywords: string[] }>(
+                content,
+                'Failed to refine scene with AI.',
+            );
         } catch {
-            return { voiceoverText: text, searchKeywords: keywords };
+            try {
+                const fallback = parseJsonPayload<{ text: string; keywords?: string[] }>(content, '');
+                return {
+                    voiceoverText: fallback.text || text,
+                    searchKeywords: fallback.keywords || keywords,
+                };
+            } catch {
+                return { voiceoverText: text, searchKeywords: keywords };
+            }
         }
+    } catch {
+        return { voiceoverText: text, searchKeywords: keywords };
     }
 }
