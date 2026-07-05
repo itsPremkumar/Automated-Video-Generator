@@ -629,7 +629,7 @@ export function videoDownloadPage(req: Request, cspNonce?: string): string {
                                 '<div class="sidebar-item" data-path="' + d.replace(/\\\\/g, '\\\\\\\\') + '"><span>💽</span> ' + d + ' Drive</div>'
                             ).join('');
                         }
-                    } catch (e) {}
+                    } catch { /* ignore — non-critical */ }
                 }
 
                 async function loadPath(path = '') {

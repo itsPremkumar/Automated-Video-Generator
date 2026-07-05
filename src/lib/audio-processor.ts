@@ -144,7 +144,7 @@ export async function applyAutoDucking(
       }
   } finally {
     if (fs.existsSync(tempCombinedVoice)) {
-      try { fs.unlinkSync(tempCombinedVoice); } catch (e) {}
+      try { fs.unlinkSync(tempCombinedVoice); } catch { /* ignore — cleanup */ }
     }
   }
 

@@ -35,11 +35,11 @@ export async function updateEnvConfig(key: string, value: string) {
 
 export async function getSystemInfo() {
     const info: Record<string, string> = {};
-    try { info.node = process.version; } catch {}
-    try { info.npm = execSync('npm -v').toString().trim(); } catch {}
-    try { info.ffmpeg = execSync('ffmpeg -version').toString().split('\n')[0].trim(); } catch {}
-    try { info.platform = process.platform; } catch {}
-    try { info.arch = process.arch; } catch {}
+    try { info.node = process.version; } catch { /* ignore — info probe */ }
+    try { info.npm = execSync('npm -v').toString().trim(); } catch { /* ignore — info probe */ }
+    try { info.ffmpeg = execSync('ffmpeg -version').toString().split('\n')[0].trim(); } catch { /* ignore — info probe */ }
+    try { info.platform = process.platform; } catch { /* ignore — info probe */ }
+    try { info.arch = process.arch; } catch { /* ignore — info probe */ }
     return info;
 }
 

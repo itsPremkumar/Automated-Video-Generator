@@ -40,7 +40,7 @@ export async function generateVoiceoverWithVoicebox(
   outputPath: string,
   language: string = 'en'
 ): Promise<void> {
-  const url = process.env.VOICEBOX_API_URL || 'http://localhost:17493';
+  const url = process.env.VOICEBOX_API_URL || 'http://127.0.0.1:17493';
   const profileId = process.env.VOICEBOX_PROFILE_ID;
 
   if (!profileId) {
@@ -83,7 +83,7 @@ export async function generateVoiceoverWithXtts(
   outputPath: string,
   language: string = 'en'
 ): Promise<void> {
-  const url = process.env.XTTS_API_URL || 'http://localhost:8020';
+  const url = process.env.XTTS_API_URL || 'http://127.0.0.1:8020';
   const speakerWav = process.env.XTTS_SPEAKER_WAV || 'cloned_speaker.wav';
   const xttsLanguage = process.env.XTTS_LANGUAGE || language || 'en';
 
@@ -131,7 +131,7 @@ export async function generateVoiceoverWithLocalOpenAI(
   text: string,
   outputPath: string
 ): Promise<void> {
-  const url = process.env.OPENAI_LOCAL_TTS_URL || 'http://localhost:8880/v1';
+  const url = process.env.OPENAI_LOCAL_TTS_URL || 'http://127.0.0.1:8880/v1';
   const apiKey = process.env.OPENAI_LOCAL_TTS_API_KEY || 'mock-key';
   const voice = process.env.OPENAI_LOCAL_TTS_VOICE || 'af_sky';
   const model = process.env.OPENAI_LOCAL_TTS_MODEL || 'kokoro';

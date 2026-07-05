@@ -122,7 +122,7 @@ export function resetInMemoryCache(): void {
     if (fs.existsSync(CACHE_FILE)) {
         try {
             fs.unlinkSync(CACHE_FILE);
-        } catch (e) { }
+        } catch { /* ignore — cleanup */ }
     }
 }
 
@@ -1088,7 +1088,7 @@ export async function downloadMedia(
             // console.log(`⬇️ [DOWNLOAD] Content-Length: ${response.headers['content-length']} bytes`);
 
             const tmpPath = `${outputPath}.tmp`;
-            if (fs.existsSync(tmpPath)) try { fs.unlinkSync(tmpPath); } catch (e) {}
+            if (fs.existsSync(tmpPath)) try { fs.unlinkSync(tmpPath); } catch { /* ignore — cleanup */ }
             const writer = fs.createWriteStream(tmpPath);
             let settled = false;
             let stallTimer: NodeJS.Timeout | null = null;
@@ -1124,7 +1124,7 @@ export async function downloadMedia(
                     settled = true;
                     clearStallTimer();
                     writer.destroy();
-                    try { fs.unlinkSync(tmpPath); } catch (e) {}
+                    try { fs.unlinkSync(tmpPath); } catch { /* ignore — cleanup */ }
                     reject(err);
                 });
                 response.data.pipe(writer);
@@ -1171,7 +1171,7 @@ export async function downloadMedia(
                     }
                     settled = true;
                     clearStallTimer();
-                    try { fs.unlinkSync(tmpPath); } catch (e) {}
+                    try { fs.unlinkSync(tmpPath); } catch { /* ignore — cleanup */ }
                     // console.error(`⬇️ [DOWNLOAD] ❌ Write error: ${err.message}`);
                     reject(err);
                 });

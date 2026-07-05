@@ -82,7 +82,7 @@ export class FreeDownloadManager {
             };
         } catch (err: any) {
             if (fs.existsSync(partPath)) {
-                try { fs.unlinkSync(partPath); } catch { }
+                try { fs.unlinkSync(partPath); } catch { /* ignore — cleanup */ }
             }
             return {
                 video, success: false, localPath: null,

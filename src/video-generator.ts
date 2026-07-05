@@ -225,7 +225,7 @@ export async function generateVideo(
                                 const verification = await verifyMedia(downloadResult.path, scene.searchKeywords);
                                 if (!verificationPasses(verification)) {
                                     invalidateCachedVisual(scene.searchKeywords, orientation);
-                                    try { fs.unlinkSync(downloadResult.path); } catch { }
+                                    try { fs.unlinkSync(downloadResult.path); } catch { /* ignore — cleanup */ }
                                     throw new Error(`Visual verification failed for ${filename}`);
                                 }
                             }

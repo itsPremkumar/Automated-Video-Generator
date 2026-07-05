@@ -172,7 +172,7 @@ export async function verifyMedia(
     console.log(`🧐 [VERIFY] Result: ${result.passes ? 'PASS' : 'FAIL'} (confidence: ${result.confidence}/10) — ${result.reason}`);
 
     if (isVideo && imagePath !== filePath) {
-        try { fs.unlinkSync(imagePath); } catch {}
+        try { fs.unlinkSync(imagePath); } catch { /* ignore — cleanup */ }
     }
 
     return result;
