@@ -2,7 +2,7 @@
     "name": "automated-video-generator",
     "version": "5.0.0",
     "main": "dist-electron/electron-main.js",
-    "description": "Free and open-source self-hosted AI text-to-video pipeline. Turn scripts into MP4 videos with Remotion, Edge-TTS, and stock media.",
+    "description": "Free & open-source self-hosted AI text-to-video pipeline. Turn scripts into MP4 videos with AI voiceovers, stock media, and Remotion rendering. No watermark, no subscriptions, no API key required.",
     "author": "Premkumar",
     "license": "MIT",
     "repository": {
@@ -16,11 +16,12 @@
     "keywords": [
         "video-generator",
         "text-to-video",
-        "ai-video",
+        "ai-video-generator",
         "remotion",
         "edge-tts",
-        "youtube-shorts",
+        "youtube-shorts-generator",
         "tiktok-video",
+        "reels-generator",
         "content-automation",
         "mcp-server",
         "open-source",
@@ -29,10 +30,17 @@
         "openverse",
         "no-api-key",
         "faceless-youtube",
-        "batch-video",
+        "batch-video-processing",
         "typescript-video",
         "creative-commons",
-        "programmatic-video"
+        "programmatic-video",
+        "ai-voiceover",
+        "text-to-speech",
+        "video-pipeline",
+        "explainer-video",
+        "marketing-video",
+        "shorts-automation",
+        "video-creator"
     ],
     "openclaw": {
         "extensions": [

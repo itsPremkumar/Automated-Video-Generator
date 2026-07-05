@@ -1,58 +1,182 @@
 <!--
-Keywords: automated video generator, free video generator, open source video generator, ai video generator, text to video, remotion, edge tts, youtube shorts generator, tiktok video generator, faceless youtube, content automation, video automation, self hosted video generator, mcp server, model context protocol, ai agent video, stock media, pexels, pixabay, video pipeline, react video, nodejs video, typescript video, batch video generation, voiceover, text to speech, video creator, marketing video, explainer video, shorts automation, reels generator, open source, MIT license, video production, programmatic video
+🧠 Automated Video Generator
+   SEO keywords: automated video generator, free video generator, open source video generator,
+   ai video generator, text to video, remotion, edge tts, youtube shorts generator, tiktok
+   video generator, faceless youtube, content automation, self hosted video generator,
+   mcp server, model context protocol, stock media, pexels, pixabay, openverse, video pipeline,
+   react video, nodejs video, typescript video, batch video generation, voiceover, text to speech,
+   video creator, marketing video, explainer video, shorts automation, reels generator,
+   open source, MIT license, programmatic video, no api key, cc images
 -->
 
-# Automated Video Generator
+<div align="center">
+  <!-- HERO BANNER PLACEHOLDER: Replace assets/hero-banner.png with a 1200x600 image showing
+       the pipeline flow: Text Script → Voiceover + Stock Media + Remotion → MP4 Video.
+       Consider a dark gradient background with bright accent colors. -->
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/hero-banner-dark.png">
+    <img src="assets/hero-banner.png" alt="Automated Video Generator — Turn scripts into MP4 videos with AI voiceovers and stock media" width="100%">
+  </picture>
+</div>
+
+<br/>
 
 <div align="center">
-  <img src="assets/logo-automation.png" alt="Automated Video Generator Logo — free open-source AI text-to-video tool" width="200" style="border-radius: 20px;">
-  <p align="center">
-    <strong>Turn text into frame-perfect videos with AI, Automation, and Remotion.</strong>
-  </p>
+  <!-- LOGO PLACEHOLDER: Replace assets/logo.svg with a polished SVG logo.
+       Current logos are in assets/logo.svg, assets/logo-automation.png, assets/logo-creative.png -->
+  <img src="assets/logo-automation.png" alt="Automated Video Generator" width="180" style="border-radius: 16px;">
+  <h1>Automated Video Generator</h1>
+  <p><strong>Free &bull; Open Source &bull; Self-Hosted &bull; AI Text-to-Video Pipeline</strong></p>
+  <p>Turn any script into a frame-perfect MP4 video — with AI voiceovers, stock media, and zero watermark.</p>
 </div>
+
+<br/>
+
+<div align="center">
+  <a href="https://github.com/itsPremkumar/Automated-Video-Generator/stargazers"><img src="https://img.shields.io/github/stars/itsPremkumar/Automated-Video-Generator?style=for-the-badge&logo=github" alt="GitHub stars"></a>
+  <a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/LICENSE"><img src="https://img.shields.io/github/license/itsPremkumar/Automated-Video-Generator?style=for-the-badge" alt="MIT license"></a>
+  <a href="https://github.com/itsPremkumar/Automated-Video-Generator/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/itsPremkumar/Automated-Video-Generator/ci.yml?branch=main&style=for-the-badge&label=CI" alt="CI status"></a>
+  <a href="https://www.npmjs.com/package/automated-video-generator"><img src="https://img.shields.io/npm/v/automated-video-generator?style=for-the-badge&color=cb0000" alt="NPM version"></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-18%2B-2f7d32?style=for-the-badge" alt="Node.js 18+"></a>
+  <a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/CONTRIBUTING.md"><img src="https://img.shields.io/badge/contributions-welcome-brightgreen?style=for-the-badge" alt="Contributions welcome"></a>
+  <a href="https://github.com/itsPremkumar/Automated-Video-Generator/releases/latest"><img src="https://img.shields.io/badge/download-Windows_.exe-blue?style=for-the-badge&logo=windows" alt="Download Windows"></a>
+</div>
+
+<br/>
 
 ---
 
+## 📖 What is this?
+
+**Automated Video Generator** is a free, open-source, self-hosted pipeline that converts text scripts into polished MP4 videos. Give it a script — it fetches relevant stock visuals, generates natural voiceovers, synchronizes everything with Remotion, and exports a ready-to-share video.
+
+No paid plans. No watermarks. No monthly limits. Just your machine, your scripts, and full control.
+
+<br/>
+
 <div align="center">
-  <a href="https://github.com/itsPremkumar/Automated-Video-Generator/stargazers">
-    <img src="https://img.shields.io/github/stars/itsPremkumar/Automated-Video-Generator?style=for-the-badge" alt="GitHub stars">
-  </a>
-  <a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/itsPremkumar/Automated-Video-Generator?style=for-the-badge" alt="MIT license">
-  </a>
-  <a href="https://github.com/itsPremkumar/Automated-Video-Generator/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/itsPremkumar/Automated-Video-Generator/ci.yml?branch=main&style=for-the-badge&label=CI" alt="CI status">
-  </a>
-  <a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/CONTRIBUTING.md">
-    <img src="https://img.shields.io/badge/Contributions-Welcome-1f8b4c?style=for-the-badge" alt="Contributions welcome">
-  </a>
-  <img src="https://img.shields.io/badge/Node.js-18%2B-2f7d32?style=for-the-badge" alt="Node.js 18+">
-  <img src="https://img.shields.io/badge/Price-Free-0a7f5a?style=for-the-badge" alt="Free to use">
-  <a href="https://www.npmjs.com/package/automated-video-generator">
-    <img src="https://img.shields.io/npm/v/automated-video-generator?style=for-the-badge&color=cb0000" alt="NPM version">
-  </a>
+  <table>
+    <tr>
+      <td align="center"><b>🎬 Input</b></td>
+      <td align="center"><b>⚙️ Pipeline</b></td>
+      <td align="center"><b>📦 Output</b></td>
+    </tr>
+    <tr>
+      <td align="center">Text script<br/>or JSON job<br/>or AI prompt</td>
+      <td align="center">Parse → Fetch media<br/>→ Generate voiceover<br/>→ Render with Remotion</td>
+      <td align="center">MP4 video<br/>+ Thumbnail<br/>+ Scene data</td>
+    </tr>
+  </table>
 </div>
 
 <br/>
+
+---
+
+## ✨ Demo
+
 <div align="center">
-  <h2>📥 Download the Windows App (Easiest)</h2>
-  <a href="https://github.com/itsPremkumar/Automated-Video-Generator/releases/latest">
-    <img src="https://img.shields.io/badge/⬇️_Download_Windows_.exe_Installer-0D1117?style=for-the-badge&logo=windows&logoColor=blue" alt="Download Windows App" height="56">
+  <a href="https://youtu.be/ryNhQd_M2G8?si=MfGNsJ_8jGvV2r8T">
+    <img src="assets/demo-thumbnail.png" alt="Watch demo video on YouTube" width="720" style="border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.25);">
   </a>
-  <p><strong>No Manual Runtime Setup • No Separate Python Install • No Separate Node.js Install</strong></p>
-  <p>Just download the latest <code>.exe</code> file, double-click, and start generating videos locally!</p>
+  <br/>
+  <em>Example video fully generated by Automated Video Generator. Click to watch on YouTube.</em>
 </div>
-<br/>
 
-## Connect to Claude (one command)
+<!-- WORKFLOW GIF PLACEHOLDER
+     Create a terminal recording GIF showing the full workflow:
+     1. Edit input/input-scripts.json
+     2. Run `npm run generate`
+     3. Watch the progress bars
+     4. Open output/ directory with the final MP4
+     
+     Tools: vhs (https://github.com/charmbracelet/vhs) or asciinema + agg
+     File: assets/workflow-demo.gif (optimized, ~3-5 MB max)
+-->
 
-### Claude Code
-```bash
-claude mcp add automated-video-generator -- npx automated-video-generator
+---
+
+## 🚀 Quick Start (5 minutes)
+
+Choose your path:
+
+| Path | Time | Difficulty | For |
+|------|------|-----------|-----|
+| [Windows Desktop App](#-windows-desktop-app) | 2 min | ★☆☆ | Everyone |
+| [One-Click Launcher](#-one-click-launcher-windows) | 3 min | ★☆☆ | Windows users |
+| [Manual Setup](#-manual-setup) | 5 min | ★★☆ | Developers |
+| [Docker](#-docker) | 3 min | ★★☆ | DevOps |
+| [npm (MCP)](#-npm-mcp-server) | 1 min | ★☆☆ | AI agents |
+
+### 🪟 Windows Desktop App
+
+**No Node.js, Python, or terminal required.**
+
+Download the [latest Windows installer](https://github.com/itsPremkumar/Automated-Video-Generator/releases/latest), double-click, and the app opens the web portal automatically. Everything is bundled.
+
+### 📜 One-Click Launcher (Windows)
+
+```powershell
+.\Start-Automated-Video-Generator.bat
 ```
 
-### Claude Desktop
-Add to your `claude_desktop_config.json`:
+Or the PowerShell version:
+
+```powershell
+.\Start-Automated-Video-Generator.ps1
+```
+
+The launcher auto-installs Node.js and Python (via `winget`), creates `.env`, installs dependencies, and opens the portal at `http://localhost:3001`.
+
+### 🛠️ Manual Setup
+
+**Prerequisites:** Node.js 18+, Python 3.8+, npm
+
+```bash
+# 1. Clone
+git clone https://github.com/itsPremkumar/Automated-Video-Generator.git
+cd Automated-Video-Generator
+
+# 2. Install Node dependencies
+npm install
+
+# 3. Install Python voice engine
+pip install -r requirements.txt
+
+# 4. Configure environment
+cp .env.example .env
+# Edit .env — add PEXELS_API_KEY (free, get one at pexels.com/api)
+# No API key? Set OPENVERSE_ENABLED=true (it's the default)
+
+# 5. Start the web portal
+npm run dev
+```
+
+Open **http://localhost:3001/** — paste a script, click generate, and watch it render.
+
+### 🐳 Docker
+
+```bash
+docker run -p 3001:3001 \
+  -v "$(pwd)/input:/app/input" \
+  -v "$(pwd)/output:/app/output" \
+  ghcr.io/itspremkumar/automated-video-generator
+```
+
+### 📦 npm (MCP Server)
+
+```bash
+npx automated-video-generator
+```
+
+Or install globally:
+
+```bash
+npm install -g automated-video-generator
+```
+
+Then connect Claude Desktop:
+
 ```json
 {
   "mcpServers": {
@@ -64,704 +188,343 @@ Add to your `claude_desktop_config.json`:
 }
 ```
 
-<div align="center">
-  <p><strong>Free and open-source AI video generator</strong> for turning scripts into MP4 videos with Remotion, Edge-TTS, stock footage APIs, and a local web portal.</p>
-  <p>🚀 <strong>Available on NPM:</strong> <a href="https://www.npmjs.com/package/automated-video-generator">automated-video-generator</a></p>
-  <p>🦀 <strong>Listed on ClawHub:</strong> <a href="https://clawhub.ai/itspremkumar/video-gen-cli">automated-video-generator</a></p>
-</div>
+---
 
-Automated Video Generator is a self-hosted text-to-video pipeline for developers, creators, and AI agents. Give it a script and it can fetch visuals, generate voiceovers, render scenes with Remotion, and export a ready-to-share video.
+## 🎯 Generate Your First Video
 
-If you are searching for a free video generator, open-source AI video generator, Remotion video generator, YouTube Shorts generator, TikTok video generator, or self-hosted text-to-video tool, this repo is built for that workflow.
+### CLI Batch Mode
 
-> This is not a fake "free trial" generator. The project itself is completely free and MIT-licensed. There is no paid plan, no subscription, and no watermark added by this codebase. Optional third-party services such as Pexels or Pixabay may still have their own quotas or terms. Openverse (CC-licensed images) works without any API key and is enabled by default.
+Create `input/input-scripts.json`:
 
-<div align="center">
-  <h2>🎬 See it in Action</h2>
-  <a href="https://youtu.be/ryNhQd_M2G8?si=MfGNsJ_8jGvV2r8T">
-    <img src="assets/demo-thumbnail.png" alt="Automated Video Generator Demo" width="800" style="border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
-  </a>
-  <br/>
-  <p><em>Example video fully generated using Automated Video Generator. Click the image to watch on YouTube.</em></p>
-</div>
+```json
+[
+  {
+    "id": "my-first-video",
+    "title": "3 Productivity Habits That Actually Work",
+    "orientation": "portrait",
+    "language": "english",
+    "script": "Here are three productivity habits that will change your life. First, start your day with a clear plan..."
+  }
+]
+```
+
+Run:
+
+```bash
+npm run generate
+```
+
+Output: `output/my-first-video/final.mp4` 🎉
+
+### Web Portal
+
+```bash
+npm run dev
+# Open http://localhost:3001
+```
+
+The portal lets you paste scripts, configure voice/language/orientation, track rendering progress live, and watch/download the result — all from your browser.
+
+### Director Mode
+
+Use `[Visual: ...]` tags for frame-perfect scene control:
+
+```json
+{
+  "id": "director-mode-demo",
+  "title": "My Directed Video",
+  "script": "[Visual: a serene mountain lake at sunset, cinematic, slow pan]\nNestled in the heart of the Rockies, this view has inspired explorers for centuries."
+}
+```
 
 ---
 
+## 🌟 Key Features
 
-## 🧊 The "Vibe Video" Philosophy
+| Feature | Description |
+|---------|-------------|
+| **🎤 400+ Voices** | Multi-language TTS via Edge-TTS with fallback to Windows offline speech, Voicebox, XTTS, Kokoro |
+| **🖼️ Stock Media** | Pexels + Pixabay + Openverse (CC images, no API key) + Wikimedia Commons + Internet Archive |
+| **🎵 Background Music** | Auto-ducking with volume control |
+| **🔄 Batch Processing** | Generate dozens of videos from one JSON file |
+| **🖥️ Web Portal** | Browser-based UI for generation, preview, download |
+| **🤖 MCP Server** | Connect Claude Desktop / Claude Code for AI-driven video creation |
+| **✅ AI Media Verification** | Validates visuals match scene context via Ollama moondream or Gemini Vision |
+| **🪟 Desktop App** | Standalone Windows .exe with bundled runtime |
+| **📱 Portrait + Landscape** | YouTube Shorts, TikTok, Reels, and widescreen support |
+| **↩️ Resumable Rendering** | Cancel and resume without losing progress |
+| **🎬 Remotion Studio** | Preview and tweak video compositions |
 
-Inspired by the **Vibe Coding** movement, this project shifts you from a "manual editor" to a **Creative Director**.
+---
 
-- **High-Level Intent**: Describe your story and the "vibe" you want.
-- **Automated Performance**: The AI handles media fetching, voice synthesis, and frame-perfect audio-visual synchronization.
-- **No Syntax, Just Story**: Stop worrying about keyframes and timelines. If you can describe it, you can generate it.
+## 🧠 AI Visual Media Verification
 
-### 🦀 ClawHub AI Skills
+After fetching media from stock sources, the pipeline verifies each image/frame against the scene description using a local vision model:
 
-The Automated Video Generator project is officially available on ClawHub. You can discover and use our native skills:
-
-- **[Video Generator CLI](https://clawhub.ai/itspremkumar/video-gen-cli)**: High-performance command line tools for mass video production.
-- **[Video Script Generator](https://clawhub.ai/itspremkumar/video-gen-script)**: Agentic skill to turn storytelling prompts into video-ready JSON scripts.
-
-## Why this repo gets attention
-
-- **Worldwide support for 400+ voices across all major languages with a searchable interface**
-- Text-to-video pipeline with Remotion and React
-- **Multi-language support including Tamil, Hindi, Spanish, French, and German**
-- Edge-TTS voiceovers with Windows desktop fallback support for fresh installs
-- Stock media fetching from Pexels, Pixabay, and Openverse (CC-licensed images, no API key required)
-- Local asset support for your own images and videos
-- **Configurable background music with volume control**
-- Batch generation for multiple videos in one run
-- Local web portal for generating, previewing, and sharing videos
-- Built-in MCP server for Claude Desktop, Claude Code, and other MCP clients
-
-## Best use cases
-
-- YouTube Shorts automation
-- TikTok and Reels content pipelines
-- Faceless YouTube channels
-- Marketing videos and product promos
-- Explainer videos and tutorials
-- Programmatic content generation for AI agents
-
-## Core features
-
-- Script-driven video generation from plain text or JSON
-- Director mode with `[Visual: ...]` tags for exact visual control
-- Automatic scene parsing and timeline generation
-- Neural voice generation with `edge-tts`, Windows offline speech fallback, and recovery-friendly desktop setup
-- Portrait and landscape video output
-- Resumable segmented rendering with Remotion
-- Cancel, retry, and restart-aware job recovery
-- Render thumbnails for completed videos
-- Browser portal for generation, status tracking, playback, and downloads
-- Windows desktop installer with setup wizard, bundled runtime checks, and release verification
-- MCP tool interface for agentic workflows
-- **AI visual media verification** — checks downloaded images/videos against scene keywords using Ollama moondream or Gemini Vision
-- **No-API-key image fallback** — Openverse integration fetches CC-licensed images without any registration or key
-
-## Openverse — Free CC-Licensed Image Search (No API Key)
-
-The pipeline includes a built-in Openverse image search that requires **no API key, no registration, and no token**. Openverse provides access to over 600 million Creative Commons and public domain images.
-
-**When it activates:**
-- If Pexels video search returns no results, Openverse images are tried as fallback
-- If Pexels image search returns no results, Openverse is the last image source
-- **No API keys configured at all?** Set `OPENVERSE_ENABLED=true` (default) and the pipeline runs entirely on CC images
-
-**Config:**
-```env
-OPENVERSE_ENABLED=true
-```
-
-**Docs:** [docs/OPENVERSE.md](docs/OPENVERSE.md) — SEO/AEO/GEO-optimized reference
-**Source:** `src/lib/openverse-fetcher.ts`
-**API:** `api.openverse.engineering/v1/images/`
-
-## Free Video Sources — Wikimedia Commons + Internet Archive (No API Key)
-
-The pipeline includes a **free video search and download system** that requires **no API key, no registration, and no token**. Videos are sourced from Wikimedia Commons (CC-licensed) and Internet Archive (public domain).
-
-**When it activates:**
-- After Pexels and Pixabay return no results (free sources are the last video fallback tier)
-- If no API keys are configured at all, free sources serve as the primary video source
-- Always reachable via dedicated HTTP API, MCP tools, or frontend UI regardless of pipeline state
-
-**Usage:**
-
-```env
-# No env vars needed — free sources are always available as fallback
-```
-
-**Search:**
-
-```bash
-# Via HTTP API
-curl "http://localhost:3001/api/free-video/search?keyword=nature&source=all&count=5"
-
-# Via frontend UI
-open http://localhost:3001/video-download
-```
-
-**Architecture:**
-
-| Layer | Path |
-|-------|------|
-| Providers | `src/lib/free-video/providers/{wikimedia,archive}.ts` |
-| Adapter | `src/lib/free-video/adapter.ts` → `MediaAsset` |
-| App Service | `src/application/free-video-app.service.ts` |
-| HTTP API | `src/adapters/http/free-video-controller.ts` |
-| MCP Tools | `src/adapters/mcp/register-free-video-tools.ts` |
-| Pipeline | `src/lib/visual-fetcher.ts` (fallback chain) |
-| Frontend | `src/views/video-download.view.ts` |
-
-**Docs:** [docs/FREE_VIDEO.md](docs/FREE_VIDEO.md) — SEO/AEO/GEO-optimized reference
-**Source:** `src/lib/free-video/`
-**Providers:** `commons.wikimedia.org`, `archive.org`
-
-## AI Visual Media Verification
-
-After downloading media from any stock provider, the pipeline runs an AI vision model to check whether the image or video frame actually matches the scene keywords. Low-confidence results are rejected and the pipeline falls back to the next source.
-
-**How it works:**
-1. Image is converted to base64 (or a video frame is extracted via FFmpeg)
+1. Image → base64 (or FFmpeg extracts a video frame)
 2. Sent to Ollama (`moondream`) or Gemini Vision with a JSON verdict prompt
-3. If confidence is below `MEDIA_VERIFICATION_CONFIDENCE` (default: 6/10), the download is rejected, cached as invalid, and the file is deleted
-4. If the AI provider is unreachable, verification passes through gracefully
+3. Low-confidence matches (< 6/10 default) are rejected, cached, and the file is deleted
+4. Pipeline falls back to the next media source automatically
 
-**Config:**
 ```env
 MEDIA_VERIFICATION_ENABLED=true
 MEDIA_VERIFICATION_CONFIDENCE=6
 AI_PROVIDER=ollama
 ```
 
-**Docs:** [docs/MEDIA_VERIFICATION.md](docs/MEDIA_VERIFICATION.md) — SEO/AEO/GEO-optimized reference
-**Source:** `src/lib/media-verifier.ts`
-**Providers:** Ollama (default, no key) or Gemini Vision (requires `GEMINI_API_KEY`)
-
-## Quick start
-
-### 🚀 Standalone Windows Desktop App (Easiest)
-
-For non-technical users, we provide a **completely standalone Windows desktop app**. No terminal, no Node.js, and no Python installation required.
-
-[**👉 Click here to download the latest Windows `.exe` Installer**](https://github.com/itsPremkumar/Automated-Video-Generator/releases/latest)
-
-- **No Manual Runtime Setup**: Most users do not need to install Node.js or Python themselves.
-- **Natively Bundled**: The desktop app ships with its own runtime and bundled voice engine resources.
-- **Fallback Friendly**: If bundled `Edge-TTS` is unavailable, Windows builds can fall back to offline Windows speech.
-- **Auto-Open**: The video generator portal launches automatically on startup.
-- **Repair Friendly**: The setup wizard can repair missing runtime pieces and launch the app directly.
-
-If you are shipping or testing the Windows app, read [`docs/WINDOWS_INSTALLER.md`](./docs/WINDOWS_INSTALLER.md) and [`docs/PRODUCTION_HARDENING.md`](./docs/PRODUCTION_HARDENING.md).
+[Full guide →](docs/MEDIA_VERIFICATION.md)
 
 ---
 
-### One-click Windows launcher (PowerShell/Batch)
-
-For non-technical users on Windows, the easiest option is:
+## 🔌 CLI Reference
 
 ```text
-Start-Automated-Video-Generator.bat
+npm run generate              # Generate videos from input/input-scripts.json
+npm run resume                # Resume an interrupted run
+npm run segment               # Rebuild from existing scene data
+npm run dev                   # Start the local web portal
+npm run mcp                   # Start the MCP server
+npm run typecheck             # TypeScript validation
+npm run test:unit             # Run unit tests
+npm run lint                  # ESLint
+npm run format                # Prettier formatting
+npm run remotion:studio       # Open Remotion Studio for composition preview
+npm run electron:dev          # Run the desktop app in development mode
+npm run electron:build        # Build the Windows desktop installer
+npm run docker:build          # Build Docker image
 ```
 
-If you are already inside PowerShell, use:
+[Full CLI docs →](docs/cli-reference.md)
 
-```powershell
-.\Start-Automated-Video-Generator.bat
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   RUNTIMES                          │
+│  HTTP (web)    CLI (batch)    MCP (AI)    Electron  │
+└─────────────────┬───────────────────────────────────┘
+                  │         Application Layer
+          ┌───────▼───────────────────────────┐
+          │  PipelineAppService               │
+          │  MediaAppService                  │
+          │  SceneAppService                  │
+          │  SetupService                     │
+          └───────┬───────────────────────────┘
+                  │
+     ┌────────────┼────────────────┐
+     ▼            ▼                ▼
+┌─────────┐ ┌─────────┐ ┌────────────────┐
+│  Lib    │ │ Services│ │ Infrastructure │
+│ Fetchers│ │ Video   │ │ Persistence    │
+│ Parsers │ │ Job     │ │ Filesystem     │
+│ Verifier│ │ AI      │ │ Scene Editor   │
+└─────────┘ └─────────┘ └────────────────┘
 ```
 
-There is also a native PowerShell launcher:
+<!-- ARCHITECTURE DIAGRAM PLACEHOLDER
+     Replace the ASCII diagram above with a proper SVG or PNG in assets/architecture.svg.
+     Style: Clean, modern, use brand colors. Show the hexagonal architecture layers.
+     Include: Runtimes → Application → Infrastructure → Lib/Services.
+-->
 
-```powershell
-.\Start-Automated-Video-Generator.ps1
-```
+The project follows a **hexagonal architecture** with four entry points sharing a common application core.
 
-It can:
+- `src/adapters/` — HTTP controllers, CLI runner, MCP tool registrars
+- `src/application/` — Shared orchestration services
+- `src/lib/` — Core business logic (fetchers, parsers, verifiers)
+- `src/infrastructure/` — Persistence and filesystem
+- `src/shared/` — Contracts, runtime safety, logging
 
-- install Node.js and Python with `winget` if missing
-- create `.env` from `.env.example`
-- install Node dependencies
-- install Python voice dependencies if needed
-- start the local portal
-- open the browser automatically
+[Full architecture docs →](docs/ARCHITECTURE.md)
 
-After the browser opens:
+---
 
-1. Save your `PEXELS_API_KEY`
-2. Paste or edit your script
-3. Click `Generate Video`
-4. Wait on the live status page
-5. Watch or download the final MP4
+## 🛠️ Use Cases
 
-### End-to-end simple installation workflows
+### YouTube Shorts / TikTok Automation
 
-#### Workflow 1: Windows one-click setup for common users
-
-1. Clone the repository:
+Automate a daily Shorts channel. Generate 30 portrait-mode videos from a script list in one batch run.
 
 ```bash
-git clone https://github.com/itsPremkumar/Automated-Video-Generator.git
-cd Automated-Video-Generator
-```
-
-2. Double-click:
-
-```text
-Start-Automated-Video-Generator.bat
-```
-
-If you are launching from PowerShell instead of File Explorer, use:
-
-```powershell
-.\Start-Automated-Video-Generator.bat
-```
-
-3. The launcher handles the first-time setup and opens the browser portal.
-
-4. In the portal:
-
-- save your API key
-- paste the script
-- choose voice, orientation, and music if needed
-- start the render
-- watch or download the result
-
-#### Workflow 2: Manual setup for Windows, macOS, or Linux
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/itsPremkumar/Automated-Video-Generator.git
-cd Automated-Video-Generator
-```
-
-2. Install Node dependencies:
-
-```bash
-npm install
-```
-
-3. Install Python voice dependencies:
-
-Windows:
-
-```bash
-py -m pip install -r requirements.txt
-```
-
-If `py` does not work:
-
-```bash
-python -m pip install -r requirements.txt
-```
-
-macOS or Linux:
-
-```bash
-python3 -m pip install -r requirements.txt
-```
-
-4. Copy `.env.example` to `.env`
-
-Windows PowerShell:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-macOS or Linux:
-
-```bash
-cp .env.example .env
-```
-
-5. Add `PEXELS_API_KEY` to `.env`
-
-6. Start the browser portal:
-
-```bash
-npm run dev
-```
-
-7. Open:
-
-```text
-http://localhost:3001/
-```
-
-### Quick verification commands
-
-Check Node.js:
-
-```bash
-node -v
-```
-
-Check npm:
-
-```bash
-npm -v
-```
-
-Check Python:
-
-Windows:
-
-```bash
-py --version
-```
-
-or:
-
-```bash
-python --version
-```
-
-macOS or Linux:
-
-```bash
-python3 --version
-```
-
-Check Edge-TTS:
-
-Windows:
-
-```bash
-py -m edge_tts --help
-```
-
-or:
-
-```bash
-python -m edge_tts --help
-```
-
-macOS or Linux:
-
-```bash
-python3 -m edge_tts --help
-```
-
-Portal health check:
-
-```bash
-npm run dev
-```
-
-Then open:
-
-```text
-http://localhost:3001/health
-```
-
-You should see JSON similar to:
-
-```json
-{"status":"ok","service":"video-generator"}
-```
-
-### Prerequisites
-
-- Node.js 18+
-- npm
-- Python 3.8+
-- FFmpeg available on your `PATH`
-
-Note: the renderer tries to use bundled `ffmpeg-static` and `ffprobe-static` first, so many users will not need a separate FFmpeg install. A global FFmpeg install is still useful as a fallback on some machines.
-
-### Install
-
-#### Via NPM (Recommended for MCP)
-
-You can run the MCP server directly without cloning:
-
-```bash
-npx automated-video-generator
-```
-
-Or install it globally:
-
-```bash
-npm install -g automated-video-generator
-```
-
-#### Via GitHub (Recommended for development)
-
-```bash
-git clone https://github.com/itsPremkumar/Automated-Video-Generator.git
-cd Automated-Video-Generator
-npm install
-pip install -r requirements.txt
-```
-
-### Configure environment variables
-
-Copy `.env.example` to `.env` and add your keys.
-
-```env
-# Free stock media — Openverse (CC images, no key required, enabled by default)
-OPENVERSE_ENABLED=true
-
-# Free stock media API keys
-PEXELS_API_KEY=your_key_here
-PIXABAY_API_KEY=your_key_here
-
-# Optional but recommended for public deployments
-PUBLIC_BASE_URL=https://your-domain.example
-
-# Optional defaults
-PORT=3001
-VIDEO_ORIENTATION=portrait
-VIDEO_VOICE=en-US-GuyNeural
-```
-
-`PEXELS_API_KEY` is the main one to start with, and Pexels offers a free API key.  
-**No API keys?** Set `OPENVERSE_ENABLED=true` (it's the default) and the pipeline will fall back to CC-licensed images from Openverse when Pexels/Pixabay aren't configured or return no results.
-
-## Generate a video
-
-Create `input/input-scripts.json` with one or more jobs:
-
-```json
-[
-  {
-    "id": "youtube-shorts-demo",
-    "title": "3 Productivity Habits That Actually Work",
-    "orientation": "portrait",
-    "language": "tamil",
-    "script": "வணக்கம்! செயற்கை நுண்ணறிவு தொழில்நுட்பம் உலகையே மாற்றிக்கொண்டிருக்கிறது."
-  }
-]
-
-```
-
-Run the pipeline:
-
-```bash
+# Configure 30 scripts in input/input-scripts.json
 npm run generate
 ```
 
-The final video will be written to `output/<id>/`.
+[Example →](examples/youtube-shorts/)
 
-## Local web portal
+### Faceless YouTube Channel
 
-Run the local portal:
+Create documentary-style videos using stock footage, AI voiceovers, and background music — no camera or mic needed.
 
-```bash
-npm run dev
-```
+[Example →](examples/faceless-channel/)
 
-Then open:
+### Multi-Language Content
 
-```text
-http://localhost:3001/
-```
+Generate the same script in English, Tamil, Hindi, Spanish, French, and German — all from a single batch config.
 
-The portal lets you:
+[Example →](examples/multi-language/)
 
-- Start a render from the browser
-- Save API keys from the browser setup form
-- Fill a sample script without touching `input/input-scripts.json`
-- Track progress on a job page
-- Watch completed videos
-- Download the final MP4
-- Expose SEO-ready pages if you deploy it publicly
+### AI Agent Workflows
 
-### Example end-to-end common user flow
-
-1. Clone the repo
-2. Run the launcher or complete the manual install
-3. Open `http://localhost:3001/`
-4. Save `PEXELS_API_KEY`
-5. Paste the script
-6. Click `Generate Video`
-7. Wait for the render page to finish
-8. Watch or download the MP4
-
-## Remotion studio
-
-Preview templates and compositions locally:
+Use the MCP server to let Claude or other AI agents create videos autonomously:
 
 ```bash
-npm run remotion:studio
-```
-
-## MCP and AI agent support
-
-This project ships with an MCP server, so AI tools can create and manage videos through chat-driven workflows.
-
-Start the MCP server:
-
-```bash
+# Start the MCP server
 npm run mcp
+
+# In Claude Code:
+claude mcp add automated-video-generator -- npx automated-video-generator
 ```
 
-Useful for:
+[Example →](examples/mcp-agent/)
 
-- Claude Desktop
-- Claude Code
-- Other Model Context Protocol clients
+### Local Assets
 
-## Project health
+Use your own images and videos instead of stock media. Place files in `input/input-assets/` and reference them with `[Visual: filename.mp4]` or `[Visual: filename.jpg]`.
 
-- CI runs on pushes and pull requests
-- Dependabot keeps npm and GitHub Actions dependencies fresh
-- Issue templates make bug reports and feature requests easier to review
-- A pull request template helps contributors ship cleaner changes
+[Example →](examples/local-assets/)
+[Full guide →](docs/INPUT_ASSETS_GUIDE.md)
 
-## How it works
+### Background Music
 
-1. Parse a script into scenes and durations.
-2. Fetch stock visuals or use local assets from `input/input-assests/`.
-3. Generate voiceover audio with Edge-TTS and supported fallbacks when needed.
-4. Save scene data into `output/<job-id>/scene-data.json`.
-5. Render scene segments with Remotion.
-6. Stitch the final MP4 and thumbnail for playback and sharing.
+Add background music with auto volume ducking so voiceovers stay clear:
 
-## Available commands
+```env
+BACKGROUND_MUSIC=true
+BACKGROUND_MUSIC_VOLUME=0.15
+```
+
+[Example →](examples/background-music/)
+
+---
+
+## 🌐 No-API-Key Media Sources
+
+One of the project's standout features: **you can generate videos without registering for any API service**.
+
+| Source | Needs API Key? | Content | Enabled By Default |
+|--------|---------------|---------|-------------------|
+| [Pexels](https://pexels.com/api) | ✅ Free key | Stock videos + images | When key is set |
+| [Pixabay](https://pixabay.com/api) | ✅ Free key | Stock videos + images | When key is set |
+| **Openverse** | ❌ No key needed | 600M+ CC-licensed images | ✅ Yes |
+| **Wikimedia Commons** | ❌ No key needed | CC-licensed videos | ✅ Yes |
+| **Internet Archive** | ❌ No key needed | Public domain videos | ✅ Yes |
+
+[Openverse guide →](docs/OPENVERSE.md) &nbsp;|&nbsp; [Free video guide →](docs/FREE_VIDEO.md)
+
+---
+
+## 🆚 How It Compares
+
+| Feature | Automated Video Generator | Commercial tools | Other OSS tools |
+|---------|--------------------------|-----------------|-----------------|
+| **Price** | Completely free (MIT) | $20-200/mo | Varies |
+| **Watermark** | None | Usually yes | Varies |
+| **Self-hosted** | ✅ Yes | ❌ Cloud-only | Sometimes |
+| **Local execution** | ✅ Full local | ❌ | Sometimes |
+| **API key required** | ❌ Optional | ✅ Required | Varies |
+| **MCP / AI agent support** | ✅ Built-in | ❌ | Rare |
+| **Stock media** | ✅ Multi-source integrated | ✅ | Limited |
+| **AI media verification** | ✅ Built-in | ❌ | ❌ |
+| **400+ voices** | ✅ 13+ languages | ✅ | Limited |
+| **Batch mode** | ✅ Built-in | ✅ | Limited |
+| **Desktop app** | ✅ Windows (.exe) | ✅ | Rare |
+
+[Full comparison →](COMPARISON.md)
+
+---
+
+## 📚 Documentation
+
+| Resource | Description |
+|----------|-------------|
+| [Installation Guide](docs/installation.md) | Full setup instructions for all platforms |
+| [Configuration Reference](docs/configuration.md) | All environment variables explained |
+| [CLI Reference](docs/cli-reference.md) | All CLI commands and options |
+| [API Reference](docs/api-reference.md) | HTTP API endpoints |
+| [Architecture](docs/ARCHITECTURE.md) | Codebase architecture deep-dive |
+| [Usage Guide](docs/usage.md) | Generating videos step by step |
+| [FAQ](docs/faq.md) | Frequently asked questions |
+| [Troubleshooting](docs/troubleshooting.md) | Common issues and solutions |
+| [OpenVerse Guide](docs/OPENVERSE.md) | Free CC-licensed image search |
+| [Free Video Guide](docs/FREE_VIDEO.md) | Free video sources |
+| [Media Verification](docs/MEDIA_VERIFICATION.md) | AI visual verification setup |
+| [Voice Cloning](docs/VOICE_CLONING_GUIDE.md) | Custom voice model setup |
+| [Input Assets Guide](docs/INPUT_ASSETS_GUIDE.md) | Using local images/videos |
+| [Production Hardening](docs/PRODUCTION_HARDENING.md) | Deployment best practices |
+| [Windows Installer](docs/WINDOWS_INSTALLER.md) | Desktop app builds |
+| [Claude MCP Setup](docs/CLAUDE_MCP_SETUP.md) | AI agent integration |
+| [llms.txt](llms.txt) | AI-friendly project summary |
+| [llms-full.txt](llms-full.txt) | Full AI-friendly documentation |
+
+---
+
+## 🤝 Contributing
+
+Contributions of all kinds are welcome — code, docs, bug reports, feature ideas, and community support.
+
+- [Contributing Guide](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Security Policy](SECURITY.md)
+- [Roadmap](ROADMAP.md)
+- [Changelog](CHANGELOG.md)
+
+### Quick contributor workflow
 
 ```bash
-npm run generate         # Generate videos from input/input-scripts.json
-npm run resume           # Resume an interrupted generation run
-npm run segment          # Rebuild from existing scene data
-npm run remotion:studio  # Open Remotion studio
-npm run remotion:render  # Render using the render pipeline
-npm run dev              # Start the local web portal
-npm run mcp              # Start the MCP server
-npm run typecheck        # Validate TypeScript before opening a PR
-npm run electron:verify-bundle   # Check desktop bundle inputs before building
-npm run electron:verify-release  # Check the unpacked Windows release
+# Fork → Clone → Branch → Code → Test → PR
+git checkout -b feat/my-feature
+# ... make changes ...
+npm run typecheck && npm run test:unit && npm run lint && npm run format
+git push origin feat/my-feature
+# Open a pull request
 ```
 
-## Project structure
+---
 
-```text
-src/
-  adapters/
-    http/                Express controllers, routes, and server bootstrap
-    cli/                 CLI adapter and batch runner
-    mcp/                 MCP tool registrars and MCP-specific stores/helpers
-  application/           Shared application services and orchestration
-  infrastructure/
-    persistence/         Persistent job tracking
-  shared/
-    contracts/           Shared runtime-safe request/status contracts
-    runtime/             Path and runtime helpers
-    logging/             Runtime-aware logging helpers
-  app.ts                 Express app composition
-  server.ts              Thin HTTP executable entrypoint
-  cli.ts                 Thin CLI executable entrypoint
-  mcp-server.ts          Thin MCP executable entrypoint
-  video-generator.ts     Pipeline generation implementation
-  render.ts              Segmented Remotion renderer
-electron/
-  electron-main.ts       Desktop composition root
-  dependency-service.ts  Desktop dependency checks and repair
-  server-manager.ts      Desktop backend process manager
-  window-manager.ts      Desktop window and tray manager
-  ipc.ts                 Electron IPC wiring
-remotion/
-  MainVideo.tsx
-  SingleSceneVideo.tsx
-  Root.tsx
-input/
-  input-scripts.json
-  input-assests/         Local images and videos
-output/                  Generated videos
-public/                  Job assets served by the portal
-```
+## 🗺️ Roadmap
 
-For the full architecture reference, see [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+**Current (v5.x):** Desktop app, MCP server, AI verification, free media sources, voice cloning
 
-## FAQ
+**Short-term (v5.5-v6.0):** Plugin system, subtitle styling, template system, macOS/Linux desktop, Swagger docs
 
-### Is this a completely free video generator?
+**Medium-term (v6.0-v7.0):** Visual timeline editor, collaboration, GPU acceleration, advanced transitions
 
-Yes. The project itself is completely free and open source under the MIT license. There is no paid plan attached to this repo. Optional external services may have their own rules or usage limits.
+**Long-term (v7.0+):** Cloud rendering, marketplace, storyboard AI, mobile companion
 
-### Is this an open-source AI video generator?
+[Full roadmap →](ROADMAP.md)
 
-Yes. It is an open-source text-to-video pipeline that uses AI voice generation plus deterministic media selection and Remotion rendering.
+---
 
-### Can I use this for YouTube Shorts, TikTok, and Reels?
+## 📦 Releases
 
-Yes. Use `portrait` for 9:16 output and `landscape` for 16:9 videos.
+The project follows [Semantic Versioning](https://semver.org/). See [releases](https://github.com/itsPremkumar/Automated-Video-Generator/releases) for download links and release notes.
 
-### Does this add a watermark?
+| Version | Status | Support |
+|---------|--------|---------|
+| 5.x | Active | ✅ Full support |
+| 4.x | Maintenance | ⚠️ Security fixes |
+| <4.0 | EOL | ❌ No support |
 
-No watermark is added by this project.
+---
 
-### Can I use my own images and videos?
+## 📄 License
 
-Yes. Put files in `input/input-assests/` and reference them with `[Visual: filename.mp4]` or `[Visual: filename.jpg]`.
+MIT © [Premkumar](https://github.com/itsPremkumar). See [LICENSE](LICENSE) for details.
 
-### Can I self-host it?
+---
 
-Yes. You can run it locally, in Docker, or behind your own deployment setup.
-
-### Do I need to install FFmpeg manually?
-
-Not always. The project tries bundled `ffmpeg-static` first. A global FFmpeg install is mainly a fallback for machines where the bundled binary cannot be used.
-
-### What happens if Edge-TTS is missing on Windows?
-
-The desktop app now tries multiple voice paths instead of failing immediately.
-
-It prefers bundled `Edge-TTS`, can repair the bundled runtime from the setup wizard, and can fall back to Windows offline speech if needed.
-
-### What should a normal user do first?
-
-Clone the repo, run `Start-Automated-Video-Generator.bat`, save the `PEXELS_API_KEY` in the browser portal, and generate from the UI.
-
-### What if `py` exists but is broken on Windows?
-
-Try:
-
-```bash
-python -m pip install -r requirements.txt
-```
-
-If Python itself is broken, reinstall Python 3 or use:
-
-```powershell
-winget install --id Python.Python.3.12 --exact --accept-package-agreements --accept-source-agreements --silent
-```
-
-### Why does PowerShell say the batch file is not recognized?
-
-PowerShell does not run files from the current folder by name alone.
-
-Use:
-
-```powershell
-.\Start-Automated-Video-Generator.bat
-```
-
-or:
-
-```powershell
-.\Start-Automated-Video-Generator.ps1
-```
-
-## GEO and AI-friendly docs
-
-These files make the project easier for AI tools and answer engines to understand:
-
-- [`llms.txt`](./llms.txt)
-- [`llms-full.txt`](./llms-full.txt)
-- [`QUICKSTART.md`](./QUICKSTART.md)
-- [`WINDOWS_INSTALLER.md`](./docs/WINDOWS_INSTALLER.md)
-- [`SETUP.md`](./docs/SETUP.md)
-- [`PRODUCTION_HARDENING.md`](./docs/PRODUCTION_HARDENING.md)
-- [`CLAUDE_MCP_SETUP.md`](./docs/CLAUDE_MCP_SETUP.md)
-- [`OPENVERSE.md`](./docs/OPENVERSE.md) — Free CC images, no API key (SEO/AEO/GEO)
-- [`MEDIA_VERIFICATION.md`](./docs/MEDIA_VERIFICATION.md) — AI visual verification (SEO/AEO/GEO)
-
-## Roadmap and contributing
-
-- [`ROADMAP.md`](./docs/ROADMAP.md)
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md)
-- [`SECURITY.md`](./SECURITY.md)
-
-## Growth assets
-
-- [`REPOSITORY_GROWTH_CHECKLIST.md`](./docs/REPOSITORY_GROWTH_CHECKLIST.md)
-- [`assets/github-social-preview.svg`](./assets/github-social-preview.svg)
-
-## Suggested GitHub topics
-
-If you want more GitHub discovery, set repo topics like:
-
-`free-video-generator`, `open-source-video-generator`, `text-to-video`, `ai-video-generator`, `remotion`, `edge-tts`, `youtube-shorts`, `tiktok-video-generator`, `self-hosted`, `mcp-server`, `no-api-key`, `openverse`, `creative-commons-images`, `stock-footage`, `video-pipeline`, `ai-image-verification`, `ollama-vision`, `gemini-vision`, `ffmpeg-frame-extraction`, `cc-licensed-images`, `visual-content-validation`
-
-## Contributing
-
-Issues, feature requests, docs improvements, and pull requests are welcome.
-
-If this repo helps you, please star it on GitHub:
-
-<https://github.com/itsPremkumar/Automated-Video-Generator>
+<div align="center">
+  <p>
+    <strong>⭐ Star this repo</strong> if it helps your projects — it helps others discover it too.<br/>
+    <a href="https://github.com/itsPremkumar/Automated-Video-Generator">GitHub</a> &bull;
+    <a href="https://www.npmjs.com/package/automated-video-generator">npm</a> &bull;
+    <a href="https://itspremkumar.github.io/Automated-Video-Generator">Website</a> &bull;
+    <a href="https://github.com/itsPremkumar/Automated-Video-Generator/discussions">Discussions</a>
+  </p>
+  <p>
+    <sub>Built with ❤️ and lots of ☕ | Free forever • MIT licensed • No watermarks • No subscriptions</sub>
+  </p>
+</div>

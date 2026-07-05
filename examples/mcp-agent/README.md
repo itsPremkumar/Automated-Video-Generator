@@ -1,25 +1,22 @@
 # MCP Agent Example
 
-This example shows how to use the Automated Video Generator MCP server with AI agents.
+Use the MCP (Model Context Protocol) server to generate videos through AI agents like Claude Desktop and Claude Code.
 
-## Prerequisites
+## Purpose
 
-- Node.js 18+
-- The project installed locally or globally
+Demonstrates the MCP server integration, allowing AI tools to create, configure, and manage video generation autonomously through natural language.
 
-## Setup
+## Expected Output
 
-### Claude Code
+Videos created entirely through conversational AI interaction — no manual script editing or command-line configuration needed.
+
+## Usage
+
+### Start the MCP Server
 
 ```bash
-claude mcp add automated-video-generator -- npx automated-video-generator
-```
-
-Then in your Claude conversation:
-
-```
-Generate a video about renewable energy. Make it portrait orientation
-for YouTube Shorts. Use English voice.
+# From the project root
+npm run mcp
 ```
 
 ### Claude Desktop
@@ -37,23 +34,19 @@ Add to your `claude_desktop_config.json`:
 }
 ```
 
-### Custom MCP Client
-
-Start the MCP server:
+### Claude Code
 
 ```bash
-npm run mcp
+claude mcp add automated-video-generator -- npx automated-video-generator
 ```
 
-Connect using any MCP-compatible client. Available tools:
+### Available MCP Tools
 
-- `generate_video` — Create a video from a script
-- `search_free_video` — Search Wikimedia Commons and Internet Archive
-- `list_assets` — List files in input directory
-- `upload_asset` — Upload a file to input assets
+Once connected, AI agents can:
+- Create and manage video jobs
+- Search and preview stock media
+- Monitor rendering progress
+- Retrieve completed video files
+- List available voices and languages
 
-## Example Prompts
-
-- "Create a 30-second video explaining quantum computing"
-- "Generate a Tamil language video about healthy eating habits"
-- "Search for free videos of nature and create a compilation"
+See [Claude MCP Setup Guide](../../docs/CLAUDE_MCP_SETUP.md) for full documentation.
