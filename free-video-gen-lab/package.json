@@ -1,0 +1,22 @@
+{
+  "name": "free-video-gen-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Experimental lab for free/open-source AI video generation features with fallback architecture",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "start": "tsx src/cli.ts",
+    "test": "tsx --test \"tests/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit",
+    "test:all": "npm run test && npm run typecheck"
+  },
+  "dependencies": {
+    "tsx": "^4.19.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
