@@ -168,7 +168,7 @@ export async function generateVideo(
         ensurePipelineWorkspace(workspace);
 
         const CONCURRENCY = 5;
-        let activePromises: Promise<void>[] = [];
+        const activePromises: Promise<void>[] = [];
 
         const processScene = async (i: number) => {
             const scene = parsed.scenes[i];
@@ -332,7 +332,7 @@ export async function generateVideo(
                     const scene = parsed.scenes[i];
                     const audioResult = audioFiles.get(scene.sceneNumber);
                     const actualDuration = audioResult?.duration || scene.duration;
-                    if (audioResult && audioResult.path) {
+                    if (audioResult?.path) {
                         duckingVoicePaths.push(audioResult.path);
                     } else {
                         const silencePath = await generateSilence(actualDuration, audioDir, scene.sceneNumber);

@@ -82,7 +82,7 @@ export class WikimediaProvider implements VideoProvider {
         for (const key of Object.keys(pages)) {
             const page = pages[key];
             const info = page.imageinfo?.[0];
-            if (!info || !info.url) continue;
+            if (!info?.url) continue;
 
             const format = mimeToFormat(info.mime);
             if (info.mime && !info.mime.startsWith('video/')) continue;

@@ -297,7 +297,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
 
             try {
                 // SAFETY CHECK: Ensure visual asset exists
-                if (scene.visual && scene.visual.localPath) {
+                if (scene.visual?.localPath) {
                     const absVisualPath = resolvePublicFilePath(scene.visual.localPath);
                     if (!fs.existsSync(absVisualPath)) {
                         console.warn(`\n   ⚠️ [WARNING] Visual asset missing: ${scene.visual.localPath}`);
