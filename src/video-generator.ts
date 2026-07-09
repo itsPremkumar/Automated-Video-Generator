@@ -244,16 +244,19 @@ export async function generateVideo(
                         if (!fs.existsSync(fallbackPathVisuals)) {
                             fs.copyFileSync(fallbackPathInput, fallbackPathVisuals);
                         }
+                        const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(defaultVideo);
                         visual = {
-                            type: 'video',
+                            type: isImage ? 'image' : 'video',
                             url: `local://${defaultVideo}`,
                             width: orientation === 'landscape' ? 1920 : 1080,
                             height: orientation === 'landscape' ? 1080 : 1920,
                             localPath: toPublicRelativePath(fallbackPathVisuals),
                         };
-                        const videoMetadata = getVideoMetadata(fallbackPathVisuals);
-                        visual.videoDuration = videoMetadata.durationSeconds;
-                        visual.videoTrimAfterFrames = videoMetadata.trimAfterFrames;
+                        if (!isImage) {
+                            const videoMetadata = getVideoMetadata(fallbackPathVisuals);
+                            visual.videoDuration = videoMetadata.durationSeconds;
+                            visual.videoTrimAfterFrames = videoMetadata.trimAfterFrames;
+                        }
                     }
                 }
 

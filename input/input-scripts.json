@@ -1,10 +1,12 @@
 [
   {
-    "id": "example-short",
-    "title": "Example - Short Video",
-    "script": "[Visual: space stars cosmos galaxy] The universe is vast and beautiful. Stars twinkle in the night sky. Galaxies spin across billions of light-years.",
-    "orientation": "portrait",
+    "id": "two-minutes",
+    "title": "2 Minute Scaled Video Test",
+    "script": "Short script.",
+    "orientation": "landscape",
     "language": "english",
-    "showText": true
+    "showText": false,
+    "defaultVideo": "default.jpg",
+    "personalAudio": "two_minutes.mp3"
   }
 ]

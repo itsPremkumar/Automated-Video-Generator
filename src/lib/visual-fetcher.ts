@@ -250,7 +250,7 @@ export function getVideoMetadata(
     renderFps: number = DEFAULT_RENDER_FPS
 ): VideoMetadata {
     try {
-        const ffprobeCmd = ffprobePath.path || 'ffprobe';
+        const ffprobeCmd = typeof ffprobePath === 'string' ? ffprobePath : (ffprobePath as any)?.path || 'ffprobe';
         const probe = spawnSync(ffprobeCmd, [
             '-v', 'quiet', '-count_frames', '-print_format', 'json',
             '-show_entries', 'format=duration:stream=codec_type,duration,avg_frame_rate,r_frame_rate,nb_frames,nb_read_frames',

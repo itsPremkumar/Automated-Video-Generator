@@ -17,6 +17,7 @@ type CliVideoJob = {
     showText?: boolean;
     defaultVideo?: string;
     backgroundMusic?: string;
+    personalAudio?: string;
     musicVolume?: number;
     language?: string;
     textConfig?: PipelineJobRequest['textConfig'];
@@ -81,6 +82,7 @@ function buildRequest(job: CliVideoJob, globalOrientation: 'portrait' | 'landsca
         showText: job.showText !== false,
         defaultVideo: job.defaultVideo,
         backgroundMusic: job.backgroundMusic || globalMusic || '',
+        personalAudio: job.personalAudio,
         musicVolume: job.musicVolume,
         textConfig: job.textConfig,
         skipReview: true,
