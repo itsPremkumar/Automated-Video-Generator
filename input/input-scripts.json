@@ -1,9 +1,57 @@
 [
   {
-    "id": "e2e-test-short",
-    "title": "E2E Test - Short Video",
+    "id": "test-01-default",
+    "title": "Test 1 - Basic Default Settings",
     "script": "[Visual: space stars cosmos galaxy] The universe is vast and beautiful. Stars twinkle in the night sky. Galaxies spin across billions of light-years.",
+    "orientation": "portrait",
+    "language": "english",
+    "showText": true
+  },
+  {
+    "id": "test-02-textconfig",
+    "title": "Test 2 - Custom Text Styling",
+    "script": "[Visual: ocean waves sunset beach] The ocean waves crash gently against the shore at sunset. Golden light reflects across the water surface. Seagulls soar gracefully through the warm evening sky.",
+    "orientation": "portrait",
+    "voice": "en-US-JennyNeural",
+    "showText": true,
+    "textConfig": {
+      "color": "#ffcc00",
+      "fontSize": 48,
+      "position": "center",
+      "animation": "typewriter",
+      "background": "glass",
+      "glow": true
+    }
+  },
+  {
+    "id": "test-03-musicvolume",
+    "title": "Test 3 - Music Volume Control",
+    "script": "[Visual: forest trees nature landscape] Tall trees stretch toward the blue sky above. Sunlight filters through the green canopy creating dancing shadows. A gentle breeze rustles through the leaves and branches.",
     "orientation": "landscape",
+    "voice": "en-GB-RyanNeural",
+    "showText": true,
+    "musicVolume": 0.3
+  },
+  {
+    "id": "test-04-portrait",
+    "title": "Test 4 - Portrait Mode No Text",
+    "script": "[Visual: city skyline night lights] The city lights sparkle against the dark night sky. Tall buildings illuminate the urban landscape below. Stars compete with streetlights in this metropolitan scene.",
+    "orientation": "portrait",
+    "showText": false
+  },
+  {
+    "id": "test-05-inline-text-off",
+    "title": "Test 5 - Inline Text Toggle",
+    "script": "[Visual: mountain peak sunrise] The morning sun rises behind the mountain peak. [Text: off] Golden light paints the rocky cliffs with warm colors. [Text: on] Eagles soar high above the valley searching for their morning meal.",
+    "orientation": "landscape",
+    "language": "english",
+    "showText": true
+  },
+  {
+    "id": "test-06-multi-visual",
+    "title": "Test 6 - Multiple Silent Visuals",
+    "script": "[Visual: fireworks celebration][Visual: crowd cheering festival][Visual: confetti party balloons]",
+    "orientation": "portrait",
     "language": "english",
     "showText": true
   }

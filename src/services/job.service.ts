@@ -319,6 +319,7 @@ async function runGenerationPipeline(
         textConfig: options.textConfig,
         defaultVideo: options.defaultVideo || DEFAULT_FALLBACK_VIDEO,
         backgroundMusic: options.backgroundMusic,
+        musicVolume: options.musicVolume,
         personalAudio: options.personalAudio,
         shouldCancel: () => isCancelRequested(jobId),
         onProgress: (step: string, percent: number, message: string) => {
