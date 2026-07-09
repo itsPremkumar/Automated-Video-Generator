@@ -12,7 +12,8 @@ export interface ScriptGenerationResult {
 const aiLogger = appLogger.child({ component: 'ai-service', provider: 'gemini' });
 const GEMINI_TIMEOUT_MS = Math.max(5000, Number.parseInt(process.env.GEMINI_TIMEOUT_MS || '30000', 10) || 30000);
 const GEMINI_MAX_RETRIES = Math.max(1, Number.parseInt(process.env.GEMINI_MAX_RETRIES || '2', 10) || 2);
-const AI_PROVIDER = process.env.AI_PROVIDER?.trim().toLowerCase() || 'ollama';
+const RAW_AI_PROVIDER_AI = process.env.AI_PROVIDER;
+const AI_PROVIDER = RAW_AI_PROVIDER_AI !== undefined ? (RAW_AI_PROVIDER_AI.trim().toLowerCase() || '') : 'ollama';
 
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));

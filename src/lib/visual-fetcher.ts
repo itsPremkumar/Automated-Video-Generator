@@ -35,7 +35,8 @@ const GEMINI_MAX_RETRIES = Math.max(1, Number.parseInt(process.env.GEMINI_MAX_RE
 const GEMINI_MAX_CONCURRENCY = Math.max(1, Number.parseInt(process.env.GEMINI_MAX_CONCURRENCY || '2', 10) || 2);
 
 const OLLAMA_MAX_CONCURRENCY = Math.max(1, Number.parseInt(process.env.OLLAMA_MAX_CONCURRENCY || '2', 10) || 2);
-const AI_PROVIDER = process.env.AI_PROVIDER?.trim().toLowerCase() || 'ollama';
+const RAW_AI_PROVIDER = process.env.AI_PROVIDER;
+const AI_PROVIDER = RAW_AI_PROVIDER !== undefined ? (RAW_AI_PROVIDER.trim().toLowerCase() || '') : 'ollama';
 
 const OPENVERSE_ENABLED = process.env.OPENVERSE_ENABLED !== 'false';
 const MEDIA_VERIFICATION_ENABLED = process.env.MEDIA_VERIFICATION_ENABLED !== 'false';
