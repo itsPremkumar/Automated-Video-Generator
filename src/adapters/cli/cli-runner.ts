@@ -81,6 +81,7 @@ function buildRequest(job: CliVideoJob, globalOrientation: 'portrait' | 'landsca
         showText: job.showText !== false,
         defaultVideo: job.defaultVideo,
         backgroundMusic: job.backgroundMusic || globalMusic || '',
+        musicVolume: job.musicVolume,
         textConfig: job.textConfig,
         skipReview: true,
     };

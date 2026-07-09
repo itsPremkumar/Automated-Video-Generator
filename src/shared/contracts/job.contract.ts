@@ -21,6 +21,7 @@ export const pipelineJobRequestSchema = z.object({
     language: z.string().trim().min(1).max(50).optional(),
     voice: z.string().trim().min(1).max(120).optional(),
     backgroundMusic: safeFilenameSchema.or(z.literal('')).optional().default(''),
+    musicVolume: z.number().min(0).max(1).optional(),
     personalAudio: safeFilenameSchema.or(z.literal('')).optional(),
     defaultVideo: safeFilenameSchema.optional(),
     showText: z.boolean().optional().default(true),
@@ -44,6 +45,7 @@ export type JobRequestOptions = {
     voice?: string;
     showText: boolean;
     backgroundMusic: string;
+    musicVolume?: number;
     personalAudio?: string;
     defaultVideo?: string;
     skipReview?: boolean;
