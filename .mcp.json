@@ -1,0 +1,11 @@
+{
+    "mcpServers": {
+        "automated-video-generator": {
+            "command": "npx",
+            "args": ["tsx", "src/mcp-server.ts"],
+            "env": {
+                "ALLOW_UNSAFE_MCP_TOOLS": "1"
+            }
+        }
+    }
+}

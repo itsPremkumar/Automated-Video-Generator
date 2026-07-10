@@ -83,13 +83,13 @@ No paid plans. No watermarks. No monthly limits. Just your machine, your scripts
 
 Choose your path:
 
-| Path | Time | Difficulty | For |
-|------|------|-----------|-----|
-| [Windows Desktop App](#-windows-desktop-app) | 2 min | ★☆☆ | Everyone |
-| [One-Click Launcher](#-one-click-launcher-windows) | 3 min | ★☆☆ | Windows users |
-| [Manual Setup](#-manual-setup) | 5 min | ★★☆ | Developers |
-| [Docker](#-docker) | 3 min | ★★☆ | DevOps |
-| [npm (MCP)](#-npm-mcp-server) | 1 min | ★☆☆ | AI agents |
+| Path                                               | Time  | Difficulty | For           |
+| -------------------------------------------------- | ----- | ---------- | ------------- |
+| [Windows Desktop App](#-windows-desktop-app)       | 2 min | ★☆☆        | Everyone      |
+| [One-Click Launcher](#-one-click-launcher-windows) | 3 min | ★☆☆        | Windows users |
+| [Manual Setup](#-manual-setup)                     | 5 min | ★★☆        | Developers    |
+| [Docker](#-docker)                                 | 3 min | ★★☆        | DevOps        |
+| [npm (MCP)](#-npm-mcp-server)                      | 1 min | ★☆☆        | AI agents     |
 
 ### 🪟 Windows Desktop App
 
@@ -148,28 +148,55 @@ docker run -p 3001:3001 \
 
 ### 📦 npm (MCP Server)
 
-```bash
-npx automated-video-generator
-```
+The MCP server lets AI agents (Claude Desktop, Claude Code, Cursor, etc.) create videos autonomously — it exposes 23 tools, 13 resources, and 4 prompts over stdio.
 
-Or install globally:
-
-```bash
-npm install -g automated-video-generator
-```
-
-Then connect Claude Desktop:
+**Quick connect (read-only safe mode — default):**
 
 ```json
+{
+    "mcpServers": {
+        "automated-video-generator": {
+            "command": "npx",
+            "args": ["automated-video-generator"]
+        }
+    }
+}
+```
+
+Or run it locally:
+
+```bash
+npm install
+npm run mcp        # starts the MCP server on stdio
+```
+
+**⚠️ Safe mode (important):** By default the MCP server runs in **safe mode** — read tools (`read_input_script`, `list_output_videos`, `health_check`, etc.) work, but **all write/mutation tools are blocked** with `ForbiddenError: safe mode`. This protects your files from accidental changes by an agent.
+
+To enable write tools (`write_input_script`, `delete_*`, `upload_asset`, `update_env_config`, `run_pipeline_command`, `delete_output`), set the flag:
+
+```bash
+# one-off
+ALLOW_UNSAFE_MCP_TOOLS=1 npm run mcp
+
+# or in your client config (env)
 {
   "mcpServers": {
     "automated-video-generator": {
       "command": "npx",
-      "args": ["automated-video-generator"]
+      "args": ["automated-video-generator"],
+      "env": { "ALLOW_UNSAFE_MCP_TOOLS": "1" }
     }
   }
 }
 ```
+
+> Only enable `ALLOW_UNSAFE_MCP_TOOLS` for trusted agents — it grants filesystem write access to your project.
+
+**What the server provides:**
+
+- **Tools (23):** `write_input_script`, `read_input_script`, `delete_input_script`, `validate_input_script`, `upload_asset`, `delete_asset`, `list_output_videos`, `read_output_file`, `delete_output`, `generate_video`, `get_video_status`, `run_pipeline_command`, `list_jobs`, `read_env_config`, `update_env_config`, `get_system_info`, `health_check`, `get_workspace_paths`, `list_public_files`, `list_voices`, `list_local_assets`, `search_free_video`, `download_free_video`
+- **Resources (13):** project overview, input scripts, input assets, input format docs, output videos, per-video detail, public tree, env/pipeline config
+- **Prompts (4):** `create-marketing-video`, `create-youtube-short`, `batch-generate`, `debug-pipeline`
 
 ---
 
@@ -181,13 +208,13 @@ Create `input/input-scripts.json`:
 
 ```json
 [
-  {
-    "id": "my-first-video",
-    "title": "3 Productivity Habits That Actually Work",
-    "orientation": "portrait",
-    "language": "english",
-    "script": "Here are three productivity habits that will change your life. First, start your day with a clear plan..."
-  }
+    {
+        "id": "my-first-video",
+        "title": "3 Productivity Habits That Actually Work",
+        "orientation": "portrait",
+        "language": "english",
+        "script": "Here are three productivity habits that will change your life. First, start your day with a clear plan..."
+    }
 ]
 ```
 
@@ -214,9 +241,9 @@ Use `[Visual: ...]` tags for frame-perfect scene control:
 
 ```json
 {
-  "id": "director-mode-demo",
-  "title": "My Directed Video",
-  "script": "[Visual: a serene mountain lake at sunset, cinematic, slow pan]\nNestled in the heart of the Rockies, this view has inspired explorers for centuries."
+    "id": "director-mode-demo",
+    "title": "My Directed Video",
+    "script": "[Visual: a serene mountain lake at sunset, cinematic, slow pan]\nNestled in the heart of the Rockies, this view has inspired explorers for centuries."
 }
 ```
 
@@ -224,19 +251,19 @@ Use `[Visual: ...]` tags for frame-perfect scene control:
 
 ## 🌟 Key Features
 
-| Feature | Description |
-|---------|-------------|
-| **🎤 400+ Voices** | Multi-language TTS via Edge-TTS with fallback to Windows offline speech, Voicebox, XTTS, Kokoro |
-| **🖼️ Stock Media** | Pexels + Pixabay + Openverse (CC images, no API key) + Wikimedia Commons + Internet Archive |
-| **🎵 Background Music** | Auto-ducking with volume control |
-| **🔄 Batch Processing** | Generate dozens of videos from one JSON file |
-| **🖥️ Web Portal** | Browser-based UI for generation, preview, download |
-| **🤖 MCP Server** | Connect Claude Desktop / Claude Code for AI-driven video creation |
-| **✅ AI Media Verification** | Validates visuals match scene context via Ollama moondream or Gemini Vision |
-| **🪟 Desktop App** | Standalone Windows .exe with bundled runtime |
-| **📱 Portrait + Landscape** | YouTube Shorts, TikTok, Reels, and widescreen support |
-| **↩️ Resumable Rendering** | Cancel and resume without losing progress |
-| **🎬 Remotion Studio** | Preview and tweak video compositions |
+| Feature                      | Description                                                                                     |
+| ---------------------------- | ----------------------------------------------------------------------------------------------- |
+| **🎤 400+ Voices**           | Multi-language TTS via Edge-TTS with fallback to Windows offline speech, Voicebox, XTTS, Kokoro |
+| **🖼️ Stock Media**           | Pexels + Pixabay + Openverse (CC images, no API key) + Wikimedia Commons + Internet Archive     |
+| **🎵 Background Music**      | Auto-ducking with volume control                                                                |
+| **🔄 Batch Processing**      | Generate dozens of videos from one JSON file                                                    |
+| **🖥️ Web Portal**            | Browser-based UI for generation, preview, download                                              |
+| **🤖 MCP Server**            | Connect Claude Desktop / Claude Code for AI-driven video creation                               |
+| **✅ AI Media Verification** | Validates visuals match scene context via Ollama moondream or Gemini Vision                     |
+| **🪟 Desktop App**           | Standalone Windows .exe with bundled runtime                                                    |
+| **📱 Portrait + Landscape**  | YouTube Shorts, TikTok, Reels, and widescreen support                                           |
+| **↩️ Resumable Rendering**   | Cancel and resume without losing progress                                                       |
+| **🎬 Remotion Studio**       | Preview and tweak video compositions                                                            |
 
 ---
 
@@ -381,13 +408,13 @@ BACKGROUND_MUSIC_VOLUME=0.15
 
 One of the project's standout features: **you can generate videos without registering for any API service**.
 
-| Source | Needs API Key? | Content | Enabled By Default |
-|--------|---------------|---------|-------------------|
-| [Pexels](https://pexels.com/api) | ✅ Free key | Stock videos + images | When key is set |
-| [Pixabay](https://pixabay.com/api) | ✅ Free key | Stock videos + images | When key is set |
-| **Openverse** | ❌ No key needed | 600M+ CC-licensed images | ✅ Yes |
-| **Wikimedia Commons** | ❌ No key needed | CC-licensed videos | ✅ Yes |
-| **Internet Archive** | ❌ No key needed | Public domain videos | ✅ Yes |
+| Source                             | Needs API Key?   | Content                  | Enabled By Default |
+| ---------------------------------- | ---------------- | ------------------------ | ------------------ |
+| [Pexels](https://pexels.com/api)   | ✅ Free key      | Stock videos + images    | When key is set    |
+| [Pixabay](https://pixabay.com/api) | ✅ Free key      | Stock videos + images    | When key is set    |
+| **Openverse**                      | ❌ No key needed | 600M+ CC-licensed images | ✅ Yes             |
+| **Wikimedia Commons**              | ❌ No key needed | CC-licensed videos       | ✅ Yes             |
+| **Internet Archive**               | ❌ No key needed | Public domain videos     | ✅ Yes             |
 
 [Openverse guide →](docs/OPENVERSE.md) &nbsp;|&nbsp; [Free video guide →](docs/FREE_VIDEO.md)
 
@@ -395,19 +422,19 @@ One of the project's standout features: **you can generate videos without regist
 
 ## 🆚 How It Compares
 
-| Feature | Automated Video Generator | Commercial tools | Other OSS tools |
-|---------|--------------------------|-----------------|-----------------|
-| **Price** | Completely free (MIT) | $20-200/mo | Varies |
-| **Watermark** | None | Usually yes | Varies |
-| **Self-hosted** | ✅ Yes | ❌ Cloud-only | Sometimes |
-| **Local execution** | ✅ Full local | ❌ | Sometimes |
-| **API key required** | ❌ Optional | ✅ Required | Varies |
-| **MCP / AI agent support** | ✅ Built-in | ❌ | Rare |
-| **Stock media** | ✅ Multi-source integrated | ✅ | Limited |
-| **AI media verification** | ✅ Built-in | ❌ | ❌ |
-| **400+ voices** | ✅ 13+ languages | ✅ | Limited |
-| **Batch mode** | ✅ Built-in | ✅ | Limited |
-| **Desktop app** | ✅ Windows (.exe) | ✅ | Rare |
+| Feature                    | Automated Video Generator  | Commercial tools | Other OSS tools |
+| -------------------------- | -------------------------- | ---------------- | --------------- |
+| **Price**                  | Completely free (MIT)      | $20-200/mo       | Varies          |
+| **Watermark**              | None                       | Usually yes      | Varies          |
+| **Self-hosted**            | ✅ Yes                     | ❌ Cloud-only    | Sometimes       |
+| **Local execution**        | ✅ Full local              | ❌               | Sometimes       |
+| **API key required**       | ❌ Optional                | ✅ Required      | Varies          |
+| **MCP / AI agent support** | ✅ Built-in                | ❌               | Rare            |
+| **Stock media**            | ✅ Multi-source integrated | ✅               | Limited         |
+| **AI media verification**  | ✅ Built-in                | ❌               | ❌              |
+| **400+ voices**            | ✅ 13+ languages           | ✅               | Limited         |
+| **Batch mode**             | ✅ Built-in                | ✅               | Limited         |
+| **Desktop app**            | ✅ Windows (.exe)          | ✅               | Rare            |
 
 [Full comparison →](COMPARISON.md)
 
@@ -415,26 +442,26 @@ One of the project's standout features: **you can generate videos without regist
 
 ## 📚 Documentation
 
-| Resource | Description |
-|----------|-------------|
-| [Installation Guide](docs/installation.md) | Full setup instructions for all platforms |
-| [Configuration Reference](docs/configuration.md) | All environment variables explained |
-| [CLI Reference](docs/cli-reference.md) | All CLI commands and options |
-| [API Reference](docs/api-reference.md) | HTTP API endpoints |
-| [Architecture](docs/ARCHITECTURE.md) | Codebase architecture deep-dive |
-| [Usage Guide](docs/usage.md) | Generating videos step by step |
-| [FAQ](docs/faq.md) | Frequently asked questions |
-| [Troubleshooting](docs/troubleshooting.md) | Common issues and solutions |
-| [OpenVerse Guide](docs/OPENVERSE.md) | Free CC-licensed image search |
-| [Free Video Guide](docs/FREE_VIDEO.md) | Free video sources |
-| [Media Verification](docs/MEDIA_VERIFICATION.md) | AI visual verification setup |
-| [Voice Cloning](docs/VOICE_CLONING_GUIDE.md) | Custom voice model setup |
-| [Input Assets Guide](docs/INPUT_ASSETS_GUIDE.md) | Using local images/videos |
-| [Production Hardening](docs/PRODUCTION_HARDENING.md) | Deployment best practices |
-| [Windows Installer](docs/WINDOWS_INSTALLER.md) | Desktop app builds |
-| [Claude MCP Setup](docs/CLAUDE_MCP_SETUP.md) | AI agent integration |
-| [llms.txt](llms.txt) | AI-friendly project summary |
-| [llms-full.txt](llms-full.txt) | Full AI-friendly documentation |
+| Resource                                             | Description                               |
+| ---------------------------------------------------- | ----------------------------------------- |
+| [Installation Guide](docs/installation.md)           | Full setup instructions for all platforms |
+| [Configuration Reference](docs/configuration.md)     | All environment variables explained       |
+| [CLI Reference](docs/cli-reference.md)               | All CLI commands and options              |
+| [API Reference](docs/api-reference.md)               | HTTP API endpoints                        |
+| [Architecture](docs/ARCHITECTURE.md)                 | Codebase architecture deep-dive           |
+| [Usage Guide](docs/usage.md)                         | Generating videos step by step            |
+| [FAQ](docs/faq.md)                                   | Frequently asked questions                |
+| [Troubleshooting](docs/troubleshooting.md)           | Common issues and solutions               |
+| [OpenVerse Guide](docs/OPENVERSE.md)                 | Free CC-licensed image search             |
+| [Free Video Guide](docs/FREE_VIDEO.md)               | Free video sources                        |
+| [Media Verification](docs/MEDIA_VERIFICATION.md)     | AI visual verification setup              |
+| [Voice Cloning](docs/VOICE_CLONING_GUIDE.md)         | Custom voice model setup                  |
+| [Input Assets Guide](docs/INPUT_ASSETS_GUIDE.md)     | Using local images/videos                 |
+| [Production Hardening](docs/PRODUCTION_HARDENING.md) | Deployment best practices                 |
+| [Windows Installer](docs/WINDOWS_INSTALLER.md)       | Desktop app builds                        |
+| [Claude MCP Setup](docs/CLAUDE_MCP_SETUP.md)         | AI agent integration                      |
+| [llms.txt](llms.txt)                                 | AI-friendly project summary               |
+| [llms-full.txt](llms-full.txt)                       | Full AI-friendly documentation            |
 
 ---
 
@@ -479,11 +506,11 @@ git push origin feat/my-feature
 
 The project follows [Semantic Versioning](https://semver.org/). See [releases](https://github.com/itsPremkumar/Automated-Video-Generator/releases) for download links and release notes.
 
-| Version | Status | Support |
-|---------|--------|---------|
-| 5.x | Active | ✅ Full support |
-| 4.x | Maintenance | ⚠️ Security fixes |
-| <4.0 | EOL | ❌ No support |
+| Version | Status      | Support           |
+| ------- | ----------- | ----------------- |
+| 5.x     | Active      | ✅ Full support   |
+| 4.x     | Maintenance | ⚠️ Security fixes |
+| <4.0    | EOL         | ❌ No support     |
 
 ---
 
