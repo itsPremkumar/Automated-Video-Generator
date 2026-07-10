@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="380" viewBox="0 0 900 380" font-family="'Segoe UI',system-ui,sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="380" rx="16" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="40" y="44" fill="#e2e8f0" font-size="22" font-weight="700">Automated Video Generator</text>
+  <text x="40" y="70" fill="#94a3b8" font-size="13">Paste a script → get a narrated, stock-footage MP4. Local. No API key.</text>
+
+  <!-- Box 1: Script -->
+  <g>
+    <rect x="40" y="110" width="200" height="180" rx="12" fill="#1e293b" stroke="#334155"/>
+    <text x="60" y="138" fill="#22d3ee" font-size="13" font-weight="600">1 · SCRIPT</text>
+    <rect x="60" y="152" width="160" height="120" rx="6" fill="#0f172a"/>
+    <text x="72" y="176" fill="#cbd5e1" font-size="11">[Visual: ocean sunset]</text>
+    <text x="72" y="196" fill="#cbd5e1" font-size="11">The ocean teaches us</text>
+    <text x="72" y="212" fill="#cbd5e1" font-size="11">patience and calm.</text>
+    <text x="72" y="236" fill="#64748b" font-size="10">[Voice: en-US-Jenny]</text>
+    <text x="72" y="256" fill="#64748b" font-size="10">[Tags: #shorts #calm]</text>
+  </g>
+  <line x1="240" y1="200" x2="300" y2="200" stroke="#64748b" marker-end="url(#arrow)"/>
+
+  <!-- Box 2: Pipeline -->
+  <g>
+    <rect x="300" y="110" width="200" height="180" rx="12" fill="#1e293b" stroke="#334155"/>
+    <text x="320" y="138" fill="#a78bfa" font-size="13" font-weight="600">2 · PIPELINE</text>
+    <circle cx="340" cy="175" r="6" fill="#22d3ee"><animate attributeName="opacity" values="1;0.2;1" dur="1.5s" repeatCount="indefinite"/></circle>
+    <text x="356" y="179" fill="#cbd5e1" font-size="11">Parse scenes</text>
+    <circle cx="340" cy="205" r="6" fill="#a78bfa"><animate attributeName="opacity" values="1;0.2;1" dur="1.5s" begin="0.4s" repeatCount="indefinite"/></circle>
+    <text x="356" y="209" fill="#cbd5e1" font-size="11">Edge-TTS voice</text>
+    <circle cx="340" cy="235" r="6" fill="#22d3ee"><animate attributeName="opacity" values="1;0.2;1" dur="1.5s" begin="0.8s" repeatCount="indefinite"/></circle>
+    <text x="356" y="239" fill="#cbd5e1" font-size="11">Fetch stock media</text>
+    <circle cx="340" cy="265" r="6" fill="#a78bfa"><animate attributeName="opacity" values="1;0.2;1" dur="1.5s" begin="1.2s" repeatCount="indefinite"/></circle>
+    <text x="356" y="269" fill="#cbd5e1" font-size="11">Render via Remotion</text>
+  </g>
+  <line x1="500" y1="200" x2="560" y2="200" stroke="#64748b" marker-end="url(#arrow)"/>
+
+  <!-- Box 3: Video -->
+  <g>
+    <rect x="560" y="110" width="300" height="180" rx="12" fill="#1e293b" stroke="#334155"/>
+    <text x="580" y="138" fill="#22d3ee" font-size="13" font-weight="600">3 · VIDEO.mp4</text>
+    <rect x="580" y="152" width="260" height="120" rx="6" fill="#000"/>
+    <rect x="580" y="152" width="260" height="120" rx="6" fill="#0ea5e9" opacity="0.15"/>
+    <text x="596" y="200" fill="#e2e8f0" font-size="12" font-weight="600">▶ Sunset on the ocean</text>
+    <text x="596" y="222" fill="#94a3b8" font-size="10">AI voice · stock footage</text>
+    <text x="596" y="244" fill="#94a3b8" font-size="10">1080×1920 · 00:30</text>
+    <text x="596" y="262" fill="#22d3ee" font-size="10">ready for YouTube / TikTok</text>
+  </g>
+
+  <!-- Loop arrow -->
+  <path d="M560 320 Q450 360 340 320" fill="none" stroke="url(#accent)" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="380" y="350" fill="#64748b" font-size="11">repeat · batch · automate</text>
+
+  <!-- Footer badges -->
+  <text x="40" y="360" fill="#64748b" font-size="11">MIT · Self-hosted · No watermark · No API key</text>
+</svg>
