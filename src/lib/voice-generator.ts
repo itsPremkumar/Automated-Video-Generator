@@ -1,6 +1,6 @@
 /**
  * Voice generation pipeline: generates MP3/WAV audio for each scene using
- * Edge-TTS, Windows SAPI fallback, or gTTS fallback.
+ * Edge-TTS, Windows SAPI fallback, or custom local API providers (Voicebox, XTTS, Kokoro).
  *
  * Data    → voice-data.ts
  * Types   → voice-types.ts
@@ -39,7 +39,7 @@ import {
   runPowerShellEncoded,
   readSpawnOutput,
 } from './voice-engine';
-import { GTTS_LANGUAGE_MAP, WINDOWS_SAPI_LANGUAGE_MAP } from './voice-data';
+import { WINDOWS_SAPI_LANGUAGE_MAP } from './voice-data';
 
 const console = {
   log: (...args: unknown[]) => logInfo(...args),
@@ -123,24 +123,6 @@ function sleep(ms: number): Promise<void> {
 }
 
 // ─── Engine-specific language helpers ────────────────────────────────────────
-
-function getGttsLanguage(config: VoiceConfig): string {
-  const requested = (config.language || '').toLowerCase().trim();
-  if (requested && GTTS_LANGUAGE_MAP[requested]) return GTTS_LANGUAGE_MAP[requested];
-
-  const voicePrefix = config.voice.split('-').slice(0, 2).join('-').toLowerCase();
-  if (voicePrefix.startsWith('ta-')) return 'ta';
-  if (voicePrefix.startsWith('hi-')) return 'hi';
-  if (voicePrefix.startsWith('es-')) return 'es';
-  if (voicePrefix.startsWith('fr-')) return 'fr';
-  if (voicePrefix.startsWith('de-')) return 'de';
-  if (voicePrefix.startsWith('pt-')) return 'pt';
-  if (voicePrefix.startsWith('ja-')) return 'ja';
-  if (voicePrefix.startsWith('ko-')) return 'ko';
-  if (voicePrefix.startsWith('it-')) return 'it';
-  if (voicePrefix.startsWith('ru-')) return 'ru';
-  return 'en';
-}
 
 function getWindowsVoiceCulture(config: VoiceConfig): string {
   const requested = (config.language || '').toLowerCase().trim();
@@ -358,7 +340,7 @@ async function generateSceneVoiceoverWithRetry(
     try {
       if (voiceEngine.activeEngine === 'edge-tts') return await generateSceneVoiceover(scene, outputDir, config);
       if (voiceEngine.activeEngine === 'windows-sapi-fallback') return await generateSceneVoiceoverWithWindowsSapi(scene, outputDir, config);
-      return await generateSceneVoiceoverWithGtts(scene, outputDir, config);
+      throw new Error(`No usable voice engine configured for scene ${scene.sceneNumber}. Enable Edge-TTS or Windows offline speech.`);
     } catch (error: any) {
       lastError = error;
       if (attempt < MAX_RETRIES) await sleep(RETRY_DELAY_MS * attempt);
@@ -371,8 +353,7 @@ async function generateSceneVoiceoverWithRetry(
       console.log(`[VOICE-GEN] Falling back to Windows offline speech for scene ${scene.sceneNumber} after Edge-TTS retries failed.`);
       return generateSceneVoiceoverWithWindowsSapi(scene, outputDir, config);
     }
-    console.log(`[VOICE-GEN] Falling back to Google TTS for scene ${scene.sceneNumber} after Edge-TTS retries failed.`);
-    return generateSceneVoiceoverWithGtts(scene, outputDir, config);
+    console.log(`[VOICE-GEN] No voice fallback available for scene ${scene.sceneNumber} after Edge-TTS retries failed.`);
   }
 
   throw lastError || new Error('Voice generation failed after all retries');
@@ -494,49 +475,5 @@ try {
     throw new Error(`Windows offline speech failed for scene ${scene.sceneNumber}: ${error.message}`);
   } finally {
     if (fs.existsSync(inputTextPath)) try { fs.unlinkSync(inputTextPath); } catch { /* ignore */ }
-  }
-}
-
-// ─── gTTS scene generation ────────────────────────────────────────────────────
-
-async function generateSceneVoiceoverWithGtts(
-  scene: Scene,
-  outputDir: string,
-  config: VoiceConfig
-): Promise<AudioResult> {
-  const outputPath = path.join(outputDir, `scene_${scene.sceneNumber}_voice.mp3`);
-  const existingAudio = resolveExistingAudio(outputPath, scene.voiceoverText);
-  if (existingAudio) return existingAudio;
-
-  const cleanText = cleanVoiceoverText(scene.voiceoverText);
-  if (!cleanText) return { path: '', duration: Math.max(3, scene.duration || 3) };
-
-  const language = getGttsLanguage(config);
-
-  try {
-    const Gtts = _require('gtts');
-    await new Promise<void>((resolve, reject) => {
-      const tts = new Gtts(cleanText, language);
-      const outputStream = fs.createWriteStream(outputPath);
-      const inputStream = tts.stream();
-      let settled = false;
-
-      const finish = (error?: Error | null) => {
-        if (settled) return;
-        settled = true;
-        error ? reject(error) : resolve();
-      };
-
-      inputStream.on('error', finish);
-      outputStream.on('error', finish);
-      outputStream.on('finish', () => finish());
-      inputStream.pipe(outputStream);
-    });
-
-    assertGeneratedAudioFile(outputPath);
-    return { path: outputPath, duration: getAudioDuration(outputPath, scene.voiceoverText) };
-  } catch (error: any) {
-    if (fs.existsSync(outputPath)) try { fs.unlinkSync(outputPath); } catch { /* ignore */ }
-    throw new Error(`Fallback Google TTS failed for scene ${scene.sceneNumber}: ${error.message}`);
   }
 }

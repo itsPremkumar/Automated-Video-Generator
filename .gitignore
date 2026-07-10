@@ -63,6 +63,11 @@ temp/
 # Portable Runtime
 portable-python/
 
+# Regenerable build artifacts (recreated by scripts/create-icons.cjs)
+assets/tray-icon.png
+assets/icon-256.png
+assets/icon.ico
+
 # TypeScript
 *.tsbuildinfo
 

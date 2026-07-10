@@ -27,7 +27,7 @@ export interface AudioResult {
 
 /** Status snapshot of the active voice engine */
 export interface VoiceEngineStatus {
-  activeEngine: 'edge-tts' | 'windows-sapi-fallback' | 'gtts-fallback' | 'voicebox' | 'xtts' | 'openai-local' | 'unavailable';
+  activeEngine: 'edge-tts' | 'windows-sapi-fallback' | 'voicebox' | 'xtts' | 'openai-local' | 'unavailable';
   detail: string;
   edgeTtsReady: boolean;
   fallbackReady: boolean;

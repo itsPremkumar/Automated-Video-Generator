@@ -179,27 +179,6 @@ export const LANGUAGE_DEFAULTS: Record<string, string> = {
   english: 'en-US-JennyNeural',
 };
 
-/** Language key → gTTS language code */
-export const GTTS_LANGUAGE_MAP: Record<string, string> = {
-  arabic: 'ar',
-  chinese: 'zh-cn',
-  english: 'en',
-  french: 'fr',
-  german: 'de',
-  hindi: 'hi',
-  indonesian: 'id',
-  italian: 'it',
-  japanese: 'ja',
-  korean: 'ko',
-  portuguese: 'pt',
-  russian: 'ru',
-  spanish: 'es',
-  tamil: 'ta',
-  thai: 'th',
-  turkish: 'tr',
-  vietnamese: 'vi',
-};
-
 /** Language key → Windows SAPI culture tag */
 export const WINDOWS_SAPI_LANGUAGE_MAP: Record<string, string> = {
   arabic: 'ar-SA',

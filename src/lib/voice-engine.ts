@@ -1,6 +1,6 @@
 /**
  * Voice engine runtime: resolves the active Edge-TTS binary, probes fallbacks
- * (Windows SAPI, gTTS), runs Edge-TTS commands, and fetches dynamic voice lists.
+ * (Windows SAPI), runs Edge-TTS commands, and fetches dynamic voice lists.
  */
 
 import * as fs from 'fs';
@@ -25,7 +25,6 @@ const console = {
 // ─── Module-level caches ──────────────────────────────────────────────────────
 
 let resolvedEdgeTtsRuntime: EdgeTtsRuntime | null = null;
-let checkedGttsAvailability: boolean | null = null;
 let cachedWindowsSapiStatus: WindowsSapiStatus | null = null;
 let cachedVoices: Record<string, VoiceMetadata[]> | null = null;
 let loggedEdgeTtsResolutionFailure = false;
@@ -197,17 +196,6 @@ export function resolveEdgeTtsRuntime(): EdgeTtsRuntime | null {
 
 // ─── Fallback engine probes ───────────────────────────────────────────────────
 
-export function canUseGttsFallback(): boolean {
-  if (checkedGttsAvailability !== null) return checkedGttsAvailability;
-  try {
-    const Gtts = _require('gtts');
-    checkedGttsAvailability = typeof Gtts === 'function';
-  } catch {
-    checkedGttsAvailability = false;
-  }
-  return checkedGttsAvailability;
-}
-
 export function getWindowsSapiStatus(): WindowsSapiStatus {
   if (cachedWindowsSapiStatus) return cachedWindowsSapiStatus;
 
@@ -270,14 +258,13 @@ export function getVoiceEngineStatus(): VoiceEngineStatus {
 
   const edgeRuntime = resolveEdgeTtsRuntime();
   const windowsSapi = getWindowsSapiStatus();
-  const gttsReady = canUseGttsFallback();
 
   if (edgeRuntime) {
     return {
       activeEngine: 'edge-tts',
       detail: `Using Edge-TTS via ${edgeRuntime.label}`,
       edgeTtsReady: true,
-      fallbackReady: windowsSapi.ready || gttsReady,
+      fallbackReady: windowsSapi.ready,
       generationReady: true,
     };
   }
@@ -286,16 +273,6 @@ export function getVoiceEngineStatus(): VoiceEngineStatus {
     return {
       activeEngine: 'windows-sapi-fallback',
       detail: `Edge-TTS is unavailable, so the app will fall back to ${windowsSapi.detail.replace(/^Using\s+/i, '')}.`,
-      edgeTtsReady: false,
-      fallbackReady: true,
-      generationReady: true,
-    };
-  }
-
-  if (gttsReady) {
-    return {
-      activeEngine: 'gtts-fallback',
-      detail: 'Edge-TTS is unavailable, so the app will fall back to Google TTS.',
       edgeTtsReady: false,
       fallbackReady: true,
       generationReady: true,
