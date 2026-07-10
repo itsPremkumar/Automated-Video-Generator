@@ -68,7 +68,7 @@ function parseScriptLocally(script: string): ParsedScript {
         const lines = para.split('\n');
         for (const line of lines) {
             // Split by sentence boundaries, but respect bracketed tags
-            const sentences = line.split(/(?<=[.?!])\s+(?![^\[]*\])/);
+            const sentences = line.split(/(?<=[.?!])\s+(?![^[]*\])/);
             for (const sentence of sentences) {
                 const trimmed = sentence.trim();
                 if (trimmed.length > 0) {
