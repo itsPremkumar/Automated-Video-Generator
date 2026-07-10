@@ -21,10 +21,11 @@ if (!fs.existsSync(envPath)) {
 }
 
 const envContent = fs.readFileSync(envPath, 'utf-8');
-if (envContent.includes('PEXELS_API_KEY=your_pexels_api_key_here')) {
-  console.error('\x1b[31m%s\x1b[0m', 'Error: PEXELS_API_KEY is not set in .env');
-  console.error('Please add your Pexels API key to the .env file.');
-  process.exit(1);
+const pexelsMatch = envContent.match(/^PEXELS_API_KEY=(.+)$/m);
+if (!pexelsMatch || !pexelsMatch[1].trim() || pexelsMatch[1].trim() === 'your_pexels_api_key_here') {
+  console.error('\x1b[33m%s\x1b[0m', 'Warning: PEXELS_API_KEY is empty or using the default placeholder.');
+  console.error('\x1b[33m%s\x1b[0m', 'Video generation will fall back to free sources (Wikimedia, Internet Archive, Openverse).');
+  console.error('\x1b[33m%s\x1b[0m', 'Set a valid Pexels API key in .env for best results.');
 }
 
 console.error('\x1b[36m%s\x1b[0m', 'Starting Automated Video Generator MCP Server...');
