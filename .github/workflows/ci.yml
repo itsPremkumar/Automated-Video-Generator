@@ -60,3 +60,17 @@ jobs:
             - uses: actions/checkout@v4
             - name: Build Docker image
               run: docker build -t automated-video-generator .
+
+    security:
+        name: Dependency Audit
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: npm
+            - run: npm ci
+            # Fail the build if any high/critical vulnerability is found, so the
+            # "0 vulnerabilities" guarantee cannot silently regress.
+            - run: npm audit --audit-level=high
