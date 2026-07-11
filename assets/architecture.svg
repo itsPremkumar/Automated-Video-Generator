@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 560" font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#4F46E5"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EEF2FF"/>
+      <stop offset="1" stop-color="#E0E7FF"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#6366F1"/>
+    </marker>
+    <style>
+      .box { fill:#fff; stroke:#C7D2FE; stroke-width:1.5; rx:10; }
+      .label { font-size:13px; font-weight:600; fill:#1E1B4B; }
+      .sub { font-size:11px; fill:#4B5563; }
+      .title { font-size:15px; font-weight:700; fill:#4F46E5; }
+      .rt { fill:#fff; stroke:url(#brand); stroke-width:2; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="920" height="560" fill="#FAFAFB"/>
+
+  <!-- Title -->
+  <text x="460" y="34" text-anchor="middle" class="title">Hexagonal Architecture · 4 Entry Points, 1 Core</text>
+
+  <!-- RUNTIMES row -->
+  <g>
+    <rect x="40" y="58" width="840" height="56" rx="12" fill="url(#brand)"/>
+    <text x="60" y="82" class="label" fill="#fff">RUNTIMES</text>
+    <text x="60" y="100" class="sub" fill="#E0E7FF">Four ways to drive the same pipeline</text>
+
+    <rect x="250" y="68" width="120" height="36" rx="8" class="rt"/>
+    <text x="310" y="91" text-anchor="middle" font-size="13" font-weight="600" fill="#4F46E5">🌐 HTTP (Web)</text>
+    <rect x="390" y="68" width="120" height="36" rx="8" class="rt"/>
+    <text x="450" y="91" text-anchor="middle" font-size="13" font-weight="600" fill="#4F46E5">⌨ CLI (Batch)</text>
+    <rect x="530" y="68" width="130" height="36" rx="8" class="rt"/>
+    <text x="595" y="91" text-anchor="middle" font-size="13" font-weight="600" fill="#4F46E5">🤖 MCP (AI)</text>
+    <rect x="680" y="68" width="130" height="36" rx="8" class="rt"/>
+    <text x="745" y="91" text-anchor="middle" font-size="13" font-weight="600" fill="#4F46E5">🖥 Electron</text>
+  </g>
+
+  <!-- arrow runtime -> app -->
+  <path d="M460,114 L460,134" stroke="#6366F1" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Application layer -->
+  <g>
+    <rect x="40" y="138" width="840" height="58" rx="12" fill="url(#core)" stroke="#A5B4FC" stroke-width="1.5"/>
+    <text x="60" y="160" class="label">Application Layer</text>
+    <text x="60" y="180" class="sub">PipelineAppService · MediaAppService · SceneAppService · SetupService</text>
+  </g>
+
+  <!-- arrow app -> infra -->
+  <path d="M460,196 L460,216" stroke="#6366F1" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Three columns: Lib / Services / Infrastructure -->
+  <g>
+    <!-- Lib -->
+    <rect x="40" y="220" width="260" height="240" rx="12" class="box"/>
+    <text x="60" y="248" class="label">src/lib/ — Core Logic</text>
+    <text x="60" y="274" class="sub">Fetchers</text>
+    <text x="60" y="296" class="sub">Parsers</text>
+    <text x="60" y="318" class="sub">Verifier (AI media check)</text>
+    <text x="60" y="340" class="sub">Voice / TTS</text>
+    <text x="60" y="362" class="sub">Renderer (Remotion)</text>
+
+    <!-- Services -->
+    <rect x="330" y="220" width="260" height="240" rx="12" class="box"/>
+    <text x="350" y="248" class="label">src/application/ — Services</text>
+    <text x="350" y="274" class="sub">Video Service</text>
+    <text x="350" y="296" class="sub">Job Service</text>
+    <text x="350" y="318" class="sub">AI Service</text>
+    <text x="350" y="340" class="sub">Media Service</text>
+
+    <!-- Infrastructure -->
+    <rect x="620" y="220" width="260" height="240" rx="12" class="box"/>
+    <text x="640" y="248" class="label">src/infrastructure/</text>
+    <text x="640" y="274" class="sub">Persistence</text>
+    <text x="640" y="296" class="sub">Filesystem</text>
+    <text x="640" y="318" class="sub">Scene Editor</text>
+    <text x="640" y="340" class="sub">Media Sources (Pexels,</text>
+    <text x="640" y="358" class="sub">Pixabay, Openverse, CC)</text>
+  </g>
+
+  <!-- adapters note -->
+  <g>
+    <rect x="40" y="478" width="840" height="54" rx="12" fill="#F5F3FF" stroke="#C4B5FD" stroke-width="1.5"/>
+    <text x="60" y="502" class="label">src/adapters/</text>
+    <text x="60" y="522" class="sub">HTTP controllers · CLI runner · MCP tool registrars · Electron bridge — all share src/shared/ contracts &amp; logging</text>
+  </g>
+
+  <!-- Input/Output side labels -->
+  <text x="14" y="350" font-size="11" fill="#9CA3AF" transform="rotate(-90 14 350)">INPUT: script / JSON / MCP</text>
+  <text x="906" y="350" font-size="11" fill="#9CA3AF" transform="rotate(90 906 350)">OUTPUT: MP4 + thumbnail</text>
+</svg>
