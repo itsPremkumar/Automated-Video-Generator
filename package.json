@@ -71,6 +71,7 @@
         "format:check": "prettier --check src/ remotion/ *.json",
         "test": "npm run typecheck && npm run test:unit",
         "test:unit": "tsx --test \"src/**/*.test.ts\"",
+        "test:render": "RUN_RENDER_E2E=1 tsx --test \"src/render.e2e.test.ts\"",
         "test:coverage": "node --experimental-test-coverage --test \"src/**/*.test.ts\"",
         "mcp": "tsx src/mcp-server.ts",
         "prepublishOnly": "npm run typecheck",
