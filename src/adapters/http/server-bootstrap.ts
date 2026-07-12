@@ -51,7 +51,9 @@ function installCrashGuards(): void {
             error.message.includes('Cannot allocate memory');
 
         if (looksSevere) {
-            console.error('[SERVER] This exception looks severe. The process will stay alive for recovery, but new work may fail until resources recover.');
+            console.error(
+                '[SERVER] This exception looks severe. The process will stay alive for recovery, but new work may fail until resources recover.',
+            );
         }
 
         console.error('[SERVER] The server will try to continue running.');
@@ -116,7 +118,8 @@ export async function runServerEntry(): Promise<void> {
     await startServer();
 
     if (!isBackgroundWorker) {
-        const openCommand = process.platform === 'win32' ? 'start' : process.platform === 'darwin' ? 'open' : 'xdg-open';
+        const openCommand =
+            process.platform === 'win32' ? 'start' : process.platform === 'darwin' ? 'open' : 'xdg-open';
         exec(`${openCommand} http://localhost:${PORT}`);
     }
 }

@@ -3,11 +3,17 @@ import { Request, Response } from 'express';
 import { filesystemAppService } from '../../application/filesystem-app.service';
 
 export const listFiles = (req: Request, res: Response) => {
-    res.json({ success: true, data: filesystemAppService.listFiles(req.query.path ? String(req.query.path) : undefined) });
+    res.json({
+        success: true,
+        data: filesystemAppService.listFiles(req.query.path ? String(req.query.path) : undefined),
+    });
 };
 
 export const pickFile = (req: Request, res: Response) => {
-    const { sourcePath, type } = req.body as { sourcePath: string; type: 'asset' | 'media' | 'music' | 'personalAudio' };
+    const { sourcePath, type } = req.body as {
+        sourcePath: string;
+        type: 'asset' | 'media' | 'music' | 'personalAudio';
+    };
     res.json({ success: true, data: filesystemAppService.pickFile(sourcePath, type) });
 };
 

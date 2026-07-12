@@ -10,12 +10,14 @@ export function formatBytes(bytes: number): string {
 }
 
 export function sanitizeFilename(name: string): string {
-    return name
-        .replace(/[<>:"/\\|?*]/g, '_')
-        .replace(/\s+/g, '_')
-        .replace(/_+/g, '_')
-        .replace(/^_+|_+$/g, '')
-        .slice(0, 200) || 'untitled';
+    return (
+        name
+            .replace(/[<>:"/\\|?*]/g, '_')
+            .replace(/\s+/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .slice(0, 200) || 'untitled'
+    );
 }
 
 export async function getAvailablePath(dir: string, baseName: string, extension: string): Promise<string> {
@@ -52,7 +54,7 @@ export async function withRetry<T>(
             lastError = err;
             if (attempt < options.retries) {
                 const delay = options.baseDelayMs * Math.pow(2, attempt);
-                await new Promise(r => setTimeout(r, delay));
+                await new Promise((r) => setTimeout(r, delay));
             }
         }
     }

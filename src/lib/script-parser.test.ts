@@ -24,7 +24,7 @@ test('validateScript throws on very short script', () => {
 
 test('parseScript returns scenes from script with visual tags', async () => {
     const result = await parseScript(
-        '[Visual: mountain landscape]\nThis is scene one.\n\n[Visual: ocean sunset]\nThis is scene two.'
+        '[Visual: mountain landscape]\nThis is scene one.\n\n[Visual: ocean sunset]\nThis is scene two.',
     );
 
     assert.ok(result.scenes.length >= 2);
@@ -32,9 +32,7 @@ test('parseScript returns scenes from script with visual tags', async () => {
 });
 
 test('parseScript returns at least one scene for simple text', async () => {
-    const result = await parseScript(
-        'This is a simple script without visual tags. It should still produce a video.'
-    );
+    const result = await parseScript('This is a simple script without visual tags. It should still produce a video.');
 
     assert.ok(result.scenes.length >= 1);
     assert.ok(result.totalDuration > 0);

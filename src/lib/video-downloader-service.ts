@@ -15,7 +15,12 @@ export class VideoDownloaderService {
     /**
      * Download a video using yt-dlp.
      */
-    async download(url: string, outputDir: string, mode: 'both' | 'video' | 'audio' = 'both', onProgress?: (p: DownloadProgress) => void): Promise<string> {
+    async download(
+        url: string,
+        outputDir: string,
+        mode: 'both' | 'video' | 'audio' = 'both',
+        onProgress?: (p: DownloadProgress) => void,
+    ): Promise<string> {
         const python = getPythonExecutable();
         if (!python) {
             throw new Error('Python runtime not found.');
@@ -38,20 +43,23 @@ export class VideoDownloaderService {
 
         return new Promise((resolve, reject) => {
             logInfo(`[DOWNLOADER] Starting download (${mode}) for: ${url}`);
-            
+
             const args = [
-                '-m', 'yt_dlp',
+                '-m',
+                'yt_dlp',
                 '--no-playlist',
                 '--restrict-filenames',
                 '--no-mtime',
-                '--format', formatStr,
-                '-o', outputTemplate,
+                '--format',
+                formatStr,
+                '-o',
+                outputTemplate,
                 '--newline',
-                url
+                url,
             ];
 
             logInfo(`[DOWNLOADER] Executing: ${python} ${args.join(' ')}`);
-            
+
             const process = spawn(python, args);
             let downloadedFilePath = '';
 
@@ -64,7 +72,7 @@ export class VideoDownloaderService {
                         percent: parseFloat(match[1]),
                         totalSize: match[2],
                         speed: match[3],
-                        eta: match[4]
+                        eta: match[4],
                     });
                     logInfo(`[DOWNLOADER] Progress: ${match[1]}% | Speed: ${match[3]} | ETA: ${match[4]}`);
                 } else if (line.trim()) {
@@ -77,7 +85,7 @@ export class VideoDownloaderService {
                     downloadedFilePath = fileMatch[1];
                     logInfo(`[DOWNLOADER] Merger detected target path: ${downloadedFilePath}`);
                 }
-                
+
                 // [download] Destination: C:\output.mp4 (if no merge needed)
                 if (!downloadedFilePath) {
                     const destMatch = line.match(/\[download\] Destination: (.+)/);

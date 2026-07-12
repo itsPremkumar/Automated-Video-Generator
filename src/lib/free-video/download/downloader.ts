@@ -34,20 +34,34 @@ export class FreeDownloadManager {
             while (queue.length > 0 && inProgress.length < this.concurrentDownloads) {
                 const video = queue.shift()!;
                 const p = this.downloadOne(video, outputDir, usedBaseNames)
-                    .then(r => { results.push(r); })
-                    .catch(err => {
+                    .then((r) => {
+                        results.push(r);
+                    })
+                    .catch((err) => {
                         results.push({
-                            video, success: false, localPath: null,
-                            error: err.message, bytesDownloaded: 0, resumed: false,
+                            video,
+                            success: false,
+                            localPath: null,
+                            error: err.message,
+                            bytesDownloaded: 0,
+                            resumed: false,
                         });
                     });
                 inProgress.push(p);
             }
             if (inProgress.length > 0) {
                 await Promise.race(inProgress);
-                inProgress.splice(0, inProgress.length, ...inProgress.filter(p => {
-                    try { return typeof (p as any).then === 'function'; } catch { return false; }
-                }));
+                inProgress.splice(
+                    0,
+                    inProgress.length,
+                    ...inProgress.filter((p) => {
+                        try {
+                            return typeof (p as any).then === 'function';
+                        } catch {
+                            return false;
+                        }
+                    }),
+                );
             }
         }
         await Promise.all(inProgress);
@@ -67,26 +81,39 @@ export class FreeDownloadManager {
         const resuming = existingBytes > 0;
 
         try {
-            const bytesWritten = await withRetry(
-                () => this.streamToFile(video.downloadUrl, partPath, existingBytes),
-                { retries: this.retryCount, baseDelayMs: this.retryBaseDelayMs, label: `download:${baseName}` },
-            );
+            const bytesWritten = await withRetry(() => this.streamToFile(video.downloadUrl, partPath, existingBytes), {
+                retries: this.retryCount,
+                baseDelayMs: this.retryBaseDelayMs,
+                label: `download:${baseName}`,
+            });
 
             if (fs.existsSync(partPath)) {
                 fs.renameSync(partPath, targetPath);
             }
 
             return {
-                video, success: true, localPath: targetPath,
-                error: null, bytesDownloaded: bytesWritten, resumed: resuming,
+                video,
+                success: true,
+                localPath: targetPath,
+                error: null,
+                bytesDownloaded: bytesWritten,
+                resumed: resuming,
             };
         } catch (err: any) {
             if (fs.existsSync(partPath)) {
-                try { fs.unlinkSync(partPath); } catch { /* ignore — cleanup */ }
+                try {
+                    fs.unlinkSync(partPath);
+                } catch {
+                    /* ignore — cleanup */
+                }
             }
             return {
-                video, success: false, localPath: null,
-                error: err.message, bytesDownloaded: existingBytes, resumed: resuming,
+                video,
+                success: false,
+                localPath: null,
+                error: err.message,
+                bytesDownloaded: existingBytes,
+                resumed: resuming,
             };
         }
     }
@@ -103,8 +130,13 @@ export class FreeDownloadManager {
         let downloadedThisSession = supportsResume ? resumeFromBytes : 0;
 
         return new Promise<number>((resolve, reject) => {
-            response.data.on('data', (chunk: Buffer) => { downloadedThisSession += chunk.length; });
-            response.data.on('error', (err: Error) => { writeStream.destroy(); reject(err); });
+            response.data.on('data', (chunk: Buffer) => {
+                downloadedThisSession += chunk.length;
+            });
+            response.data.on('error', (err: Error) => {
+                writeStream.destroy();
+                reject(err);
+            });
             writeStream.on('error', (err: Error) => reject(err));
             writeStream.on('finish', () => resolve(downloadedThisSession || 1));
             response.data.pipe(writeStream);
@@ -127,6 +159,8 @@ export class FreeDownloadManager {
         try {
             const ext = path.extname(new URL(url).pathname).replace('.', '').toLowerCase();
             return ['mp4', 'webm', 'ogg', 'ogv'].includes(ext) ? ext : 'mp4';
-        } catch { return 'mp4'; }
+        } catch {
+            return 'mp4';
+        }
     }
 }

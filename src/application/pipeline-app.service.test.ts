@@ -55,27 +55,27 @@ test('PipelineAppService.waitForJobCompletion resolves terminal job state', asyn
             attempts += 1;
             return attempts > 1
                 ? {
-                    id: 'job_1',
-                    status: 'completed',
-                    phase: 'completed',
-                    progress: 100,
-                    message: 'done',
-                    startTime: Date.now(),
-                    updatedAt: Date.now(),
-                    cancelRequested: false,
-                    retryCount: 0,
-                }
+                      id: 'job_1',
+                      status: 'completed',
+                      phase: 'completed',
+                      progress: 100,
+                      message: 'done',
+                      startTime: Date.now(),
+                      updatedAt: Date.now(),
+                      cancelRequested: false,
+                      retryCount: 0,
+                  }
                 : {
-                    id: 'job_1',
-                    status: 'processing',
-                    phase: 'generate',
-                    progress: 10,
-                    message: 'working',
-                    startTime: Date.now(),
-                    updatedAt: Date.now(),
-                    cancelRequested: false,
-                    retryCount: 0,
-                };
+                      id: 'job_1',
+                      status: 'processing',
+                      phase: 'generate',
+                      progress: 10,
+                      message: 'working',
+                      startTime: Date.now(),
+                      updatedAt: Date.now(),
+                      cancelRequested: false,
+                      retryCount: 0,
+                  };
         },
         listJobs: () => [],
         setup: {

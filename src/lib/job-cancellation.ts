@@ -11,7 +11,7 @@ export class JobCancellationError extends Error {
     constructor(message: string = JOB_CANCELLATION_MESSAGE) {
         super(message);
         this.name = 'JobCancellationError';
-        
+
         // Ensure proper prototype chain for instanceof checks
         Object.setPrototypeOf(this, JobCancellationError.prototype);
     }

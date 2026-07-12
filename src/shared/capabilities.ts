@@ -50,10 +50,7 @@ export function assertRuntimeCapability(
     }
 }
 
-export function assertSafeMutationAllowed(
-    runtime: RuntimeCapabilityName,
-    operation: string,
-): void {
+export function assertSafeMutationAllowed(runtime: RuntimeCapabilityName, operation: string): void {
     const runtimeCapabilities = getRuntimeCapabilities(runtime);
     if (!runtimeCapabilities.safeMode) {
         return;

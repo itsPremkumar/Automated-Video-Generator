@@ -24,8 +24,10 @@ export const MAX_TITLE_LENGTH = 80;
 export const PROJECT_NAME = 'Automated Video Generator';
 export const PROJECT_REPOSITORY_URL = 'https://github.com/itsPremkumar/Automated-Video-Generator';
 export const PROJECT_LICENSE_URL = 'https://opensource.org/licenses/MIT';
-export const DEFAULT_SITE_DESCRIPTION = 'Free and open-source AI text-to-video generator built with Remotion, Edge-TTS, stock footage APIs, and a local web portal for YouTube Shorts, TikTok videos, explainers, and marketing content.';
-export const DEFAULT_SITE_KEYWORDS = 'free video generator, open-source video generator, ai video generator, text to video, remotion video generator, self-hosted video generator, youtube shorts generator, tiktok video generator, mcp video automation';
+export const DEFAULT_SITE_DESCRIPTION =
+    'Free and open-source AI text-to-video generator built with Remotion, Edge-TTS, stock footage APIs, and a local web portal for YouTube Shorts, TikTok videos, explainers, and marketing content.';
+export const DEFAULT_SITE_KEYWORDS =
+    'free video generator, open-source video generator, ai video generator, text to video, remotion video generator, self-hosted video generator, youtube shorts generator, tiktok video generator, mcp video automation';
 export const BRAND_COLOR = '#4F46E5';
 
 export const HELLO_WORLD_TITLE = 'Hello World - My First Video';
@@ -82,7 +84,7 @@ export const EDITABLE_ENV_KEYS = [
     'OLLAMA_MODEL',
     'OLLAMA_TIMEOUT_MS',
     'OLLAMA_MAX_RETRIES',
-    'OLLAMA_MAX_CONCURRENCY'
+    'OLLAMA_MAX_CONCURRENCY',
 ] as const;
 
 export const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;

@@ -9,10 +9,13 @@ function normalizeError(error: unknown): AppError {
     }
 
     if (error instanceof ZodError) {
-        return new RequestValidationError('Invalid request payload.', error.issues.map((issue) => ({
-            path: issue.path.length > 0 ? issue.path.join('.') : '(root)',
-            message: issue.message,
-        })));
+        return new RequestValidationError(
+            'Invalid request payload.',
+            error.issues.map((issue) => ({
+                path: issue.path.length > 0 ? issue.path.join('.') : '(root)',
+                message: issue.message,
+            })),
+        );
     }
 
     if (error instanceof SyntaxError && 'body' in error) {

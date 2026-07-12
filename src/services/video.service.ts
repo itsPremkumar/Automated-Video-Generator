@@ -37,7 +37,9 @@ export function outputFolder(publicId: string): string | null {
 }
 
 export function findVideoFile(folder: string): string | null {
-    const files = fs.readdirSync(folder).filter((name) => name.toLowerCase().endsWith('.mp4') && !name.startsWith('segment'));
+    const files = fs
+        .readdirSync(folder)
+        .filter((name) => name.toLowerCase().endsWith('.mp4') && !name.startsWith('segment'));
     return files[0] || null;
 }
 
@@ -50,7 +52,12 @@ export function readSceneData(folder: string): { orientation: string; durationSe
     try {
         const data = JSON.parse(fs.readFileSync(file, 'utf8'));
         return {
-            orientation: data.orientation === 'landscape' ? 'landscape' : data.orientation === 'portrait' ? 'portrait' : 'unknown',
+            orientation:
+                data.orientation === 'landscape'
+                    ? 'landscape'
+                    : data.orientation === 'portrait'
+                      ? 'portrait'
+                      : 'unknown',
             durationSeconds: typeof data.totalDuration === 'number' ? data.totalDuration : null,
         };
     } catch {
@@ -81,7 +88,7 @@ export function getVideo(publicId: string, req: Request): VideoRecord | null {
 
     const videoPath = path.join(folder, videoFilename);
     const stats = fs.statSync(videoPath);
-    
+
     if (stats.size === 0) {
         return null;
     }
@@ -103,7 +110,9 @@ export function getVideo(publicId: string, req: Request): VideoRecord | null {
         watchUrl: relativeUrl(`/videos/${encodeURIComponent(publicId)}`),
         downloadUrl: relativeUrl(`/download/${encodeURIComponent(publicId)}`),
         videoUrl: relativeUrl(`/files/${encodeURIComponent(publicId)}/video`),
-        thumbnailUrl: fs.existsSync(thumbnailPath) ? relativeUrl(`/files/${encodeURIComponent(publicId)}/thumbnail`) : null,
+        thumbnailUrl: fs.existsSync(thumbnailPath)
+            ? relativeUrl(`/files/${encodeURIComponent(publicId)}/thumbnail`)
+            : null,
     };
 }
 
@@ -138,7 +147,8 @@ export function listVideos(req: Request): VideoRecord[] {
         return [];
     }
 
-    return fs.readdirSync(OUTPUT_ROOT)
+    return fs
+        .readdirSync(OUTPUT_ROOT)
         .map((name) => getVideo(name, req))
         .filter((video): video is VideoRecord => Boolean(video))
         .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());

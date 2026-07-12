@@ -50,11 +50,7 @@ function mapOllamaError(error: unknown): ServiceUnavailableError {
     return new ServiceUnavailableError('Unknown error while reaching Ollama API.', { provider: 'ollama' });
 }
 
-export async function generateContent(
-    systemInstruction: string,
-    prompt: string,
-    format?: 'json',
-): Promise<string> {
+export async function generateContent(systemInstruction: string, prompt: string, format?: 'json'): Promise<string> {
     return generateContentWithImage(systemInstruction, prompt, undefined, format);
 }
 
@@ -79,14 +75,10 @@ export async function generateContentWithImage(
 
     for (let attempt = 1; attempt <= OLLAMA_MAX_RETRIES; attempt += 1) {
         try {
-            const response = await axios.post<OllamaGenerateResponse>(
-                `${OLLAMA_BASE_URL}/api/generate`,
-                body,
-                {
-                    timeout: OLLAMA_TIMEOUT_MS,
-                    headers: { 'Content-Type': 'application/json' },
-                },
-            );
+            const response = await axios.post<OllamaGenerateResponse>(`${OLLAMA_BASE_URL}/api/generate`, body, {
+                timeout: OLLAMA_TIMEOUT_MS,
+                headers: { 'Content-Type': 'application/json' },
+            });
 
             const content = response.data?.response;
             if (!content) {

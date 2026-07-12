@@ -6,7 +6,7 @@ export function workspaceSection(
     defaultScript: string,
     musicOptions: string,
     voiceOptions: string,
-    languageOptions: string
+    languageOptions: string,
 ): string {
     return `
     <!-- ═══════════════════════════════════════════════════════════════════════

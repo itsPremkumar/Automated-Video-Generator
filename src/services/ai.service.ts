@@ -13,7 +13,7 @@ const aiLogger = appLogger.child({ component: 'ai-service', provider: 'gemini' }
 const GEMINI_TIMEOUT_MS = Math.max(5000, Number.parseInt(process.env.GEMINI_TIMEOUT_MS || '30000', 10) || 30000);
 const GEMINI_MAX_RETRIES = Math.max(1, Number.parseInt(process.env.GEMINI_MAX_RETRIES || '2', 10) || 2);
 const RAW_AI_PROVIDER_AI = process.env.AI_PROVIDER;
-const AI_PROVIDER = RAW_AI_PROVIDER_AI !== undefined ? (RAW_AI_PROVIDER_AI.trim().toLowerCase() || '') : 'ollama';
+const AI_PROVIDER = RAW_AI_PROVIDER_AI !== undefined ? RAW_AI_PROVIDER_AI.trim().toLowerCase() || '' : 'ollama';
 
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -66,10 +66,13 @@ function mapGeminiError(error: unknown): ServiceUnavailableError {
             });
         }
 
-        return new ServiceUnavailableError(error.message || 'Unknown network error occurred while reaching Gemini API.', {
-            provider: 'gemini',
-            statusCode: error.response?.status,
-        });
+        return new ServiceUnavailableError(
+            error.message || 'Unknown network error occurred while reaching Gemini API.',
+            {
+                provider: 'gemini',
+                statusCode: error.response?.status,
+            },
+        );
     }
 
     return new ServiceUnavailableError('Unknown network error occurred while reaching Gemini API.', {
@@ -100,13 +103,17 @@ async function generateGeminiContent(systemInstruction: string, prompt: string):
 
     for (let attempt = 1; attempt <= GEMINI_MAX_RETRIES; attempt += 1) {
         try {
-            const response = await axios.post(url, {
-                system_instruction: { parts: { text: systemInstruction } },
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { response_mime_type: 'application/json' },
-            }, {
-                timeout: GEMINI_TIMEOUT_MS,
-            });
+            const response = await axios.post(
+                url,
+                {
+                    system_instruction: { parts: { text: systemInstruction } },
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { response_mime_type: 'application/json' },
+                },
+                {
+                    timeout: GEMINI_TIMEOUT_MS,
+                },
+            );
 
             const content = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
             if (!content) {
@@ -210,11 +217,12 @@ export async function generateMetadataAI(
     scenes: { voiceoverText: string; searchKeywords: string[] }[],
 ): Promise<{ description: string; hashtags: string }> {
     const useOllama = AI_PROVIDER === 'ollama';
-    const sceneText = scenes.map(s => s.voiceoverText).join('\n');
-    const allKeywords = [...new Set(scenes.flatMap(s => s.searchKeywords))];
+    const sceneText = scenes.map((s) => s.voiceoverText).join('\n');
+    const allKeywords = [...new Set(scenes.flatMap((s) => s.searchKeywords))];
 
     if (useOllama) {
-        const systemInstruction = 'You are a social media content creator. Generate a compelling video description and relevant hashtags.';
+        const systemInstruction =
+            'You are a social media content creator. Generate a compelling video description and relevant hashtags.';
         const prompt = `Video title: "${title}"
 Scene voiceovers:
 ${sceneText}
@@ -247,10 +255,7 @@ ${sceneText}
 Search keywords: ${allKeywords.join(', ')}`;
 
     const content = await generateGeminiContent(systemInstruction, prompt);
-    return parseJsonPayload<{ description: string; hashtags: string }>(
-        content,
-        'Failed to generate metadata with AI.',
-    );
+    return parseJsonPayload<{ description: string; hashtags: string }>(content, 'Failed to generate metadata with AI.');
 }
 
 export async function refineSceneAI(

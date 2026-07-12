@@ -12,7 +12,7 @@ export class AppError extends Error {
         statusCode: number = 500,
         code: string = 'internal_error',
         details?: any,
-        expose: boolean = true
+        expose: boolean = true,
     ) {
         super(message);
         this.name = this.constructor.name;

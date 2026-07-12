@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import './mcp-env-init';  // MUST be first — sets MCP flag before any other module loads
+import './mcp-env-init'; // MUST be first — sets MCP flag before any other module loads
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import * as dotenv from 'dotenv';

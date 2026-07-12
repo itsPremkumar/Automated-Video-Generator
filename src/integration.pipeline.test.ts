@@ -31,7 +31,7 @@ test('parseScript extracts scenes and honours [Visual:] director tags', async ()
     assert.ok(parsed.totalDuration > 0, 'totalDuration should be positive');
 
     // The second and third scenes carry explicit visual cues from the tags.
-    const tagged = parsed.scenes.filter(s => s.searchKeywords.some(k => /keyboard|celebrat/i.test(k)));
+    const tagged = parsed.scenes.filter((s) => s.searchKeywords.some((k) => /keyboard|celebrat/i.test(k)));
     assert.ok(tagged.length >= 1, 'at least one scene should inherit a [Visual:] keyword');
 
     // Every scene should have a non-empty visual description and a duration >= 3s.

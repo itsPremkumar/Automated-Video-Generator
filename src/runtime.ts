@@ -10,17 +10,9 @@ export {
     resolveRuntimePublicPath,
 } from './shared/runtime/paths';
 
-export {
-    logError,
-    logInfo,
-    logWarn,
-    writeProgress,
-} from './shared/logging/runtime-logging';
+export { logError, logInfo, logWarn, writeProgress } from './shared/logging/runtime-logging';
 
-export {
-    jobStore,
-    JobStore,
-} from './infrastructure/persistence/job-store';
+export { jobStore, JobStore } from './infrastructure/persistence/job-store';
 
 export type {
     JobPhase,

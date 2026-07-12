@@ -6,8 +6,8 @@ import { videoDownloadAppService } from '../../application/video-download-app.se
  */
 export const processDownloadRequest = async (req: Request, res: Response) => {
     try {
-        const { script, orientation, source } = req.body as { 
-            script: string; 
+        const { script, orientation, source } = req.body as {
+            script: string;
             orientation?: 'portrait' | 'landscape';
             source?: 'all' | 'pexels' | 'pixabay';
         };
@@ -17,12 +17,12 @@ export const processDownloadRequest = async (req: Request, res: Response) => {
         }
 
         const data = await videoDownloadAppService.processDownload(script, orientation, source);
-        
+
         res.json({ success: true, data });
     } catch (error: any) {
-        res.status(500).json({ 
-            success: false, 
-            error: error.message || 'Internal server error' 
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Internal server error',
         });
     }
 };

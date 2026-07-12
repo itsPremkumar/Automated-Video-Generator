@@ -71,7 +71,9 @@ function getJobOrThrow(jobId: string): JobStatus {
 function getStoredRequest(jobId: string): NonNullable<JobStatus['request']> {
     const job = getJobOrThrow(jobId);
     if (!job.request) {
-        throw new ConflictError('This job does not have a stored request snapshot and cannot be retried automatically.');
+        throw new ConflictError(
+            'This job does not have a stored request snapshot and cannot be retried automatically.',
+        );
     }
 
     return job.request;
@@ -156,7 +158,13 @@ function markJobFailed(jobId: string, message: string, error: unknown, phase?: J
 function refreshPendingMessages(): void {
     pendingTasks.forEach((task, index) => {
         const job = jobStore.get(task.jobId);
-        if (!job || isTerminalStatus(job.status) || job.status === 'awaiting_review' || job.status === 'cancelling' || job.cancelRequested) {
+        if (
+            !job ||
+            isTerminalStatus(job.status) ||
+            job.status === 'awaiting_review' ||
+            job.status === 'cancelling' ||
+            job.cancelRequested
+        ) {
             return;
         }
 
@@ -164,9 +172,10 @@ function refreshPendingMessages(): void {
             status: 'pending',
             phase: task.phase === 'render' ? 'render' : 'generate',
             progress: job.progress > 0 ? job.progress : 0,
-            message: index === 0 && activeTaskCount < MAX_CONCURRENT_JOBS
-                ? task.queuedMessage
-                : `${task.queuedMessage} Position ${index + 1} in queue.`,
+            message:
+                index === 0 && activeTaskCount < MAX_CONCURRENT_JOBS
+                    ? task.queuedMessage
+                    : `${task.queuedMessage} Position ${index + 1} in queue.`,
         });
     });
 }
@@ -187,12 +196,17 @@ function drainQueue(): void {
             queuedTasks: pendingTasks.length,
         });
 
-        void task.execute()
+        void task
+            .execute()
             .catch((error) => {
-                schedulerLogger.error('job.task.crashed', {
-                    jobId: task.jobId,
-                    phase: task.phase,
-                }, error);
+                schedulerLogger.error(
+                    'job.task.crashed',
+                    {
+                        jobId: task.jobId,
+                        phase: task.phase,
+                    },
+                    error,
+                );
             })
             .finally(() => {
                 activeTaskKeys.delete(taskKey);
@@ -345,7 +359,8 @@ async function runGenerationPipeline(
             progress: 100,
             message: 'Generation failed before render.',
             error: result.error || 'Unknown generation error.',
-            errorDetails: (result as { errorDetails?: string }).errorDetails || result.error || 'Unknown generation error.',
+            errorDetails:
+                (result as { errorDetails?: string }).errorDetails || result.error || 'Unknown generation error.',
             cancelRequested: false,
             endTime: Date.now(),
         });
@@ -476,7 +491,10 @@ export async function continueJobToRender(
     }
 
     const job = getJobOrThrow(jobId);
-    const canRecover = options.allowRecovery === true && (job.status === 'failed' || job.status === 'cancelled') && job.phase === 'render';
+    const canRecover =
+        options.allowRecovery === true &&
+        (job.status === 'failed' || job.status === 'cancelled') &&
+        job.phase === 'render';
     if (job.status !== 'awaiting_review' && !canRecover) {
         throw new ConflictError('Job is not ready to render.');
     }
@@ -540,9 +558,10 @@ export async function cancelJob(jobId: string): Promise<{ completed: boolean; pe
             status: 'cancelling',
             phase,
             cancelRequested: true,
-            message: phase === 'render'
-                ? 'Cancellation requested. Rendering will stop after the current safe checkpoint.'
-                : 'Cancellation requested. Generation will stop after the current safe checkpoint.',
+            message:
+                phase === 'render'
+                    ? 'Cancellation requested. Rendering will stop after the current safe checkpoint.'
+                    : 'Cancellation requested. Generation will stop after the current safe checkpoint.',
             endTime: undefined,
         });
         return { completed: false, pending: false };

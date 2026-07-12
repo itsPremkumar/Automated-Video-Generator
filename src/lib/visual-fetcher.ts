@@ -25,7 +25,7 @@ export interface MediaAsset {
     height: number;
     photographer?: string;
     localPath?: string;
-    videoDuration?: number;  // Duration in seconds for video files
+    videoDuration?: number; // Duration in seconds for video files
     videoTrimAfterFrames?: number;
 }
 
@@ -36,7 +36,7 @@ const GEMINI_MAX_CONCURRENCY = Math.max(1, Number.parseInt(process.env.GEMINI_MA
 
 const OLLAMA_MAX_CONCURRENCY = Math.max(1, Number.parseInt(process.env.OLLAMA_MAX_CONCURRENCY || '2', 10) || 2);
 const RAW_AI_PROVIDER = process.env.AI_PROVIDER;
-const AI_PROVIDER = RAW_AI_PROVIDER !== undefined ? (RAW_AI_PROVIDER.trim().toLowerCase() || '') : 'ollama';
+const AI_PROVIDER = RAW_AI_PROVIDER !== undefined ? RAW_AI_PROVIDER.trim().toLowerCase() || '' : 'ollama';
 
 const OPENVERSE_ENABLED = process.env.OPENVERSE_ENABLED !== 'false';
 const MEDIA_VERIFICATION_ENABLED = process.env.MEDIA_VERIFICATION_ENABLED !== 'false';
@@ -45,11 +45,11 @@ const BASE_URL = 'https://api.pexels.com/v1';
 const CACHE_FILE = resolveProjectPath('.video-cache.json');
 const MAX_DOWNLOAD_BYTES = Math.max(
     40 * 1024 * 1024,
-    Number.parseInt(process.env.MAX_DOWNLOAD_BYTES || '', 10) || 150 * 1024 * 1024
+    Number.parseInt(process.env.MAX_DOWNLOAD_BYTES || '', 10) || 150 * 1024 * 1024,
 );
 const DOWNLOAD_STALL_TIMEOUT_MS = Math.max(
     15000,
-    Number.parseInt(process.env.DOWNLOAD_STALL_TIMEOUT_MS || '', 10) || 30000
+    Number.parseInt(process.env.DOWNLOAD_STALL_TIMEOUT_MS || '', 10) || 30000,
 );
 const TARGET_VIDEO_DURATION_SECONDS = 6;
 const DEFAULT_RENDER_FPS = 30;
@@ -78,15 +78,12 @@ type CachedMediaType = MediaAsset['type'];
 function buildCacheKey(
     query: string,
     orientation: 'portrait' | 'landscape' | 'none',
-    mediaType: CachedMediaType
+    mediaType: CachedMediaType,
 ): string {
     return `${mediaType}:${query.toLowerCase()}:${orientation}`;
 }
 
-function buildLegacyCacheKey(
-    query: string,
-    orientation: 'portrait' | 'landscape' | 'none'
-): string {
+function buildLegacyCacheKey(query: string, orientation: 'portrait' | 'landscape' | 'none'): string {
     return `${query.toLowerCase()}:${orientation}`;
 }
 
@@ -123,14 +120,13 @@ export function resetInMemoryCache(): void {
     if (fs.existsSync(CACHE_FILE)) {
         try {
             fs.unlinkSync(CACHE_FILE);
-        } catch { /* ignore — cleanup */ }
+        } catch {
+            /* ignore — cleanup */
+        }
     }
 }
 
-export function invalidateCachedVisual(
-    keywords: string[],
-    orientation: 'portrait' | 'landscape' = 'portrait'
-): void {
+export function invalidateCachedVisual(keywords: string[], orientation: 'portrait' | 'landscape' = 'portrait'): void {
     const query = keywords.join(' ');
     const cache = getCache();
 
@@ -167,7 +163,7 @@ function saveCache(cache: VideoCache): void {
  * Sleep utility for retry delays
  */
 function sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export interface VideoMetadata {
@@ -232,10 +228,7 @@ const estimateVideoDurationFromSize = (filePath: string): number | undefined => 
     }
 };
 
-const calculateSafeTrimAfterFrames = (
-    durationSeconds: number,
-    renderFps: number = DEFAULT_RENDER_FPS
-): number => {
+const calculateSafeTrimAfterFrames = (durationSeconds: number, renderFps: number = DEFAULT_RENDER_FPS): number => {
     const durationFrames = Math.max(1, Math.floor(durationSeconds * renderFps));
     return Math.max(1, durationFrames - SAFE_VIDEO_END_BUFFER_FRAMES);
 };
@@ -245,17 +238,23 @@ const calculateSafeTrimAfterFrames = (
  * We trim a few frames from the end because some stock clips report a
  * slightly longer duration than the actually seekable final frame.
  */
-export function getVideoMetadata(
-    filePath: string,
-    renderFps: number = DEFAULT_RENDER_FPS
-): VideoMetadata {
+export function getVideoMetadata(filePath: string, renderFps: number = DEFAULT_RENDER_FPS): VideoMetadata {
     try {
         const ffprobeCmd = typeof ffprobePath === 'string' ? ffprobePath : (ffprobePath as any)?.path || 'ffprobe';
-        const probe = spawnSync(ffprobeCmd, [
-            '-v', 'quiet', '-count_frames', '-print_format', 'json',
-            '-show_entries', 'format=duration:stream=codec_type,duration,avg_frame_rate,r_frame_rate,nb_frames,nb_read_frames',
-            filePath
-        ], { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+        const probe = spawnSync(
+            ffprobeCmd,
+            [
+                '-v',
+                'quiet',
+                '-count_frames',
+                '-print_format',
+                'json',
+                '-show_entries',
+                'format=duration:stream=codec_type,duration,avg_frame_rate,r_frame_rate,nb_frames,nb_read_frames',
+                filePath,
+            ],
+            { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] },
+        );
         if (probe.error) throw probe.error;
         if (probe.status !== 0) throw new Error(probe.stderr?.trim() || 'FFprobe failed');
         const parsed = JSON.parse(probe.stdout) as {
@@ -275,18 +274,14 @@ export function getVideoMetadata(
         const streamDuration = parsePositiveNumber(videoStream?.duration);
         const rawDuration = streamDuration ?? formatDuration;
         const sourceFrameRate =
-            parseFrameRate(videoStream?.avg_frame_rate) ??
-            parseFrameRate(videoStream?.r_frame_rate);
+            parseFrameRate(videoStream?.avg_frame_rate) ?? parseFrameRate(videoStream?.r_frame_rate);
         const sourceFrameCount =
-            parsePositiveInteger(videoStream?.nb_read_frames) ??
-            parsePositiveInteger(videoStream?.nb_frames);
+            parsePositiveInteger(videoStream?.nb_read_frames) ?? parsePositiveInteger(videoStream?.nb_frames);
 
         let measuredDuration = rawDuration;
         if (sourceFrameCount && sourceFrameRate) {
             const frameBasedDuration = sourceFrameCount / sourceFrameRate;
-            measuredDuration = measuredDuration
-                ? Math.min(measuredDuration, frameBasedDuration)
-                : frameBasedDuration;
+            measuredDuration = measuredDuration ? Math.min(measuredDuration, frameBasedDuration) : frameBasedDuration;
         }
 
         if (measuredDuration) {
@@ -321,7 +316,6 @@ export function getVideoDuration(filePath: string): number {
     return getVideoMetadata(filePath).durationSeconds;
 }
 
-
 /**
  * Select the best quality video file
  */
@@ -334,18 +328,15 @@ function getQualityRank(quality: unknown): number {
     return rank === -1 ? Number.MAX_SAFE_INTEGER : rank;
 }
 
-function selectBestVideoFile(
-    videoFiles: any[],
-    orientation: 'portrait' | 'landscape' | 'none' = 'portrait'
-): any {
+function selectBestVideoFile(videoFiles: any[], orientation: 'portrait' | 'landscape' | 'none' = 'portrait'): any {
     // console.log(`    🎬 [QUALITY] Selecting best from ${videoFiles.length} video files`);
 
     // Log available qualities
-    const qualities = videoFiles.map(f => `${f.quality} (${f.width}x${f.height})`);
+    const qualities = videoFiles.map((f) => `${f.quality} (${f.width}x${f.height})`);
     // console.log(`    🎬 [QUALITY] Available: ${qualities.join(', ')}`);
 
     // Filter out videos that are too small
-    const validFiles = videoFiles.filter(f => f.width >= MIN_WIDTH);
+    const validFiles = videoFiles.filter((f) => f.width >= MIN_WIDTH);
     // console.log(`    🎬 [QUALITY] Files >= ${MIN_WIDTH}px width: ${validFiles.length}`);
 
     if (validFiles.length === 0) {
@@ -504,10 +495,7 @@ function formatGeminiError(error: unknown): string {
     return String(error);
 }
 
-async function optimizeKeywordsWithGeminiInternal(
-    sceneText: string,
-    defaultKeywords: string[]
-): Promise<string[]> {
+async function optimizeKeywordsWithGeminiInternal(sceneText: string, defaultKeywords: string[]): Promise<string[]> {
     const prompt = `You are an expert AI video director.
 I have this voiceover text for a video scene: "${sceneText}"
 
@@ -532,8 +520,8 @@ Only return the JSON array, no other text or formatting. DO NOT wrap with \`\`\`
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                    }
-                )
+                    },
+                ),
             );
 
             const responseText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -551,7 +539,9 @@ Only return the JSON array, no other text or formatting. DO NOT wrap with \`\`\`
             const shouldRetry = attempt < GEMINI_MAX_RETRIES && shouldRetryGeminiRequest(error);
             if (shouldRetry) {
                 const retryDelay = attempt * 1500;
-                console.log(`[AI-DIRECTOR] Retry ${attempt}/${GEMINI_MAX_RETRIES - 1} after ${retryDelay}ms: ${formatGeminiError(error)}`);
+                console.log(
+                    `[AI-DIRECTOR] Retry ${attempt}/${GEMINI_MAX_RETRIES - 1} after ${retryDelay}ms: ${formatGeminiError(error)}`,
+                );
                 await sleep(retryDelay);
                 continue;
             }
@@ -563,10 +553,7 @@ Only return the JSON array, no other text or formatting. DO NOT wrap with \`\`\`
     return defaultKeywords;
 }
 
-async function optimizeKeywordsWithOllamaInternal(
-    sceneText: string,
-    defaultKeywords: string[]
-): Promise<string[]> {
+async function optimizeKeywordsWithOllamaInternal(sceneText: string, defaultKeywords: string[]): Promise<string[]> {
     const systemInstruction = `You are an expert AI video director. Return a JSON array of up to 3 search query strings.`;
 
     const prompt = `I have this voiceover text for a video scene: "${sceneText}"
@@ -577,9 +564,7 @@ Only return the JSON array, no other text or formatting. DO NOT wrap with \`\`\`
 
     for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-            const responseText = await withOllamaSlot(() =>
-                ollamaGenerateContent(systemInstruction, prompt)
-            );
+            const responseText = await withOllamaSlot(() => ollamaGenerateContent(systemInstruction, prompt));
 
             const optimizedKeywords = parseGeminiKeywordResponse(responseText);
 
@@ -613,7 +598,7 @@ export async function searchVideos(
     query: string,
     perPage: number = 15,
     retries: number = 3,
-    orientation: 'portrait' | 'landscape' | 'none' = 'portrait'
+    orientation: 'portrait' | 'landscape' | 'none' = 'portrait',
 ): Promise<MediaAsset[]> {
     // console.log(`\n🔍 [PEXELS-VIDEO] Searching videos for: "${query}"`);
     // console.log(`🔍 [PEXELS-VIDEO] Per page: ${perPage}, Max retries: ${retries}`);
@@ -697,7 +682,7 @@ export async function searchImages(
     query: string,
     perPage: number = 1,
     retries: number = 3,
-    orientation: 'portrait' | 'landscape' = 'portrait'
+    orientation: 'portrait' | 'landscape' = 'portrait',
 ): Promise<MediaAsset[]> {
     // console.log(`\n🔍 [PEXELS-IMAGE] Searching images for: "${query}"`);
     // console.log(`🔍 [PEXELS-IMAGE] Per page: ${perPage}, Max retries: ${retries}`);
@@ -776,7 +761,7 @@ export async function searchPixabayVideos(
     query: string,
     perPage: number = 15,
     retries: number = 3,
-    orientation: 'portrait' | 'landscape' | 'none' = 'portrait'
+    orientation: 'portrait' | 'landscape' | 'none' = 'portrait',
 ): Promise<MediaAsset[]> {
     // console.log(`\n🔍 [PIXABAY-VIDEO] Searching videos for: "${query}"`);
 
@@ -786,7 +771,8 @@ export async function searchPixabayVideos(
         return [];
     }
 
-    const pixabayOrientation = orientation === 'landscape' ? 'horizontal' : (orientation === 'portrait' ? 'vertical' : '');
+    const pixabayOrientation =
+        orientation === 'landscape' ? 'horizontal' : orientation === 'portrait' ? 'vertical' : '';
 
     for (let attempt = 1; attempt <= retries; attempt++) {
         // console.log(`🔍 [PIXABAY-VIDEO] Attempt ${attempt}/${retries}...`);
@@ -800,7 +786,7 @@ export async function searchPixabayVideos(
                     video_type: 'film',
                     ...(pixabayOrientation ? { orientation: pixabayOrientation } : {}),
                     per_page: perPage,
-                    min_width: 1280 // Prefer HD+
+                    min_width: 1280, // Prefer HD+
                 },
                 timeout: 10000,
             });
@@ -817,7 +803,7 @@ export async function searchPixabayVideos(
                 // Pixabay returns 'videos' object with sizes
                 const sizes = hit.videos;
                 // Prefer Large > Medium > Small
-                const bestFile = sizes.large.url ? sizes.large : (sizes.medium.url ? sizes.medium : sizes.small);
+                const bestFile = sizes.large.url ? sizes.large : sizes.medium.url ? sizes.medium : sizes.small;
 
                 return {
                     type: 'video' as const,
@@ -825,7 +811,7 @@ export async function searchPixabayVideos(
                     width: bestFile.width,
                     height: bestFile.height,
                     photographer: hit.user,
-                    videoDuration: hit.duration
+                    videoDuration: hit.duration,
                 };
             });
             return sortVideoAssets(assets);
@@ -846,10 +832,7 @@ export async function searchPixabayVideos(
  * Supports both Gemini and Ollama providers based on AI_PROVIDER env var.
  * Falls back to default keywords on error.
  */
-export async function optimizeKeywordsWithGemini(
-    sceneText: string,
-    defaultKeywords: string[]
-): Promise<string[]> {
+export async function optimizeKeywordsWithGemini(sceneText: string, defaultKeywords: string[]): Promise<string[]> {
     if (AI_PROVIDER === 'ollama') {
         return optimizeKeywordsWithOllamaInternal(sceneText, defaultKeywords);
     }
@@ -869,7 +852,7 @@ export async function fetchVisualsForScene(
     keywords: string[],
     preferVideo: boolean = true,
     orientation: 'portrait' | 'landscape' | 'none' = 'portrait',
-    sceneText?: string
+    sceneText?: string,
 ): Promise<MediaAsset | null> {
     const query = keywords.join(' ').trim();
     const cache = getCache();
@@ -900,9 +883,7 @@ export async function fetchVisualsForScene(
         console.log(`🧠 [FETCH] Original query: "${query}"`);
     }
 
-    const queriesToTry = sceneText && preferVideo
-        ? await optimizeKeywordsWithGemini(sceneText, [query]) 
-        : [query];
+    const queriesToTry = sceneText && preferVideo ? await optimizeKeywordsWithGemini(sceneText, [query]) : [query];
 
     // console.log('\n🎨 ════════════════════════════════════════════════');
     // console.log(`🎨 [FETCH] Fetching visuals for keywords: [${keywords.join(', ')}]`);
@@ -921,14 +902,16 @@ export async function fetchVisualsForScene(
         if (preferVideo) {
             for (const q of queriesToTry) {
                 console.log(`🎨 [FETCH] 🎬 Trying query: "${q}"...`);
-                const orientationsToTry: ('portrait' | 'landscape' | 'none')[] = 
+                const orientationsToTry: ('portrait' | 'landscape' | 'none')[] =
                     orientation !== 'none' ? [orientation, 'none'] : ['none'];
 
                 for (const orient of orientationsToTry) {
                     console.log(`🎨 [FETCH] 📐 Search Orientation: ${orient}`);
                     const videos = await searchVideos(q, 15, 2, orient);
                     if (videos.length > 0) {
-                        console.log(`🎨 [FETCH] ✅ Found video on Pexels: ${videos[0].url} (${videos[0].width}x${videos[0].height}, ${videos[0].videoDuration}s)`);
+                        console.log(
+                            `🎨 [FETCH] ✅ Found video on Pexels: ${videos[0].url} (${videos[0].width}x${videos[0].height}, ${videos[0].videoDuration}s)`,
+                        );
                         cache[cacheKey] = videos[0];
                         saveCache(cache);
                         return videos[0];
@@ -936,7 +919,9 @@ export async function fetchVisualsForScene(
 
                     const pixabayVideos = await searchPixabayVideos(q, 15, 2, orient);
                     if (pixabayVideos.length > 0) {
-                        console.log(`🎨 [FETCH] ✅ Found video on Pixabay: ${pixabayVideos[0].url} (${pixabayVideos[0].width}x${pixabayVideos[0].height}, ${pixabayVideos[0].videoDuration}s)`);
+                        console.log(
+                            `🎨 [FETCH] ✅ Found video on Pixabay: ${pixabayVideos[0].url} (${pixabayVideos[0].width}x${pixabayVideos[0].height}, ${pixabayVideos[0].videoDuration}s)`,
+                        );
                         cache[cacheKey] = pixabayVideos[0];
                         saveCache(cache);
                         return pixabayVideos[0];
@@ -950,7 +935,12 @@ export async function fetchVisualsForScene(
                 console.log(`🎨 [FETCH] 🆓 Trying free sources for: "${q}"...`);
                 for (const provider of [wikiProvider, archiveProvider]) {
                     try {
-                        const freeResults = await provider.search({ keyword: q, count: 3, maxDurationSeconds: 30, minResolutionHeight: MIN_WIDTH });
+                        const freeResults = await provider.search({
+                            keyword: q,
+                            count: 3,
+                            maxDurationSeconds: 30,
+                            minResolutionHeight: MIN_WIDTH,
+                        });
                         if (freeResults.length > 0) {
                             const best = freeResults[0];
                             const videosDir = path.dirname(path.resolve(process.cwd(), 'public/jobs'));
@@ -959,8 +949,12 @@ export async function fetchVisualsForScene(
                                 const asset: MediaAsset = {
                                     type: 'video',
                                     url: best.downloadUrl,
-                                    width: best.resolution ? parseInt(best.resolution.split('x')[0] ?? '1080', 10) : 1080,
-                                    height: best.resolution ? parseInt(best.resolution.split('x')[1] ?? '1920', 10) : 1920,
+                                    width: best.resolution
+                                        ? parseInt(best.resolution.split('x')[0] ?? '1080', 10)
+                                        : 1080,
+                                    height: best.resolution
+                                        ? parseInt(best.resolution.split('x')[1] ?? '1920', 10)
+                                        : 1920,
                                     photographer: best.creator,
                                     localPath: dlResults[0].localPath,
                                     videoDuration: best.durationSeconds ?? undefined,
@@ -982,7 +976,9 @@ export async function fetchVisualsForScene(
                 console.log(`🎨 [FETCH] 🔄 No videos found, trying Openverse images for "${query}"...`);
                 const openverseImages = await searchOpenverseImages(query, 3);
                 if (openverseImages.length > 0) {
-                    console.log(`🎨 [FETCH] ✅ Found image on Openverse: ${openverseImages[0].url} (${openverseImages[0].width}x${openverseImages[0].height})`);
+                    console.log(
+                        `🎨 [FETCH] ✅ Found image on Openverse: ${openverseImages[0].url} (${openverseImages[0].width}x${openverseImages[0].height})`,
+                    );
                     cache[cacheKey] = openverseImages[0];
                     saveCache(cache);
                     return openverseImages[0];
@@ -1005,7 +1001,9 @@ export async function fetchVisualsForScene(
             console.log(`🎨 [FETCH] 🔄 Trying Openverse images for "${query}"...`);
             const openverseImages = await searchOpenverseImages(query, 3);
             if (openverseImages.length > 0) {
-                console.log(`🎨 [FETCH] ✅ Found image on Openverse: ${openverseImages[0].url} (${openverseImages[0].width}x${openverseImages[0].height})`);
+                console.log(
+                    `🎨 [FETCH] ✅ Found image on Openverse: ${openverseImages[0].url} (${openverseImages[0].width}x${openverseImages[0].height})`,
+                );
                 cache[cacheKey] = openverseImages[0];
                 saveCache(cache);
                 return openverseImages[0];
@@ -1026,7 +1024,7 @@ export async function fetchVisualsForScene(
  */
 export interface DownloadResult {
     path: string;
-    videoDuration?: number;  // Duration in seconds for video files
+    videoDuration?: number; // Duration in seconds for video files
     videoTrimAfterFrames?: number;
 }
 
@@ -1038,7 +1036,7 @@ export async function downloadMedia(
     url: string,
     outputDir: string,
     filename: string,
-    retries: number = 3
+    retries: number = 3,
 ): Promise<DownloadResult> {
     const outputPath = path.join(outputDir, filename);
 
@@ -1057,7 +1055,8 @@ export async function downloadMedia(
     if (fs.existsSync(outputPath)) {
         try {
             const stats = fs.statSync(outputPath);
-            if (stats.size > 100 * 1024) { // Ignore > 100KB files
+            if (stats.size > 100 * 1024) {
+                // Ignore > 100KB files
                 // Get video duration if it's a video file
                 let videoDuration: number | undefined;
                 let videoTrimAfterFrames: number | undefined;
@@ -1089,7 +1088,12 @@ export async function downloadMedia(
             // console.log(`⬇️ [DOWNLOAD] Content-Length: ${response.headers['content-length']} bytes`);
 
             const tmpPath = `${outputPath}.tmp`;
-            if (fs.existsSync(tmpPath)) try { fs.unlinkSync(tmpPath); } catch { /* ignore — cleanup */ }
+            if (fs.existsSync(tmpPath))
+                try {
+                    fs.unlinkSync(tmpPath);
+                } catch {
+                    /* ignore — cleanup */
+                }
             const writer = fs.createWriteStream(tmpPath);
             let settled = false;
             let stallTimer: NodeJS.Timeout | null = null;
@@ -1125,7 +1129,11 @@ export async function downloadMedia(
                     settled = true;
                     clearStallTimer();
                     writer.destroy();
-                    try { fs.unlinkSync(tmpPath); } catch { /* ignore — cleanup */ }
+                    try {
+                        fs.unlinkSync(tmpPath);
+                    } catch {
+                        /* ignore — cleanup */
+                    }
                     reject(err);
                 });
                 response.data.pipe(writer);
@@ -1137,10 +1145,14 @@ export async function downloadMedia(
                     settled = true;
                     clearStallTimer();
                     const elapsed = Date.now() - startTime;
-                    
+
                     if (fs.existsSync(tmpPath)) {
-                        try { fs.renameSync(tmpPath, outputPath); } 
-                        catch (e: any) { reject(new Error(`Failed to save: ${e.message}`)); return; }
+                        try {
+                            fs.renameSync(tmpPath, outputPath);
+                        } catch (e: any) {
+                            reject(new Error(`Failed to save: ${e.message}`));
+                            return;
+                        }
                     }
 
                     if (!fs.existsSync(outputPath)) {
@@ -1172,7 +1184,11 @@ export async function downloadMedia(
                     }
                     settled = true;
                     clearStallTimer();
-                    try { fs.unlinkSync(tmpPath); } catch { /* ignore — cleanup */ }
+                    try {
+                        fs.unlinkSync(tmpPath);
+                    } catch {
+                        /* ignore — cleanup */
+                    }
                     // console.error(`⬇️ [DOWNLOAD] ❌ Write error: ${err.message}`);
                     reject(err);
                 });
@@ -1197,8 +1213,6 @@ export async function downloadMedia(
     }
     throw new Error('Download failed after all retries');
 }
-
-
 
 const getPexelsApiKey = () => process.env.PEXELS_API_KEY || '';
 const getGeminiApiKey = () => process.env.GEMINI_API_KEY || '';

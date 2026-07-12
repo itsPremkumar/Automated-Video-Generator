@@ -36,13 +36,16 @@ export interface FreeVideoDownloadResponse {
 }
 
 export class FreeVideoAppService {
-    async search(keyword: string, filters?: {
-        source?: 'wikimedia' | 'archive' | 'all';
-        count?: number;
-        maxDuration?: number;
-        minResolution?: number;
-        sortBy?: 'relevance' | 'newest' | 'resolution';
-    }): Promise<FreeVideoSearchResult[]> {
+    async search(
+        keyword: string,
+        filters?: {
+            source?: 'wikimedia' | 'archive' | 'all';
+            count?: number;
+            maxDuration?: number;
+            minResolution?: number;
+            sortBy?: 'relevance' | 'newest' | 'resolution';
+        },
+    ): Promise<FreeVideoSearchResult[]> {
         const count = filters?.count ?? 5;
         const maxDuration = filters?.maxDuration;
         const minResolution = filters?.minResolution;
@@ -61,36 +64,46 @@ export class FreeVideoAppService {
         const promises: Promise<void>[] = [];
 
         if (source === 'all' || source === 'wikimedia') {
-            promises.push((async () => {
-                try {
-                    const results = await wikiProvider.search(searchFilters);
-                    if (results.length > 0) {
-                        output.push({ source: 'wikimedia', results: results.map(this.toResponse) });
+            promises.push(
+                (async () => {
+                    try {
+                        const results = await wikiProvider.search(searchFilters);
+                        if (results.length > 0) {
+                            output.push({ source: 'wikimedia', results: results.map(this.toResponse) });
+                        }
+                    } catch (err: any) {
+                        logError(`[FREE-VIDEO] Wikimedia search error: ${err.message}`);
                     }
-                } catch (err: any) {
-                    logError(`[FREE-VIDEO] Wikimedia search error: ${err.message}`);
-                }
-            })());
+                })(),
+            );
         }
 
         if (source === 'all' || source === 'archive') {
-            promises.push((async () => {
-                try {
-                    const results = await archiveProvider.search(searchFilters);
-                    if (results.length > 0) {
-                        output.push({ source: 'archive', results: results.map(this.toResponse) });
+            promises.push(
+                (async () => {
+                    try {
+                        const results = await archiveProvider.search(searchFilters);
+                        if (results.length > 0) {
+                            output.push({ source: 'archive', results: results.map(this.toResponse) });
+                        }
+                    } catch (err: any) {
+                        logError(`[FREE-VIDEO] Archive search error: ${err.message}`);
                     }
-                } catch (err: any) {
-                    logError(`[FREE-VIDEO] Archive search error: ${err.message}`);
-                }
-            })());
+                })(),
+            );
         }
 
         await Promise.all(promises);
         return output;
     }
 
-    async download(url: string, title: string, creator: string, license: string, format: string): Promise<FreeVideoDownloadResponse> {
+    async download(
+        url: string,
+        title: string,
+        creator: string,
+        license: string,
+        format: string,
+    ): Promise<FreeVideoDownloadResponse> {
         const outputDir = resolveProjectPath('public', 'jobs', 'free-video');
         if (!fs.existsSync(outputDir)) {
             fs.mkdirSync(outputDir, { recursive: true });

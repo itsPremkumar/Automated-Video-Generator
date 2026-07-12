@@ -12,7 +12,9 @@ export async function readEnvConfig(showSecrets?: boolean) {
     const masked: Record<string, string> = {};
     for (const key of Object.keys(config)) {
         const value = config[key];
-        masked[key] = key.match(/KEY|SECRET|PASSWORD|TOKEN|AUTH/i) ? value.substring(0, 4) + '****' + value.substring(Math.max(0, value.length - 4)) : value;
+        masked[key] = key.match(/KEY|SECRET|PASSWORD|TOKEN|AUTH/i)
+            ? value.substring(0, 4) + '****' + value.substring(Math.max(0, value.length - 4))
+            : value;
     }
     return masked;
 }
@@ -35,11 +37,31 @@ export async function updateEnvConfig(key: string, value: string) {
 
 export async function getSystemInfo() {
     const info: Record<string, string> = {};
-    try { info.node = process.version; } catch { /* ignore — info probe */ }
-    try { info.npm = execSync('npm -v').toString().trim(); } catch { /* ignore — info probe */ }
-    try { info.ffmpeg = execSync('ffmpeg -version').toString().split('\n')[0].trim(); } catch { /* ignore — info probe */ }
-    try { info.platform = process.platform; } catch { /* ignore — info probe */ }
-    try { info.arch = process.arch; } catch { /* ignore — info probe */ }
+    try {
+        info.node = process.version;
+    } catch {
+        /* ignore — info probe */
+    }
+    try {
+        info.npm = execSync('npm -v').toString().trim();
+    } catch {
+        /* ignore — info probe */
+    }
+    try {
+        info.ffmpeg = execSync('ffmpeg -version').toString().split('\n')[0].trim();
+    } catch {
+        /* ignore — info probe */
+    }
+    try {
+        info.platform = process.platform;
+    } catch {
+        /* ignore — info probe */
+    }
+    try {
+        info.arch = process.arch;
+    } catch {
+        /* ignore — info probe */
+    }
     return info;
 }
 

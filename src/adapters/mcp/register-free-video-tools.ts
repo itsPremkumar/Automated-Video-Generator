@@ -8,7 +8,8 @@ export function registerFreeVideoTools(server: McpServer) {
         'search_free_video',
         {
             title: 'Search Free Video',
-            description: 'Search for free CC-licensed videos from Wikimedia Commons and Internet Archive. No API key needed.',
+            description:
+                'Search for free CC-licensed videos from Wikimedia Commons and Internet Archive. No API key needed.',
             inputSchema: z.object({
                 keyword: z.string().describe('Search keyword or phrase'),
                 count: z.number().optional().describe('Maximum results (default: 5)'),
@@ -20,7 +21,13 @@ export function registerFreeVideoTools(server: McpServer) {
         },
         async (args: any) => {
             const { keyword, count, source, maxDuration, minResolution, sortBy } = args;
-            const results = await freeVideoAppService.search(keyword, { source, count, maxDuration, minResolution, sortBy });
+            const results = await freeVideoAppService.search(keyword, {
+                source,
+                count,
+                maxDuration,
+                minResolution,
+                sortBy,
+            });
 
             if (results.length === 0) {
                 return textResponse('No free videos found for the given keyword.');
@@ -52,7 +59,8 @@ export function registerFreeVideoTools(server: McpServer) {
         'download_free_video',
         {
             title: 'Download Free Video',
-            description: 'Download a free CC-licensed video by URL to the project workspace for use in video generation.',
+            description:
+                'Download a free CC-licensed video by URL to the project workspace for use in video generation.',
             inputSchema: z.object({
                 url: z.string().describe('The download URL of the video'),
                 title: z.string().describe('Title for the downloaded file'),
@@ -63,18 +71,24 @@ export function registerFreeVideoTools(server: McpServer) {
         },
         async (args: any) => {
             const { url, title, creator, license, format } = args;
-            const result = await freeVideoAppService.download(url, title, creator || 'Unknown', license || 'CC', format || 'mp4');
+            const result = await freeVideoAppService.download(
+                url,
+                title,
+                creator || 'Unknown',
+                license || 'CC',
+                format || 'mp4',
+            );
 
             return textResponse(
                 `Downloaded successfully!\n\n` +
-                `Title: ${result.title}\n` +
-                `Creator: ${result.creator}\n` +
-                `License: ${result.license}\n` +
-                `File: ${result.filename}\n` +
-                `Size: ${(result.fileSizeBytes / 1024 / 1024).toFixed(2)} MB\n` +
-                `Local Path: ${result.localPath}\n` +
-                `Public URL: /${result.publicPath}\n\n` +
-                `You can reference this video in your scene configuration.`
+                    `Title: ${result.title}\n` +
+                    `Creator: ${result.creator}\n` +
+                    `License: ${result.license}\n` +
+                    `File: ${result.filename}\n` +
+                    `Size: ${(result.fileSizeBytes / 1024 / 1024).toFixed(2)} MB\n` +
+                    `Local Path: ${result.localPath}\n` +
+                    `Public URL: /${result.publicPath}\n\n` +
+                    `You can reference this video in your scene configuration.`,
             );
         },
     );

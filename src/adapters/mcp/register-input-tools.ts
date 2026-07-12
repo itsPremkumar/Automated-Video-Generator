@@ -2,7 +2,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { deleteInputScript, readInputScripts, validateScriptFormat, videoScriptSchema, writeInputScript } from './input-store';
+import {
+    deleteInputScript,
+    readInputScripts,
+    validateScriptFormat,
+    videoScriptSchema,
+    writeInputScript,
+} from './input-store';
 import { assertSafeMutationAllowed } from '../../shared/capabilities';
 import { resolveProjectPath } from '../../shared/runtime/paths';
 import { inputAssetPath, INPUT_ASSETS_DIR } from '../../lib/path-safety';
@@ -82,7 +88,9 @@ export function registerInputTools(server: McpServer) {
             }
 
             fs.writeFileSync(path.join(assetsDir, filename), buffer);
-            return textResponse(`Asset "${filename}" uploaded successfully (${(buffer.length / 1024 / 1024).toFixed(2)} MB).`);
+            return textResponse(
+                `Asset "${filename}" uploaded successfully (${(buffer.length / 1024 / 1024).toFixed(2)} MB).`,
+            );
         },
     );
 

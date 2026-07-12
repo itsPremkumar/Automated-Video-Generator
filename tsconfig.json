@@ -3,11 +3,7 @@
         "target": "ES2022",
         "module": "NodeNext",
         "moduleResolution": "NodeNext",
-        "lib": [
-            "ES2022",
-            "DOM",
-            "DOM.Iterable"
-        ],
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
         "outDir": "./dist",
         "strict": true,
         "esModuleInterop": true,
@@ -16,12 +12,6 @@
         "resolveJsonModule": true,
         "jsx": "react"
     },
-    "include": [
-        "src/**/*",
-        "remotion/**/*"
-    ],
-    "exclude": [
-        "node_modules",
-        "dist"
-    ]
+    "include": ["src/**/*", "remotion/**/*"],
+    "exclude": ["node_modules", "dist"]
 }

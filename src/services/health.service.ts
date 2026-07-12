@@ -31,9 +31,7 @@ function runQuiet(command: string): string | null {
 }
 
 function checkPortablePython(): DependencyCheck {
-    const resourcesPath = (process as any).resourcesPath
-        || process.env.ELECTRON_RESOURCES_PATH
-        || '';
+    const resourcesPath = (process as any).resourcesPath || process.env.ELECTRON_RESOURCES_PATH || '';
 
     const candidatePaths = [
         resolveProjectPath('portable-python', 'python.exe'),
@@ -95,9 +93,7 @@ function checkEdgeTts(): DependencyCheck {
         };
     }
 
-    const resourcesPath = (process as any).resourcesPath
-        || process.env.ELECTRON_RESOURCES_PATH
-        || '';
+    const resourcesPath = (process as any).resourcesPath || process.env.ELECTRON_RESOURCES_PATH || '';
 
     const edgeTtsPaths = [
         resolveProjectPath('portable-python', 'Scripts', 'edge-tts.exe'),
@@ -190,16 +186,11 @@ function checkNodeModules(): DependencyCheck {
 }
 
 export function runHealthCheck(): HealthCheckResult {
-    const checks = [
-        checkPortablePython(),
-        checkEdgeTts(),
-        checkFfmpeg(),
-        checkNodeModules(),
-    ];
+    const checks = [checkPortablePython(), checkEdgeTts(), checkFfmpeg(), checkNodeModules()];
 
-    const hasMissing = checks.some(c => c.status === 'missing');
-    const hasBroken = checks.some(c => c.status === 'broken');
-    const overall = (hasMissing || hasBroken) ? (hasMissing ? 'unhealthy' : 'degraded') : 'healthy';
+    const hasMissing = checks.some((c) => c.status === 'missing');
+    const hasBroken = checks.some((c) => c.status === 'broken');
+    const overall = hasMissing || hasBroken ? (hasMissing ? 'unhealthy' : 'degraded') : 'healthy';
 
     return {
         overall,

@@ -710,15 +710,11 @@ export function videoDownloadPage(req: Request, cspNonce?: string): string {
         </script>
     `;
 
-    return layout(
-        'Download Assets for Script | ' + PROJECT_NAME,
-        body,
-        {
-            canonical: absoluteUrl(req, '/video-download'),
-            cspNonce,
-            description: 'Analyze your video script with AI and download matching high-quality stock videos and images.',
-            keywords: DEFAULT_SITE_KEYWORDS + ', asset downloader, stock footage finder',
-            ogType: 'website',
-        }
-    );
+    return layout('Download Assets for Script | ' + PROJECT_NAME, body, {
+        canonical: absoluteUrl(req, '/video-download'),
+        cspNonce,
+        description: 'Analyze your video script with AI and download matching high-quality stock videos and images.',
+        keywords: DEFAULT_SITE_KEYWORDS + ', asset downloader, stock footage finder',
+        ogType: 'website',
+    });
 }

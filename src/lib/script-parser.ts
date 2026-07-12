@@ -32,15 +32,74 @@ export interface ParsedScript {
 
 // Common stop words to filter out for better keyword extraction
 const STOP_WORDS = new Set([
-    'about', 'after', 'again', 'also', 'back', 'been', 'before', 'being',
-    'could', 'each', 'every', 'first', 'from', 'give', 'have', 'here',
-    'into', 'just', 'know', 'like', 'look', 'make', 'many', 'more',
-    'most', 'much', 'need', 'only', 'other', 'over', 'same', 'should',
-    'some', 'such', 'take', 'than', 'that', 'their', 'them', 'then',
-    'there', 'these', 'they', 'thing', 'this', 'those', 'through', 'time',
-    'very', 'want', 'well', 'what', 'when', 'where', 'which', 'while',
-    'will', 'with', 'work', 'would', 'year', 'your', 'free', 'today',
-    'already', 'towards', 'specifically', 'question'
+    'about',
+    'after',
+    'again',
+    'also',
+    'back',
+    'been',
+    'before',
+    'being',
+    'could',
+    'each',
+    'every',
+    'first',
+    'from',
+    'give',
+    'have',
+    'here',
+    'into',
+    'just',
+    'know',
+    'like',
+    'look',
+    'make',
+    'many',
+    'more',
+    'most',
+    'much',
+    'need',
+    'only',
+    'other',
+    'over',
+    'same',
+    'should',
+    'some',
+    'such',
+    'take',
+    'than',
+    'that',
+    'their',
+    'them',
+    'then',
+    'there',
+    'these',
+    'they',
+    'thing',
+    'this',
+    'those',
+    'through',
+    'time',
+    'very',
+    'want',
+    'well',
+    'what',
+    'when',
+    'where',
+    'which',
+    'while',
+    'will',
+    'with',
+    'work',
+    'would',
+    'year',
+    'your',
+    'free',
+    'today',
+    'already',
+    'towards',
+    'specifically',
+    'question',
 ]);
 
 /**
@@ -78,7 +137,7 @@ function parseScriptLocally(script: string): ParsedScript {
         }
     }
 
-    const lines = rawLines.filter(s => s.length > 3); // Slightly lower threshold for short scripts
+    const lines = rawLines.filter((s) => s.length > 3); // Slightly lower threshold for short scripts
 
     const scenes: Scene[] = [];
     let pendingVisualCue = '';
@@ -94,7 +153,7 @@ function parseScriptLocally(script: string): ParsedScript {
 
         // Find all visual matches in the line
         const visualMatches = [...line.matchAll(/\[Visual:?\s*(.*?)\]/gis)];
-        
+
         // FEATURE: If we have multiple visual tags on one line and NO text, split them evenly
         if (visualMatches.length > 1 && !cleanText) {
             for (const match of visualMatches) {
@@ -107,7 +166,7 @@ function parseScriptLocally(script: string): ParsedScript {
                     voiceoverText: '',
                     searchKeywords: keywords,
                     localAsset: fs.existsSync(inputAssetPath(tag)) ? tag : undefined,
-                    showText: false
+                    showText: false,
                 });
             }
             pendingVisualCue = '';
@@ -127,7 +186,7 @@ function parseScriptLocally(script: string): ParsedScript {
                 voiceoverText: '',
                 searchKeywords: keywords,
                 localAsset: fs.existsSync(inputAssetPath(pendingVisualCue)) ? pendingVisualCue : undefined,
-                showText: false
+                showText: false,
             });
             pendingVisualCue = visualCue;
             continue;
@@ -141,8 +200,11 @@ function parseScriptLocally(script: string): ParsedScript {
         }
 
         // Scene generation from text and visual cue
-        const allWords = cleanText.toLowerCase().replace(/[.,?!#+'%]/g, '').split(/\s+/);
-        const filteredWords = allWords.filter(w => w.length > 3 && !STOP_WORDS.has(w));
+        const allWords = cleanText
+            .toLowerCase()
+            .replace(/[.,?!#+'%]/g, '')
+            .split(/\s+/);
+        const filteredWords = allWords.filter((w) => w.length > 3 && !STOP_WORDS.has(w));
 
         let keywords: string[] = [];
         let visualDescription = '';
@@ -156,7 +218,7 @@ function parseScriptLocally(script: string): ParsedScript {
             if (fs.existsSync(inputAssetPath(effectiveVisual))) {
                 localAsset = effectiveVisual;
             }
-            pendingVisualCue = ''; 
+            pendingVisualCue = '';
         } else {
             keywords = filteredWords.slice(0, 4);
             if (keywords.length === 0) keywords.push('business', 'professional');
@@ -172,7 +234,7 @@ function parseScriptLocally(script: string): ParsedScript {
             voiceoverText: cleanText,
             searchKeywords: keywords,
             localAsset,
-            showText: sceneShowText
+            showText: sceneShowText,
         });
     }
 
@@ -181,7 +243,7 @@ function parseScriptLocally(script: string): ParsedScript {
         const keywords = pendingVisualCue.toLowerCase().split(/\s+/).filter(Boolean);
         const visualDescription = `Visual for: ${pendingVisualCue}`;
         let localAsset: string | undefined = undefined;
-        
+
         if (fs.existsSync(inputAssetPath(pendingVisualCue))) {
             localAsset = pendingVisualCue;
         }
@@ -193,7 +255,7 @@ function parseScriptLocally(script: string): ParsedScript {
             voiceoverText: '',
             searchKeywords: keywords,
             localAsset,
-            showText: false
+            showText: false,
         });
     }
 
@@ -202,7 +264,7 @@ function parseScriptLocally(script: string): ParsedScript {
     return {
         scenes,
         totalDuration,
-        videoStyle: 'professional'
+        videoStyle: 'professional',
     };
 }
 

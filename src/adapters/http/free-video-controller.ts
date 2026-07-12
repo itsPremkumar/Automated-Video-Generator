@@ -15,7 +15,8 @@ export const search = async (req: Request, res: Response) => {
         const sortBy = req.query.sortBy as 'relevance' | 'newest' | 'resolution' | undefined;
 
         const validSources = ['wikimedia', 'archive', 'all'] as const;
-        const resolvedSource = source && validSources.includes(source as any) ? source as 'wikimedia' | 'archive' | 'all' : 'all';
+        const resolvedSource =
+            source && validSources.includes(source as any) ? (source as 'wikimedia' | 'archive' | 'all') : 'all';
 
         const data = await freeVideoAppService.search(keyword, {
             source: resolvedSource,

@@ -17,13 +17,26 @@ const execAsync = promisify(exec);
 const MAX_DIRECTORY_ITEMS = 500;
 
 function assertPathWithinProject(filePath: string): void {
-  const resolved = path.resolve(filePath);
-  if (!resolved.startsWith(projectRoot)) {
-    throw new BadRequestError(`Access denied: path is outside the project directory (${projectRoot})`);
-  }
+    const resolved = path.resolve(filePath);
+    if (!resolved.startsWith(projectRoot)) {
+        throw new BadRequestError(`Access denied: path is outside the project directory (${projectRoot})`);
+    }
 }
 const STREAMABLE_EXTENSIONS = ['.m4a', '.mov', '.mp3', '.mp4', '.ogg', '.wav', '.webm'];
-const VIEWABLE_EXTENSIONS = ['.gif', '.jpeg', '.jpg', '.m4a', '.mov', '.mp3', '.mp4', '.ogg', '.png', '.wav', '.webm', '.webp'];
+const VIEWABLE_EXTENSIONS = [
+    '.gif',
+    '.jpeg',
+    '.jpg',
+    '.m4a',
+    '.mov',
+    '.mp3',
+    '.mp4',
+    '.ogg',
+    '.png',
+    '.wav',
+    '.webm',
+    '.webp',
+];
 
 function resolveContentType(extension: string): string | null {
     const contentTypes: Record<string, string> = {
@@ -48,18 +61,18 @@ export type PickedFileType = 'asset' | 'media' | 'music' | 'personalAudio';
 
 export type ViewFileResult =
     | {
-        type: 'range';
-        filePath: string;
-        contentType: string;
-        stat: fs.Stats;
-        start: number;
-        end: number;
-    }
+          type: 'range';
+          filePath: string;
+          contentType: string;
+          stat: fs.Stats;
+          start: number;
+          end: number;
+      }
     | {
-        type: 'file';
-        filePath: string;
-        contentType: string | null;
-    };
+          type: 'file';
+          filePath: string;
+          contentType: string | null;
+      };
 
 export class LocalFilesystem {
     listFiles(rawPath?: string) {
@@ -82,7 +95,9 @@ export class LocalFilesystem {
                 path: path.join(queryPath, entry.name),
                 ext: path.extname(entry.name).toLowerCase(),
             }))
-            .sort((left, right) => (left.isDir !== right.isDir ? (left.isDir ? -1 : 1) : left.name.localeCompare(right.name)))
+            .sort((left, right) =>
+                left.isDir !== right.isDir ? (left.isDir ? -1 : 1) : left.name.localeCompare(right.name),
+            )
             .slice(0, MAX_DIRECTORY_ITEMS);
 
         return {
@@ -107,7 +122,12 @@ export class LocalFilesystem {
         const filename = path.basename(sourcePath);
         const mediaType = type === 'music' || type === 'personalAudio' ? 'audio' : 'visual';
         const targetDir = mediaType === 'audio' ? INPUT_MUSIC_ROOT : INPUT_ASSET_ROOT;
-        ensureAllowedExtension(filename, mediaType === 'audio' ? ['.m4a', '.mp3', '.wav'] : ['.gif', '.jpeg', '.jpg', '.mov', '.mp4', '.png', '.webm', '.webp']);
+        ensureAllowedExtension(
+            filename,
+            mediaType === 'audio'
+                ? ['.m4a', '.mp3', '.wav']
+                : ['.gif', '.jpeg', '.jpg', '.mov', '.mp4', '.png', '.webm', '.webp'],
+        );
         if (!fs.existsSync(targetDir)) {
             fs.mkdirSync(targetDir, { recursive: true });
         }
@@ -130,7 +150,8 @@ export class LocalFilesystem {
             return [];
         }
 
-        return fs.readdirSync(INPUT_ASSET_ROOT, { withFileTypes: true })
+        return fs
+            .readdirSync(INPUT_ASSET_ROOT, { withFileTypes: true })
             .filter((entry) => !entry.isDirectory())
             .map((entry) => ({
                 filename: entry.name,

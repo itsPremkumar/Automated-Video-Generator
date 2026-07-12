@@ -10,7 +10,9 @@ test('validateRequest passes valid body through', () => {
     const req = { body: { name: 'test' } } as any;
     let nextCalled = false;
 
-    middleware(req, {} as any, () => { nextCalled = true; });
+    middleware(req, {} as any, () => {
+        nextCalled = true;
+    });
 
     assert.equal(nextCalled, true);
     assert.equal(req.body.name, 'test');
@@ -23,7 +25,9 @@ test('validateRequest passes error to next for invalid body', () => {
     const req = { body: { name: 123 } } as any;
     let nextError: any = null;
 
-    middleware(req, {} as any, (err: any) => { nextError = err; });
+    middleware(req, {} as any, (err: any) => {
+        nextError = err;
+    });
 
     assert.ok(nextError);
 });

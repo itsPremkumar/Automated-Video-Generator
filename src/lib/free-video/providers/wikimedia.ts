@@ -2,7 +2,9 @@ import { createHttpClient, getJson } from '../http-client.js';
 import { withRetry } from '../utils.js';
 import { SearchFilters, VideoFormat, VideoProvider, VideoResult } from '../models.js';
 
-interface CommonsExtMetadataField { value: string; }
+interface CommonsExtMetadataField {
+    value: string;
+}
 interface CommonsExtMetadata {
     LicenseShortName?: CommonsExtMetadataField;
     LicenseUrl?: CommonsExtMetadataField;
@@ -28,7 +30,7 @@ interface CommonsPage {
 }
 
 interface CommonsQueryResponse {
-    query?: { pages?: Record<string, CommonsPage>; };
+    query?: { pages?: Record<string, CommonsPage> };
 }
 
 const COMMONS_API_URL = 'https://commons.wikimedia.org/w/api.php';
@@ -60,18 +62,19 @@ export class WikimediaProvider implements VideoProvider {
         const offset = ((filters.page ?? 1) - 1) * gsrlimit;
 
         const data = await withRetry(
-            () => getJson<CommonsQueryResponse>(this.client, COMMONS_API_URL, {
-                action: 'query',
-                format: 'json',
-                generator: 'search',
-                gsrsearch: `filetype:video ${filters.keyword}`,
-                gsrnamespace: 6,
-                gsrlimit,
-                gsroffset: offset || undefined,
-                prop: 'imageinfo',
-                iiprop: 'url|size|mime|extmetadata|metadata',
-                formatversion: 2,
-            }),
+            () =>
+                getJson<CommonsQueryResponse>(this.client, COMMONS_API_URL, {
+                    action: 'query',
+                    format: 'json',
+                    generator: 'search',
+                    gsrsearch: `filetype:video ${filters.keyword}`,
+                    gsrnamespace: 6,
+                    gsrlimit,
+                    gsroffset: offset || undefined,
+                    prop: 'imageinfo',
+                    iiprop: 'url|size|mime|extmetadata|metadata',
+                    formatversion: 2,
+                }),
             { retries: 3, baseDelayMs: 2000, label: 'Wikimedia search' },
         );
 
@@ -106,7 +109,8 @@ export class WikimediaProvider implements VideoProvider {
                 resolution: info.width && info.height ? `${info.width}x${info.height}` : null,
                 fileSizeBytes: typeof info.size === 'number' ? info.size : null,
                 format,
-                sourcePageUrl: info.descriptionurl ?? `https://commons.wikimedia.org/wiki/${encodeURIComponent(page.title)}`,
+                sourcePageUrl:
+                    info.descriptionurl ?? `https://commons.wikimedia.org/wiki/${encodeURIComponent(page.title)}`,
             });
 
             if (results.length >= filters.count) break;
@@ -120,20 +124,24 @@ export class WikimediaProvider implements VideoProvider {
 
         if (filters.license) {
             const wanted = filters.license.toLowerCase();
-            filtered = filtered.filter(v => v.license.toLowerCase().includes(wanted));
+            filtered = filtered.filter((v) => v.license.toLowerCase().includes(wanted));
         }
         if (filters.minDurationSeconds !== undefined) {
-            filtered = filtered.filter(v => v.durationSeconds !== null && v.durationSeconds >= filters.minDurationSeconds!);
+            filtered = filtered.filter(
+                (v) => v.durationSeconds !== null && v.durationSeconds >= filters.minDurationSeconds!,
+            );
         }
         if (filters.maxDurationSeconds !== undefined) {
-            filtered = filtered.filter(v => v.durationSeconds !== null && v.durationSeconds <= filters.maxDurationSeconds!);
+            filtered = filtered.filter(
+                (v) => v.durationSeconds !== null && v.durationSeconds <= filters.maxDurationSeconds!,
+            );
         }
         if (filters.maxFileSizeBytes !== undefined) {
-            filtered = filtered.filter(v => v.fileSizeBytes !== null && v.fileSizeBytes <= filters.maxFileSizeBytes!);
+            filtered = filtered.filter((v) => v.fileSizeBytes !== null && v.fileSizeBytes <= filters.maxFileSizeBytes!);
         }
         if (filters.minResolutionHeight !== undefined || filters.hdOnly) {
             const minHeight = filters.hdOnly ? 720 : filters.minResolutionHeight!;
-            filtered = filtered.filter(v => {
+            filtered = filtered.filter((v) => {
                 if (!v.resolution) return false;
                 const height = parseInt(v.resolution.split('x')[1] ?? '0', 10);
                 return height >= minHeight;

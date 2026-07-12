@@ -26,15 +26,17 @@ export function registerJobTools(server: McpServer) {
                 skipReview: args.skipReview !== false,
             });
 
-            return textResponse([
-                'Video generation job started.',
-                '',
-                `Job ID: ${accepted.jobId}`,
-                `Output ID: ${accepted.publicId}`,
-                'Status: Processing in background',
-                '',
-                `Use get_video_status(jobId: "${accepted.jobId}") to check progress.`,
-            ].join('\n'));
+            return textResponse(
+                [
+                    'Video generation job started.',
+                    '',
+                    `Job ID: ${accepted.jobId}`,
+                    `Output ID: ${accepted.publicId}`,
+                    'Status: Processing in background',
+                    '',
+                    `Use get_video_status(jobId: "${accepted.jobId}") to check progress.`,
+                ].join('\n'),
+            );
         },
     );
 
@@ -93,17 +95,18 @@ export function registerJobTools(server: McpServer) {
         },
     );
 
-    server.tool(
-        'list_jobs',
-        'List all recent video generation jobs and their current status.',
-        async () => {
-            const jobs = pipelineAppService.listJobs().sort((a, b) => b.startTime - a.startTime);
-            if (jobs.length === 0) {
-                return textResponse('No jobs found.');
-            }
+    server.tool('list_jobs', 'List all recent video generation jobs and their current status.', async () => {
+        const jobs = pipelineAppService.listJobs().sort((a, b) => b.startTime - a.startTime);
+        if (jobs.length === 0) {
+            return textResponse('No jobs found.');
+        }
 
-            const tableRows = jobs.map((job) => `| ${job.id} | ${job.status} | ${job.progress}% | ${new Date(job.startTime).toLocaleTimeString()} |`);
-            return textResponse(`| Job ID | Status | Progress | Started |\n| :--- | :--- | :--- | :--- |\n${tableRows.join('\n')}`);
-        },
-    );
+        const tableRows = jobs.map(
+            (job) =>
+                `| ${job.id} | ${job.status} | ${job.progress}% | ${new Date(job.startTime).toLocaleTimeString()} |`,
+        );
+        return textResponse(
+            `| Job ID | Status | Progress | Started |\n| :--- | :--- | :--- | :--- |\n${tableRows.join('\n')}`,
+        );
+    });
 }

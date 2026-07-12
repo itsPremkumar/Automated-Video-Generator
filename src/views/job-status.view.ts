@@ -7,7 +7,6 @@ import { layout, escapeHtml } from './layout.view';
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export function jobPage(req: Request, jobId: string, cspNonce?: string): string {
-
     // ─── Premium UI Styles ──────────────────────────────────────────────────────
 
     const styles = `
@@ -832,6 +831,6 @@ export function jobPage(req: Request, jobId: string, cspNonce?: string): string 
             robots: 'noindex, nofollow',
             cspNonce,
         },
-        script
+        script,
     );
 }

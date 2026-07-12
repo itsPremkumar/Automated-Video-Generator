@@ -1,11 +1,26 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { JobPhase, JobRequestOptions, JobState, JobStatus, JobTextConfig, StoredJobRequest } from '../../shared/contracts/job.contract';
+import {
+    JobPhase,
+    JobRequestOptions,
+    JobState,
+    JobStatus,
+    JobTextConfig,
+    StoredJobRequest,
+} from '../../shared/contracts/job.contract';
 import { resolveProjectPath } from '../../shared/runtime/paths';
 
 const JOBS_FILE = resolveProjectPath('.mcp-jobs.json');
 
-const VALID_JOB_STATES: JobState[] = ['pending', 'processing', 'awaiting_review', 'cancelling', 'cancelled', 'completed', 'failed'];
+const VALID_JOB_STATES: JobState[] = [
+    'pending',
+    'processing',
+    'awaiting_review',
+    'cancelling',
+    'cancelled',
+    'completed',
+    'failed',
+];
 const VALID_JOB_PHASES: JobPhase[] = ['generate', 'review', 'render', 'completed'];
 
 function isJobState(value: unknown): value is JobState {
@@ -33,7 +48,13 @@ function normalizeTextConfig(value: unknown): JobTextConfig | undefined {
     if (raw.position === 'top' || raw.position === 'center' || raw.position === 'bottom') {
         textConfig.position = raw.position;
     }
-    if (raw.animation === 'fade' || raw.animation === 'slide' || raw.animation === 'zoom' || raw.animation === 'typewriter' || raw.animation === 'pop') {
+    if (
+        raw.animation === 'fade' ||
+        raw.animation === 'slide' ||
+        raw.animation === 'zoom' ||
+        raw.animation === 'typewriter' ||
+        raw.animation === 'pop'
+    ) {
         textConfig.animation = raw.animation;
     }
     if (raw.background === 'none' || raw.background === 'box' || raw.background === 'glass') {
@@ -53,7 +74,12 @@ function normalizeRequest(value: unknown): StoredJobRequest | undefined {
 
     const raw = value as Record<string, unknown>;
     const optionsValue = raw.options;
-    if (typeof raw.title !== 'string' || typeof raw.script !== 'string' || !optionsValue || typeof optionsValue !== 'object') {
+    if (
+        typeof raw.title !== 'string' ||
+        typeof raw.script !== 'string' ||
+        !optionsValue ||
+        typeof optionsValue !== 'object'
+    ) {
         return undefined;
     }
 
@@ -63,7 +89,10 @@ function normalizeRequest(value: unknown): StoredJobRequest | undefined {
         script: raw.script,
         options: {
             orientation: options.orientation === 'landscape' ? 'landscape' : 'portrait',
-            language: typeof options.language === 'string' && options.language.trim().length > 0 ? options.language : 'english',
+            language:
+                typeof options.language === 'string' && options.language.trim().length > 0
+                    ? options.language
+                    : 'english',
             voice: typeof options.voice === 'string' ? options.voice : undefined,
             showText: options.showText !== false,
             backgroundMusic: typeof options.backgroundMusic === 'string' ? options.backgroundMusic : '',
@@ -118,11 +147,12 @@ function normalizeJobRecord(value: unknown): JobStatus | null {
 
     const status = isJobState(raw.status) ? raw.status : 'pending';
     const startTime = typeof raw.startTime === 'number' && Number.isFinite(raw.startTime) ? raw.startTime : Date.now();
-    const updatedAt = typeof raw.updatedAt === 'number' && Number.isFinite(raw.updatedAt)
-        ? raw.updatedAt
-        : typeof raw.endTime === 'number' && Number.isFinite(raw.endTime)
-            ? raw.endTime
-            : startTime;
+    const updatedAt =
+        typeof raw.updatedAt === 'number' && Number.isFinite(raw.updatedAt)
+            ? raw.updatedAt
+            : typeof raw.endTime === 'number' && Number.isFinite(raw.endTime)
+              ? raw.endTime
+              : startTime;
 
     return {
         id: raw.id,
@@ -139,7 +169,10 @@ function normalizeJobRecord(value: unknown): JobStatus | null {
         updatedAt,
         endTime: typeof raw.endTime === 'number' && Number.isFinite(raw.endTime) ? raw.endTime : undefined,
         cancelRequested: raw.cancelRequested === true,
-        retryCount: typeof raw.retryCount === 'number' && Number.isFinite(raw.retryCount) && raw.retryCount >= 0 ? Math.floor(raw.retryCount) : 0,
+        retryCount:
+            typeof raw.retryCount === 'number' && Number.isFinite(raw.retryCount) && raw.retryCount >= 0
+                ? Math.floor(raw.retryCount)
+                : 0,
         request: normalizeRequest(raw.request),
     };
 }
@@ -196,9 +229,10 @@ export class JobStore {
 
             const phase = job.phase === 'completed' ? 'render' : job.phase;
             const interruptedAt = job.updatedAt || job.startTime;
-            const message = phase === 'render' && hasSceneData(job)
-                ? 'Application restarted before rendering finished. Retry to continue.'
-                : 'Application restarted before generation finished. Retry to continue.';
+            const message =
+                phase === 'render' && hasSceneData(job)
+                    ? 'Application restarted before rendering finished. Retry to continue.'
+                    : 'Application restarted before generation finished. Retry to continue.';
 
             this.jobs.set(id, {
                 ...job,

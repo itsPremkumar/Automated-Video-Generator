@@ -29,9 +29,8 @@ function parseArgs() {
     const resume = args.includes('--resume');
     const segmentOnly = args.includes('--segment');
     const musicIdx = args.indexOf('--music');
-    const music = (musicIdx !== -1 && args[musicIdx + 1] && !args[musicIdx + 1].startsWith('--'))
-        ? args[musicIdx + 1]
-        : undefined;
+    const music =
+        musicIdx !== -1 && args[musicIdx + 1] && !args[musicIdx + 1].startsWith('--') ? args[musicIdx + 1] : undefined;
 
     return {
         landscape,
@@ -67,7 +66,11 @@ function readJobs(): CliVideoJob[] {
     }
 }
 
-function buildRequest(job: CliVideoJob, globalOrientation: 'portrait' | 'landscape', globalMusic?: string): PipelineJobRequest {
+function buildRequest(
+    job: CliVideoJob,
+    globalOrientation: 'portrait' | 'landscape',
+    globalMusic?: string,
+): PipelineJobRequest {
     const jobOrientation = job.orientation || globalOrientation;
     const publicId = sanitizeFilename(job.id || job.title);
 

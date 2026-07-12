@@ -42,7 +42,7 @@ export interface SingleSceneProps {
     backgroundMusic?: string;
     musicVolume?: number;
     globalStartFrame?: number;
-    [key: string]: unknown;  // Allow additional props for Remotion compatibility
+    [key: string]: unknown; // Allow additional props for Remotion compatibility
 }
 
 // Transition duration in frames
@@ -60,11 +60,7 @@ const resolveStaticMediaPath = (mediaPath: string): string => {
     return normalized;
 };
 
-const getUsableVideoTrimAfterFrames = (
-    scene: Scene,
-    fps: number,
-    durationInFrames: number
-): number => {
+const getUsableVideoTrimAfterFrames = (scene: Scene, fps: number, durationInFrames: number): number => {
     const explicitTrimFrames = scene.visual?.videoTrimAfterFrames;
     if (typeof explicitTrimFrames === 'number' && Number.isFinite(explicitTrimFrames) && explicitTrimFrames > 0) {
         return Math.max(1, Math.min(Math.floor(explicitTrimFrames), durationInFrames));
@@ -102,44 +98,29 @@ export const SingleSceneVideo: React.FC<SingleSceneProps> = ({
     // Fade in only for first scene, fade out only for last scene
     // Middle scenes get no fade (seamless concatenation)
     const fadeIn = isFirstScene
-        ? interpolate(
-            frame,
-            [0, FADE_DURATION],
-            [0, 1],
-            {
-                extrapolateLeft: 'clamp',
-                extrapolateRight: 'clamp',
-                easing: Easing.out(Easing.quad),
-            }
-        )
+        ? interpolate(frame, [0, FADE_DURATION], [0, 1], {
+              extrapolateLeft: 'clamp',
+              extrapolateRight: 'clamp',
+              easing: Easing.out(Easing.quad),
+          })
         : 1;
 
     const fadeOut = isLastScene
-        ? interpolate(
-            frame,
-            [durationInFrames - FADE_DURATION, durationInFrames],
-            [1, 0],
-            {
-                extrapolateLeft: 'clamp',
-                extrapolateRight: 'clamp',
-                easing: Easing.in(Easing.quad),
-            }
-        )
+        ? interpolate(frame, [durationInFrames - FADE_DURATION, durationInFrames], [1, 0], {
+              extrapolateLeft: 'clamp',
+              extrapolateRight: 'clamp',
+              easing: Easing.in(Easing.quad),
+          })
         : 1;
 
     const opacity = Math.min(fadeIn, fadeOut);
 
     // Text animation
-    const textOpacity = interpolate(
-        frame,
-        [FADE_DURATION * 0.5, FADE_DURATION * 1.2],
-        [0, 1],
-        {
-            extrapolateLeft: 'clamp',
-            extrapolateRight: 'clamp',
-            easing: Easing.out(Easing.quad),
-        }
-    );
+    const textOpacity = interpolate(frame, [FADE_DURATION * 0.5, FADE_DURATION * 1.2], [0, 1], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+        easing: Easing.out(Easing.quad),
+    });
 
     const textFadeOut = interpolate(
         frame,
@@ -149,7 +130,7 @@ export const SingleSceneVideo: React.FC<SingleSceneProps> = ({
             extrapolateLeft: 'clamp',
             extrapolateRight: 'clamp',
             easing: Easing.in(Easing.quad),
-        }
+        },
     );
 
     const combinedTextOpacity = Math.min(textOpacity, textFadeOut);
@@ -277,10 +258,7 @@ export const SingleSceneVideo: React.FC<SingleSceneProps> = ({
 
             {/* Voiceover Audio */}
             {scene.audioPath && (scene.audioPath.endsWith('.mp3') || scene.audioPath.endsWith('.wav')) && (
-                <Audio
-                    src={staticFile(resolveStaticMediaPath(scene.audioPath))}
-                    volume={1.0}
-                />
+                <Audio src={staticFile(resolveStaticMediaPath(scene.audioPath))} volume={1.0} />
             )}
 
             {/* Global Background Music - Offset by globalStartFrame for continuity */}

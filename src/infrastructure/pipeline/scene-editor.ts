@@ -133,7 +133,9 @@ export async function reorderJobScenes(outputDir: string, fromIndex: number, toI
 
     const [movedScene] = data.scenes.splice(fromIndex, 1);
     data.scenes.splice(toIndex, 0, movedScene);
-    data.scenes.forEach((s: any, i: number) => { s.sceneNumber = i + 1; });
+    data.scenes.forEach((s: any, i: number) => {
+        s.sceneNumber = i + 1;
+    });
     fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
     return data.scenes;
 }
@@ -146,7 +148,9 @@ export async function deleteJobScene(outputDir: string, index: number): Promise<
     if (!data.scenes[index]) throw new Error('Scene not found');
 
     data.scenes.splice(index, 1);
-    data.scenes.forEach((s: any, i: number) => { s.sceneNumber = i + 1; });
+    data.scenes.forEach((s: any, i: number) => {
+        s.sceneNumber = i + 1;
+    });
     data.totalDuration = data.scenes.reduce((acc: number, s: any) => acc + (s.duration || 0), 0);
     fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
     return data.scenes;

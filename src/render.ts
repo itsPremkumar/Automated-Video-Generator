@@ -67,7 +67,9 @@ function throwIfCancelled(shouldCancel?: () => boolean): void {
 
 function getChromiumOptions() {
     if (process.env.REMOTION_DISABLE_WEB_SECURITY === '1') {
-        console.warn('[RENDER] REMOTION_DISABLE_WEB_SECURITY=1 detected. Chromium web security is disabled for this render.');
+        console.warn(
+            '[RENDER] REMOTION_DISABLE_WEB_SECURITY=1 detected. Chromium web security is disabled for this render.',
+        );
         return {
             disableWebSecurity: true,
         };
@@ -187,8 +189,9 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         }
 
         // Check for existing segments (resume capability)
-        const existingSegments = fs.readdirSync(segmentsDir)
-            .filter(f => f.startsWith('segment_') && f.endsWith('.mp4'));
+        const existingSegments = fs
+            .readdirSync(segmentsDir)
+            .filter((f) => f.startsWith('segment_') && f.endsWith('.mp4'));
 
         if (existingSegments.length > 0) {
             console.log(`📂 [RENDER] Found ${existingSegments.length} existing segments (resume mode)`);
@@ -278,7 +281,8 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
             // RESUME CAPABILITY: Skip if segment already exists
             if (fs.existsSync(segmentPath)) {
                 const stats = fs.statSync(segmentPath);
-                if (stats.size > 10000) {  // At least 10KB
+                if (stats.size > 10000) {
+                    // At least 10KB
                     console.log(`⏭️ Scene ${i + 1}/${sceneData.scenes.length} - Already rendered, skipping`);
                     segments.push(segmentPath);
                     cumulativeFrames += sceneDurationFrames;
@@ -358,25 +362,26 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                         globalStartFrame,
                     },
                     crf: 18,
-                    timeoutInMilliseconds: 300000,  // 5 min per scene max
+                    timeoutInMilliseconds: 300000, // 5 min per scene max
                     concurrency: 1,
                     chromiumOptions: getChromiumOptions(),
                     onProgress: ({ progress }) => {
                         throwIfCancelled(shouldCancel);
                         const percent = Math.round(progress * 100);
                         writeProgress(`\r   ⏳ Progress: ${percent}%`);
-                    }
+                    },
                 });
                 throwIfCancelled(shouldCancel);
 
                 const sceneTime = Date.now() - sceneStart;
                 const stats = fs.statSync(segmentPath);
-                console.log(`\n   ✅ Saved: ${segmentFilename} (${(stats.size / 1024 / 1024).toFixed(2)} MB) in ${(sceneTime / 1000).toFixed(1)}s`);
+                console.log(
+                    `\n   ✅ Saved: ${segmentFilename} (${(stats.size / 1024 / 1024).toFixed(2)} MB) in ${(sceneTime / 1000).toFixed(1)}s`,
+                );
 
                 segments.push(segmentPath);
                 cumulativeFrames += sceneDurationFrames;
                 renderedCount++;
-
             } catch (sceneError: any) {
                 // Per-scene crash isolation: log the failure and continue to the next scene
                 // instead of crashing the entire render pipeline.
@@ -395,20 +400,28 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                     if (fs.existsSync(segmentPath)) {
                         fs.unlinkSync(segmentPath);
                     }
-                } catch { /* ignore cleanup errors */ }
+                } catch {
+                    /* ignore cleanup errors */
+                }
 
                 // If more than half the scenes fail, abort the render
                 if (failedCount > Math.ceil(sceneData.scenes.length / 2)) {
-                    throw new Error(`Too many scene render failures (${failedCount}/${sceneData.scenes.length}). Aborting render. Failed scenes: ${failedScenes.join(', ')}`);
+                    throw new Error(
+                        `Too many scene render failures (${failedCount}/${sceneData.scenes.length}). Aborting render. Failed scenes: ${failedScenes.join(', ')}`,
+                    );
                 }
 
                 console.log(`   💡 Continuing to next scene (${failedCount} failed so far)`);
             }
         }
 
-        console.log(`\n📊 [RENDER] Rendered: ${renderedCount}, Skipped: ${skippedCount}, Failed: ${failedCount}, Total segments: ${segments.length}`);
+        console.log(
+            `\n📊 [RENDER] Rendered: ${renderedCount}, Skipped: ${skippedCount}, Failed: ${failedCount}, Total segments: ${segments.length}`,
+        );
         if (failedScenes.length > 0) {
-            console.warn(`⚠️ [RENDER] Failed scenes: ${failedScenes.join(', ')} — these will be missing from the final video`);
+            console.warn(
+                `⚠️ [RENDER] Failed scenes: ${failedScenes.join(', ')} — these will be missing from the final video`,
+            );
         }
 
         // ══════════════════════════════════════════════════════════════════
@@ -436,13 +449,13 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
             throw new Error('No valid segments to concatenate. All scenes failed to render.');
         }
 
-        console.log(`🔗 [RENDER] Concatenating ${validSegments.length} valid segments (${failedCount} skipped due to failures)...`);
+        console.log(
+            `🔗 [RENDER] Concatenating ${validSegments.length} valid segments (${failedCount} skipped due to failures)...`,
+        );
 
         // Create FFmpeg concat list
         const concatListPath = path.join(segmentsDir, 'segments.txt');
-        const concatList = validSegments
-            .map((segmentPath) => `file '${segmentPath.replace(/\\/g, '/')}'`)
-            .join('\n');
+        const concatList = validSegments.map((segmentPath) => `file '${segmentPath.replace(/\\/g, '/')}'`).join('\n');
         fs.writeFileSync(concatListPath, concatList);
 
         // Run FFmpeg concat (lossless copy)
@@ -466,7 +479,22 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
             // Try with re-encoding if concat copy fails
             console.log('⚠️ [RENDER] Lossless concat failed, trying with re-encode...');
             throwIfCancelled(shouldCancel);
-            const reencodeArgs = ['-y', '-f', 'concat', '-safe', '0', '-i', concatListPath, '-c:v', 'libx264', '-crf', '18', '-c:a', 'aac', finalOutput];
+            const reencodeArgs = [
+                '-y',
+                '-f',
+                'concat',
+                '-safe',
+                '0',
+                '-i',
+                concatListPath,
+                '-c:v',
+                'libx264',
+                '-crf',
+                '18',
+                '-c:a',
+                'aac',
+                finalOutput,
+            ];
 
             try {
                 const result = spawnSync(ffmpegPath, reencodeArgs, { stdio: 'pipe', encoding: 'utf-8' });
@@ -526,7 +554,6 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         console.log(`   Size: ${finalSizeMB} MB`);
         console.log(`   Duration: ${sceneData.totalDuration}s`);
         console.log('\n');
-
     } catch (err: any) {
         const totalTime = Date.now() - totalStartTime;
 
@@ -539,8 +566,9 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
 
         // Check segment progress
         if (fs.existsSync(segmentsDir)) {
-            const completedSegments = fs.readdirSync(segmentsDir)
-                .filter(f => f.startsWith('segment_') && f.endsWith('.mp4'));
+            const completedSegments = fs
+                .readdirSync(segmentsDir)
+                .filter((f) => f.startsWith('segment_') && f.endsWith('.mp4'));
             console.log(`\n💾 [RECOVERY] ${completedSegments.length} segments saved to disk`);
             console.log(`💡 [RECOVERY] Run again to resume from last completed segment`);
         }
@@ -569,8 +597,7 @@ const runCleanup = async (bundleLocation?: string, assetWorkspaceDir?: string) =
     if (dirsToClean.length > 0) {
         await cleanupAssets(dirsToClean);
     }
-}
-
+};
 
 if (require.main === module) {
     renderVideo();

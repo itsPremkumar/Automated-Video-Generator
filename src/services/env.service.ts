@@ -36,7 +36,9 @@ function setEnvFileValue(contents: string, key: EditableEnvKey, value: string): 
 export function updateEnvValues(updates: Partial<Record<EditableEnvKey, string>>): void {
     let contents = fs.existsSync(ENV_FILE)
         ? fs.readFileSync(ENV_FILE, 'utf8')
-        : (fs.existsSync(resolveProjectPath('.env.example')) ? fs.readFileSync(resolveProjectPath('.env.example'), 'utf8') : '');
+        : fs.existsSync(resolveProjectPath('.env.example'))
+          ? fs.readFileSync(resolveProjectPath('.env.example'), 'utf8')
+          : '';
 
     for (const key of EDITABLE_ENV_KEYS) {
         if (!(key in updates)) {

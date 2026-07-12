@@ -26,6 +26,8 @@ export const getStatus = (_req: Request, res: Response) => {
 };
 
 export const updateEnv = (req: Request, res: Response) => {
-    const updated = setupService.updateEnvValues(toEditableEnvUpdates(req.body as Record<string, unknown>, EDITABLE_ENV_KEYS));
+    const updated = setupService.updateEnvValues(
+        toEditableEnvUpdates(req.body as Record<string, unknown>, EDITABLE_ENV_KEYS),
+    );
     res.json({ success: true, data: updated });
 };

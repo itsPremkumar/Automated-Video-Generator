@@ -61,15 +61,22 @@ export function registerAdminTools(server: McpServer) {
             description: 'Return the absolute project paths Claude should use.',
             inputSchema: z.object({}) as any,
         },
-        async () => textResponse(JSON.stringify({
-            projectRoot,
-            inputDir: resolveProjectPath('input'),
-            inputScriptsFile: resolveProjectPath('input', 'input-scripts.json'),
-            inputAssetsDir: inputAssetPath(),
-            outputDir: resolveProjectPath('output'),
-            publicDir: resolveProjectPath('public'),
-            publicJobsDir: resolveProjectPath('public', 'jobs'),
-        }, null, 2)),
+        async () =>
+            textResponse(
+                JSON.stringify(
+                    {
+                        projectRoot,
+                        inputDir: resolveProjectPath('input'),
+                        inputScriptsFile: resolveProjectPath('input', 'input-scripts.json'),
+                        inputAssetsDir: inputAssetPath(),
+                        outputDir: resolveProjectPath('output'),
+                        publicDir: resolveProjectPath('public'),
+                        publicJobsDir: resolveProjectPath('public', 'jobs'),
+                    },
+                    null,
+                    2,
+                ),
+            ),
     );
 
     server.registerTool(
@@ -80,7 +87,8 @@ export function registerAdminTools(server: McpServer) {
             inputSchema: z.object({ subdir: z.string().optional() }) as any,
         },
         async ({ subdir }: any) => {
-            const normalizedSubdir = typeof subdir === 'string' ? subdir.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : '';
+            const normalizedSubdir =
+                typeof subdir === 'string' ? subdir.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : '';
             if (normalizedSubdir.includes('..')) {
                 return errorResponse('subdir cannot contain "..".');
             }
@@ -114,19 +122,23 @@ export function registerAdminTools(server: McpServer) {
         },
     );
 
-    server.tool(
-        'list_voices',
-        'List all available AI voice options for the video generator TTS engine.',
-        async () => textResponse(JSON.stringify([
-            { id: 'en-US-JennyNeural', gender: 'Female', style: 'Warm, Professional', region: 'US' },
-            { id: 'en-US-AriaNeural', gender: 'Female', style: 'Friendly, Helpful', region: 'US' },
-            { id: 'en-US-SaraNeural', gender: 'Female', style: 'Cheerful, Bright', region: 'US' },
-            { id: 'en-GB-SoniaNeural', gender: 'Female', style: 'British Accent', region: 'UK' },
-            { id: 'en-US-GuyNeural', gender: 'Male', style: 'Deep, Authoritative', region: 'US' },
-            { id: 'en-US-ChristopherNeural', gender: 'Male', style: 'Calm, Steady', region: 'US' },
-            { id: 'en-GB-RyanNeural', gender: 'Male', style: 'British Accent', region: 'UK' },
-            { id: 'en-IN-PrabhatNeural', gender: 'Male', style: 'Indian Accent', region: 'IN' },
-        ], null, 2)),
+    server.tool('list_voices', 'List all available AI voice options for the video generator TTS engine.', async () =>
+        textResponse(
+            JSON.stringify(
+                [
+                    { id: 'en-US-JennyNeural', gender: 'Female', style: 'Warm, Professional', region: 'US' },
+                    { id: 'en-US-AriaNeural', gender: 'Female', style: 'Friendly, Helpful', region: 'US' },
+                    { id: 'en-US-SaraNeural', gender: 'Female', style: 'Cheerful, Bright', region: 'US' },
+                    { id: 'en-GB-SoniaNeural', gender: 'Female', style: 'British Accent', region: 'UK' },
+                    { id: 'en-US-GuyNeural', gender: 'Male', style: 'Deep, Authoritative', region: 'US' },
+                    { id: 'en-US-ChristopherNeural', gender: 'Male', style: 'Calm, Steady', region: 'US' },
+                    { id: 'en-GB-RyanNeural', gender: 'Male', style: 'British Accent', region: 'UK' },
+                    { id: 'en-IN-PrabhatNeural', gender: 'Male', style: 'Indian Accent', region: 'IN' },
+                ],
+                null,
+                2,
+            ),
+        ),
     );
 
     server.tool(

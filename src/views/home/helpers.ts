@@ -13,7 +13,9 @@ export function buildVideoCards(videos: VideoRecord[]): string {
             </div>`;
     }
 
-    return videos.map((video) => `
+    return videos
+        .map(
+            (video) => `
         <a class="card" href="${video.watchUrl}">
             <div class="thumb"${video.thumbnailUrl ? ` style="background-image:url('${video.thumbnailUrl}')"` : ''}></div>
             <div class="card-body">
@@ -24,7 +26,9 @@ export function buildVideoCards(videos: VideoRecord[]): string {
                     <span class="pill">${escapeHtml(new Date(video.createdAt).toLocaleString())}</span>
                 </div>
             </div>
-        </a>`).join('');
+        </a>`,
+        )
+        .join('');
 }
 
 // ─── Helper: Build recent sidebar cards ────────────────────────────────────────
@@ -37,7 +41,10 @@ export function buildRecentCards(videos: VideoRecord[]): string {
             </div>`;
     }
 
-    return videos.slice(0, 3).map((video) => `
+    return videos
+        .slice(0, 3)
+        .map(
+            (video) => `
         <a class="small-card" href="${video.watchUrl}">
             <div class="small-thumb"${video.thumbnailUrl ? ` style="background-image:url('${video.thumbnailUrl}')"` : ''}></div>
             <div>
@@ -48,7 +55,9 @@ export function buildRecentCards(videos: VideoRecord[]): string {
                     <span class="pill">${escapeHtml(new Date(video.createdAt).toLocaleDateString())}</span>
                 </div>
             </div>
-        </a>`).join('');
+        </a>`,
+        )
+        .join('');
 }
 
 // ─── Helper: Build select options ──────────────────────────────────────────────
@@ -59,7 +68,7 @@ export function buildMusicOptions(musicFiles: string[]): string {
         options.push('<option value="" disabled>No music found in input/music</option>');
         return options.join('');
     }
-    musicFiles.forEach(file => {
+    musicFiles.forEach((file) => {
         options.push(`<option value="${escapeHtml(file)}">${escapeHtml(file)}</option>`);
     });
     return options.join('');
@@ -71,17 +80,19 @@ export function buildVoiceOptions(voiceFiles: string[]): string {
         options.push('<option value="" disabled>No recordings found in input/voice</option>');
         return options.join('');
     }
-    voiceFiles.forEach(file => {
+    voiceFiles.forEach((file) => {
         options.push(`<option value="${escapeHtml(file)}">${escapeHtml(file)}</option>`);
     });
     return options.join('');
 }
 
 export function buildLanguageOptions(voicesList: Record<string, { male: string[]; female: string[] }>): string {
-    return Object.keys(voicesList).map(lang => {
-        const langName = LOCALE_TO_LANGUAGE_NAME[lang] || (lang.charAt(0).toUpperCase() + lang.slice(1));
-        return `<option value="${lang}">${langName}</option>`;
-    }).join('');
+    return Object.keys(voicesList)
+        .map((lang) => {
+            const langName = LOCALE_TO_LANGUAGE_NAME[lang] || lang.charAt(0).toUpperCase() + lang.slice(1);
+            return `<option value="${lang}">${langName}</option>`;
+        })
+        .join('');
 }
 
 // ─── Helper: Build setup status summary chips ──────────────────────────────────

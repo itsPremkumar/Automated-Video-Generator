@@ -1,5 +1,10 @@
 import { Request } from 'express';
-import { PROJECT_NAME, PROJECT_REPOSITORY_URL, DEFAULT_SITE_DESCRIPTION, DEFAULT_SITE_KEYWORDS } from '../constants/config';
+import {
+    PROJECT_NAME,
+    PROJECT_REPOSITORY_URL,
+    DEFAULT_SITE_DESCRIPTION,
+    DEFAULT_SITE_KEYWORDS,
+} from '../constants/config';
 import { VideoRecord } from '../types/server.types';
 import { absoluteUrl } from '../shared/http/public-url';
 import { layout, escapeHtml, truncateText } from './layout.view';
@@ -45,9 +50,13 @@ export function watchPage(req: Request, video: VideoRecord, cspNonce?: string): 
                     <span class="pill" style="background:var(--brand-soft); color:var(--brand); border:1px solid hsla(var(--brand-h), var(--brand-s), var(--brand-l), 0.1); padding:8px 20px; font-weight:700">
                         <i data-lucide="layers" style="width:14px;height:14px;margin-right:6px;vertical-align:middle"></i>${escapeHtml(video.orientation)}
                     </span>
-                    ${video.durationSeconds ? `<span class="pill" style="background:var(--success-soft); color:var(--success); border:1px solid hsla(142, 70%, 45%, 0.1); padding:8px 20px; font-weight:700">
+                    ${
+                        video.durationSeconds
+                            ? `<span class="pill" style="background:var(--success-soft); color:var(--success); border:1px solid hsla(142, 70%, 45%, 0.1); padding:8px 20px; font-weight:700">
                         <i data-lucide="clock" style="width:14px;height:14px;margin-right:6px;vertical-align:middle"></i>${Math.round(video.durationSeconds)} sec
-                    </span>` : ''}
+                    </span>`
+                            : ''
+                    }
                     <span class="pill" style="background:var(--surface-soft); color:var(--ink); border:1px solid var(--line); padding:8px 20px; font-weight:700">
                         <i data-lucide="hard-drive" style="width:14px;height:14px;margin-right:6px;vertical-align:middle"></i>${video.fileSizeMB} MB
                     </span>
@@ -100,11 +109,15 @@ export function watchPage(req: Request, video: VideoRecord, cspNonce?: string): 
                         <strong style="font-family:'Outfit'; font-size:14px"><i data-lucide="layers" style="width:14px;height:14px;margin-right:8px;vertical-align:middle"></i>Orientation</strong>
                         <span class="muted">${escapeHtml(video.orientation)}</span>
                     </div>
-                    ${video.durationSeconds ? `
+                    ${
+                        video.durationSeconds
+                            ? `
                     <div class="info-row" style="border-bottom:1px solid var(--glass-border); padding:10px 0">
                         <strong style="font-family:'Outfit'; font-size:14px"><i data-lucide="clock" style="width:14px;height:14px;margin-right:8px;vertical-align:middle"></i>Duration</strong>
                         <span class="muted">${Math.round(video.durationSeconds)} seconds</span>
-                    </div>` : ''}
+                    </div>`
+                            : ''
+                    }
                     <div class="info-row" style="border-bottom:1px solid var(--glass-border); padding:10px 0">
                         <strong style="font-family:'Outfit'; font-size:14px"><i data-lucide="hard-drive" style="width:14px;height:14px;margin-right:8px;vertical-align:middle"></i>File Size</strong>
                         <span class="muted">${video.fileSizeMB} MB</span>
@@ -116,13 +129,17 @@ export function watchPage(req: Request, video: VideoRecord, cspNonce?: string): 
                 </div>
             </div>
 
-            ${video.description ? `
+            ${
+                video.description
+                    ? `
             <!-- Video Description -->
             <div class="panel soft" style="border-radius:var(--radius-xl)">
                 <span class="eyebrow">Project Notes</span>
                 <h2 style="margin:12px 0; font-size:1.5rem">Notes & Description</h2>
                 <p style="opacity:0.9; font-size:15px">${escapeHtml(video.description).replace(/\n/g, '<br>')}</p>
-            </div>` : ''}
+            </div>`
+                    : ''
+            }
 
             <!-- Next Step -->
             <div class="panel" style="border-radius:var(--radius-xl)">
@@ -141,46 +158,42 @@ export function watchPage(req: Request, video: VideoRecord, cspNonce?: string): 
 
     // ─── Return the assembled page ─────────────────────────────────────────────
 
-    return layout(
-        `${video.title} | ${PROJECT_NAME}`,
-        body,
-        {
-            canonical: video.watchUrl,
-            cspNonce,
-            description,
-            imageUrl: video.thumbnailUrl || absoluteUrl(req, '/og-image.svg'),
-            jsonLd: [
-                {
-                    '@context': 'https://schema.org',
-                    '@type': 'VideoObject',
-                    contentUrl: video.videoUrl,
-                    description,
-                    duration: toIsoDuration(video.durationSeconds),
-                    embedUrl: video.watchUrl,
-                    isAccessibleForFree: true,
-                    name: video.title,
-                    thumbnailUrl: video.thumbnailUrl ? [video.thumbnailUrl] : undefined,
-                    uploadDate: video.createdAt,
-                    url: video.watchUrl,
+    return layout(`${video.title} | ${PROJECT_NAME}`, body, {
+        canonical: video.watchUrl,
+        cspNonce,
+        description,
+        imageUrl: video.thumbnailUrl || absoluteUrl(req, '/og-image.svg'),
+        jsonLd: [
+            {
+                '@context': 'https://schema.org',
+                '@type': 'VideoObject',
+                contentUrl: video.videoUrl,
+                description,
+                duration: toIsoDuration(video.durationSeconds),
+                embedUrl: video.watchUrl,
+                isAccessibleForFree: true,
+                name: video.title,
+                thumbnailUrl: video.thumbnailUrl ? [video.thumbnailUrl] : undefined,
+                uploadDate: video.createdAt,
+                url: video.watchUrl,
+            },
+            {
+                '@context': 'https://schema.org',
+                '@type': 'SoftwareApplication',
+                applicationCategory: 'MultimediaApplication',
+                description: DEFAULT_SITE_DESCRIPTION,
+                isAccessibleForFree: true,
+                name: PROJECT_NAME,
+                offers: {
+                    '@type': 'Offer',
+                    price: '0',
+                    priceCurrency: 'USD',
                 },
-                {
-                    '@context': 'https://schema.org',
-                    '@type': 'SoftwareApplication',
-                    applicationCategory: 'MultimediaApplication',
-                    description: DEFAULT_SITE_DESCRIPTION,
-                    isAccessibleForFree: true,
-                    name: PROJECT_NAME,
-                    offers: {
-                        '@type': 'Offer',
-                        price: '0',
-                        priceCurrency: 'USD',
-                    },
-                    sameAs: PROJECT_REPOSITORY_URL,
-                    url: absoluteUrl(req, '/'),
-                },
-            ],
-            keywords: DEFAULT_SITE_KEYWORDS,
-            ogType: 'video.other',
-        }
-    );
+                sameAs: PROJECT_REPOSITORY_URL,
+                url: absoluteUrl(req, '/'),
+            },
+        ],
+        keywords: DEFAULT_SITE_KEYWORDS,
+        ogType: 'video.other',
+    });
 }

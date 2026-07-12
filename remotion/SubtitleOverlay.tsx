@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-    AbsoluteFill,
-    useCurrentFrame,
-    interpolate,
-    Easing,
-    useVideoConfig,
-} from 'remotion';
+import { AbsoluteFill, useCurrentFrame, interpolate, Easing, useVideoConfig } from 'remotion';
 
 /**
  * Production-Grade Text Configuration
@@ -82,7 +76,7 @@ const SubtitleInternal: React.FC<SubtitleOverlayProps> = ({
     const safeFontSize = isNaN(fontSize) || !isFinite(fontSize) ? 52 : Math.max(12, fontSize);
     const charsPerLine = 22;
     const padding = 100;
-    
+
     // Guard against width being 0 or NaN
     const safeWidth = isNaN(width) || width <= 0 ? 1920 : width;
     const maxFontSize = (safeWidth - padding) / (Math.max(1, text.length) / 1.5);
@@ -93,19 +87,17 @@ const SubtitleInternal: React.FC<SubtitleOverlayProps> = ({
     const outStart = Math.max(ANIM_DURATION + delayInFrames, durationInFrames - ANIM_DURATION);
 
     // --- Animation Interpolations ---
-    const fadeIn = interpolate(
-        frame,
-        [delayInFrames, delayInFrames + ANIM_DURATION],
-        [0, 1],
-        { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.out(Easing.quad) }
-    );
+    const fadeIn = interpolate(frame, [delayInFrames, delayInFrames + ANIM_DURATION], [0, 1], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+        easing: Easing.out(Easing.quad),
+    });
 
-    const fadeOut = interpolate(
-        frame,
-        [outStart, durationInFrames],
-        [1, 0],
-        { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.in(Easing.quad) }
-    );
+    const fadeOut = interpolate(frame, [outStart, durationInFrames], [1, 0], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+        easing: Easing.in(Easing.quad),
+    });
 
     const opacity = isNaN(fadeIn) || isNaN(fadeOut) ? 1 : Math.min(fadeIn, fadeOut);
 
@@ -118,7 +110,7 @@ const SubtitleInternal: React.FC<SubtitleOverlayProps> = ({
 
     // --- Animation Transforms ---
     let transform = 'none';
-    
+
     if (animation === 'slide') {
         const slideIn = interpolate(fadeIn, [0, 1], [30, 0]);
         const slideOut = interpolate(fadeOut, [1, 0], [0, -30]);
@@ -129,7 +121,7 @@ const SubtitleInternal: React.FC<SubtitleOverlayProps> = ({
         transform = `scale(${scaleIn * scaleOut})`;
     } else if (animation === 'pop') {
         const scaleIn = interpolate(fadeIn, [0, 1], [0.4, 1], {
-            easing: Easing.elastic(1.2)
+            easing: Easing.elastic(1.2),
         });
         const scaleOut = interpolate(fadeOut, [1, 0], [1, 0.8]);
         transform = `scale(${scaleIn * scaleOut})`;
@@ -138,7 +130,12 @@ const SubtitleInternal: React.FC<SubtitleOverlayProps> = ({
     // --- Typewriter Effect ---
     let displayedText = text;
     if (animation === 'typewriter') {
-        const charsToDisplay = Math.floor(interpolate(frame, [delayInFrames, delayInFrames + text.length * 2], [0, text.length], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }));
+        const charsToDisplay = Math.floor(
+            interpolate(frame, [delayInFrames, delayInFrames + text.length * 2], [0, text.length], {
+                extrapolateLeft: 'clamp',
+                extrapolateRight: 'clamp',
+            }),
+        );
         displayedText = text.substring(0, charsToDisplay);
     }
 
@@ -183,7 +180,7 @@ const SubtitleInternal: React.FC<SubtitleOverlayProps> = ({
                     opacity,
                     transform,
                     lineHeight: 1.4,
-                    textShadow: glow 
+                    textShadow: glow
                         ? `0 0 10px ${color}, 0 0 20px ${color}88`
                         : '0 2px 20px rgba(0,0,0,0.8), 0 4px 40px rgba(0,0,0,0.5)',
                     letterSpacing: '-0.5px',

@@ -19,12 +19,20 @@ export const renderWatch = (req: Request, res: Response) => {
         const video = portalAppService.getWatchVideo(String(req.params.videoId), req);
         res.type('html').send(watchPage(req, video, res.locals.cspNonce));
     } catch {
-        res.status(404).type('html').send(layout(`Video Not Found | ${PROJECT_NAME}`, '<section><h1>Video not found</h1><p class="muted">The requested video is not available.</p><a class="button secondary" href="/">Back to Portal</a></section>', {
-            cspNonce: res.locals.cspNonce,
-            description: 'The requested video page could not be found.',
-            ogType: 'website',
-            robots: 'noindex, nofollow',
-        }));
+        res.status(404)
+            .type('html')
+            .send(
+                layout(
+                    `Video Not Found | ${PROJECT_NAME}`,
+                    '<section><h1>Video not found</h1><p class="muted">The requested video is not available.</p><a class="button secondary" href="/">Back to Portal</a></section>',
+                    {
+                        cspNonce: res.locals.cspNonce,
+                        description: 'The requested video page could not be found.',
+                        ogType: 'website',
+                        robots: 'noindex, nofollow',
+                    },
+                ),
+            );
     }
 };
 
@@ -37,24 +45,55 @@ export const renderVideoDownload = (req: Request, res: Response) => {
 };
 
 export const renderRobots = (req: Request, res: Response) => {
-    res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /download/\nDisallow: /files/\nDisallow: /health\nDisallow: /jobs/\nSitemap: ${absoluteUrl(req, '/sitemap.xml')}\n`);
+    res.type('text/plain').send(
+        `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /download/\nDisallow: /files/\nDisallow: /health\nDisallow: /jobs/\nSitemap: ${absoluteUrl(req, '/sitemap.xml')}\n`,
+    );
 };
 
 export const renderSitemap = (req: Request, res: Response) => {
     const videos = portalAppService.listSitemapVideos(req);
     const now = new Date().toISOString();
-    const xmlEscape = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+    const xmlEscape = (value: string) =>
+        value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
     const items = [
-        { changefreq: 'daily' as const, lastmod: videos[0]?.createdAt || now, loc: absoluteUrl(req, '/'), priority: '1.0' },
+        {
+            changefreq: 'daily' as const,
+            lastmod: videos[0]?.createdAt || now,
+            loc: absoluteUrl(req, '/'),
+            priority: '1.0',
+        },
         { changefreq: 'weekly' as const, lastmod: now, loc: absoluteUrl(req, '/video-download'), priority: '0.6' },
-        ...videos.map((video) => ({ changefreq: 'weekly' as const, lastmod: video.createdAt, loc: video.watchUrl, priority: '0.8' })),
+        ...videos.map((video) => ({
+            changefreq: 'weekly' as const,
+            lastmod: video.createdAt,
+            loc: video.watchUrl,
+            priority: '0.8',
+        })),
     ];
-    const urls = items.map((item) => `<url><loc>${xmlEscape(item.loc)}</loc><lastmod>${xmlEscape(item.lastmod)}</lastmod><changefreq>${item.changefreq}</changefreq><priority>${item.priority}</priority></url>`).join('');
-    res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`);
+    const urls = items
+        .map(
+            (item) =>
+                `<url><loc>${xmlEscape(item.loc)}</loc><lastmod>${xmlEscape(item.lastmod)}</lastmod><changefreq>${item.changefreq}</changefreq><priority>${item.priority}</priority></url>`,
+        )
+        .join('');
+    res.type('application/xml').send(
+        `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`,
+    );
 };
 
 export const renderOgImage = (_req: Request, res: Response) => {
-    const xmlEscape = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+    const xmlEscape = (value: string) =>
+        value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
     const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="1200" height="630" fill="#F5E9DA"/>

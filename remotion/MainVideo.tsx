@@ -58,11 +58,7 @@ const resolveStaticMediaPath = (mediaPath: string): string => {
     return normalized;
 };
 
-const getUsableVideoTrimAfterFrames = (
-    scene: Scene,
-    fps: number,
-    durationInFrames: number
-): number => {
+const getUsableVideoTrimAfterFrames = (scene: Scene, fps: number, durationInFrames: number): number => {
     const explicitTrimFrames = scene.visual?.videoTrimAfterFrames;
     if (typeof explicitTrimFrames === 'number' && Number.isFinite(explicitTrimFrames) && explicitTrimFrames > 0) {
         return Math.max(1, Math.min(Math.floor(explicitTrimFrames), durationInFrames));
@@ -76,9 +72,7 @@ const getUsableVideoTrimAfterFrames = (
     return Math.max(1, Math.min(safeFrames, durationInFrames));
 };
 
-export const MainVideo: React.FC<{ sceneData: VideoData }> = ({
-    sceneData
-}) => {
+export const MainVideo: React.FC<{ sceneData: VideoData }> = ({ sceneData }) => {
     const { fps } = useVideoConfig();
 
     // console.log('MainVideo: Rendered', { sceneData, fps });
@@ -117,31 +111,24 @@ export const MainVideo: React.FC<{ sceneData: VideoData }> = ({
                 // });
 
                 return (
-                    <Sequence
-                        key={scene.sceneNumber}
-                        from={sequenceStart}
-                        durationInFrames={sceneDurationInFrames}
-                    >
+                    <Sequence key={scene.sceneNumber} from={sequenceStart} durationInFrames={sceneDurationInFrames}>
                         <SceneComponent
                             scene={scene}
                             durationInFrames={sceneDurationInFrames}
                             showText={videoData.showText !== false}
                             textConfig={videoData.textConfig}
                         />
-                        {scene.audioPath && (scene.audioPath.endsWith('.mp3') || scene.audioPath.endsWith('.wav')) && (
+                        {scene.audioPath &&
+                            (scene.audioPath.endsWith('.mp3') || scene.audioPath.endsWith('.wav')) &&
                             (() => {
                                 // console.log(`MainVideo: Processing audio for scene ${scene.sceneNumber}`, {
                                 //     originalPath: scene.audioPath,
                                 //     staticFilePath: staticFile(resolveStaticMediaPath(scene.audioPath!))
                                 // });
                                 return (
-                                    <Audio
-                                        src={staticFile(resolveStaticMediaPath(scene.audioPath!))}
-                                        volume={1.0}
-                                    />
+                                    <Audio src={staticFile(resolveStaticMediaPath(scene.audioPath!))} volume={1.0} />
                                 );
-                            })()
-                        )}
+                            })()}
                     </Sequence>
                 );
             })}
@@ -166,9 +153,8 @@ const SceneComponent: React.FC<SceneProps> = ({ scene, durationInFrames, showTex
     const shouldLoopVideo = videoTrimAfterFrames < durationInFrames;
 
     // Determine visual mode for logging
-    const visualMode = (scene.visual && hasLocalVideo)
-        ? 'local-video'
-        : (scene.visual ? 'remote-image' : 'gradient-fallback');
+    const visualMode =
+        scene.visual && hasLocalVideo ? 'local-video' : scene.visual ? 'remote-image' : 'gradient-fallback';
 
     // console.log(`SceneComponent: Visual logic for scene ${scene.sceneNumber}`, {
     //     hasVisual: !!scene.visual,
@@ -185,43 +171,28 @@ const SceneComponent: React.FC<SceneProps> = ({ scene, durationInFrames, showTex
     }
 
     // Simple crossfade - fade in at start
-    const fadeIn = interpolate(
-        frame,
-        [0, FADE_DURATION],
-        [0, 1],
-        {
-            extrapolateLeft: 'clamp',
-            extrapolateRight: 'clamp',
-            easing: Easing.out(Easing.quad),
-        }
-    );
+    const fadeIn = interpolate(frame, [0, FADE_DURATION], [0, 1], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+        easing: Easing.out(Easing.quad),
+    });
 
     // Fade out at end
-    const fadeOut = interpolate(
-        frame,
-        [durationInFrames - FADE_DURATION, durationInFrames],
-        [1, 0],
-        {
-            extrapolateLeft: 'clamp',
-            extrapolateRight: 'clamp',
-            easing: Easing.in(Easing.quad),
-        }
-    );
+    const fadeOut = interpolate(frame, [durationInFrames - FADE_DURATION, durationInFrames], [1, 0], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+        easing: Easing.in(Easing.quad),
+    });
 
     // Combined opacity - simple crossfade
     const opacity = Math.min(fadeIn, fadeOut);
 
     // Text fade with slight delay after video fades in
-    const textOpacity = interpolate(
-        frame,
-        [FADE_DURATION * 0.5, FADE_DURATION * 1.2],
-        [0, 1],
-        {
-            extrapolateLeft: 'clamp',
-            extrapolateRight: 'clamp',
-            easing: Easing.out(Easing.quad),
-        }
-    );
+    const textOpacity = interpolate(frame, [FADE_DURATION * 0.5, FADE_DURATION * 1.2], [0, 1], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+        easing: Easing.out(Easing.quad),
+    });
 
     const textFadeOut = interpolate(
         frame,
@@ -231,7 +202,7 @@ const SceneComponent: React.FC<SceneProps> = ({ scene, durationInFrames, showTex
             extrapolateLeft: 'clamp',
             extrapolateRight: 'clamp',
             easing: Easing.in(Easing.quad),
-        }
+        },
     );
 
     const combinedTextOpacity = Math.min(textOpacity, textFadeOut);

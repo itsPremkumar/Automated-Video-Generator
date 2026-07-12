@@ -14,11 +14,7 @@ export function asyncHandler(fn: RequestHandler): RequestHandler {
 /**
  * Express middleware for validating request body, query, and params against Zod schemas
  */
-export function validateRequest(schemas: {
-    body?: ZodSchema;
-    query?: ZodSchema;
-    params?: ZodSchema;
-}): RequestHandler {
+export function validateRequest(schemas: { body?: ZodSchema; query?: ZodSchema; params?: ZodSchema }): RequestHandler {
     return (req: Request, res: Response, next: NextFunction) => {
         try {
             if (schemas.body) {

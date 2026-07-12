@@ -18,18 +18,26 @@ export class FreeVideoAdapter {
         this.downloader = new FreeDownloadManager();
     }
 
-    async searchAll(keyword: string, filters?: {
-        count?: number;
-        maxDuration?: number;
-        minResolution?: number;
-    }): Promise<{ source: string; results: VideoResult[] }[]> {
+    async searchAll(
+        keyword: string,
+        filters?: {
+            count?: number;
+            maxDuration?: number;
+            minResolution?: number;
+        },
+    ): Promise<{ source: string; results: VideoResult[] }[]> {
         const count = filters?.count ?? 5;
         const maxDuration = filters?.maxDuration;
         const minResolution = filters?.minResolution;
 
         const [wikiResults, archiveResults] = await Promise.allSettled([
             this.wiki.search({ keyword, count, maxDurationSeconds: maxDuration, minResolutionHeight: minResolution }),
-            this.archive.search({ keyword, count, maxDurationSeconds: maxDuration, minResolutionHeight: minResolution }),
+            this.archive.search({
+                keyword,
+                count,
+                maxDurationSeconds: maxDuration,
+                minResolutionHeight: minResolution,
+            }),
         ]);
 
         const output: { source: string; results: VideoResult[] }[] = [];
@@ -61,10 +69,7 @@ export class FreeVideoAdapter {
             publicPath = toPublicRelativePath(localPath);
         } catch {
             // Fallback: just return the filename relative to workspace
-            publicPath = `jobs/${path.relative(
-                path.resolve(process.cwd(), 'public'),
-                localPath
-            ).replace(/\\/g, '/')}`;
+            publicPath = `jobs/${path.relative(path.resolve(process.cwd(), 'public'), localPath).replace(/\\/g, '/')}`;
         }
 
         logInfo(`[FREE-VIDEO] Downloaded "${videoResult.title}" to ${localPath}`);
@@ -80,7 +85,7 @@ export class FreeVideoAdapter {
         if (sources.length === 0) return null;
 
         // Flatten and pick the best result
-        const allResults = sources.flatMap(s => s.results);
+        const allResults = sources.flatMap((s) => s.results);
         // Prefer videos with resolution matching orientation
         const sorted = allResults.sort((a, b) => {
             const aRes = a.resolution ? parseInt(a.resolution.split('x')[1] ?? '0', 10) : 0;

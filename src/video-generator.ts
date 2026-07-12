@@ -61,9 +61,22 @@ function throwIfCancelled(shouldCancel?: () => boolean): void {
 export async function generateVideo(
     script: string,
     outputDir: string = resolveProjectPath('output'),
-    options: GenerationOptions = {}
+    options: GenerationOptions = {},
 ): Promise<GenerationResult> {
-    const { onProgress, orientation = 'portrait', title, showText = true, defaultVideo = 'default.mp4', publicId, backgroundMusic, personalAudio, musicVolume, language, textConfig, shouldCancel } = options;
+    const {
+        onProgress,
+        orientation = 'portrait',
+        title,
+        showText = true,
+        defaultVideo = 'default.mp4',
+        publicId,
+        backgroundMusic,
+        personalAudio,
+        musicVolume,
+        language,
+        textConfig,
+        shouldCancel,
+    } = options;
 
     let voice = options.voice;
     if (!voice && language) {
@@ -101,9 +114,10 @@ export async function generateVideo(
         const parsed = await parseScript(script);
         throwIfCancelled(shouldCancel);
 
-        const hasManualVisuals = parsed.scenes.some(s => s.localAsset);
-        const isMinimalScript = parsed.scenes.length === 0 ||
-            (!hasManualVisuals && parsed.scenes.every(s => s.voiceoverText.length < 50));
+        const hasManualVisuals = parsed.scenes.some((s) => s.localAsset);
+        const isMinimalScript =
+            parsed.scenes.length === 0 ||
+            (!hasManualVisuals && parsed.scenes.every((s) => s.voiceoverText.length < 50));
 
         if (isMinimalScript && personalAudio) {
             const personalAudioPath = resolveProjectPath('input', 'music', personalAudio);
@@ -121,8 +135,9 @@ export async function generateVideo(
             let foundAssets: string[] = [];
 
             if (fs.existsSync(INPUT_ASSET_ROOT)) {
-                foundAssets = fs.readdirSync(INPUT_ASSET_ROOT)
-                    .filter(file => mediaExtensions.includes(path.extname(file).toLowerCase()))
+                foundAssets = fs
+                    .readdirSync(INPUT_ASSET_ROOT)
+                    .filter((file) => mediaExtensions.includes(path.extname(file).toLowerCase()))
                     .sort();
             }
 
@@ -137,7 +152,7 @@ export async function generateVideo(
                         visualDescription: `Slideshow: ${asset}`,
                         voiceoverText: '',
                         searchKeywords: [asset],
-                        localAsset: asset
+                        localAsset: asset,
                     });
                 });
             } else if (parsed.scenes.length === 0) {
@@ -154,7 +169,9 @@ export async function generateVideo(
         }
 
         if (parsed.scenes.length === 0) {
-            throw new Error('No scenes could be parsed from the script. Please ensure you have narration text or visual tags.');
+            throw new Error(
+                'No scenes could be parsed from the script. Please ensure you have narration text or visual tags.',
+            );
         }
 
         const step2Time = Date.now() - step2Start;
@@ -225,7 +242,11 @@ export async function generateVideo(
                                 const verification = await verifyMedia(downloadResult.path, scene.searchKeywords);
                                 if (!verificationPasses(verification)) {
                                     invalidateCachedVisual(scene.searchKeywords, orientation);
-                                    try { fs.unlinkSync(downloadResult.path); } catch { /* ignore — cleanup */ }
+                                    try {
+                                        fs.unlinkSync(downloadResult.path);
+                                    } catch {
+                                        /* ignore — cleanup */
+                                    }
                                     throw new Error(`Visual verification failed for ${filename}`);
                                 }
                             }
@@ -261,7 +282,12 @@ export async function generateVideo(
                 }
 
                 if (!visual) {
-                    const imageFallback = await fetchVisualsForScene(scene.searchKeywords, false, orientation, scene.voiceoverText);
+                    const imageFallback = await fetchVisualsForScene(
+                        scene.searchKeywords,
+                        false,
+                        orientation,
+                        scene.voiceoverText,
+                    );
                     visual = imageFallback && imageFallback.type === 'image' ? imageFallback : null;
                 }
 
@@ -292,7 +318,7 @@ export async function generateVideo(
         }
         await Promise.all(activePromises);
 
-        const visualsFound = visuals.filter(v => v !== null).length;
+        const visualsFound = visuals.filter((v) => v !== null).length;
         const step3Time = Date.now() - step3Start;
 
         // STEP 4: Generate Voiceovers
@@ -400,18 +426,23 @@ export async function generateVideo(
         const step6Start = Date.now();
         reportProgress('metadata', 95, 'Generating metadata');
 
-        const sentences = parsed.scenes.map(s => s.voiceoverText).join(' ').split('. ');
+        const sentences = parsed.scenes
+            .map((s) => s.voiceoverText)
+            .join(' ')
+            .split('. ');
         let description = sentences.slice(0, 3).join('. ') + (sentences.length > 3 ? '.' : '');
 
         const uniqueKeywords = new Set<string>();
-        parsed.scenes.forEach(scene => {
-            scene.searchKeywords.forEach(k => uniqueKeywords.add(k.replace(/\s+/g, '').toLowerCase()));
+        parsed.scenes.forEach((scene) => {
+            scene.searchKeywords.forEach((k) => uniqueKeywords.add(k.replace(/\s+/g, '').toLowerCase()));
         });
         uniqueKeywords.add('ai');
         uniqueKeywords.add('future');
         uniqueKeywords.add('technology');
 
-        let hashtags = Array.from(uniqueKeywords).map(k => `#${k}`).join(' ');
+        let hashtags = Array.from(uniqueKeywords)
+            .map((k) => `#${k}`)
+            .join(' ');
 
         try {
             const { generateMetadataAI } = await import('./services/ai.service.js');
@@ -441,7 +472,6 @@ export async function generateVideo(
                 visualsFound,
             },
         };
-
     } catch (error: any) {
         const totalTime = Date.now() - totalStartTime;
         console.error(`Video generation failed after ${totalTime}ms: ${error.message}`);

@@ -14,13 +14,13 @@ export const processSocialDownloadRequest = async (req: Request, res: Response) 
 
         // For now we don't stream progress back via SSE, just await the final result
         const data = await socialDownloadAppService.processSocialDownload(url, mode || 'both');
-        
+
         res.json({ success: true, data });
     } catch (error: any) {
         console.error(`[SOCIAL-CONTROLLER] Error processing social download:`, error);
-        res.status(500).json({ 
-            success: false, 
-            error: error.message || 'Internal server error' 
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Internal server error',
         });
     }
 };

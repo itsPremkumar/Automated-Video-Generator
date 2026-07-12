@@ -8,7 +8,12 @@ import {
     retryJob as retryJobExecution,
 } from '../services/job.service';
 import { jobStore } from '../infrastructure/persistence/job-store';
-import { JobStatus, PipelineJobAccepted, PipelineJobRequest, pipelineJobRequestSchema } from '../shared/contracts/job.contract';
+import {
+    JobStatus,
+    PipelineJobAccepted,
+    PipelineJobRequest,
+    pipelineJobRequestSchema,
+} from '../shared/contracts/job.contract';
 import { setupService } from './setup.service';
 
 type ContinueResult = Awaited<ReturnType<typeof continueJobExecution>>;
@@ -43,23 +48,17 @@ export class PipelineAppService {
         const request = pipelineJobRequestSchema.parse(input);
         const ids = defaultIds(request.title, request.publicId || request.id, request.id);
 
-        await this.deps.createAndRunJob(
-            ids.jobId,
-            ids.publicId,
-            request.title,
-            request.script,
-            {
-                orientation: request.orientation,
-                language: request.language || 'english',
-                voice: request.voice,
-                backgroundMusic: request.backgroundMusic || '',
-                personalAudio: request.personalAudio,
-                defaultVideo: request.defaultVideo || DEFAULT_FALLBACK_VIDEO,
-                showText: request.showText !== false,
-                textConfig: request.textConfig,
-                skipReview: !!request.skipReview,
-            },
-        );
+        await this.deps.createAndRunJob(ids.jobId, ids.publicId, request.title, request.script, {
+            orientation: request.orientation,
+            language: request.language || 'english',
+            voice: request.voice,
+            backgroundMusic: request.backgroundMusic || '',
+            personalAudio: request.personalAudio,
+            defaultVideo: request.defaultVideo || DEFAULT_FALLBACK_VIDEO,
+            showText: request.showText !== false,
+            textConfig: request.textConfig,
+            skipReview: !!request.skipReview,
+        });
 
         return {
             jobId: ids.jobId,
@@ -72,23 +71,17 @@ export class PipelineAppService {
         const request = pipelineJobRequestSchema.parse(input);
         const ids = defaultIds(request.title, request.publicId || request.id, request.id);
 
-        this.deps.registerJobForRender(
-            ids.jobId,
-            ids.publicId,
-            request.title,
-            request.script,
-            {
-                orientation: request.orientation,
-                language: request.language || 'english',
-                voice: request.voice,
-                backgroundMusic: request.backgroundMusic || '',
-                personalAudio: request.personalAudio,
-                defaultVideo: request.defaultVideo || DEFAULT_FALLBACK_VIDEO,
-                showText: request.showText !== false,
-                textConfig: request.textConfig,
-                skipReview: true,
-            },
-        );
+        this.deps.registerJobForRender(ids.jobId, ids.publicId, request.title, request.script, {
+            orientation: request.orientation,
+            language: request.language || 'english',
+            voice: request.voice,
+            backgroundMusic: request.backgroundMusic || '',
+            personalAudio: request.personalAudio,
+            defaultVideo: request.defaultVideo || DEFAULT_FALLBACK_VIDEO,
+            showText: request.showText !== false,
+            textConfig: request.textConfig,
+            skipReview: true,
+        });
 
         return {
             jobId: ids.jobId,
@@ -117,7 +110,10 @@ export class PipelineAppService {
         return this.deps.listJobs();
     }
 
-    async waitForJobCompletion(jobId: string, options: { intervalMs?: number; timeoutMs?: number } = {}): Promise<JobStatus> {
+    async waitForJobCompletion(
+        jobId: string,
+        options: { intervalMs?: number; timeoutMs?: number } = {},
+    ): Promise<JobStatus> {
         const intervalMs = options.intervalMs ?? 1000;
         const timeoutMs = options.timeoutMs ?? 30 * 60 * 1000;
         const startedAt = Date.now();

@@ -1,16 +1,12 @@
 {
-  "mcpServers": {
-    "automated-video-generator": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "tsx",
-        "c:\\one\\Automated-Video-Generator\\src\\mcp-server.ts"
-      ],
-      "cwd": "c:\\one\\Automated-Video-Generator",
-      "env": {
-        "AUTOMATED_VIDEO_GENERATOR_MCP": "1"
-      }
+    "mcpServers": {
+        "automated-video-generator": {
+            "command": "npx",
+            "args": ["-y", "tsx", "c:\\one\\Automated-Video-Generator\\src\\mcp-server.ts"],
+            "cwd": "c:\\one\\Automated-Video-Generator",
+            "env": {
+                "AUTOMATED_VIDEO_GENERATOR_MCP": "1"
+            }
+        }
     }
-  }
 }

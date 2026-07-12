@@ -12,7 +12,7 @@ interface ArchiveSearchDoc {
 }
 
 interface ArchiveSearchResponse {
-    response?: { docs?: ArchiveSearchDoc[]; numFound?: number; };
+    response?: { docs?: ArchiveSearchDoc[]; numFound?: number };
 }
 
 interface ArchiveFile {
@@ -26,7 +26,7 @@ interface ArchiveFile {
 }
 
 interface ArchiveMetadataResponse {
-    metadata?: { title?: string; creator?: string | string[]; licenseurl?: string; };
+    metadata?: { title?: string; creator?: string | string[]; licenseurl?: string };
     files?: ArchiveFile[];
     server?: string;
     dir?: string;
@@ -46,7 +46,7 @@ function extensionToFormat(filename: string): VideoFormat {
 
 function isVideoFile(file: ArchiveFile): boolean {
     const lower = file.name.toLowerCase();
-    return VIDEO_EXTENSIONS.some(ext => lower.endsWith(ext));
+    return VIDEO_EXTENSIONS.some((ext) => lower.endsWith(ext));
 }
 
 function normalizeCreator(creator: string | string[] | undefined): string {
@@ -69,14 +69,15 @@ export class ArchiveOrgProvider implements VideoProvider {
         const sortParam = this.mapSort(filters.sortBy);
 
         const searchData = await withRetry(
-            () => getJson<ArchiveSearchResponse>(this.client, SEARCH_URL, {
-                q: `mediatype:movies AND (${filters.keyword})`,
-                'fl[]': 'identifier,title,creator,licenseurl,mediatype,publicdate',
-                rows,
-                page,
-                output: 'json',
-                ...(sortParam ? { 'sort[]': sortParam } : {}),
-            }),
+            () =>
+                getJson<ArchiveSearchResponse>(this.client, SEARCH_URL, {
+                    q: `mediatype:movies AND (${filters.keyword})`,
+                    'fl[]': 'identifier,title,creator,licenseurl,mediatype,publicdate',
+                    rows,
+                    page,
+                    output: 'json',
+                    ...(sortParam ? { 'sort[]': sortParam } : {}),
+                }),
             { retries: 3, baseDelayMs: 2000, label: 'Archive.org search' },
         );
 
@@ -89,7 +90,9 @@ export class ArchiveOrgProvider implements VideoProvider {
             try {
                 const itemResult = await this.fetchBestVideoFromItem(doc);
                 if (itemResult) results.push(itemResult);
-            } catch { continue; }
+            } catch {
+                continue;
+            }
         }
 
         return this.applyFilters(results, filters);
@@ -123,7 +126,7 @@ export class ArchiveOrgProvider implements VideoProvider {
             id: doc.identifier,
             title: data.metadata?.title ?? doc.title ?? doc.identifier,
             creator: normalizeCreator(data.metadata?.creator ?? doc.creator),
-            license: data.metadata?.licenseurl ?? doc.licenseurl ? 'See license URL' : 'Public Domain / Unspecified',
+            license: (data.metadata?.licenseurl ?? doc.licenseurl) ? 'See license URL' : 'Public Domain / Unspecified',
             licenseUrl: data.metadata?.licenseurl ?? doc.licenseurl ?? 'https://archive.org/about/terms.php',
             provider: this.name,
             downloadUrl,
@@ -146,20 +149,26 @@ export class ArchiveOrgProvider implements VideoProvider {
 
         if (filters.license) {
             const wanted = filters.license.toLowerCase();
-            filtered = filtered.filter(v => v.license.toLowerCase().includes(wanted) || v.licenseUrl.toLowerCase().includes(wanted));
+            filtered = filtered.filter(
+                (v) => v.license.toLowerCase().includes(wanted) || v.licenseUrl.toLowerCase().includes(wanted),
+            );
         }
         if (filters.minDurationSeconds !== undefined) {
-            filtered = filtered.filter(v => v.durationSeconds !== null && v.durationSeconds >= filters.minDurationSeconds!);
+            filtered = filtered.filter(
+                (v) => v.durationSeconds !== null && v.durationSeconds >= filters.minDurationSeconds!,
+            );
         }
         if (filters.maxDurationSeconds !== undefined) {
-            filtered = filtered.filter(v => v.durationSeconds !== null && v.durationSeconds <= filters.maxDurationSeconds!);
+            filtered = filtered.filter(
+                (v) => v.durationSeconds !== null && v.durationSeconds <= filters.maxDurationSeconds!,
+            );
         }
         if (filters.maxFileSizeBytes !== undefined) {
-            filtered = filtered.filter(v => v.fileSizeBytes !== null && v.fileSizeBytes <= filters.maxFileSizeBytes!);
+            filtered = filtered.filter((v) => v.fileSizeBytes !== null && v.fileSizeBytes <= filters.maxFileSizeBytes!);
         }
         if (filters.minResolutionHeight !== undefined || filters.hdOnly) {
             const minHeight = filters.hdOnly ? 720 : filters.minResolutionHeight!;
-            filtered = filtered.filter(v => {
+            filtered = filtered.filter((v) => {
                 if (!v.resolution) return false;
                 const height = parseInt(v.resolution.split('x')[1] ?? '0', 10);
                 return height >= minHeight;

@@ -1,17 +1,14 @@
 import * as os from 'os';
 import * as path from 'path';
 
-const isElectronPackaged = (
-    (!!(process.versions as any).electron && !(process.env as any).ELECTRON_IS_DEV && (process as any).resourcesPath)
-    || (process.env.ELECTRON_BACKEND_SERVER === '1' && !!process.env.ELECTRON_RESOURCES_PATH)
-);
+const isElectronPackaged =
+    (!!(process.versions as any).electron && !(process.env as any).ELECTRON_IS_DEV && (process as any).resourcesPath) ||
+    (process.env.ELECTRON_BACKEND_SERVER === '1' && !!process.env.ELECTRON_RESOURCES_PATH);
 
-const resourcesPath: string = (process as any).resourcesPath
-    || process.env.ELECTRON_RESOURCES_PATH
-    || '';
+const resourcesPath: string = (process as any).resourcesPath || process.env.ELECTRON_RESOURCES_PATH || '';
 
 export const projectRoot = isElectronPackaged
-    ? (process.env.ELECTRON_APP_ROOT || path.join(resourcesPath, 'app'))
+    ? process.env.ELECTRON_APP_ROOT || path.join(resourcesPath, 'app')
     : path.resolve(__dirname, '..', '..', '..');
 
 function resolvePackagedDataRoot(): string {
@@ -28,22 +25,11 @@ function resolvePackagedDataRoot(): string {
     return path.join(os.homedir(), 'AppData', 'Local', 'Automated Video Generator');
 }
 
-export const dataRoot = isElectronPackaged
-    ? resolvePackagedDataRoot()
-    : projectRoot;
+export const dataRoot = isElectronPackaged ? resolvePackagedDataRoot() : projectRoot;
 
-const runtimePublicRoot = isElectronPackaged
-    ? path.join(dataRoot, 'public')
-    : path.join(projectRoot, 'public');
+const runtimePublicRoot = isElectronPackaged ? path.join(dataRoot, 'public') : path.join(projectRoot, 'public');
 
-const runtimeManagedRoots = new Set([
-    '.env',
-    '.mcp-jobs.json',
-    '.video-cache.json',
-    'logs',
-    'output',
-    'tmp',
-]);
+const runtimeManagedRoots = new Set(['.env', '.mcp-jobs.json', '.video-cache.json', 'logs', 'output', 'tmp']);
 
 function normalizeRelativeSegments(segments: string[]): string[] {
     const normalized: string[] = [];

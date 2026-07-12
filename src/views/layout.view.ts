@@ -1,4 +1,10 @@
-import { BRAND_COLOR, PROJECT_NAME, DEFAULT_SITE_DESCRIPTION, DEFAULT_SITE_KEYWORDS, APP_VERSION } from '../constants/config';
+import {
+    BRAND_COLOR,
+    PROJECT_NAME,
+    DEFAULT_SITE_DESCRIPTION,
+    DEFAULT_SITE_KEYWORDS,
+    APP_VERSION,
+} from '../constants/config';
 import { HtmlOptions } from '../types/server.types';
 
 // ─── HTML Escaping Utilities ───────────────────────────────────────────────────
@@ -25,7 +31,10 @@ export function truncateText(value: string, maxLength: number): string {
     return `${normalized.slice(0, Math.max(0, maxLength - 3)).trimEnd()}...`;
 }
 
-export function serializeJsonLd(jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>, cspNonce?: string): string {
+export function serializeJsonLd(
+    jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>,
+    cspNonce?: string,
+): string {
     if (!jsonLd) {
         return '';
     }
@@ -33,7 +42,10 @@ export function serializeJsonLd(jsonLd?: Record<string, unknown> | Array<Record<
     const items = Array.isArray(jsonLd) ? jsonLd : [jsonLd];
     const nonceAttribute = cspNonce ? ` nonce="${escapeHtml(cspNonce)}"` : '';
     return items
-        .map((item) => `<script type="application/ld+json"${nonceAttribute}>${JSON.stringify(item).replace(/</g, '\\u003c')}</script>`)
+        .map(
+            (item) =>
+                `<script type="application/ld+json"${nonceAttribute}>${JSON.stringify(item).replace(/</g, '\\u003c')}</script>`,
+        )
         .join('');
 }
 

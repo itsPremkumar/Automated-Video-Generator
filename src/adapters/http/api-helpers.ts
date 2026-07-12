@@ -16,7 +16,11 @@ export function getJobOrThrow(jobId: string, getJob: JobGetter): JobStatus {
     return job;
 }
 
-export function getJobOutputDir(jobId: string, getJob: JobGetter, resolveProjectPath: (...segments: string[]) => string): string {
+export function getJobOutputDir(
+    jobId: string,
+    getJob: JobGetter,
+    resolveProjectPath: (...segments: string[]) => string,
+): string {
     const job = getJobOrThrow(jobId, getJob);
     if (job.publicId) {
         return resolveProjectPath('output', job.publicId);
@@ -53,7 +57,10 @@ export function toSceneIndex(sceneIndex: string): number {
     return parsed;
 }
 
-export function toEditableEnvUpdates(body: Record<string, unknown>, editableEnvKeys: readonly EditableEnvKey[]): Partial<Record<EditableEnvKey, string>> {
+export function toEditableEnvUpdates(
+    body: Record<string, unknown>,
+    editableEnvKeys: readonly EditableEnvKey[],
+): Partial<Record<EditableEnvKey, string>> {
     const updates: Partial<Record<EditableEnvKey, string>> = {};
     for (const key of editableEnvKeys) {
         const value = body[key];
