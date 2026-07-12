@@ -17,6 +17,7 @@ Copy `.env.example` to `.env` and configure:
 | `OPENVERSE_ENABLED` | No | CC-licensed image fallback (default: `true`) |
 | `PORT` | No | Web portal port (default: 3001) |
 | `OUTPUT_DIR` | No | Custom output directory |
+| `REMOTION_BROWSER_EXECUTABLE` | No | Absolute path to a locally-installed Chrome/Chromium binary. When set, Remotion uses it for composition selection and rendering instead of downloading a browser. Useful on air-gapped or CI hosts. |
 
 *`PEXELS_API_KEY` is recommended but not required. Without any API keys, the pipeline falls back to **free video sources** (Wikimedia Commons + Internet Archive) and **Openverse images** — both work with zero registration.
 

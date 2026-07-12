@@ -98,6 +98,10 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
     const totalStartTime = Date.now();
     const { shouldCancel } = options;
 
+    // Allow pointing Remotion at a locally-installed Chrome/Chromium instead of
+    // triggering a network browser download (useful on air-gapped/CI hosts).
+    const browserExecutable = process.env.REMOTION_BROWSER_EXECUTABLE || null;
+
     console.log('\n🎥 [RENDER] Module loaded (Segmented Mode)');
     console.log(`🎥 [RENDER] Working directory: ${process.cwd()}`);
 
@@ -218,6 +222,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
             const thumbnailComposition = await selectComposition({
                 serveUrl: bundleLocation,
                 id: 'SingleScene',
+                browserExecutable,
                 inputProps: {
                     scene: firstScene,
                     isFirstScene: true,
@@ -328,6 +333,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                 const composition = await selectComposition({
                     serveUrl: bundleLocation,
                     id: 'SingleScene',
+                    browserExecutable,
                     inputProps: {
                         scene,
                         isFirstScene,
@@ -351,6 +357,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                     serveUrl: bundleLocation,
                     codec: 'h264',
                     outputLocation: segmentPath,
+                    browserExecutable,
                     inputProps: {
                         scene,
                         isFirstScene,
