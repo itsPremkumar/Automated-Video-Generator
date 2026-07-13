@@ -6,6 +6,7 @@ import { assertSafeMutationAllowed } from '../../shared/capabilities';
 import { runPipelineCommand } from './pipeline-commands';
 import { pipelineJobRequestSchema } from '../../shared/contracts/job.contract';
 import { errorResponse, textResponse } from './responses';
+import { readManifestSafe, summarize, BATCH_MANIFEST_PATH } from '../cli/batch-queue';
 
 export function registerJobTools(server: McpServer) {
     server.registerTool(
@@ -109,4 +110,32 @@ export function registerJobTools(server: McpServer) {
             `| Job ID | Status | Progress | Started |\n| :--- | :--- | :--- | :--- |\n${tableRows.join('\n')}`,
         );
     });
+
+    server.tool(
+        'get_batch_status',
+        'Read the latest batch run summary from output/batch-manifest.json (Batch Queue Manager, PRE-15-B).',
+        async () => {
+            const manifest = readManifestSafe(BATCH_MANIFEST_PATH);
+            if (!manifest) {
+                return textResponse('No batch manifest found. Run `npm run batch` first.');
+            }
+
+            const summary = summarize(manifest);
+            const header = [
+                `Batch: ${summary.total} job(s) — ${summary.completed} completed, ${summary.failed} failed, ` +
+                    `${summary.pending} pending, ${summary.cancelled} cancelled.`,
+                `Concurrency: ${manifest.concurrency} | Max retries: ${manifest.maxRetries} | ` +
+                    `All completed: ${summary.allCompleted ? 'yes' : 'no'}`,
+                `Updated: ${new Date(manifest.updatedAt).toLocaleString()}`,
+                '',
+                '| Job ID | Outcome | Attempts | Output | Error |',
+                '| :--- | :--- | :--- | :--- | :--- |',
+            ];
+            const rows = manifest.jobs.map(
+                (job) =>
+                    `| ${job.id} | ${job.outcome} | ${job.attempts} | ${job.outputPath ?? '-'} | ${job.error ?? '-'} |`,
+            );
+            return textResponse([...header, ...rows].join('\n'));
+        },
+    );
 }
