@@ -1,0 +1,19 @@
+# Normalize line endings so the working tree matches CI (Linux, LF).
+# Without this, Windows checkouts (core.autocrlf=true) materialize CRLF files,
+# which makes `npm run format:check` (Prettier endOfLine: lf) fail locally even
+# though CI is green. Pinning eol=lf keeps format/lint reproducible on every OS.
+* text=auto eol=lf
+
+# Build/library artifacts that must stay untouched
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text eol=lf
+*.mp4 binary
+*.webm binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
