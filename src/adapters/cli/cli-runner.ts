@@ -4,6 +4,7 @@ import { pipelineAppService } from '../../application/pipeline-app.service';
 import { cleanupAssets } from '../../lib/cleaner';
 import { resetInMemoryCache } from '../../lib/visual-fetcher';
 import { PipelineJobRequest } from '../../shared/contracts/job.contract';
+import { runBatch, summarize, type BatchJobInput, type BatchJobResult } from './batch-queue';
 
 const INPUT_DIR = path.join(process.cwd(), 'input');
 const INPUT_SCRIPTS_FILE = path.join(INPUT_DIR, 'input-scripts.json');
@@ -23,20 +24,45 @@ type CliVideoJob = {
     textConfig?: PipelineJobRequest['textConfig'];
 };
 
+function readFlagValue(args: string[], flag: string): string | undefined {
+    const idx = args.indexOf(flag);
+    if (idx === -1) return undefined;
+    const next = args[idx + 1];
+    return next && !next.startsWith('--') ? next : undefined;
+}
+
 function parseArgs() {
     const args = process.argv.slice(2);
     const landscape = args.includes('--landscape');
     const resume = args.includes('--resume');
     const segmentOnly = args.includes('--segment');
-    const musicIdx = args.indexOf('--music');
-    const music =
-        musicIdx !== -1 && args[musicIdx + 1] && !args[musicIdx + 1].startsWith('--') ? args[musicIdx + 1] : undefined;
+    const batch = args.includes('--batch');
+    const failFast = args.includes('--fail-fast');
+    const music = readFlagValue(args, '--music');
+
+    const concurrencyRaw = readFlagValue(args, '--concurrency');
+    const concurrency =
+        concurrencyRaw !== undefined && Number.isFinite(Number.parseInt(concurrencyRaw, 10))
+            ? Math.max(1, Number.parseInt(concurrencyRaw, 10))
+            : undefined;
+
+    const onlyRaw = readFlagValue(args, '--only');
+    const onlyIds = onlyRaw
+        ? onlyRaw
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
+        : undefined;
 
     return {
         landscape,
         resume,
         segmentOnly,
+        batch,
+        failFast,
         music,
+        concurrency,
+        onlyIds,
     };
 }
 
@@ -140,11 +166,25 @@ async function runSegmentJob(job: CliVideoJob, index: number, total: number, req
 export async function runCli() {
     console.log('Video Generator CLI\n');
 
-    const { landscape, resume, segmentOnly, music } = parseArgs();
+    const { landscape, resume, segmentOnly, batch, failFast, music, concurrency, onlyIds } = parseArgs();
     const globalOrientation = landscape ? 'landscape' : getEnvOrientation();
 
     await prepareWorkspace(resume);
     const jobs = readJobs();
+
+    // Batch mode: bounded concurrency + retry + resumable manifest (PRE-15-B / PRE-62).
+    if (batch || resume) {
+        await runBatchMode(jobs, {
+            globalOrientation,
+            music,
+            segmentOnly,
+            concurrency,
+            failFast,
+            resume,
+            onlyIds,
+        });
+        return;
+    }
 
     for (let index = 0; index < jobs.length; index += 1) {
         const job = jobs[index];
@@ -161,5 +201,75 @@ export async function runCli() {
             const audioDir = path.join(process.cwd(), 'public', 'audio');
             await cleanupAssets([videoDir, audioDir]);
         }
+    }
+}
+
+interface BatchModeOptions {
+    globalOrientation: 'portrait' | 'landscape';
+    music?: string;
+    segmentOnly: boolean;
+    concurrency?: number;
+    failFast: boolean;
+    resume: boolean;
+    onlyIds?: string[];
+}
+
+async function runBatchMode(jobs: CliVideoJob[], options: BatchModeOptions): Promise<void> {
+    const inputs: BatchJobInput[] = jobs.map((job, index) => ({
+        id: sanitizeFilename(job.id || job.title),
+        index,
+        title: job.title,
+    }));
+    const jobsById = new Map(inputs.map((input, index) => [input.id, jobs[index]]));
+
+    console.log(
+        `[BATCH] Starting batch of ${inputs.length} job(s)` +
+            (options.resume ? ' (resume)' : '') +
+            (options.onlyIds ? ` (only: ${options.onlyIds.join(', ')})` : ''),
+    );
+
+    const executeJob = async (input: BatchJobInput): Promise<BatchJobResult> => {
+        const job = jobsById.get(input.id)!;
+        const request = buildRequest(job, options.globalOrientation, options.music);
+        try {
+            if (options.segmentOnly) {
+                const accepted = pipelineAppService.createRenderReadyJob(request);
+                await pipelineAppService.continueJobToRender(accepted.jobId);
+                const result = await pipelineAppService.waitForJobCompletion(accepted.jobId);
+                if (result.status === 'completed') {
+                    return { outcome: 'completed', outputPath: request.publicId };
+                }
+                return { outcome: 'failed', error: result.error || result.message };
+            }
+
+            const accepted = await pipelineAppService.createJob(request);
+            const result = await pipelineAppService.waitForJobCompletion(accepted.jobId);
+            if (result.status === 'completed') {
+                return { outcome: 'completed', outputPath: request.publicId };
+            }
+            return { outcome: 'failed', error: result.error || result.message };
+        } finally {
+            const videoDir = path.join(process.cwd(), 'public', 'videos');
+            const audioDir = path.join(process.cwd(), 'public', 'audio');
+            await cleanupAssets([videoDir, audioDir]);
+        }
+    };
+
+    const manifest = await runBatch(inputs, {
+        concurrency: options.concurrency,
+        failFast: options.failFast,
+        resume: options.resume,
+        onlyIds: options.onlyIds,
+        executeJob,
+    });
+
+    const summary = summarize(manifest);
+    console.log(
+        `[BATCH] Done: ${summary.completed}/${summary.total} completed, ` +
+            `${summary.failed} failed, ${summary.pending} pending, ${summary.cancelled} cancelled.`,
+    );
+    if (!summary.allCompleted) {
+        console.error('[BATCH] Some jobs did not complete. Re-run with --resume to retry pending/failed jobs.');
+        process.exitCode = 1;
     }
 }
