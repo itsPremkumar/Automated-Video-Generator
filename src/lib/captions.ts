@@ -212,7 +212,11 @@ export interface CaptionSidecarOptions {
  * Returns the list of written file paths. Skips writing entirely when no
  * scene has any text, so an empty render does not produce bogus artifacts.
  */
-export function writeCaptionSidecars(outputDir: string, scenes: CaptionSourceScene[], opts: CaptionSidecarOptions = {}): string[] {
+export function writeCaptionSidecars(
+    outputDir: string,
+    scenes: CaptionSourceScene[],
+    opts: CaptionSidecarOptions = {},
+): string[] {
     const mode = opts.mode ?? 'sentence';
     const baseName = opts.baseName ?? 'subtitles';
     const captions = deriveGlobalCaptions(scenes, mode);

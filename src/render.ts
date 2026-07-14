@@ -537,7 +537,9 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                     mode: options.captionCueMode === 'word' ? 'word' : 'sentence',
                 });
                 if (written.length > 0) {
-                    console.log(`✅ [RENDER] Caption sidecars: ${written.map((w: string) => path.basename(w)).join(', ')}`);
+                    console.log(
+                        `✅ [RENDER] Caption sidecars: ${written.map((w: string) => path.basename(w)).join(', ')}`,
+                    );
                 }
             } catch (capErr: any) {
                 // Sidecar export is best-effort: never fail the render for it.
