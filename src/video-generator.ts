@@ -4,6 +4,7 @@ import { generateVoiceovers, DEFAULT_VOICE_CONFIG, LANGUAGE_DEFAULTS } from './l
 import { AudioCaptionSegment } from './lib/voice-types';
 import { getAudioDuration, splitAudioFile, generateSilence, applyAutoDucking } from './lib/audio-processor';
 import { verifyMedia, verificationPasses, MEDIA_VERIFICATION_ENABLED } from './lib/media-verifier';
+import { resolveFreeBackgroundMusic } from './lib/free-music';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logError, logInfo } from './shared/logging/runtime-logging';
@@ -71,13 +72,14 @@ export async function generateVideo(
         showText = true,
         defaultVideo = 'default.mp4',
         publicId,
-        backgroundMusic,
         personalAudio,
         musicVolume,
         language,
         textConfig,
         shouldCancel,
     } = options;
+
+    let backgroundMusic = options.backgroundMusic;
 
     let voice = options.voice;
     if (!voice && language) {
@@ -352,6 +354,18 @@ export async function generateVideo(
 
         // Background Music & Auto-Ducking
         let resolvedMusicPath: string | undefined = undefined;
+        if (!backgroundMusic) {
+            try {
+                const freeMusic = await resolveFreeBackgroundMusic({
+                    query: title || parsed.videoStyle || 'ambient lofi',
+                });
+                if (freeMusic) {
+                    backgroundMusic = `music/__auto__/${path.basename(freeMusic.localPath)}`;
+                }
+            } catch (musicErr: any) {
+                console.warn(`[AUTO-MUSIC] Skipped (non-fatal): ${musicErr?.message || musicErr}`);
+            }
+        }
         if (backgroundMusic) {
             const musicInputPath = resolveProjectPath('input', 'music', backgroundMusic);
             if (fs.existsSync(musicInputPath)) {

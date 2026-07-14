@@ -164,3 +164,44 @@ export async function generateVoiceoverWithLocalOpenAI(text: string, outputPath:
         throw error;
     }
 }
+
+/**
+ * Synthesizes voice using a Kokoro-FastAPI (or Kokoro-Cpp) OpenAI-compatible
+ * endpoint. Kokoro is an MIT-licensed, fully local neural TTS — no cloud, no
+ * API key. Point OPENAI_LOCAL_TTS_URL at any Kokoro server.
+ */
+export async function generateVoiceoverWithKokoro(
+    text: string,
+    outputPath: string,
+): Promise<void> {
+    const baseUrl = (process.env.OPENAI_LOCAL_TTS_URL || 'http://127.0.0.1:8880/v1').replace(/\/+$/, '');
+    const apiKey = process.env.OPENAI_LOCAL_TTS_API_KEY || 'mock-key';
+    const voice = process.env.OPENAI_LOCAL_TTS_VOICE || 'af_sky';
+    const model = process.env.OPENAI_LOCAL_TTS_MODEL || 'kokoro';
+    const endpoint = `${baseUrl}/audio/speech`;
+    console.log(`Sending synthesis request to Kokoro: ${endpoint} (voice: ${voice}, model: ${model})`);
+    try {
+        const response = await axios.post(
+            endpoint,
+            {
+                model,
+                input: text,
+                voice,
+                response_format: 'mp3',
+            },
+            {
+                responseType: 'stream',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${apiKey}`,
+                },
+                timeout: 120000,
+            },
+        );
+        await saveStreamToFile(response.data, outputPath);
+        console.log(`Successfully generated voiceover via Kokoro: ${outputPath}`);
+    } catch (error: any) {
+        console.error(`Kokoro synthesis failed: ${error.message}`);
+        throw error;
+    }
+}

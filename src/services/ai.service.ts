@@ -3,6 +3,7 @@ import { readEnvValues } from './env.service';
 import { BadRequestError, ServiceUnavailableError } from '../lib/errors';
 import { appLogger } from '../lib/logger';
 import { generateContent as ollamaGenerateContent } from '../lib/ollama-client';
+import { ensureOllamaReady } from '../lib/ollama-bootstrap';
 
 export interface ScriptGenerationResult {
     title: string;
@@ -148,6 +149,7 @@ export async function generateScriptFromPrompt(prompt: string): Promise<ScriptGe
 
     if (useOllama) {
         try {
+            await ensureOllamaReady({ model: process.env.OLLAMA_SCRIPT_MODEL || process.env.OLLAMA_MODEL });
             const systemInstruction = 'You are a video script writer. Keep responses concise and well-structured.';
             const userPrompt = `Write a short video script about: ${prompt}
 
