@@ -16,6 +16,8 @@ export interface Scene {
         rate?: number;
     };
     audioPath?: string;
+    /** Speech-timed caption cues (relative to scene start, ms) persisted from TTS. */
+    captionSegments?: { text: string; startMs: number; endMs: number }[];
     visual?: {
         type: 'video' | 'image';
         url: string;

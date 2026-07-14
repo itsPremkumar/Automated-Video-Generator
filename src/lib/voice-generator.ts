@@ -391,6 +391,9 @@ async function generateSceneVoiceover(scene: Scene, outputDir: string, config: V
     if (!cleanText) return { path: '', duration: Math.max(3, scene.duration || 3) };
     if (cleanText.length < 2) throw new Error(`Scene ${scene.sceneNumber} has empty or invalid text`);
 
+    // Subtitle output path (Edge-TTS writes word-boundary SRT when --write-subtitles is set).
+    const subtitlePath = outputPath.replace(/\.(mp3|wav|ogg|m4a)$/i, '.srt');
+
     try {
         runEdgeTts([
             '--voice',
@@ -401,9 +404,27 @@ async function generateSceneVoiceover(scene: Scene, outputDir: string, config: V
             cleanText,
             '--write-media',
             outputPath,
+            '--write-subtitles',
+            subtitlePath,
         ]);
         assertGeneratedAudioFile(outputPath);
-        return { path: outputPath, duration: getAudioDuration(outputPath, scene.voiceoverText) };
+
+        // Capture speech-timed caption segments from Edge-TTS word boundaries.
+        // Falls back to undefined when unavailable (e.g. offline, or engine produced
+        // no subtitles) — callers must gracefully fall back to scene-length cues.
+        let captionSegments: AudioResult['captionSegments'];
+        try {
+            const { parseEdgeTtsSubtitles } = await import('./captions.js');
+            captionSegments = parseEdgeTtsSubtitles(subtitlePath) ?? undefined;
+        } catch {
+            captionSegments = undefined;
+        }
+
+        return {
+            path: outputPath,
+            duration: getAudioDuration(outputPath, scene.voiceoverText),
+            captionSegments,
+        };
     } catch (error: any) {
         if (fs.existsSync(outputPath))
             try {

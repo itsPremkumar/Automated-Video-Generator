@@ -53,6 +53,12 @@ interface SceneData {
     backgroundMusic?: string;
     musicVolume?: number;
     assetNamespace?: string;
+    /** Subtitle application mode for burned captions. Defaults to 'burned'. */
+    subtitleMode?: 'off' | 'overlay' | 'burned';
+    /** Sidecar caption format emitted next to the MP4. */
+    captionFormat?: 'none' | 'srt' | 'vtt';
+    /** Sidecar cue distribution mode. */
+    captionCueMode?: 'sentence' | 'word';
 }
 
 interface RenderOptions {
@@ -160,6 +166,17 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         const width = isLandscape ? 1920 : 1080;
         const height = isLandscape ? 1080 : 1350;
 
+        // Speech-timed caption cues per scene (relative to each scene start, ms).
+        // Carried from TTS word-boundary capture; undefined when unavailable.
+        const sceneCaptionSegments: ({ text: string; startMs: number; endMs: number }[] | undefined)[] =
+            sceneData.scenes.map((s: any) =>
+                Array.isArray(s.captionSegments) && s.captionSegments.length > 0
+                    ? (s.captionSegments as { text: string; startMs: number; endMs: number }[])
+                    : undefined,
+            );
+        const subtitleMode: 'off' | 'overlay' | 'burned' =
+            (sceneData.subtitleMode as 'off' | 'overlay' | 'burned') || 'burned';
+
         // ══════════════════════════════════════════════════════════════════
         // STEP 2: BUNDLE REMOTION PROJECT (ONCE)
         // ══════════════════════════════════════════════════════════════════
@@ -257,6 +274,8 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                     backgroundMusic: sceneData.backgroundMusic,
                     musicVolume: sceneData.musicVolume,
                     globalStartFrame: 0,
+                    captionSegments: sceneCaptionSegments[0],
+                    subtitleMode,
                 },
             });
 
@@ -347,6 +366,8 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                         backgroundMusic: sceneData.backgroundMusic,
                         musicVolume: sceneData.musicVolume,
                         globalStartFrame,
+                        captionSegments: sceneCaptionSegments[i],
+                        subtitleMode,
                     },
                 });
 
@@ -371,6 +392,8 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                         backgroundMusic: sceneData.backgroundMusic,
                         musicVolume: sceneData.musicVolume,
                         globalStartFrame,
+                        captionSegments: sceneCaptionSegments[i],
+                        subtitleMode,
                     },
                     crf: 18,
                     timeoutInMilliseconds: 300000, // 5 min per scene max

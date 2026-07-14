@@ -13,11 +13,32 @@ export interface TextConfig {
     glow?: boolean;
 }
 
+/** A single speech-timed caption cue, relative to the scene start (milliseconds). */
+export interface CaptionSegment {
+    text: string;
+    startMs: number;
+    endMs: number;
+}
+
+/** How subtitles are applied to a render. */
+export type SubtitleMode = 'off' | 'overlay' | 'burned';
+
 interface SubtitleOverlayProps {
+    /** Whole-scene fallback text used when no speech-timed segments are available. */
     text: string;
     config?: TextConfig;
     durationInFrames: number;
     delayInFrames?: number;
+    /**
+     * Speech-timed caption cues (relative to scene start, ms). When provided,
+     * the overlay renders only the cue active at the current frame, producing
+     * burned-in, speech-synced captions (PRE-61 Feature A). When undefined or
+     * empty, falls back to showing `text` for the whole scene (preserving the
+     * prior behavior for engines that emit no word boundaries).
+     */
+    captionSegments?: CaptionSegment[];
+    /** Subtitle application mode. 'off' hides captions entirely. Defaults to 'burned'. */
+    subtitleMode?: SubtitleMode;
 }
 
 /**
@@ -47,19 +68,48 @@ class SubtitleErrorBoundary extends React.Component<{ children: React.ReactNode 
 }
 
 /**
+ * Return the caption segment active at a given time offset (ms), or null.
+ * Clamps to the last cue past the final boundary to avoid flicker at scene tail.
+ */
+function activeSegmentAt(segments: CaptionSegment[], timeMs: number): CaptionSegment | null {
+    if (segments.length === 0) return null;
+    for (const seg of segments) {
+        if (timeMs >= seg.startMs && timeMs < seg.endMs) return seg;
+    }
+    const last = segments[segments.length - 1];
+    if (last && timeMs >= last.endMs) return last;
+    return segments[0] ?? null;
+}
+
+/**
  * Main Subtitle Overlay Component
+ *
+ * Renders either:
+ *  - the speech-timed cue active at the current frame (when captionSegments exist),
+ *  - or the whole-scene `text` for the entire scene (fallback, backward compatible).
  */
 const SubtitleInternal: React.FC<SubtitleOverlayProps> = ({
     text,
     config = {},
     durationInFrames,
     delayInFrames = 12,
+    captionSegments,
+    subtitleMode = 'burned',
 }) => {
     const frame = useCurrentFrame();
-    const { width } = useVideoConfig();
+    const { fps, width } = useVideoConfig();
+
+    // 'off' mode suppresses captions entirely.
+    if (subtitleMode === 'off') return null;
+
+    // Pick the active text: speech-timed cue when available, else whole-scene fallback.
+    const segments = captionSegments && captionSegments.length > 0 ? captionSegments : undefined;
+    const currentTimeMs = Math.round((frame / (fps || 30)) * 1000);
+    const activeSeg = segments ? activeSegmentAt(segments, currentTimeMs) : null;
+    const displayText = activeSeg ? activeSeg.text : text;
 
     // Defensive check for empty or invalid text
-    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+    if (!displayText || typeof displayText !== 'string' || displayText.trim().length === 0) {
         return null;
     }
 
@@ -79,8 +129,8 @@ const SubtitleInternal: React.FC<SubtitleOverlayProps> = ({
 
     // Guard against width being 0 or NaN
     const safeWidth = isNaN(width) || width <= 0 ? 1920 : width;
-    const maxFontSize = (safeWidth - padding) / (Math.max(1, text.length) / 1.5);
-    const finalFontSize = text.length > charsPerLine ? Math.max(28, Math.min(safeFontSize, maxFontSize)) : safeFontSize;
+    const maxFontSize = (safeWidth - padding) / (Math.max(1, displayText.length) / 1.5);
+    const finalFontSize = displayText.length > charsPerLine ? Math.max(28, Math.min(safeFontSize, maxFontSize)) : safeFontSize;
 
     // --- Animation Constants ---
     const ANIM_DURATION = 15;
@@ -127,16 +177,16 @@ const SubtitleInternal: React.FC<SubtitleOverlayProps> = ({
         transform = `scale(${scaleIn * scaleOut})`;
     }
 
-    // --- Typewriter Effect ---
-    let displayedText = text;
-    if (animation === 'typewriter') {
+    // --- Typewriter Effect (per-scene fallback only; speech-timed cues render whole) ---
+    let displayedText = displayText;
+    if (animation === 'typewriter' && !segments) {
         const charsToDisplay = Math.floor(
-            interpolate(frame, [delayInFrames, delayInFrames + text.length * 2], [0, text.length], {
+            interpolate(frame, [delayInFrames, delayInFrames + displayText.length * 2], [0, displayText.length], {
                 extrapolateLeft: 'clamp',
                 extrapolateRight: 'clamp',
             }),
         );
-        displayedText = text.substring(0, charsToDisplay);
+        displayedText = displayText.substring(0, charsToDisplay);
     }
 
     // --- Background Styling ---

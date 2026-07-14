@@ -1,6 +1,7 @@
 import { parseScript, validateScript } from './lib/script-parser';
 import { fetchVisualsForScene, downloadMedia, getVideoMetadata, invalidateCachedVisual } from './lib/visual-fetcher';
 import { generateVoiceovers, DEFAULT_VOICE_CONFIG, LANGUAGE_DEFAULTS } from './lib/voice-generator';
+import { AudioCaptionSegment } from './lib/voice-types';
 import { getAudioDuration, splitAudioFile, generateSilence, applyAutoDucking } from './lib/audio-processor';
 import { verifyMedia, verificationPasses, MEDIA_VERIFICATION_ENABLED } from './lib/media-verifier';
 import * as fs from 'fs';
@@ -326,7 +327,7 @@ export async function generateVideo(
         reportProgress('audio', 55, 'Generating voiceovers');
         const audioDir = workspace.audioDir;
 
-        let audioFiles: Map<number, { path: string; duration: number }>;
+        let audioFiles: Map<number, { path: string; duration: number; captionSegments?: AudioCaptionSegment[] }>;
 
         if (personalAudio) {
             reportProgress('audio', 55, 'Processing personal audio recording');
@@ -396,6 +397,10 @@ export async function generateVideo(
                 duration: actualDuration,
                 visual: visuals[index],
                 audioPath: audioResult?.path ? toPublicRelativePath(audioResult.path) : undefined,
+                captionSegments:
+                    audioResult?.captionSegments && audioResult.captionSegments.length > 0
+                        ? audioResult.captionSegments
+                        : undefined,
             };
         });
 

@@ -11,7 +11,7 @@ import {
     Easing,
     Loop,
 } from 'remotion';
-import { SubtitleOverlay, TextConfig } from './SubtitleOverlay';
+import { SubtitleOverlay, TextConfig, CaptionSegment, SubtitleMode } from './SubtitleOverlay';
 
 interface Scene {
     sceneNumber: number;
@@ -42,6 +42,10 @@ export interface SingleSceneProps {
     backgroundMusic?: string;
     musicVolume?: number;
     globalStartFrame?: number;
+    /** Speech-timed caption cues (relative to scene start, ms). */
+    captionSegments?: CaptionSegment[];
+    /** Subtitle application mode. Defaults to 'burned'. */
+    subtitleMode?: SubtitleMode;
     [key: string]: unknown; // Allow additional props for Remotion compatibility
 }
 
@@ -87,6 +91,8 @@ export const SingleSceneVideo: React.FC<SingleSceneProps> = ({
     backgroundMusic,
     musicVolume,
     globalStartFrame = 0,
+    captionSegments,
+    subtitleMode,
 }) => {
     const { fps, durationInFrames } = useVideoConfig();
     const frame = useCurrentFrame();
@@ -253,6 +259,8 @@ export const SingleSceneVideo: React.FC<SingleSceneProps> = ({
                     config={textConfig}
                     durationInFrames={durationInFrames}
                     delayInFrames={FADE_DURATION * 0.5}
+                    captionSegments={captionSegments}
+                    subtitleMode={subtitleMode}
                 />
             )}
 
