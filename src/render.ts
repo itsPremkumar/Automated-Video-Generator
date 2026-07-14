@@ -57,6 +57,10 @@ interface SceneData {
 
 interface RenderOptions {
     shouldCancel?: () => boolean;
+    /** When true (default), emit sidecar subtitles.srt/.vtt next to the MP4 (spec F2). */
+    exportCaptions?: boolean;
+    /** Sidecar cue mode. 'sentence' (default) or 'word' (karaoke). */
+    captionCueMode?: 'sentence' | 'word';
 }
 
 function throwIfCancelled(shouldCancel?: () => boolean): void {
@@ -518,6 +522,28 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
 
         console.log(`✅ [RENDER] Final video: ${finalOutput}`);
         console.log(`📊 [RENDER] File size: ${finalSizeMB} MB`);
+
+        // ══════════════════════════════════════════════════════════════════
+        // STEP 6.5: CAPTION SIDECAR EXPORT (spec F2) — subtitles.srt + .vtt
+        // ══════════════════════════════════════════════════════════════════
+        if (options.exportCaptions !== false) {
+            try {
+                const { writeCaptionSidecars } = await import('./lib/captions.js');
+                const sidecarScenes = sceneData.scenes.map((s: any) => ({
+                    text: typeof s.voiceoverText === 'string' ? s.voiceoverText : '',
+                    durationSeconds: typeof s.duration === 'number' ? s.duration : 0,
+                }));
+                const written = writeCaptionSidecars(outputDir, sidecarScenes, {
+                    mode: options.captionCueMode === 'word' ? 'word' : 'sentence',
+                });
+                if (written.length > 0) {
+                    console.log(`✅ [RENDER] Caption sidecars: ${written.map((w: string) => path.basename(w)).join(', ')}`);
+                }
+            } catch (capErr: any) {
+                // Sidecar export is best-effort: never fail the render for it.
+                console.warn(`⚠️ [RENDER] Caption sidecar export skipped: ${capErr?.message ?? capErr}`);
+            }
+        }
 
         // ══════════════════════════════════════════════════════════════════
         // STEP 7: CLEANUP SEGMENTS

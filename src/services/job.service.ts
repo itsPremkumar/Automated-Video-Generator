@@ -279,8 +279,11 @@ async function runRenderPipeline(jobId: string, outputDir: string): Promise<void
         message: 'Rendering final MP4.',
     });
 
+    const opts = getStoredRequest(jobId).options ?? {};
     await renderVideo(outputDir, {
         shouldCancel: () => isCancelRequested(jobId),
+        exportCaptions: opts.exportCaptions,
+        captionCueMode: opts.captionMode === 'word' ? 'word' : 'sentence',
     });
 
     assertNotCancelled(jobId);

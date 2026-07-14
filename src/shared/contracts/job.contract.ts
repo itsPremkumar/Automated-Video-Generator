@@ -39,6 +39,11 @@ export const pipelineJobRequestSchema = z
         showText: z.boolean().optional().default(true),
         skipReview: z.boolean().optional().default(false),
         textConfig: textConfigSchema.optional(),
+        // Spec F2: emit sidecar subtitles.srt/.vtt next to the MP4.
+        // Optional — render layer defaults to exporting (exportCaptions !== false).
+        exportCaptions: z.boolean().optional(),
+        // Sidecar cue mode: 'sentence' (default) or 'word' (karaoke timing).
+        captionMode: z.enum(['sentence', 'word']).optional(),
     })
     .strict();
 
@@ -63,6 +68,8 @@ export type JobRequestOptions = {
     defaultVideo?: string;
     skipReview?: boolean;
     textConfig?: JobTextConfig;
+    exportCaptions?: boolean;
+    captionMode?: 'sentence' | 'word';
 };
 
 export type StoredJobRequest = {
