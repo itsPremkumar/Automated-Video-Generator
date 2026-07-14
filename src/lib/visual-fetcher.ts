@@ -171,7 +171,7 @@ export interface VideoMetadata {
     trimAfterFrames: number;
 }
 
-const parsePositiveNumber = (value: unknown): number | undefined => {
+export const parsePositiveNumber = (value: unknown): number | undefined => {
     if (typeof value === 'number') {
         return Number.isFinite(value) && value > 0 ? value : undefined;
     }
@@ -184,7 +184,7 @@ const parsePositiveNumber = (value: unknown): number | undefined => {
     return undefined;
 };
 
-const parsePositiveInteger = (value: unknown): number | undefined => {
+export const parsePositiveInteger = (value: unknown): number | undefined => {
     if (typeof value === 'number') {
         return Number.isFinite(value) && value > 0 ? Math.floor(value) : undefined;
     }
@@ -197,7 +197,7 @@ const parsePositiveInteger = (value: unknown): number | undefined => {
     return undefined;
 };
 
-const parseFrameRate = (value: unknown): number | undefined => {
+export const parseFrameRate = (value: unknown): number | undefined => {
     if (typeof value !== 'string' || value.trim().length === 0) {
         return undefined;
     }
@@ -218,7 +218,7 @@ const parseFrameRate = (value: unknown): number | undefined => {
     return Number.isFinite(rate) && rate > 0 ? rate : undefined;
 };
 
-const estimateVideoDurationFromSize = (filePath: string): number | undefined => {
+export const estimateVideoDurationFromSize = (filePath: string): number | undefined => {
     try {
         const stats = fs.statSync(filePath);
         const sizeMB = stats.size / (1024 * 1024);
@@ -228,7 +228,10 @@ const estimateVideoDurationFromSize = (filePath: string): number | undefined => 
     }
 };
 
-const calculateSafeTrimAfterFrames = (durationSeconds: number, renderFps: number = DEFAULT_RENDER_FPS): number => {
+export const calculateSafeTrimAfterFrames = (
+    durationSeconds: number,
+    renderFps: number = DEFAULT_RENDER_FPS,
+): number => {
     const durationFrames = Math.max(1, Math.floor(durationSeconds * renderFps));
     return Math.max(1, durationFrames - SAFE_VIDEO_END_BUFFER_FRAMES);
 };
@@ -319,7 +322,7 @@ export function getVideoDuration(filePath: string): number {
 /**
  * Select the best quality video file
  */
-function getQualityRank(quality: unknown): number {
+export function getQualityRank(quality: unknown): number {
     if (typeof quality !== 'string') {
         return Number.MAX_SAFE_INTEGER;
     }
@@ -328,7 +331,10 @@ function getQualityRank(quality: unknown): number {
     return rank === -1 ? Number.MAX_SAFE_INTEGER : rank;
 }
 
-function selectBestVideoFile(videoFiles: any[], orientation: 'portrait' | 'landscape' | 'none' = 'portrait'): any {
+export function selectBestVideoFile(
+    videoFiles: any[],
+    orientation: 'portrait' | 'landscape' | 'none' = 'portrait',
+): any {
     // console.log(`    🎬 [QUALITY] Selecting best from ${videoFiles.length} video files`);
 
     // Log available qualities
@@ -359,7 +365,7 @@ function selectBestVideoFile(videoFiles: any[], orientation: 'portrait' | 'lands
     return sorted;
 }
 
-function sortVideoAssets(assets: MediaAsset[]): MediaAsset[] {
+export function sortVideoAssets(assets: MediaAsset[]): MediaAsset[] {
     return assets.sort((left: MediaAsset, right: MediaAsset) => {
         const leftDur = left.videoDuration || TARGET_VIDEO_DURATION_SECONDS;
         const rightDur = right.videoDuration || TARGET_VIDEO_DURATION_SECONDS;
@@ -410,12 +416,13 @@ async function withOllamaSlot<T>(task: () => Promise<T>): Promise<T> {
     }
 }
 
-function normalizeKeywordList(value: unknown): string[] {
+export function normalizeKeywordList(value: unknown): string[] {
     if (!Array.isArray(value)) {
         return [];
     }
 
     const uniqueKeywords = new Set<string>();
+    const seenLower = new Set<string>();
 
     for (const item of value) {
         if (typeof item !== 'string') {
@@ -423,15 +430,25 @@ function normalizeKeywordList(value: unknown): string[] {
         }
 
         const normalized = item.trim().replace(/\s+/g, ' ');
-        if (normalized) {
-            uniqueKeywords.add(normalized);
+        if (!normalized) {
+            continue;
         }
+
+        // Dedup case-insensitively so "Sunset" and "sunset" collapse into one
+        // search keyword (stock APIs treat them as the same query).
+        const lower = normalized.toLowerCase();
+        if (seenLower.has(lower)) {
+            continue;
+        }
+
+        seenLower.add(lower);
+        uniqueKeywords.add(normalized);
     }
 
     return Array.from(uniqueKeywords).slice(0, 3);
 }
 
-function parseGeminiKeywordResponse(responseText: string): string[] {
+export function parseGeminiKeywordResponse(responseText: string): string[] {
     const cleaned = responseText
         .replace(/```json/gi, '')
         .replace(/```/g, '')
