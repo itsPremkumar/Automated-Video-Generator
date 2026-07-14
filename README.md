@@ -32,6 +32,7 @@
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-18%2B-2f7d32?style=for-the-badge" alt="Node.js 18+"></a>
   <a href="https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/CONTRIBUTING.md"><img src="https://img.shields.io/badge/contributions-welcome-brightgreen?style=for-the-badge" alt="Contributions welcome"></a>
   <a href="https://github.com/itsPremkumar/Automated-Video-Generator/releases/latest"><img src="https://img.shields.io/badge/download-Windows_.exe-blue?style=for-the-badge&logo=windows" alt="Download Windows"></a>
+  <a href="https://github.com/sponsors/itsPremkumar"><img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4-red?style=for-the-badge&logo=github" alt="GitHub Sponsors"></a>
 </div>
 
 <div align="center">
