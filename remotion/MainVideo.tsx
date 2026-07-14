@@ -12,7 +12,7 @@ import {
     interpolate,
     Easing,
 } from 'remotion';
-import { SubtitleOverlay, TextConfig } from './SubtitleOverlay';
+import { SubtitleOverlay, TextConfig, CaptionSegment, SubtitleMode } from './SubtitleOverlay';
 
 interface Scene {
     sceneNumber: number;
@@ -20,6 +20,7 @@ interface Scene {
     visualDescription: string;
     voiceoverText: string;
     searchKeywords: string[];
+    captionSegments?: CaptionSegment[];
     visual?: {
         type: 'image' | 'video';
         url: string;
@@ -41,6 +42,7 @@ interface VideoData {
     textConfig?: TextConfig;
     backgroundMusic?: string;
     musicVolume?: number;
+    subtitleMode?: 'off' | 'overlay' | 'burned';
 }
 
 // Transition duration in frames
@@ -117,6 +119,8 @@ export const MainVideo: React.FC<{ sceneData: VideoData }> = ({ sceneData }) => 
                             durationInFrames={sceneDurationInFrames}
                             showText={videoData.showText !== false}
                             textConfig={videoData.textConfig}
+                            captionSegments={scene.captionSegments}
+                            subtitleMode={videoData.subtitleMode}
                         />
                         {scene.audioPath &&
                             (scene.audioPath.endsWith('.mp3') || scene.audioPath.endsWith('.wav')) &&
@@ -141,9 +145,11 @@ interface SceneProps {
     durationInFrames: number;
     showText?: boolean;
     textConfig?: TextConfig;
+    captionSegments?: CaptionSegment[];
+    subtitleMode?: SubtitleMode;
 }
 
-const SceneComponent: React.FC<SceneProps> = ({ scene, durationInFrames, showText = true, textConfig }) => {
+const SceneComponent: React.FC<SceneProps> = ({ scene, durationInFrames, showText = true, textConfig, captionSegments, subtitleMode }) => {
     // console.log(`SceneComponent: Rendered scene ${scene.sceneNumber}`, { scene, durationInFrames });
     const frame = useCurrentFrame();
     const { fps } = useVideoConfig();
@@ -342,6 +348,8 @@ const SceneComponent: React.FC<SceneProps> = ({ scene, durationInFrames, showTex
                     config={textConfig}
                     durationInFrames={durationInFrames}
                     delayInFrames={FADE_DURATION * 0.5}
+                    captionSegments={captionSegments}
+                    subtitleMode={subtitleMode}
                 />
             )}
         </AbsoluteFill>

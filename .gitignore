@@ -73,3 +73,7 @@ assets/icon.ico
 
 # Docker
 .docker/
+
+# local backup copies (not source)
+input/input-scripts-backup.json
+input/input-scripts.json.bak-*

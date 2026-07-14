@@ -19,10 +19,19 @@ export interface VoiceConfig {
     language?: string;
 }
 
+/** A single speech-timed caption cue (relative to scene start, milliseconds). */
+export interface AudioCaptionSegment {
+    text: string;
+    startMs: number;
+    endMs: number;
+}
+
 /** Result returned after generating audio for a scene */
 export interface AudioResult {
     path: string;
     duration: number;
+    /** Speech-timed caption cues captured from the TTS engine (Edge-TTS word boundaries). */
+    captionSegments?: AudioCaptionSegment[];
 }
 
 /** Status snapshot of the active voice engine */

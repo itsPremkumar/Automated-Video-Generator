@@ -61,6 +61,7 @@
         "build": "npm run typecheck",
         "generate": "tsx src/cli.ts",
         "resume": "tsx src/cli.ts --resume",
+        "batch": "tsx src/cli.ts --batch",
         "segment": "tsx src/cli.ts --segment",
         "remotion:studio": "remotion studio remotion/index.ts",
         "remotion:render": "tsx src/render.ts",

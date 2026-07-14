@@ -16,6 +16,8 @@ export interface Scene {
         rate?: number;
     };
     audioPath?: string;
+    /** Speech-timed caption cues (relative to scene start, ms) persisted from TTS. */
+    captionSegments?: { text: string; startMs: number; endMs: number }[];
     visual?: {
         type: 'video' | 'image';
         url: string;
@@ -126,8 +128,11 @@ function parseScriptLocally(script: string): ParsedScript {
         // Split by single newlines
         const lines = para.split('\n');
         for (const line of lines) {
-            // Split by sentence boundaries, but respect bracketed tags
-            const sentences = line.split(/(?<=[.?!])\s+(?![^[]*\])/);
+            // Split by sentence boundaries, but keep a trailing [Visual:...]/[Text:...]
+            // tag attached to the sentence it belongs to (e.g. "Do X? [Visual: default.mp4]"
+            // must stay one unit so the visual cue is not dropped). Only split when the
+            // following char is not an opening bracket.
+            const sentences = line.split(/(?<=[.?!])\s+(?!\[)/);
             for (const sentence of sentences) {
                 const trimmed = sentence.trim();
                 if (trimmed.length > 0) {

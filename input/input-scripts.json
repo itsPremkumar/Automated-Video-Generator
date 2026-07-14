@@ -1,12 +1,12 @@
 [
   {
-    "id": "two-minutes",
-    "title": "2 Minute Scaled Video Test",
-    "script": "Short script.",
-    "orientation": "landscape",
+    "id": "pre7-productivity-tip",
+    "title": "One Simple Trick To Beat Procrastination",
+    "script": "Struggling to get started? [Visual: default.mp4]\nTry the two minute rule. [Visual: default.mp4]\nIf a task takes less than two minutes, do it right now. [Visual: default.mp4]\nFor bigger tasks, commit to just the first two minutes. [Visual: default.mp4]\nWant to work out? [Visual: default.mp4]\nJust put on your shoes. [Visual: default.mp4]\nStarting is the hardest part. [Visual: default.mp4]\nSmall actions build unstoppable habits. [Visual: default.mp4]\nFollow for more tips. [Visual: default.mp4]",
+    "orientation": "portrait",
     "language": "english",
-    "showText": false,
-    "defaultVideo": "default.jpg",
-    "personalAudio": "two_minutes.mp3"
+    "voice": "en-US-JennyNeural",
+    "showText": true,
+    "defaultVideo": "default.mp4"
   }
 ]

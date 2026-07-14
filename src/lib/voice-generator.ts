@@ -27,6 +27,7 @@ import {
     generateVoiceoverWithXtts,
     generateVoiceoverWithLocalOpenAI,
 } from './api-tts-provider';
+import { generateVoiceoverWithKokoro } from './api-tts-provider';
 
 // @ts-ignore - ffprobe-static types
 import ffprobePath from 'ffprobe-static';
@@ -239,7 +240,33 @@ export async function generateVoiceovers(
     return audioFiles;
 }
 
-// ─── Custom API Providers ──────────────────────────────────────────────────
+async function generateSceneVoiceoverWithKokoroWrapper(
+    scene: Scene,
+    outputDir: string,
+): Promise<AudioResult> {
+    const outputPath = path.join(outputDir, `scene_${scene.sceneNumber}_voice.mp3`);
+    const existingAudio = resolveExistingAudio(outputPath, scene.voiceoverText);
+    if (existingAudio) return existingAudio;
+
+    const cleanText = cleanVoiceoverText(scene.voiceoverText);
+    if (!cleanText) return { path: '', duration: Math.max(3, scene.duration || 3) };
+
+    try {
+        await generateVoiceoverWithKokoro(cleanText, outputPath);
+        assertGeneratedAudioFile(outputPath);
+        return { path: outputPath, duration: getAudioDuration(outputPath, scene.voiceoverText) };
+    } catch (error: any) {
+        if (fs.existsSync(outputPath))
+            try {
+                fs.unlinkSync(outputPath);
+            } catch {
+                /* ignore */
+            }
+        throw new Error(`Kokoro failed for scene ${scene.sceneNumber}: ${error.message}`);
+    }
+}
+
+// ─── Custom API Providers (continued) ───────────────────────────────────
 async function generateSceneVoiceoverWithVoiceboxWrapper(
     scene: Scene,
     outputDir: string,
@@ -329,6 +356,19 @@ async function generateSceneVoiceoverWithRetry(
 ): Promise<AudioResult> {
     const provider = (process.env.TTS_PROVIDER || '').toLowerCase().trim();
 
+    if (provider === 'kokoro') {
+        let lastError: Error | null = null;
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                return await generateSceneVoiceoverWithKokoroWrapper(scene, outputDir);
+            } catch (error: any) {
+                lastError = error;
+                if (attempt < MAX_RETRIES) await sleep(RETRY_DELAY_MS * attempt);
+            }
+        }
+        throw lastError || new Error('Kokoro TTS failed after all retries');
+    }
+
     if (provider === 'voicebox' || provider === 'xtts' || provider === 'openai-local') {
         let lastError: Error | null = null;
         for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -391,6 +431,9 @@ async function generateSceneVoiceover(scene: Scene, outputDir: string, config: V
     if (!cleanText) return { path: '', duration: Math.max(3, scene.duration || 3) };
     if (cleanText.length < 2) throw new Error(`Scene ${scene.sceneNumber} has empty or invalid text`);
 
+    // Subtitle output path (Edge-TTS writes word-boundary SRT when --write-subtitles is set).
+    const subtitlePath = outputPath.replace(/\.(mp3|wav|ogg|m4a)$/i, '.srt');
+
     try {
         runEdgeTts([
             '--voice',
@@ -401,9 +444,27 @@ async function generateSceneVoiceover(scene: Scene, outputDir: string, config: V
             cleanText,
             '--write-media',
             outputPath,
+            '--write-subtitles',
+            subtitlePath,
         ]);
         assertGeneratedAudioFile(outputPath);
-        return { path: outputPath, duration: getAudioDuration(outputPath, scene.voiceoverText) };
+
+        // Capture speech-timed caption segments from Edge-TTS word boundaries.
+        // Falls back to undefined when unavailable (e.g. offline, or engine produced
+        // no subtitles) — callers must gracefully fall back to scene-length cues.
+        let captionSegments: AudioResult['captionSegments'];
+        try {
+            const { parseEdgeTtsSubtitles } = await import('./captions.js');
+            captionSegments = parseEdgeTtsSubtitles(subtitlePath) ?? undefined;
+        } catch {
+            captionSegments = undefined;
+        }
+
+        return {
+            path: outputPath,
+            duration: getAudioDuration(outputPath, scene.voiceoverText),
+            captionSegments,
+        };
     } catch (error: any) {
         if (fs.existsSync(outputPath))
             try {

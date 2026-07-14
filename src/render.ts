@@ -53,10 +53,20 @@ interface SceneData {
     backgroundMusic?: string;
     musicVolume?: number;
     assetNamespace?: string;
+    /** Subtitle application mode for burned captions. Defaults to 'burned'. */
+    subtitleMode?: 'off' | 'overlay' | 'burned';
+    /** Sidecar caption format emitted next to the MP4. */
+    captionFormat?: 'none' | 'srt' | 'vtt';
+    /** Sidecar cue distribution mode. */
+    captionCueMode?: 'sentence' | 'word';
 }
 
 interface RenderOptions {
     shouldCancel?: () => boolean;
+    /** When true (default), emit sidecar subtitles.srt/.vtt next to the MP4 (spec F2). */
+    exportCaptions?: boolean;
+    /** Sidecar cue mode. 'sentence' (default) or 'word' (karaoke). */
+    captionCueMode?: 'sentence' | 'word';
 }
 
 function throwIfCancelled(shouldCancel?: () => boolean): void {
@@ -97,6 +107,10 @@ function logMemoryUsage(label: string): void {
 export const renderVideo = async (outputDir: string = resolveProjectPath('output'), options: RenderOptions = {}) => {
     const totalStartTime = Date.now();
     const { shouldCancel } = options;
+
+    // Allow pointing Remotion at a locally-installed Chrome/Chromium instead of
+    // triggering a network browser download (useful on air-gapped/CI hosts).
+    const browserExecutable = process.env.REMOTION_BROWSER_EXECUTABLE || null;
 
     console.log('\n🎥 [RENDER] Module loaded (Segmented Mode)');
     console.log(`🎥 [RENDER] Working directory: ${process.cwd()}`);
@@ -151,6 +165,17 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         const isLandscape = sceneData.orientation === 'landscape';
         const width = isLandscape ? 1920 : 1080;
         const height = isLandscape ? 1080 : 1350;
+
+        // Speech-timed caption cues per scene (relative to each scene start, ms).
+        // Carried from TTS word-boundary capture; undefined when unavailable.
+        const sceneCaptionSegments: ({ text: string; startMs: number; endMs: number }[] | undefined)[] =
+            sceneData.scenes.map((s: any) =>
+                Array.isArray(s.captionSegments) && s.captionSegments.length > 0
+                    ? (s.captionSegments as { text: string; startMs: number; endMs: number }[])
+                    : undefined,
+            );
+        const subtitleMode: 'off' | 'overlay' | 'burned' =
+            (sceneData.subtitleMode as 'off' | 'overlay' | 'burned') || 'burned';
 
         // ══════════════════════════════════════════════════════════════════
         // STEP 2: BUNDLE REMOTION PROJECT (ONCE)
@@ -218,6 +243,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
             const thumbnailComposition = await selectComposition({
                 serveUrl: bundleLocation,
                 id: 'SingleScene',
+                browserExecutable,
                 inputProps: {
                     scene: firstScene,
                     isFirstScene: true,
@@ -248,6 +274,8 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                     backgroundMusic: sceneData.backgroundMusic,
                     musicVolume: sceneData.musicVolume,
                     globalStartFrame: 0,
+                    captionSegments: sceneCaptionSegments[0],
+                    subtitleMode,
                 },
             });
 
@@ -328,6 +356,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                 const composition = await selectComposition({
                     serveUrl: bundleLocation,
                     id: 'SingleScene',
+                    browserExecutable,
                     inputProps: {
                         scene,
                         isFirstScene,
@@ -337,6 +366,8 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                         backgroundMusic: sceneData.backgroundMusic,
                         musicVolume: sceneData.musicVolume,
                         globalStartFrame,
+                        captionSegments: sceneCaptionSegments[i],
+                        subtitleMode,
                     },
                 });
 
@@ -351,6 +382,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                     serveUrl: bundleLocation,
                     codec: 'h264',
                     outputLocation: segmentPath,
+                    browserExecutable,
                     inputProps: {
                         scene,
                         isFirstScene,
@@ -360,6 +392,8 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
                         backgroundMusic: sceneData.backgroundMusic,
                         musicVolume: sceneData.musicVolume,
                         globalStartFrame,
+                        captionSegments: sceneCaptionSegments[i],
+                        subtitleMode,
                     },
                     crf: 18,
                     timeoutInMilliseconds: 300000, // 5 min per scene max
@@ -511,6 +545,30 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
 
         console.log(`✅ [RENDER] Final video: ${finalOutput}`);
         console.log(`📊 [RENDER] File size: ${finalSizeMB} MB`);
+
+        // ══════════════════════════════════════════════════════════════════
+        // STEP 6.5: CAPTION SIDECAR EXPORT (spec F2) — subtitles.srt + .vtt
+        // ══════════════════════════════════════════════════════════════════
+        if (options.exportCaptions !== false) {
+            try {
+                const { writeCaptionSidecars } = await import('./lib/captions.js');
+                const sidecarScenes = sceneData.scenes.map((s: any) => ({
+                    text: typeof s.voiceoverText === 'string' ? s.voiceoverText : '',
+                    durationSeconds: typeof s.duration === 'number' ? s.duration : 0,
+                }));
+                const written = writeCaptionSidecars(outputDir, sidecarScenes, {
+                    mode: options.captionCueMode === 'word' ? 'word' : 'sentence',
+                });
+                if (written.length > 0) {
+                    console.log(
+                        `✅ [RENDER] Caption sidecars: ${written.map((w: string) => path.basename(w)).join(', ')}`,
+                    );
+                }
+            } catch (capErr: any) {
+                // Sidecar export is best-effort: never fail the render for it.
+                console.warn(`⚠️ [RENDER] Caption sidecar export skipped: ${capErr?.message ?? capErr}`);
+            }
+        }
 
         // ══════════════════════════════════════════════════════════════════
         // STEP 7: CLEANUP SEGMENTS

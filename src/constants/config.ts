@@ -13,7 +13,19 @@ export const APP_VERSION = pkg.version;
 export { AVAILABLE_VOICES, LOCALE_TO_LANGUAGE_NAME };
 
 export const HOST = process.env.HOST || '127.0.0.1';
-export const PORT = Number(process.env.PORT || 3001);
+
+// Fix (D2): do not inherit an ambient PORT from the host shell (e.g. Paperclip
+// exports PORT=3100). That causes EADDRINUSE when AVG boots next to another
+// service. Resolution order: explicit AVG_PORT env > .env PORT > default 3001.
+// Ambient process.env.PORT is intentionally ignored unless AVG_PORT is set, so
+// CI/containers stay deterministic. Pass AVG_PORT to override.
+const AVG_PORT = process.env.AVG_PORT;
+const ENV_PORT = process.env.PORT;
+export const PORT = AVG_PORT
+  ? Number(AVG_PORT)
+  : typeof ENV_PORT === 'string' && ENV_PORT.length > 0 && !process.env.AVG_PORT_IGNORE_ENV
+    ? Number(ENV_PORT)
+    : 3001;
 export const OUTPUT_ROOT = resolveProjectPath('output');
 export const ENV_FILE = resolveProjectPath('.env');
 export const DEFAULT_TITLE = 'Generated Video';
