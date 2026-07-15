@@ -75,6 +75,8 @@
         "test:render": "tsx --test \"src/render.e2e.test.ts\"",
         "test:coverage": "node --experimental-test-coverage --test \"src/**/*.test.ts\"",
         "mcp": "tsx src/mcp-server.ts",
+        "agentic": "tsx bin/agentic-run.ts",
+        "agentic:batch": "tsx bin/agentic-batch.ts",
         "prepublishOnly": "npm run typecheck",
         "prepare": "node -e \"try{process.exit(0)}catch(e){process.exit(0)}\"",
         "electron:compile": "tsc -p tsconfig.electron.json",

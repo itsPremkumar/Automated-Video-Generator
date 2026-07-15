@@ -16,5 +16,5 @@
         },
         "required": ["PEXELS_API_KEY"]
     },
-    "skills": ["skills/cli-operations", "skills/generate-script"]
+    "skills": ["skills/cli-operations", "skills/generate-script", "skills/agentic-video"]
 }

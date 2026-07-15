@@ -2,6 +2,7 @@ import express, { NextFunction, Request, Response } from 'express';
 import apiRoutes from './adapters/http/api-routes';
 import viewRoutes from './adapters/http/view-routes';
 import fileRoutes from './adapters/http/file-routes';
+import agenticRoutes from './adapters/http/agentic-controller.js';
 import { startJobController } from './adapters/http/jobs-controller';
 import { RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS } from './constants/config';
 import { resolveProjectPath, resolveRuntimePublicPath } from './shared/runtime/paths';
@@ -167,6 +168,8 @@ app.post(
 app.use('/api', apiRoutes);
 app.use(fileRoutes);
 app.use(viewRoutes);
+// PHASE 9.1: agentic pipeline REST endpoints (additive; legacy /api untouched).
+app.use('/api/agentic', agenticRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

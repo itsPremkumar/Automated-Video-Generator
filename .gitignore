@@ -12,6 +12,7 @@ output/
 public/visuals/
 public/jobs/
 public/audio/
+public/agentic-assets/
 coverage/
 
 # Environment Variables
@@ -77,3 +78,13 @@ assets/icon.ico
 # local backup copies (not source)
 input/input-scripts-backup.json
 input/input-scripts.json.bak-*
+
+# Agentic pipeline runtime job workspaces (generated at runtime, NOT source)
+# Each agentic job downloads candidates + writes verification/manifests here.
+# Planning docs in agentic-pipeline/ (README.md, VERIFICATION_MATRIX.md,
+# AGENT_TOOLS_AND_PHASES.md) and the source under src/agentic/ stay tracked.
+agentic-pipeline/workspaces/
+agentic-pipeline/**/*.candidate.*
+*.candidate.jpg
+*.candidate.mp4
+*.candidate.mp3

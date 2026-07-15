@@ -36,6 +36,18 @@ export interface VerificationResult {
     reason: string;
 }
 
+export interface VisionCheckOptions {
+    /** Also screen for watermarks / embedded text overlays. */
+    checkWatermark?: boolean;
+    /** Also screen for NSFW / unsafe content. */
+    checkSafety?: boolean;
+}
+
+const DEFAULT_VISION_OPTS: VisionCheckOptions = {
+    checkWatermark: true,
+    checkSafety: true,
+};
+
 function extractVideoFrame(videoPath: string, outputDir: string): string | null {
     const framePath = path.join(outputDir, `verify_frame_${path.basename(videoPath)}.jpg`);
     if (fs.existsSync(framePath)) return framePath;
@@ -56,10 +68,21 @@ function imageToBase64(imagePath: string): string | null {
     }
 }
 
-async function verifyWithOllama(base64Image: string, keywords: string): Promise<VerificationResult> {
-    const prompt = `Does this image match the concept: "${keywords}"?
-Answer ONLY with a JSON object: {"passes": true/false, "confidence": 0-10, "reason": "short reason"}
-confidence 0 =完全不匹配, 10 =完美匹配.`;
+async function verifyWithOllama(
+    base64Image: string,
+    keywords: string,
+    opts: VisionCheckOptions,
+): Promise<VerificationResult> {
+    let prompt = `Does this image match the concept: "${keywords}"?`;
+    if (opts.checkWatermark) {
+        prompt += ` Is there any visible WATERMARK or embedded TEXT overlay? (watermark must be false if none)`;
+    }
+    if (opts.checkSafety) {
+        prompt += ` Is the content SAFE and not NSFW? (safe must be true)`;
+    }
+    prompt += `
+Answer ONLY with a JSON object: {"passes": true/false, "confidence": 0-10, "reason": "short reason", "watermark": true/false, "safe": true/false}
+confidence 0 = completely unrelated, 10 = perfect match.`;
 
     const response = await ollamaGenerateWithImage(
         'You are a strict image-content verifier. You must respond with valid JSON only.',
@@ -71,13 +94,25 @@ confidence 0 =完全不匹配, 10 =完美匹配.`;
     return parseVerificationResponse(response);
 }
 
-async function verifyWithGemini(base64Image: string, keywords: string, mimeType: string): Promise<VerificationResult> {
+async function verifyWithGemini(
+    base64Image: string,
+    keywords: string,
+    mimeType: string,
+    opts: VisionCheckOptions,
+): Promise<VerificationResult> {
     if (!GEMINI_API_KEY) {
         return { passes: true, confidence: 5, reason: 'No Gemini API key configured, skipping verification' };
     }
 
-    const prompt = `Does this image match the concept: "${keywords}"?
-Answer ONLY with a JSON object: {"passes": true/false, "confidence": 0-10, "reason": "short reason"}`;
+    let prompt = `Does this image match the concept: "${keywords}"?`;
+    if (opts.checkWatermark) {
+        prompt += ` Is there any visible WATERMARK or embedded TEXT overlay? (watermark must be false if none)`;
+    }
+    if (opts.checkSafety) {
+        prompt += ` Is the content SAFE and not NSFW? (safe must be true)`;
+    }
+    prompt += `
+Answer ONLY with a JSON object: {"passes": true/false, "confidence": 0-10, "reason": "short reason", "watermark": true/false, "safe": true/false}`;
 
     const { data } = await axios.post(
         `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
@@ -124,7 +159,11 @@ function parseVerificationResponse(text: string): VerificationResult {
     }
 }
 
-export async function verifyMedia(filePath: string, keywords: string[]): Promise<VerificationResult> {
+export async function verifyMedia(
+    filePath: string,
+    keywords: string[],
+    opts: VisionCheckOptions = DEFAULT_VISION_OPTS,
+): Promise<VerificationResult> {
     const ext = path.extname(filePath).toLowerCase();
     const isVideo = ['.mp4', '.webm', '.mov', '.m4v', '.avi'].includes(ext);
     const isImage = ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
@@ -157,13 +196,12 @@ export async function verifyMedia(filePath: string, keywords: string[]): Promise
 
     const keywordStr = keywords.join(', ');
     console.log(`🧐 [VERIFY] Checking "${keywordStr}" against ${path.basename(imagePath)}...`);
-
     let result: VerificationResult;
     try {
         if (AI_PROVIDER === 'gemini' && GEMINI_API_KEY) {
-            result = await verifyWithGemini(base64, keywordStr, mimeType);
+            result = await verifyWithGemini(base64, keywordStr, mimeType, opts);
         } else {
-            result = await verifyWithOllama(base64, keywordStr);
+            result = await verifyWithOllama(base64, keywordStr, opts);
         }
     } catch (err: any) {
         console.log(`🧐 [VERIFY] AI provider unavailable (${err.message}), skipping verification`);

@@ -872,6 +872,10 @@ export async function fetchVisualsForScene(
     sceneText?: string,
 ): Promise<MediaAsset | null> {
     const query = keywords.join(' ').trim();
+    // Try EACH keyword individually (not the joined string) so a multi-phrase
+    // keyword list like ["lions","lions wildlife"] issues separate API queries
+    // instead of one mangled "lions lions wildlife" query that returns nothing.
+    const individualQueries = [...new Set(keywords.map((k) => k.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()).filter(Boolean))];
     const cache = getCache();
     const preferredType: CachedMediaType = preferVideo ? 'video' : 'image';
     const preferredCacheKey = buildCacheKey(query, orientation, preferredType);
@@ -900,7 +904,7 @@ export async function fetchVisualsForScene(
         console.log(`🧠 [FETCH] Original query: "${query}"`);
     }
 
-    const queriesToTry = sceneText && preferVideo ? await optimizeKeywordsWithGemini(sceneText, [query]) : [query];
+    const queriesToTry = sceneText && preferVideo ? await optimizeKeywordsWithGemini(sceneText, individualQueries) : individualQueries;
 
     // console.log('\n🎨 ════════════════════════════════════════════════');
     // console.log(`🎨 [FETCH] Fetching visuals for keywords: [${keywords.join(', ')}]`);
@@ -988,10 +992,50 @@ export async function fetchVisualsForScene(
                 }
             }
 
-            // If no videos found, try Openverse images as fallback
+            // If no videos found, fall back to images: Pexels first (reliable CDN),
+            // then Openverse (per keyword) so we still get a real still, not a card.
+            for (const q of individualQueries) {
+                const images = await searchImages(q, 1, 3, orientation === 'none' ? 'portrait' : orientation);
+                if (images.length > 0) {
+                    cache[cacheKey] = images[0];
+                    saveCache(cache);
+                    return images[0];
+                }
+            }
+
             if (OPENVERSE_ENABLED) {
-                console.log(`🎨 [FETCH] 🔄 No videos found, trying Openverse images for "${query}"...`);
-                const openverseImages = await searchOpenverseImages(query, 3);
+                for (const q of individualQueries) {
+                    console.log(`🎨 [FETCH] 🔄 No videos found, trying Openverse images for "${q}"...`);
+                    const openverseImages = await searchOpenverseImages(q, 3);
+                    if (openverseImages.length > 0) {
+                        console.log(
+                            `🎨 [FETCH] ✅ Found image on Openverse: ${openverseImages[0].url} (${openverseImages[0].width}x${openverseImages[0].height})`,
+                        );
+                        cache[cacheKey] = openverseImages[0];
+                        saveCache(cache);
+                        return openverseImages[0];
+                    }
+                }
+            }
+            return null;
+        }
+
+        // Fallback to images — try each individual keyword (Pexels first, then
+        // Openverse) so a clean term like "lion" wins instead of a mangled join.
+        for (const q of individualQueries) {
+            const images = await searchImages(q, 1, 3, orientation === 'none' ? 'portrait' : orientation);
+            if (images.length > 0) {
+                cache[cacheKey] = images[0];
+                saveCache(cache);
+                return images[0];
+            }
+        }
+
+        // Openverse image fallback (no API key required)
+        if (OPENVERSE_ENABLED) {
+            for (const q of individualQueries) {
+                console.log(`🎨 [FETCH] 🔄 Trying Openverse images for "${q}"...`);
+                const openverseImages = await searchOpenverseImages(q, 3);
                 if (openverseImages.length > 0) {
                     console.log(
                         `🎨 [FETCH] ✅ Found image on Openverse: ${openverseImages[0].url} (${openverseImages[0].width}x${openverseImages[0].height})`,
@@ -1000,30 +1044,6 @@ export async function fetchVisualsForScene(
                     saveCache(cache);
                     return openverseImages[0];
                 }
-            }
-            return null;
-        }
-
-        // Fallback to images
-        const images = await searchImages(query, 1, 3, orientation === 'none' ? 'portrait' : orientation);
-        if (images.length > 0) {
-            // console.log(`🎨 [FETCH] ✅ Found image: ${images[0].url}`);
-            cache[cacheKey] = images[0];
-            saveCache(cache);
-            return images[0];
-        }
-
-        // Openverse image fallback (no API key required)
-        if (OPENVERSE_ENABLED) {
-            console.log(`🎨 [FETCH] 🔄 Trying Openverse images for "${query}"...`);
-            const openverseImages = await searchOpenverseImages(query, 3);
-            if (openverseImages.length > 0) {
-                console.log(
-                    `🎨 [FETCH] ✅ Found image on Openverse: ${openverseImages[0].url} (${openverseImages[0].width}x${openverseImages[0].height})`,
-                );
-                cache[cacheKey] = openverseImages[0];
-                saveCache(cache);
-                return openverseImages[0];
             }
         }
 
