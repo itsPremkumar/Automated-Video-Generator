@@ -183,8 +183,34 @@ FFMPEG=$(node -e "console.log(require('ffmpeg-static'))")
   offline. Use `--no-sfx` for deterministic offline runs.
 - `OPENVERSE_ENABLED=false` is recommended here because Openverse returns
   Flickr URLs that 502 on download.
+- `fontconfig` is broken on this box; all drawtext calls pin a real font file
+  (`C:/Windows/Fonts/arial.ttf`) so captions/karaoke/thumbnail never hang.
 
 ---
+
+## 8. FREE advanced features (offline, $0) — `src/agentic/export.ts`
+
+All of these run with **no API keys, no paid services, no network**. Implemented
+the 120-day-plan "advanced" items that need no external dependency:
+
+- **Multi-aspect export** — every render also emits `_16x9.mp4`, `_1x1.mp4`,
+  `_9x16.mp4` (ffmpeg scale+pad, no crop/distortion). Push one video everywhere.
+- **Free social metadata** — `generateFreeMetadata(plan)` writes `_metadata.txt`
+  with a YouTube/TikTok-ready TITLE, DESCRIPTION, HASHTAGS, TAGS. No LLM call
+  (legacy `generateMetadataAI` is NOT used → stays free + offline).
+- **Branded thumbnail** — `renderThumbnail()` burns the title onto frame 1.
+- **Karaoke / word-level captions (B1)** — `--karaoke` highlights each word in
+  turn (yellow on dark box). Word timing is generated FREE from the script
+  (`wordTimingsFromScript`); when real TTS word-timings exist they can replace it.
+  Verified: a karaoke render produced a valid video with all X7–X15 gates passing.
+- **A/B variant** — `renderVariant(res, preset, tag)` re-renders the same approved
+  plan with an alternate preset (e.g. `reels` vs `cinematic`) for comparison.
+
+**CLI:**
+```bash
+npx tsx bin/agentic-auto.ts --topic "..." --karaoke --aspect 16:9 --no-sfx
+# outputs: <job>.mp4 + _16x9/_1x1/_9x16 + _thumbnail.jpg + _metadata.txt
+```
 
 ## 7. Agent-editable + user-media features (P1, ported from legacy)
 

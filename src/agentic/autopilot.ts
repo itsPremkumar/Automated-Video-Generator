@@ -152,6 +152,8 @@ export async function autoRunVideo(
                 kinetic: cfg.kineticText !== false && !soften,
                 kenBurns: cfg.kenBurns !== false,
                 crossfadeSec: soften ? 0.3 : 0.5,
+                captions: (cfg.captions as any) ?? 'burned',
+                dimensions: cfg.aspect === '16:9' ? { w: 1280, h: 720 } : cfg.aspect === '1:1' ? { w: 1080, h: 1080 } : { w: 720, h: 1280 },
             };
             let out: string;
             if ((opts.renderer ?? cfg.renderer) === 'remotion' && !soften) {

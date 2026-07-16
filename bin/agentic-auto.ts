@@ -48,6 +48,9 @@ async function main() {
     if (arg('grade', '')) cfg.grade = arg('grade', '') as any;
     if (arg('transition', '')) cfg.transition = arg('transition', '') as any;
     if (bool('landscape')) { cfg.orientation = 'landscape'; cfg.aspect = '16:9'; }
+    if (arg('aspect', '')) cfg.aspect = arg('aspect', '') as any;
+    if (bool('karaoke')) cfg.captions = 'karaoke';
+    if (bool('no-captions')) cfg.captions = 'none';
 
     console.log(`\n🤖 AUTOPILOT — fully autonomous: "${cfg.topic}" (preset ${cfg.preset})`);
     const report = await autoRunVideo(

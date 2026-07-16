@@ -25,6 +25,7 @@ import { verifyMedia } from '../lib/media-verifier.js';
 import { resolveFreeBackgroundMusic } from '../lib/free-music.js';
 import { verifyRenderedVideo, PostRenderCheck } from './gate.js';
 import { inputAssetPath } from '../lib/path-safety.js';
+import { exportMultiAspect, generateFreeMetadata, renderThumbnail, wordTimingsFromScript } from './export.js';
 
 import { buildPlan } from './plan.js';
 import { acquireAssets, AcquireDeps, FetchedVisual } from './acquire.js';
@@ -541,11 +542,24 @@ async function buildSfxLayer(
 
 export async function renderAgenticSlideshow(
     res: PipelineResult,
-    opts: { outPath?: string; crossfadeSec?: number; burnCaptions?: boolean; sfx?: boolean; transition?: string; preset?: string; kinetic?: boolean; kenBurns?: boolean } = {},
+    opts: { outPath?: string; crossfadeSec?: number; burnCaptions?: boolean; sfx?: boolean; transition?: string; preset?: string; kinetic?: boolean; kenBurns?: boolean; dimensions?: { w: number; h: number }; captions?: 'burned' | 'karaoke' | 'none' } = {},
 ): Promise<string> {
-     
+    
     const ffmpeg: string = require('ffmpeg-static');
     const { execFile } = require('child_process');
+    // Pin a real font file so drawtext never touches fontconfig (which is broken
+    // on this box and would otherwise hang/error the render). Falls back gracefully
+    // if the path is missing (ffmpeg then uses its built-in default).
+    const FONT_FILE = (() => {
+        const candidates = [
+            'C:/Windows/Fonts/arial.ttf',
+            'C:/Windows/Fonts/seguiemj.ttf',
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+        ];
+        for (const c of candidates) if (fs.existsSync(c)) return c;
+        return '';
+    })();
+    const FONT_ARG = FONT_FILE ? `fontfile='${FONT_FILE}':` : '';
     const outDir = res.workspace.root + '/render';
     fs.mkdirSync(outDir, { recursive: true });
     const out = opts.outPath ?? (outDir + '/' + res.workspace.jobId + '.mp4');
@@ -607,7 +621,7 @@ export async function renderAgenticSlideshow(
     }
 
     // ── Each scene: scale+pad, optional Ken Burns zoom, color grade, hold for VO. ──
-    const W = 720, H = 1280;
+    const W = opts.dimensions?.w ?? 720, H = opts.dimensions?.h ?? 1280;
     const sceneFilters = visuals.map((a, i) => {
         const dur = a.durationSec ?? 4;
         // Gentle Ken Burns zoom (spec 7.1). Comma inside the min() expression is
@@ -659,17 +673,34 @@ export async function renderAgenticSlideshow(
         let tBase = 0;
         for (const a of visuals) {
             const dur = a.durationSec ?? 4;
-            const segs = (a.captionSegments && a.captionSegments.length
-                ? a.captionSegments
-                : [{ text: (res.plan.scenes[a.sceneIndex] && res.plan.scenes[a.sceneIndex].voiceoverText) || '', startMs: 0, endMs: Math.round(dur * 1000) }]);
-            for (const s of segs) {
-                const start = (tBase + s.startMs / 1000).toFixed(2);
-                const end = (tBase + s.endMs / 1000).toFixed(2);
-                const safe = s.text.replace(/'/g, '’').replace(/:/g, '\\:').replace(/\n/g, ' ');
-                const out = `c${ci}`;
-                vfArgs.push(`${ctag}drawtext=text='${safe}':fontcolor=white:fontsize=30:box=1:boxcolor=black@0.5:boxborderw=10:line_spacing=4:x=(w-text_w)/2:y=h-text_h-120:enable='between(t\\,${start}\\,${end})'[${out}]`);
-                ctag = `[${out}]`;
-                ci++;
+            const scText = (res.plan.scenes[a.sceneIndex] && res.plan.scenes[a.sceneIndex].voiceoverText) || '';
+            if (opts.captions === 'karaoke') {
+                // B1 word-level karaoke: highlight each word in turn (yellow on
+                // dark box) across the scene. Free — timing from the script.
+                const words = wordTimingsFromScript(scText, dur);
+                for (const wseg of words) {
+                    const start = (tBase + wseg.startMs / 1000).toFixed(2);
+                    const end = (tBase + wseg.endMs / 1000).toFixed(2);
+                    const safe = wseg.word.replace(/'/g, '’').replace(/:/g, '\\:');
+                    const out = `c${ci}`;
+                    // current word highlighted yellow, rest of sentence dim white below
+                    vfArgs.push(`${ctag}drawtext=${FONT_ARG}text='${safe}':fontcolor=yellow:fontsize=38:box=1:boxcolor=black@0.55:boxborderw=12:x=(w-text_w)/2:y=h-text_h-140:enable='between(t\\,${start}\\,${end})'[${out}]`);
+                    ctag = `[${out}]`;
+                    ci++;
+                }
+            } else {
+                const segs = (a.captionSegments && a.captionSegments.length
+                    ? a.captionSegments
+                    : [{ text: scText, startMs: 0, endMs: Math.round(dur * 1000) }]);
+                for (const s of segs) {
+                    const start = (tBase + s.startMs / 1000).toFixed(2);
+                    const end = (tBase + s.endMs / 1000).toFixed(2);
+                    const safe = s.text.replace(/'/g, '’').replace(/:/g, '\\:').replace(/\\n/g, ' ');
+                    const out = `c${ci}`;
+                    vfArgs.push(`${ctag}drawtext=${FONT_ARG}text='${safe}':fontcolor=white:fontsize=30:box=1:boxcolor=black@0.5:boxborderw=10:line_spacing=4:x=(w-text_w)/2:y=h-text_h-120:enable='between(t\\,${start}\\,${end})'[${out}]`);
+                    ctag = `[${out}]`;
+                    ci++;
+                }
             }
             tBase += dur;
         }
@@ -692,9 +723,9 @@ export async function renderAgenticSlideshow(
                 const end = (base + cue.atSec + (cue.kind === 'wordpop' ? 0.9 : 2.6)).toFixed(2);
                 const safe = cue.text.replace(/'/g, '’').replace(/:/g, '\\:');
                 if (cue.kind === 'lowerthird') {
-                    vfArgs.push(`${ktag}drawtext=text='${safe}':fontcolor=white:fontsize=34:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=h-text_h-90:enable='between(t\\,${start}\\,${end})'[k${i}]`);
+                    vfArgs.push(`${ktag}drawtext=${FONT_ARG}text='${safe}':fontcolor=white:fontsize=34:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=h-text_h-90:enable='between(t\\,${start}\\,${end})'[k${i}]`);
                 } else {
-                    vfArgs.push(`${ktag}drawtext=text='${safe}':fontcolor=yellow:fontsize=64:box=1:boxcolor=black@0.0:borderw=3:bordercolor=yellow:x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t\\,${start}\\,${end})'[k${i}]`);
+                    vfArgs.push(`${ktag}drawtext=${FONT_ARG}text='${safe}':fontcolor=yellow:fontsize=64:box=1:boxcolor=black@0.0:borderw=3:bordercolor=yellow:x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t\\,${start}\\,${end})'[k${i}]`);
                 }
                 ktag = `[k${i}]`;
             }
@@ -884,6 +915,19 @@ function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: string):
     fs.writeFileSync(base + '_details.txt',
         `${res.plan.title}\n\n${res.plan.scenes.map((s) => `• ${s.voiceoverText}`).join('\n')}\n\n${hashtags}\n\nGenerated by agentic pipeline (backend=${res.backend}, voiceoverDriven=${res.voiceovers?.voiceoverDriven ?? false}).`,
         'utf8');
+
+    // ── FREE advanced exports (offline, $0) ──
+    // Branded thumbnail from the first frame.
+    try { renderThumbnail(mp4, res.plan); } catch { /* optional */ }
+    // Multi-aspect copies (9:16 + 16:9 + 1:1) for cross-platform publishing.
+    try { exportMultiAspect(mp4, ['9:16', '16:9', '1:1']); } catch { /* optional */ }
+    // Social-ready metadata (no LLM, fully offline).
+    try {
+        const meta = generateFreeMetadata(res.plan);
+        fs.writeFileSync(base + '_metadata.txt',
+            `TITLE:\n${meta.title}\n\nDESCRIPTION:\n${meta.description}\n\nHASHTAGS:\n${meta.hashtags}\n\nTAGS:\n${meta.tags.join(', ')}`,
+            'utf8');
+    } catch { /* optional */ }
 }
 
 /**
