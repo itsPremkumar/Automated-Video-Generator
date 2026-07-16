@@ -43,6 +43,22 @@ import {
     writeScriptHeuristic,
 } from './agent.js';
 
+/**
+ * Pure helper: derive the media provider name from a URL host so candidate
+ * attribution in the output reflects the REAL source (not a hardcoded label).
+ * Exported for unit testing.
+ */
+export function sourceFromUrl(url: string): string {
+    let host = '';
+    try { host = new URL(url).hostname; } catch { return 'unknown'; }
+    if (host.includes('pexels')) return 'pexels';
+    if (host.includes('pixabay')) return 'pixabay';
+    if (host.includes('wikimedia') || host.includes('commons')) return 'wikimedia';
+    if (host.includes('archive.org')) return 'internet-archive';
+    if (host.includes('openverse')) return 'openverse';
+    return host || 'unknown';
+}
+
 export interface PipelineRequest {
     topic: string;
     title: string;
@@ -218,13 +234,7 @@ export async function runAgenticPipeline(
                 if (pick && pick.url && !DEAD_HOSTS.test(pick.url)) {
                     // Derive the real source from the URL host so attribution in
                     // the output reflects the actual provider (not a hardcoded label).
-                    const host = (() => { try { return new URL(pick.url).hostname; } catch { return ''; } })();
-                    const source = host.includes('pexels') ? 'pexels'
-                        : host.includes('pixabay') ? 'pixabay'
-                        : host.includes('wikimedia') || host.includes('commons') ? 'wikimedia'
-                        : host.includes('archive.org') ? 'internet-archive'
-                        : host.includes('openverse') ? 'openverse'
-                        : (host || 'unknown');
+                    const source = sourceFromUrl(pick.url);
                     return [{
                         url: pick.url,
                         localPath: '',
