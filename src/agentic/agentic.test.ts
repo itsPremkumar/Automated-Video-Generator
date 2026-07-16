@@ -239,3 +239,22 @@ describe('agent backend (no external AI)', () => {
     });
 });
 
+describe('writeScriptHeuristic — per-scene visual diversity', () => {
+    test('each scene gets a DISTINCT [Visual: ...] keyword', () => {
+        const script = writeScriptHeuristic('coffee', 'Coffee Facts');
+        const visuals = script.match(/\[Visual:\s*([^\]]+)\]/g)?.map((v) => v.toLowerCase()) ?? [];
+        assert.ok(visuals.length >= 3, 'expected >=3 scene visuals, got ' + visuals.length);
+        const uniq = new Set(visuals);
+        // At least 2 of the 3 scenes must differ (avoids the "all same image" bug).
+        assert.ok(uniq.size >= 2, 'all scenes shared one visual keyword: ' + visuals.join(' | '));
+    });
+
+    test('multi-sentence topic also varies visuals per scene', () => {
+        const script = writeScriptHeuristic('Lions are apex predators. They hunt in prides. Cubs learn by playing.', 'Lions');
+        const visuals = script.match(/\[Visual:\s*([^\]]+)\]/g) ?? [];
+        assert.equal(visuals.length, 3);
+        const uniq = new Set(visuals.map((v) => v.toLowerCase()));
+        assert.ok(uniq.size >= 2, 'multi-sentence topic reused one visual: ' + visuals.join(' | '));
+    });
+});
+

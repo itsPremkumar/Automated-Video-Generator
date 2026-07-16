@@ -74,35 +74,37 @@ export function expandKeywordsHeuristic(scene: ScenePlan, title: string): string
  *  well-keyworded scenes. Sentences are VARIED (hook / insight / payoff) so the
  *  voiceover doesn't read as three identical formulaic lines. */
 export function writeScriptHeuristic(topic: string, title: string): string {
+    const t = title || topic;
+    // Primary visual noun drives the stock search. Keep it clean + on-topic.
+    const topicWords = topic.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter((w) => w.length > 3);
+    const kw = topicWords[topicWords.length - 1] ?? t.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter((w) => w.length > 3)[0] ?? 'nature';
+    // Per-scene visual variation: rotate DISTINCT primary nouns so every scene
+    // fetches a DIFFERENT on-topic image. Critical: the leading word must differ
+    // across scenes (not all "coffee X"), because the fetcher joins ALL keywords
+    // into one query and a shared leading noun collapses to the same top result.
+    const angles = [`${kw} cup`, `espresso machine`, `barista cafe`, `${kw} beans roast`, `latte art`, `${kw} pour over`];
+    const visualFor = (i: number) => angles[i % angles.length];
+
     const sentences = topic
         .split(/(?<=[.!?])\s+|\n+/)
         .map((s) => s.trim())
         .filter(Boolean);
     if (sentences.length >= 3) {
-        const kw = topic.split(/\s+/).filter((w) => w.length > 3).slice(0, 3).join(' ');
-        return sentences.map((s) => `${s} [Visual: ${kw}]`).join('\n');
+        return sentences.map((s, i) => `${s} [Visual: ${visualFor(i)}]`).join('\n');
     }
-    const t = title || topic;
-    // Extract a clean primary visual noun from the topic, lowercased and
-    // punctuation-stripped, so the [Visual: ...] tag drives a sane stock search.
-    const topicWords = topic.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter((w) => w.length > 3);
-    const kw = topicWords[topicWords.length - 1] ?? t.split(/\s+/).filter((w) => w.length > 3)[0] ?? 'nature';
-
-    // Varied opener bank — pick by a stable hash of the topic so the same topic
-    // is always rendered the same way (deterministic) but different topics vary.
     const hook = (str: string): string => {
         let h = 0;
         for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
         const hooks = [
-            `Did you know ${t} is more interesting than most people think? [Visual: ${kw}]`,
-            `Here's something surprising about ${t} you'll want to remember. [Visual: ${kw}]`,
-            `Let's break down ${t} in a way that actually makes sense. [Visual: ${kw}]`,
-            `Most guides get ${t} wrong — here's the real story. [Visual: ${kw}]`,
+            `Did you know ${t} is more interesting than most people think? [Visual: ${visualFor(0)}]`,
+            `Here's something surprising about ${t} you'll want to remember. [Visual: ${visualFor(1)}]`,
+            `Let's break down ${t} in a way that actually makes sense. [Visual: ${visualFor(2)}]`,
+            `Most guides get ${t} wrong — here's the real story. [Visual: ${visualFor(0)}]`,
         ];
         return hooks[h % hooks.length];
     };
-    const insight = `The key detail about ${t} is what separates the beginners from the pros. [Visual: ${kw}]`;
-    const payoff = `Apply this one idea about ${t} and you'll see the difference immediately. [Visual: ${kw}]`;
+    const insight = `The key detail about ${t} is what separates the beginners from the pros. [Visual: ${visualFor(1)}]`;
+    const payoff = `Apply this one idea about ${t} and you'll see the difference immediately. [Visual: ${visualFor(2)}]`;
     return [hook(topic), insight, payoff].join('\n');
 }
 

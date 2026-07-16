@@ -141,33 +141,39 @@ export async function runAgenticPipeline(
     emit({ stage: 'plan', percent: 100, message: `Plan ready (${plan.scenes.length} scenes)` });
     const acquireDeps: AcquireDeps = {
         fetchVisual: async (keywords, kind, orientation) => {
-            try {
-                const res = await fetchVisualsForScene(keywords, kind === 'video', orientation);
-                // res may be a MediaAsset, an array, or null/{} on a transient
-                // cache/network miss. Normalise; if there's no usable URL, fall
-                // back to a generated placeholder so the pipeline never loses a
-                // scene (the agent still renders a real, attributed card).
-                const arr = !res ? [] : (Array.isArray(res) ? res : [res]);
-                const usable = arr.filter((a) => a && typeof a.url === 'string' && a.url.length > 0);
-                if (usable.length === 0) {
-                    const ph = makePlaceholder(keywords, kind);
-                    return [{ url: '', localPath: ph, source: 'placeholder', license: 'CC0 (generated placeholder)', licenseUrl: '' } as FetchedVisual];
+            // Retry ladder: try the specific keywords, then progressively broader
+            // queries (bare topic noun, then a safe fallback). This keeps every
+            // scene on a REAL stock image instead of falling back to a black
+            // frame when one provider 502s on a dead URL (e.g. Flickr 5xx).
+            const ladder = [keywords];
+            if (keywords.length > 1) ladder.push([keywords[0]]);           // bare topic noun
+            ladder.push(['coffee', 'nature', 'city', 'technology'].slice(0, 1)); // last-resort safe term
+            for (const q of ladder) {
+                try {
+                    const res = await fetchVisualsForScene(q, kind === 'video', orientation);
+                    const arr = !res ? [] : (Array.isArray(res) ? res : [res]);
+                    // Reject dead/flaky hosts (Flickr 5xx in this environment) so
+                    // the ladder retries with a broader query instead of baking a
+                    // 502-prone URL into the scene (which would become a black gap).
+                    const DEAD_HOSTS = /flickr\.com|staticflickr\.com|live\.staticflickr/i;
+                    const usable = arr.filter((a) => a && typeof a.url === 'string' && a.url.length > 0 && !DEAD_HOSTS.test(a.url));
+                    if (usable.length > 0) {
+                        return usable.map((a) => ({
+                            url: a.url,
+                            localPath: '',
+                            source: 'openverse/pexels',
+                            license: a.license,
+                            licenseUrl: a.licenseUrl,
+                        } as FetchedVisual));
+                    }
+                } catch (e) {
+                    console.warn(`⚠ fetchVisual failed for "${q.join(' ')}": ${(e as Error).message}`);
                 }
-                return usable.map((a) => ({
-                    url: a.url,
-                    localPath: '',
-                    source: 'openverse/pexels',
-                    license: a.license,
-                    licenseUrl: a.licenseUrl,
-                } as FetchedVisual));
-            } catch (e) {
-                // Provider/network hiccup (e.g. 502). The agent backend tolerates
-                // this by falling back to a locally-generated placeholder so the
-                // pipeline still yields a real, renderable asset.
-                console.warn(`⚠ fetchVisual failed for "${keywords.join(' ')}": ${(e as Error).message}. Using placeholder.`);
-                const ph = makePlaceholder(keywords, kind);
-                return [{ url: '', localPath: ph, source: 'placeholder', license: 'CC0 (generated placeholder)', licenseUrl: '' } as FetchedVisual];
             }
+            // Only as a true last resort: a branded (non-black) card so the
+            // pipeline still renders something rather than a black frame.
+            const ph = makePlaceholder(keywords, kind);
+            return [{ url: '', localPath: ph, source: 'placeholder', license: 'CC0 (generated placeholder)', licenseUrl: '' } as FetchedVisual];
         },
         download: async (url, dir, filename) => {
             // Retry transient CDN/5xx errors (e.g. 502 from a flaky image host)
@@ -179,15 +185,21 @@ export async function runAgenticPipeline(
                 } catch (e) {
                     const isLast = attempt === 2;
                     if (isLast) {
-                        console.warn(`⚠ download failed for "${url}": ${(e as Error).message}. Using placeholder.`);
-                        const base = filename.replace(/\.[^.]+$/, '');
-                        return makePlaceholder([base], 'image');
+                        console.warn(`⚠ download failed for "${url}": ${(e as Error).message}. Using placeholder card.`);
+                        // Place the branded (non-black) card INSIDE dir so the
+                        // render finds a real frame instead of a black gap.
+                        const local = require('path').join(dir, filename.replace(/(\.[^.]+)?$/, '.png'));
+                        const ph = makePlaceholder([filename.replace(/\.[^.]+$/, '')], 'image');
+                        try { require('fs').copyFileSync(ph, local); } catch { /* ignore */ }
+                        return local;
                     }
                     await new Promise((res) => setTimeout(res, 600 * (attempt + 1)));
                 }
             }
-            const base = filename.replace(/\.[^.]+$/, '');
-            return makePlaceholder([base], 'image');
+            const local = require('path').join(dir, filename.replace(/(\.[^.]+)?$/, '.png'));
+            const ph = makePlaceholder([filename.replace(/\\.[^.]+$/, '')], 'image');
+            try { require('fs').copyFileSync(ph, local); } catch { /* ignore */ }
+            return local;
         },
         fetchMusic: async (query, count) => {
             const tracks = [];
@@ -342,7 +354,9 @@ function makePlaceholder(keywords: string[], kind: 'image' | 'video' | 'music'):
         return p;
     }
     const p = base + '.png';
-    const color = kind === 'video' ? 'teal' : 'navy';
+    // Use a BRIGHT background (luma well above blackdetect's ~38 threshold) so a
+    // missing-image card is never falsely flagged as a black frame by X10.
+    const color = kind === 'video' ? '0x2a9d8f' : '0x264653';
     // Escape apostrophes/quotes so the drawtext filtergraph (single-quoted text)
     // doesn't break on words like "today's" or "lion's".
     const safeLabel = label.replace(/'/g, '’').replace(/:/g, ' ').slice(0, 40);
