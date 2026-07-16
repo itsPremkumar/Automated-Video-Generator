@@ -1,7 +1,7 @@
 import { Request } from 'express';
 import { layout } from './layout.view';
 import { absoluteUrl } from '../shared/http/public-url';
-import { PROJECT_NAME, DEFAULT_SITE_DESCRIPTION, DEFAULT_SITE_KEYWORDS } from '../constants/config';
+import { PROJECT_NAME, DEFAULT_SITE_KEYWORDS } from '../constants/config';
 import { browserModalComponent } from './home/components/browser-modal.component';
 
 export function videoDownloadPage(req: Request, cspNonce?: string): string {

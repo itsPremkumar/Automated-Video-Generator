@@ -1,6 +1,6 @@
 import { Request } from 'express';
 import { PROJECT_NAME } from '../constants/config';
-import { layout, escapeHtml } from './layout.view';
+import { layout } from './layout.view';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // JOB STATUS PAGE — Premium Timeline Editor V3 (Studio Style)
