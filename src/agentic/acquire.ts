@@ -22,6 +22,7 @@ import {
     writeJson,
 } from './workspace.js';
 import { AssetCandidate, Plan } from './types.js';
+import { inputAssetPath } from '../lib/path-safety.js';
 
 /** Ensure every candidate carries an attribution label so the final gate (X6)
  *  can never be blocked by a *missing metadata string* — only by a truly
@@ -65,6 +66,34 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
         const scene = plan.scenes[i];
         const kind = scene.visualPreference;
         const dir = kind === 'image' ? sceneImageDir(ws, i) : sceneVideoDir(ws, i);
+
+        // P1a — local asset reuse: if this scene is bound to a user file in
+        // input/input-assets/, copy it in directly and skip stock fetching.
+        if (scene.localAsset) {
+            const srcPath = inputAssetPath(scene.localAsset);
+            if (fs.existsSync(srcPath)) {
+                const ext = path.extname(scene.localAsset).toLowerCase();
+                const isVideo = ['.mp4', '.mov', '.webm', '.m4v'].includes(ext);
+                const destName = `candidate_1${ext}`;
+                const destPath = path.join(dir, destName);
+                fs.mkdirSync(dir, { recursive: true });
+                if (!fs.existsSync(destPath)) fs.copyFileSync(srcPath, destPath);
+                candidates.push({
+                    kind: isVideo ? 'video' : 'image',
+                    sceneIndex: i,
+                    candidateIndex: 1,
+                    localPath: destPath,
+                    url: `local://${scene.localAsset}`,
+                    source: 'local-asset',
+                    license: 'User-supplied — owner attribution',
+                    licenseUrl: '',
+                    keywords: scene.searchKeywords,
+                });
+                continue; // done with this scene
+            }
+            // File missing → fall through to stock fetch below.
+        }
+
         // Fetch all scenes in parallel (bounded by the fetcher's own limits).
         // Rejections are isolated per scene so one bad fetch can't kill the run.
         sceneFetches.push(

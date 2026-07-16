@@ -133,7 +133,7 @@ export async function autoRunVideo(
                 emit('error', `post-render checks failed: ${failed}`);
             } else {
             const res = await runAgenticPipeline(
-                { ...req, preferVisual: req.preferVisual ?? cfg.preferVisual, candidatesPerAsset: req.candidatesPerAsset ?? cfg.candidatesPerAsset, voice: req.voice ?? cfg.voice, musicQuery: req.musicQuery ?? cfg.musicQuery },
+                { ...req, preferVisual: req.preferVisual ?? cfg.preferVisual, candidatesPerAsset: req.candidatesPerAsset ?? cfg.candidatesPerAsset, voice: req.voice ?? cfg.voice, musicQuery: req.musicQuery ?? cfg.musicQuery, localAssets: req.localAssets ?? cfg.localAssets, defaultVisual: req.defaultVisual ?? cfg.defaultVisual },
                 (p: PipelineProgress) => {
                 if (p.stage === 'gate') emit(p.message.includes('PASS') ? 'info' : 'warn', `gate: ${p.message}`);
             });

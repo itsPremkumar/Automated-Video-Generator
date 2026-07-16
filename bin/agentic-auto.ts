@@ -41,6 +41,9 @@ async function main() {
         musicIntensity: (arg('music-intensity', base.musicIntensity ?? 'mid')) as any,
         videoType: (arg('video-type', base.videoType ?? '')) as any || undefined,
     };
+    // P1a/P1b — local media reuse + default-visual fallback.
+    if (arg('local-assets', '')) cfg.localAssets = arg('local-assets', '').split(',').map((s) => s.trim()).filter(Boolean);
+    if (arg('default-visual', '')) cfg.defaultVisual = arg('default-visual', '');
     if (bool('no-sfx')) cfg.sfx = false;
     if (arg('grade', '')) cfg.grade = arg('grade', '') as any;
     if (arg('transition', '')) cfg.transition = arg('transition', '') as any;

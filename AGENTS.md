@@ -183,4 +183,45 @@ FFMPEG=$(node -e "console.log(require('ffmpeg-static'))")
   offline. Use `--no-sfx` for deterministic offline runs.
 - `OPENVERSE_ENABLED=false` is recommended here because Openverse returns
   Flickr URLs that 502 on download.
-   renderable MP4.
+
+---
+
+## 7. Agent-editable + user-media features (P1, ported from legacy)
+
+These three were ported from the mature legacy system (`video-generator.ts` +
+`scene-editor.ts`) into the agentic pipeline, all additive.
+
+**P1a — Local asset reuse.** A user (or agent) can supply their OWN photos/videos
+in `input/input-assets/` and bind them per scene. Files are distributed
+round-robin across scenes; scenes beyond the file count fall back to stock fetch.
+- CLI: `--local-assets "my_photo.jpg,my_clip.mp4"`
+- Config: `localAssets: ["my_photo.jpg","my_clip.mp4"]`
+- Verified: a run with `--local-assets "local_test_a.jpg,local_test_b.jpg"`
+  produced scene candidates sourced `local-asset` / `local://local_test_a.jpg`
+  etc. — zero Pexels fetches for those scenes.
+
+**P1b — Default-visual fallback.** A user-supplied `default.jpg`/`default.mp4`
+in `input/input-assets/` is used as the LAST-RESORT visual when both the Pexels
+pool and the fetch ladder fail (legacy `default.mp4` behavior). Reuses
+`inputAssetPath()` + `makePlaceholder` machinery.
+- CLI: `--default-visual "default.jpg"`
+- Config: `defaultVisual: "default.jpg"`
+
+**P1c — Scene edit API (`src/agentic/scene-edit.ts`).** Lets a NEW Hermes agent
+reshape a generated video WITHOUT re-running the whole pipeline. The plan is
+persisted to `<workspace>/plan.json` on every run. Functions:
+- `reorderScenes(ws, from, to)` — move a scene.
+- `deleteScene(ws, index)` — remove a scene (+ its candidates).
+- `updateScene(ws, index, {voiceoverText, searchKeywords, durationSec, localAsset, visualPreference})` — patch a scene.
+- `insertScene(ws, {voiceoverText, ...}, index?)` — add a scene (e.g. a CTA).
+All renumber `sceneNumber` and recompute `totalDurationSec`. Covered by
+`scene-edit.test.ts` (5 tests, all passing).
+
+**How an agent edits an existing video:**
+```ts
+import { reorderScenes, deleteScene } from './src/agentic/scene-edit.js';
+const ws = { jobId, root: 'agentic-pipeline/workspaces/<jobId>', /* ... */ };
+reorderScenes(ws, 0, 2);           // move opening scene to the end
+deleteScene(ws, 4);                // drop a weak scene
+// then re-render with renderAgenticSlideshow(ws, {...}) or re-run autopilot
+```

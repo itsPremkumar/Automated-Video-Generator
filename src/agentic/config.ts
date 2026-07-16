@@ -64,6 +64,14 @@ export interface AgenticConfig {
     preferVisual?: 'image' | 'video';
     candidatesPerAsset?: number;     // assets fetched per scene (default 4)
     videoType?: VideoType;           // template selector (Phase: templates)
+    /** Use the user's OWN media from input/input-assets/ instead of (or in
+     *  addition to) fetched stock. Files are distributed round-robin across
+     *  scenes; any scene without a matching local file falls back to fetching. */
+    localAssets?: string[];
+    /** A user-supplied default image/video (in input/input-assets/) used as a
+     *  last-resort visual when both fetch and the pool fail (legacy-style
+     *  default.mp4 fallback). */
+    defaultVisual?: string;
 
     /** ── Self-heal / automation ── */
     backend?: 'agent' | 'vision';
@@ -156,6 +164,11 @@ export function loadConfig(path?: string): Partial<AgenticConfig> {
 
 /** Convert a resolved config into the PipelineRequest + render opts the engine uses. */
 export function configToRequest(cfg: AgenticConfig) {
+    const merged = configToRequest_buildReq(cfg);
+    return merged;
+}
+
+function configToRequest_buildReq(cfg: AgenticConfig) {
     return {
         req: {
             topic: cfg.topic,
@@ -166,6 +179,8 @@ export function configToRequest(cfg: AgenticConfig) {
             orientation: cfg.orientation,
             voice: cfg.voice,
             musicQuery: cfg.musicQuery,
+            localAssets: cfg.localAssets,
+            defaultVisual: cfg.defaultVisual,
         } as import('./orchestrate.js').PipelineRequest,
         render: {
             preset: cfg.preset ?? 'cinematic',

@@ -24,6 +24,7 @@ import { downloadMedia } from '../lib/visual-fetcher.js';
 import { verifyMedia } from '../lib/media-verifier.js';
 import { resolveFreeBackgroundMusic } from '../lib/free-music.js';
 import { verifyRenderedVideo, PostRenderCheck } from './gate.js';
+import { inputAssetPath } from '../lib/path-safety.js';
 
 import { buildPlan } from './plan.js';
 import { acquireAssets, AcquireDeps, FetchedVisual } from './acquire.js';
@@ -55,6 +56,10 @@ export interface PipelineRequest {
     agent?: Partial<AgentBackendConfig>; // optional LLM hooks / vision bolt-on
     /** When true, plan + keyword expansion run but NO network acquire/render. */
     dryRun?: boolean;
+    /** User's own media files (from input/input-assets/) to use per-scene. */
+    localAssets?: string[];
+    /** User-supplied default image/video (input/input-assets/) last-resort fallback. */
+    defaultVisual?: string;
 }
 
 export interface PipelineResult {
@@ -119,6 +124,16 @@ export async function runAgenticPipeline(
     }
     if (req.preferVisual) {
         for (const s of plan.scenes) s.visualPreference = req.preferVisual;
+    }
+
+    // P1a — local asset reuse: distribute the user's own media (input/input-assets/)
+    // round-robin across scenes. A scene bound to a local file skips stock fetching
+    // (handled in acquire.ts). Scenes beyond the file count fall back to fetching.
+    if (req.localAssets && req.localAssets.length > 0) {
+        plan.scenes.forEach((s, i) => {
+            s.localAsset = req.localAssets![i % req.localAssets!.length];
+        });
+        emit({ stage: 'plan', percent: 100, message: `Bound ${req.localAssets.length} local asset(s) to ${plan.scenes.length} scenes` });
     }
 
     // ── DRY RUN (#25): preview plan + per-scene keywords, skip network/render. ──
@@ -243,6 +258,17 @@ export async function runAgenticPipeline(
             return [{ url: '', localPath: ph, source: 'placeholder', license: 'CC0 (generated placeholder)', licenseUrl: '' } as FetchedVisual];
         },
         download: async (url, dir, filename) => {
+            // P1b — default-visual fallback: if the user configured a
+            // default.mp4/image in input/input-assets/, use it as the
+            // last-resort visual when both fetch + pool fail (legacy behaviour).
+            const useDefaultVisual = (): string => {
+                const local = require('path').join(dir, filename.replace(/(\.[^.]+)?$/, path.extname(req.defaultVisual || '.png')));
+                try {
+                    const src = inputAssetPath(req.defaultVisual!);
+                    if (fs.existsSync(src)) { fs.mkdirSync(dir, { recursive: true }); fs.copyFileSync(src, local); return local; }
+                } catch { /* ignore */ }
+                return '';
+            };
             // Retry transient CDN/5xx errors (e.g. 502 from a flaky image host)
             // before giving up on a real asset — only then fall back to a card.
             for (let attempt = 0; attempt < 3; attempt++) {
@@ -256,17 +282,23 @@ export async function runAgenticPipeline(
                         // Place the branded (non-black) card INSIDE dir so the
                         // render finds a real frame instead of a black gap.
                         const local = require('path').join(dir, filename.replace(/(\.[^.]+)?$/, '.png'));
-                        const ph = makePlaceholder([filename.replace(/\.[^.]+$/, '')], 'image');
-                        try { require('fs').copyFileSync(ph, local); } catch { /* ignore */ }
-                        return local;
+                        const def = req.defaultVisual ? useDefaultVisual() : '';
+                        if (!def) {
+                            const ph = makePlaceholder([filename.replace(/\.[^.]+$/, '')], 'image');
+                            try { require('fs').copyFileSync(ph, local); } catch { /* ignore */ }
+                        }
+                        return def || local;
                     }
                     await new Promise((res) => setTimeout(res, 600 * (attempt + 1)));
                 }
             }
             const local = require('path').join(dir, filename.replace(/(\.[^.]+)?$/, '.png'));
-            const ph = makePlaceholder([filename.replace(/\\.[^.]+$/, '')], 'image');
-            try { require('fs').copyFileSync(ph, local); } catch { /* ignore */ }
-            return local;
+            const def = req.defaultVisual ? useDefaultVisual() : '';
+            if (!def) {
+                const ph = makePlaceholder([filename.replace(/\\.[^.]+$/, '')], 'image');
+                try { require('fs').copyFileSync(ph, local); } catch { /* ignore */ }
+            }
+            return def || local;
         },
         fetchMusic: async (query, count) => {
             const tracks = [];
@@ -292,6 +324,9 @@ export async function runAgenticPipeline(
     };
     const { workspace, candidates } = await acquireAssets(plan, acquireDeps, req.candidatesPerAsset ?? 2);
     emit({ stage: 'acquire', percent: 100, message: `Acquired ${candidates.length} candidates` });
+    // Persist the plan so a later agent run can edit/reorder scenes via the
+    // scene-edit API (P1c) without re-planning from scratch.
+    writeJson(workspace, 'plan.json', plan);
     // PHASE 8: register the job in the state machine now that the workspace exists.
     const jobRec = createJob(jobId, workspace, { topic: req.topic, title: req.title, backend, state: 'processing' });
 
