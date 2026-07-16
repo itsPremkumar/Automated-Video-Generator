@@ -34,6 +34,8 @@ async function main() {
     const noDucking = bool('no-ducking');
     const noKenBurns = bool('no-ken-burns');
     const dryRun = bool('dry-run');
+    const preset = arg('preset', 'cinematic');
+    const noKinetic = bool('no-kinetic');
 
     if (noDucking) process.env.AUDIO_DUCK_LEVEL = ''; // empty => ducking expr skipped
     console.log(`\n🎬 Agentic run | backend=${backend} renderer=${renderer} quality=${quality} intro=${introMode} outro=${outroMode}`);
@@ -78,11 +80,11 @@ async function main() {
             out = await renderAgenticWithRemotion(res, { intro, outro, kenBurns: !noKenBurns, quality });
         } catch (e: any) {
             console.warn(`⚠ Remotion render failed (${e?.message ?? e}); falling back to ffmpeg.`);
-            out = await renderAgenticSlideshow(res, { crossfadeSec: 0.5, burnCaptions: true, sfx });
+            out = await renderAgenticSlideshow(res, { crossfadeSec: 0.5, burnCaptions: true, sfx, preset, kinetic: !noKinetic });
         }
     } else {
         console.log(`\n🎞  Rendering MP4 (ffmpeg-static)...`);
-        out = await renderAgenticSlideshow(res, { crossfadeSec: 0.5, burnCaptions: true, sfx });
+        out = await renderAgenticSlideshow(res, { crossfadeSec: 0.5, burnCaptions: true, sfx, preset, kinetic: !noKinetic });
     }
 
     // Phase 8.4 — print post-render verification (X7-X9)
