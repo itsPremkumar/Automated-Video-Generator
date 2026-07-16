@@ -248,7 +248,7 @@ export async function runAgenticPipeline(
     emit({ stage: 'verify', percent: 100, message: 'Verification complete' });
     const { decisions } = await runGateway(plan, candidates, gatewayDeps);
     emit({ stage: 'decide', percent: 100, message: `${decisions.filter((d) => d.decision === 'approved').length} assets approved` });
-    let manifest = readJson<RenderManifest>(workspace, 'render-manifest.json');
+    const manifest = readJson<RenderManifest>(workspace, 'render-manifest.json');
     const gate = runFinalGate(plan, candidates, decisions, manifest);
     emit({ stage: 'gate', percent: 100, message: gate.pass ? 'GATE PASS' : 'GATE FAIL' });
 
@@ -326,7 +326,7 @@ export async function runAgenticPipeline(
  * solid card with the keyword text. Keeps the pipeline end-to-end even offline.
  */
 function makePlaceholder(keywords: string[], kind: 'image' | 'video' | 'music'): string {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const ffmpeg: string = require('ffmpeg-static');
     const { execFileSync } = require('child_process');
     const os = require('os');
@@ -362,7 +362,7 @@ function makePlaceholder(keywords: string[], kind: 'image' | 'video' | 'music'):
  */
 function normalizeAudio(src: string): string {
     if (!src || !fs.existsSync(src)) return src;
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const ffmpeg: string = require('ffmpeg-static');
     const { execFileSync } = require('child_process');
     const os = require('os');
@@ -427,7 +427,7 @@ export async function renderAgenticSlideshow(
     res: PipelineResult,
     opts: { outPath?: string; crossfadeSec?: number; burnCaptions?: boolean; sfx?: boolean; transition?: string; preset?: string; kinetic?: boolean; kenBurns?: boolean } = {},
 ): Promise<string> {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const ffmpeg: string = require('ffmpeg-static');
     const { execFile } = require('child_process');
     const outDir = res.workspace.root + '/render';
@@ -470,7 +470,7 @@ export async function renderAgenticSlideshow(
         let n = 1;
         for (const a of visuals) {
             const dur = a.durationSec ?? 4;
-            const raw = a.captionSegments && a.captionSegments.length
+            const raw = a.captionSegments?.length
                 ? a.captionSegments
                 : [{ text: res.plan.scenes[a.sceneIndex]?.voiceoverText ?? '', startMs: 0, endMs: Math.round(dur * 1000) }];
             const segs = chunkCues(raw);
@@ -697,7 +697,8 @@ export function chunkCues(segs: { text: string; startMs: number; endMs: number }
     // 2) enforce minimum 500ms and split very long (>8 word) segments
     const out: { text: string; startMs: number; endMs: number }[] = [];
     for (const m of merged) {
-        let { startMs, endMs, text } = m;
+        const { startMs, text } = m;
+        let { endMs } = m;
         if (endMs - startMs < 500) endMs = startMs + 500;
         const words = text.split(/\s+/);
         if (words.length > 8) {
@@ -729,7 +730,7 @@ function escapeFilterPath(p: string): string {
 
 /** Phase 7.3 — emit thumbnail.jpg, subtitles sidecars, details.txt, scene-data copy. */
 function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: string): void {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const ffmpeg: string = require('ffmpeg-static');
     const { execFileSync } = require('child_process');
     const base = outDir + '/' + res.workspace.jobId;
@@ -765,7 +766,7 @@ export function makeContactSheet(res: PipelineResult): string | null {
     for (const d of res.decisions) {
         if (d.kind === 'music') continue;
         const c = res.candidates.find((x) => assetId(x.kind, x.sceneIndex, x.candidateIndex) === d.assetId);
-        if (!c || !c.localPath || !fs.existsSync(c.localPath)) continue;
+        if (!c?.localPath || !fs.existsSync(c.localPath)) continue;
         if (c.kind === 'image') imgs.push(c.localPath);
         else if (c.kind === 'video') {
      // Pull one early frame as a still. Use a tiny offset so it works even
@@ -837,9 +838,9 @@ export async function renderAgenticWithRemotion(
     res: PipelineResult,
     opts: { brand?: { primaryColor?: string; accentColor?: string; fontFamily?: string; logoPath?: string }; intro?: { title: string; subtitle?: string; durationSec: number }; outro?: { ctaText: string; showSubscribe: boolean; hashtags?: string[]; durationSec: number }; kenBurns?: boolean; quality?: 'draft' | 'medium' | 'high' } = {},
 ): Promise<string> {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const { bundle } = require('@remotion/bundler');
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const { renderMedia, selectComposition } = require('@remotion/renderer');
     const fs = require('fs');
     const os = require('os');

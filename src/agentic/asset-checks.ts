@@ -11,7 +11,7 @@
 import fs from 'fs';
 import crypto from 'crypto';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+ 
 const { spawnSync } = require('child_process');
 
 export interface AssetProbe {
@@ -25,7 +25,7 @@ export interface AssetProbe {
 function ffprobeBin(): string {
     try {
         // ffprobe-static exports { path } not a string.
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+         
         const mod = require('ffprobe-static');
         return typeof mod === 'string' ? mod : mod.path;
     } catch {
@@ -35,7 +35,7 @@ function ffprobeBin(): string {
 
 /** Probe an image or video file for dimensions + (video) duration/aspect. */
 export function probeAsset(filePath: string): AssetProbe | null {
-    let bin = ffprobeBin();
+    const bin = ffprobeBin();
     let raw = '';
     try {
         const res = spawnSync(bin, ['-v', 'error', '-show_entries', 'stream=width,height,duration,codec_name,codec_type', '-of', 'default=noprint_wrappers=1', filePath], { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
@@ -45,7 +45,7 @@ export function probeAsset(filePath: string): AssetProbe | null {
     }
     // If bundled ffprobe missing, fall back to ffmpeg -i parsing.
     if (!raw.includes('width=') && !raw.includes('Stream')) {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+         
         const ffmpeg: string = require('ffmpeg-static');
         try {
             const r = spawnSync(ffmpeg, ['-i', filePath], { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });

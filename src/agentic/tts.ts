@@ -18,7 +18,7 @@ import { Plan, ScenePlan } from './types.js';
 import { AgenticWorkspace } from './workspace.js';
 import { CaptionSegment, writeCaptionSidecars } from '../lib/captions.js';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+ 
 const ffmpeg: string = require('ffmpeg-static');
 const { execFileSync } = require('child_process');
 const os = require('os');
@@ -77,7 +77,7 @@ export async function generateAgenticVoiceovers(
         let ok = 0;
         for (const s of plan.scenes) {
             const r: any = map.get(s.sceneNumber);
-            if (r && r.path && fs.existsSync(r.path)) {
+            if (r?.path && fs.existsSync(r.path)) {
                 scenes.push({
                     sceneIndex: s.sceneNumber - 1,
                     audioPath: r.path,

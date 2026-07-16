@@ -16,11 +16,11 @@ import fs from 'fs';
 
 // Mirror gate.ts: import execFileSync untyped so the `{ stderr: 'pipe' }`
 // option (which ffmpeg uses to emit detection stats) typechecks.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+ 
 const { execFileSync } = require('child_process');
 
 function ffmpegBin(): string {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     return require('ffmpeg-static');
 }
 
@@ -79,7 +79,7 @@ export interface DimCheck { width: number; height: number; codec: string; pixFmt
 
 /** Probe the rendered video's actual dimensions, codec, pixel format, range. */
 export function analyzeDimensions(mp4: string): DimCheck {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const ffprobe = require('ffprobe-static') ? require('ffprobe-static') : null;
     void ffprobe;
     // Use ffprobe if available, else fall back to parsing ffmpeg -i output.
@@ -121,7 +121,7 @@ function runFilter(args: string[], marker: string): string {
 function probeBin(): string {
     try {
         // ffprobe-static exports { path } not a string.
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+         
         const mod = require('ffprobe-static');
         return typeof mod === 'string' ? mod : mod.path;
     } catch {

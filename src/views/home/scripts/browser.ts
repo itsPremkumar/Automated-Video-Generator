@@ -100,9 +100,15 @@ async function loadSidebar() {
         const drivesRes = await fetch('/api/fs/drives');
         const drivesJson = await drivesRes.json();
         if (drivesJson.success && drivesList) {
-            drivesList.innerHTML = drivesJson.data.map(d => 
-                '<div class="sidebar-item" data-path="' + d + '"><span>💽</span> ' + d + ' Drive</div>'
-            ).join('');
+            drivesList.innerHTML = '';
+            (drivesJson.data || []).forEach((d: string) => {
+                const el = document.createElement('div');
+                el.className = 'sidebar-item';
+                el.dataset.path = d;
+                el.innerHTML = '<span>💽</span> ';
+                el.appendChild(document.createTextNode(d + ' Drive'));
+                drivesList.appendChild(el);
+            });
         }
     } catch (e) {
         console.error('Sidebar load failed', e);
@@ -158,7 +164,9 @@ async function loadPath(path = '') {
             browserList.appendChild(div);
         });
     } catch (e) {
-        browserList.innerHTML = '<div class="status" style="margin:20px"><strong>Error:</strong> ' + e.message + '</div>';
+        const msg = e instanceof Error ? e.message : String(e);
+        browserList.innerHTML = '<div class="status" style="margin:20px"><strong>Error:</strong> </div>';
+        browserList.lastElementChild?.appendChild(document.createTextNode(msg));
     }
 }
 

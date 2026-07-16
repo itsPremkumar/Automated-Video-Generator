@@ -66,7 +66,7 @@ test('chunkCues: enforces a minimum 500ms display', () => {
 });
 
 test('verifyRenderedVideo: detects a valid tiny MP4 and confirms audio/video', () => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const ffmpeg: string = require('ffmpeg-static');
     const { execFileSync } = require('child_process');
     const fs = require('fs');

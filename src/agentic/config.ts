@@ -146,7 +146,7 @@ function stripUndefined<T extends object>(o: T): Partial<T> {
  */
 export function loadConfig(path?: string): Partial<AgenticConfig> {
     if (path) {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+         
         const fs = require('fs');
         const raw = fs.readFileSync(path, 'utf8');
         return JSON.parse(raw) as Partial<AgenticConfig>;

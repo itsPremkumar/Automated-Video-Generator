@@ -78,7 +78,7 @@ export async function runGateway(plan: Plan, initialCandidates: AssetCandidate[]
 
     // STAGE 3 already ran during acquire; re-run verify on the (possibly replaced) set.
     // For simplicity we verify the working candidate list here.
-    let verifications = await verifyAll(candidates, ws, deps);
+    const verifications = await verifyAll(candidates, ws, deps);
 
     const verifyById = new Map(verifications.map((v) => [v.assetId, v]));
 
@@ -99,7 +99,6 @@ export async function runGateway(plan: Plan, initialCandidates: AssetCandidate[]
                     if (r2.decision === 'approved') {
                         candidates.push(replaced);
                         decisions.push(mkDecision(replaced, 'approved', r2.rationale, 'agent', false));
-                        replaced = replaced; // keep
                         break;
                     }
                 }

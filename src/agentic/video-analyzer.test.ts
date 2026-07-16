@@ -21,7 +21,7 @@ import { detectBlackFrames, detectFreezeFrames, analyzeAudio, analyzeDimensions 
 import { verifyRenderedVideo } from './gate.js';
 
 function ffmpeg(): string {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     return require('ffmpeg-static');
 }
 function makeTestsrc(): string {

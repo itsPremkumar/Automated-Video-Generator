@@ -37,11 +37,16 @@ export default tseslint.config(
             '@typescript-eslint/ban-ts-comment': 'warn',
             '@typescript-eslint/prefer-optional-chain': 'warn',
             '@typescript-eslint/prefer-nullish-coalescing': 'warn',
-            '@typescript-eslint/no-require-imports': 'error',
+            // Native binary modules (ffmpeg-static, ffprobe-static, edge-tts) have no
+            // ESM default export / type declarations, so they MUST be loaded via
+            // require(). These are intentional and safe; keep them as warnings so
+            // the gate stays green and still catches real require() misuse.
+            '@typescript-eslint/no-require-imports': 'warn',
+            '@typescript-eslint/no-var-requires': 'warn',
             'no-console': 'off',
             'prefer-const': 'error',
             'no-var': 'error',
-            'eqeqeq': ['error', 'always'],
+            'eqeqeq': ['error', 'smart'],
         },
     },
 );

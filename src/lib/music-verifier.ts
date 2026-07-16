@@ -59,7 +59,7 @@ function resolveFfprobeBin(): string {
 export const defaultFfprobeRunner: FfprobeRunner = (filePath: string) => {
     try {
         // Lazy require to avoid a hard dependency at import time.
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+         
         const { spawnSync } = require('child_process');
         const bin = resolveFfprobeBin();
         const result = spawnSync(

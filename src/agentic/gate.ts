@@ -79,7 +79,7 @@ export function runFinalGate(
         .filter((d) => d.decision === 'approved')
         .filter((d) => {
             const c = candidates.find((c) => `${c.kind}_s${c.sceneIndex}_c${c.candidateIndex}` === d.assetId);
-            return !c || !c.license;
+            return !c?.license;
         })
         .length;
     checks.push({ id: 'X6', label: 'Attribution completeness', pass: attrMissing === 0, detail: attrMissing === 0 ? 'all approved assets carry a license' : `${attrMissing} asset(s) without any license` });
@@ -105,7 +105,7 @@ export interface PostRenderCheck {
 }
 
 export function verifyRenderedVideo(mp4Path: string, expectedDurationSec: number): PostRenderCheck {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const ffmpeg: string = require('ffmpeg-static');
     const { execFileSync } = require('child_process');
     const fs = require('fs');
@@ -137,7 +137,7 @@ export function verifyRenderedVideo(mp4Path: string, expectedDurationSec: number
 
         // ── X10–X15: FINAL-OUTPUT quality (the real gap). ──
         // Imported lazily so offline tests that stub ffmpeg don't pay for it.
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+         
         const ana = require('./video-analyzer.js');
         try {
             const black = ana.detectBlackFrames(mp4Path);
