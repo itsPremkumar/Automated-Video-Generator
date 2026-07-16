@@ -44,7 +44,7 @@ export interface FetchedVisual {
 
 export interface AcquireDeps {
     /** Returns candidate URLs (and metadata) for a scene's visual query. */
-    fetchVisual: (keywords: string[], kind: 'image' | 'video', orientation: 'portrait' | 'landscape') => Promise<FetchedVisual[]>;
+    fetchVisual: (keywords: string[], kind: 'image' | 'video', orientation: 'portrait' | 'landscape', sceneIndex?: number) => Promise<FetchedVisual[]>;
     /** Persists a URL to a local path; returns the final path. */
     download: (url: string, dir: string, filename: string) => Promise<string>;
     /** Returns candidate music tracks. */
@@ -68,7 +68,7 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
         // Fetch all scenes in parallel (bounded by the fetcher's own limits).
         // Rejections are isolated per scene so one bad fetch can't kill the run.
         sceneFetches.push(
-            deps.fetchVisual(scene.searchKeywords, kind, plan.orientation)
+            deps.fetchVisual(scene.searchKeywords, kind, plan.orientation, i)
                 .then((fetched) => ({ i, kind, dir, scene, fetched }))
                 .catch((e) => {
                     console.warn(`⚠ fetch failed for scene ${i}: ${(e as Error)?.message ?? e}`);

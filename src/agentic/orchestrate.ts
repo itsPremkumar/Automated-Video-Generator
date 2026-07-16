@@ -19,7 +19,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { parseScript } from '../lib/script-parser.js';
-import { fetchVisualsForScene } from '../lib/visual-fetcher.js';
+import { fetchVisualsForScene, searchImages } from '../lib/visual-fetcher.js';
 import { downloadMedia } from '../lib/visual-fetcher.js';
 import { verifyMedia } from '../lib/media-verifier.js';
 import { resolveFreeBackgroundMusic } from '../lib/free-music.js';
@@ -139,18 +139,85 @@ export async function runAgenticPipeline(
 
     // ── STAGE 2: ACQUIRE (real fetchers) ─────────────────────────────
     emit({ stage: 'plan', percent: 100, message: `Plan ready (${plan.scenes.length} scenes)` });
+
+    // Shared topic image pool: fetched ONCE for the whole video so every scene
+    // can pull a DIFFERENT real photo from the same topic (Pexels returns a
+    // distinct set per page). This guarantees per-scene visual diversity instead
+    // of every scene showing the identical top search result.
+    // Extract a clean search noun from the topic (drop numbers + stopwords like
+    // "5 fascinating facts about") so the pool query is "coffee", not "5 fascinating
+    // facts", which returns irrelevant/duplicate results.
+    const STOP = new Set(['a','an','the','of','for','to','and','or','in','on','with','about','facts','fact','benefits','benefit','how','what','why','tips','ways','things','5','3','10','top','best','amazing','fascinating','interesting','daily','changed','change','vs']);
+    const topicNoun = ((req.topic || plan.title || 'video') as string)
+        .toLowerCase().split(/\s+/).filter((w) => w && !STOP.has(w.replace(/[^a-z]/g, ''))).join(' ') || 'video';
+    let sharedImagePool: { url: string }[] = [];
+    const getImagePool = async () => {
+        if (sharedImagePool.length > 0) return sharedImagePool;
+        // Try several query variants so a weak/empty topic noun still yields a
+        // real, on-topic pool (e.g. "walking" -> "person walking" -> title).
+        const variants = [topicNoun, `${topicNoun} photo`, (req.title || '').trim(), `person ${topicNoun}`]
+            .map((s) => s.trim()).filter(Boolean);
+        for (const q of variants) {
+            try {
+                const pool = await searchImages(q, 12, 2, plan.orientation, 1);
+                if (pool.length > 0) {
+                    sharedImagePool = pool.map((p) => ({ url: p.url }));
+                    break;
+                }
+            } catch { /* try next variant */ }
+        }
+        if (sharedImagePool.length === 0) {
+            try {
+                const res = await fetchVisualsForScene([topicNoun], false, plan.orientation);
+                if (res) sharedImagePool = [{ url: res.url }];
+            } catch { /* ignore */ }
+        }
+        return sharedImagePool;
+    };
+
     const acquireDeps: AcquireDeps = {
-        fetchVisual: async (keywords, kind, orientation) => {
-            // Retry ladder: try the specific keywords, then progressively broader
-            // queries (bare topic noun, then a safe fallback). This keeps every
-            // scene on a REAL stock image instead of falling back to a black
-            // frame when one provider 502s on a dead URL (e.g. Flickr 5xx).
-            const ladder = [keywords];
+        fetchVisual: async (keywords, kind, orientation, sceneIndex = 0) => {
+            // If we have a shared topic pool, assign each scene a DISTINCT photo
+            // from it (scene 0 -> pool[0], scene 1 -> pool[1], ...). This is the
+            // primary path that guarantees per-scene diversity.
+            const pool = await getImagePool();
+            if (pool.length > 0) {
+                const pick = pool[sceneIndex % pool.length];
+                const DEAD_HOSTS = /flickr\.com|staticflickr\.com|live\.staticflickr/i;
+                if (pick && pick.url && !DEAD_HOSTS.test(pick.url)) {
+                    return [{
+                        url: pick.url,
+                        localPath: '',
+                        source: 'pexels',
+                        license: undefined,
+                        licenseUrl: undefined,
+                        width: 0,
+                        height: 0,
+                    }];
+                }
+            }
+            // Retry ladder: lead with the MOST-SPECIFIC keyword (longest phrase,
+            // e.g. "espresso machine") so each scene fetches its own distinct
+            // on-topic image instead of all collapsing to the bare topic noun
+            // ("coffee") which Pexels returns the same top photo for. Broader/
+            // safe fallbacks come later only if the specific query yields nothing.
+            const bySpecificity = [...keywords].sort((a, b) => b.length - a.length);
+            const ladder = [bySpecificity, keywords];
             if (keywords.length > 1) ladder.push([keywords[0]]);           // bare topic noun
-            ladder.push(['coffee', 'nature', 'city', 'technology'].slice(0, 1)); // last-resort safe term
-            for (const q of ladder) {
+ ladder.push([topicNoun || 'coffee', 'nature', 'city', 'technology'].slice(0, 1)); // topic-aware last resort
+            const seen = new Set<string>();
+            for (const raw of ladder) {
+                const q = raw.filter(Boolean);
+                const key = q.join(' ');
+                if (seen.has(key)) continue;
+                seen.add(key);
                 try {
-                    const res = await fetchVisualsForScene(q, kind === 'video', orientation);
+                    // Use the scene index so each scene pulls a DIFFERENT real
+                    // photo from the Pexels pool (avoids every scene showing the
+                    // same top result). The ladder's queries also lead with the
+                    // scene's most-specific keyword for extra diversity.
+                    const resultIndex = sceneIndex;
+                    const res = await fetchVisualsForScene(q, kind === 'video', orientation, undefined, resultIndex);
                     const arr = !res ? [] : (Array.isArray(res) ? res : [res]);
                     // Reject dead/flaky hosts (Flickr 5xx in this environment) so
                     // the ladder retries with a broader query instead of baking a

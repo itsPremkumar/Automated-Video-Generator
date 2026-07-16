@@ -700,6 +700,7 @@ export async function searchImages(
     perPage: number = 1,
     retries: number = 3,
     orientation: 'portrait' | 'landscape' = 'portrait',
+    page: number = 1,
 ): Promise<MediaAsset[]> {
     // console.log(`\n🔍 [PEXELS-IMAGE] Searching images for: "${query}"`);
     // console.log(`🔍 [PEXELS-IMAGE] Per page: ${perPage}, Max retries: ${retries}`);
@@ -723,6 +724,7 @@ export async function searchImages(
                     query,
                     per_page: perPage,
                     orientation,
+                    page,
                 },
                 timeout: 10000,
             });
@@ -870,6 +872,7 @@ export async function fetchVisualsForScene(
     preferVideo: boolean = true,
     orientation: 'portrait' | 'landscape' | 'none' = 'portrait',
     sceneText?: string,
+    resultIndex: number = 0,
 ): Promise<MediaAsset | null> {
     const query = keywords.join(' ').trim();
     // Try EACH keyword individually (not the joined string) so a multi-phrase
@@ -1022,12 +1025,20 @@ export async function fetchVisualsForScene(
 
         // Fallback to images — try each individual keyword (Pexels first, then
         // Openverse) so a clean term like "lion" wins instead of a mangled join.
-        for (const q of individualQueries) {
-            const images = await searchImages(q, 1, 3, orientation === 'none' ? 'portrait' : orientation);
+        // Try the MOST-SPECIFIC (longest) keyword first so a scene's distinct
+        // angle ("espresso machine") wins over the bare topic noun ("coffee"),
+        // which would otherwise return the same popular top photo for every scene.
+        const specificFirst = [...individualQueries].sort((a, b) => b.length - a.length);
+        for (const q of specificFirst) {
+            // Request a pool of 10 and pick the photo at resultIndex so different
+            // scenes get DIFFERENT real photos from the same topic (Pexels varies
+            // results by page/index). Falls through to the next query if empty.
+            const images = await searchImages(q, 10, 3, orientation === 'none' ? 'portrait' : orientation, 1);
             if (images.length > 0) {
-                cache[cacheKey] = images[0];
+                const pick = images[resultIndex % images.length];
+                cache[cacheKey] = pick;
                 saveCache(cache);
-                return images[0];
+                return pick;
             }
         }
 

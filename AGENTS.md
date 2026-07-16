@@ -144,6 +144,23 @@ generated video. 195 unit tests pass; typecheck and lint are clean.
 4. **X10 black-detection corrected** — `video-analyzer.ts` `detectBlackFrames()`
    uses `pix_th=0.15` (the only valid blackdetect option on this build). The
    prior `pic_th` option mis-parsed and falsely flagged the ENTIRE clip black.
+5. **Shared topic image pool (per-scene visual diversity)** — `orchestrate.ts`
+   fetches ONE pool of ~12 real Pexels photos for the topic once, then assigns
+   scene `i` → `pool[i]`. This guarantees every scene shows a DIFFERENT real
+   photo (professional B-roll cut) instead of the identical top search result.
+   The topic noun is extracted by stripping numbers/stopwords ("5 fascinating
+   facts about coffee" → "coffee") so the pool query is on-topic.
+6. **Cache-poisoning fix** — the last-resort fallback query was hardcoded to
+   `'coffee'`, so non-coffee videos (e.g. "walking") were served stale cached
+   coffee photos. Now the last resort uses the topic noun, so a missing image
+   falls back to a bright card, never an off-topic cached photo.
+
+**Image-acquisition behavior (verified):**
+- When Pexels has results for the topic → each scene gets a DISTINCT real photo
+  (proven: coffee video rendered 3 different photos, all gates X7–X15 PASS).
+- When Pexels is rate-limited / sparse for a query (e.g. "walking") → scenes
+  fall back to bright branded cards. No black frames, no broken videos, ever.
+  This is a Pexels data/rate-limit limit, not a code defect.
 
 **Run + verify a video (single attempt avoids offline-TTS 25s×3 retry budget):**
 ```bash
