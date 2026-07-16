@@ -1,0 +1,28 @@
+# tools/.gitignore — keep asset-creation engines clean in the AVG repo
+
+# --- asset-creator (Node / ffmpeg-static) ---
+asset-creator/node_modules/
+asset-creator/package-lock.json
+asset-creator/out/
+asset-creator/*.log
+
+# --- computer-agent (Python) ---
+__pycache__/
+*.pyc
+.pytest_cache/
+computer-agent/assets/           # generated screenshots / recordings / renders
+computer-agent/workspace/        # live screenshots, temp MLT, debug dumps
+computer-agent/*.log
+
+# --- generated media (safety net) ---
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.wav
+*.mp3
+*.webm
+*.avi
+*.mov
+*.log
