@@ -167,6 +167,11 @@ export async function runAgenticPipeline(
     const topicNoun = ((req.topic || plan.title || 'video') as string)
         .toLowerCase().split(/\s+/).filter((w) => w && !STOP.has(w.replace(/[^a-z]/g, ''))).join(' ') || 'video';
     let sharedImagePool: { url: string }[] = [];
+    // Video-first consistency: if any scene prefers video, build the shared pool
+    // video-first (Pexels/Pixabay/Wikimedia/Archive video), then image as
+    // fallback. This makes "video first, then image" true on BOTH the pool path
+    // and the fetchVisual ladder (which already respects visualPreference).
+    const preferVideo = plan.scenes.some((s) => s.visualPreference === 'video');
     const getImagePool = async () => {
         if (sharedImagePool.length > 0) return sharedImagePool;
         const DEAD_HOSTS = /flickr\.com|staticflickr\.com|live\.staticflickr/i;
@@ -178,18 +183,23 @@ export async function runAgenticPipeline(
         // real, on-topic pool (e.g. "walking" -> "person walking" -> title).
         const variants = [topicNoun, `${topicNoun} photo`, (req.title || '').trim(), `person ${topicNoun}`]
             .map((s) => s.trim()).filter(Boolean);
-        // Pull from EVERY working provider (Pexels + Pixabay + Wikimedia +
-        // Internet Archive + Openverse) so the agentic system uses the full
-        // media library, not just Pexels. searchImages = Pexels; fetchVisualsForScene
-        // already walks the rest of the ladder internally.
+        // Pull from EVERY working provider. When preferVideo, lead with video
+        // (Pexels/Pixabay/Wikimedia/Archive via fetchVisualsForScene(preferVideo=true)),
+        // then image (searchImages + fetchVisualsForScene(false)). Otherwise image-first.
         for (const q of variants) {
-            try { (await searchImages(q, 12, 2, plan.orientation, 1)).forEach((p) => add(p.url)); } catch { /* next */ }
-            try { const r = await fetchVisualsForScene([q], false, plan.orientation); if (r) add(Array.isArray(r) ? r[0]?.url : r.url); } catch { /* next */ }
+            if (preferVideo) {
+                try { const r = await fetchVisualsForScene([q], true, plan.orientation); if (r) add(Array.isArray(r) ? r[0]?.url : r.url); } catch { /* next */ }
+                try { (await searchImages(q, 12, 2, plan.orientation, 1)).forEach((p) => add(p.url)); } catch { /* next */ }
+                try { const r = await fetchVisualsForScene([q], false, plan.orientation); if (r) add(Array.isArray(r) ? r[0]?.url : r.url); } catch { /* next */ }
+            } else {
+                try { (await searchImages(q, 12, 2, plan.orientation, 1)).forEach((p) => add(p.url)); } catch { /* next */ }
+                try { const r = await fetchVisualsForScene([q], false, plan.orientation); if (r) add(Array.isArray(r) ? r[0]?.url : r.url); } catch { /* next */ }
+            }
             if (sharedImagePool.length >= 12) break;
         }
         if (sharedImagePool.length === 0) {
             try {
-                const res = await fetchVisualsForScene([topicNoun], false, plan.orientation);
+                const res = await fetchVisualsForScene([topicNoun], preferVideo, plan.orientation);
                 if (res) add(Array.isArray(res) ? res[0]?.url : res.url);
             } catch { /* ignore */ }
         }
@@ -206,10 +216,19 @@ export async function runAgenticPipeline(
                 const pick = pool[sceneIndex % pool.length];
                 const DEAD_HOSTS = /flickr\.com|staticflickr\.com|live\.staticflickr/i;
                 if (pick && pick.url && !DEAD_HOSTS.test(pick.url)) {
+                    // Derive the real source from the URL host so attribution in
+                    // the output reflects the actual provider (not a hardcoded label).
+                    const host = (() => { try { return new URL(pick.url).hostname; } catch { return ''; } })();
+                    const source = host.includes('pexels') ? 'pexels'
+                        : host.includes('pixabay') ? 'pixabay'
+                        : host.includes('wikimedia') || host.includes('commons') ? 'wikimedia'
+                        : host.includes('archive.org') ? 'internet-archive'
+                        : host.includes('openverse') ? 'openverse'
+                        : (host || 'unknown');
                     return [{
                         url: pick.url,
                         localPath: '',
-                        source: 'pexels',
+                        source,
                         license: undefined,
                         licenseUrl: undefined,
                         width: 0,
