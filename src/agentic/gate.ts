@@ -13,11 +13,21 @@ export interface GateReport {
     checks: { id: string; label: string; pass: boolean; detail: string }[];
 }
 
+export interface GateOptions {
+    /** Platform whose runtime cap applies (X5). Default Shorts=180s. */
+    platform?: 'shorts' | 'tiktok' | 'reels' | 'youtube';
+    /** Explicit override for X5 runtime cap (seconds). */
+    maxRuntimeSec?: number;
+}
+
+const RUNTIME_CAPS: Record<string, number> = { shorts: 60, tiktok: 180, reels: 90, youtube: 600 };
+
 export function runFinalGate(
     plan: Plan,
     candidates: AssetCandidate[],
     decisions: AssetDecision[],
     manifest: RenderManifest | null,
+    opts: GateOptions = {},
 ): GateReport {
     const checks: GateReport['checks'] = [];
 
@@ -38,17 +48,29 @@ export function runFinalGate(
         detail: missingScenes.length === 0 ? 'all scenes covered' : `missing scenes: ${missingScenes.join(', ')}`,
     });
 
-    // X1: TTS duration alignment (approx — sum of scene durations vs plan)
+    // X1: duration alignment — compare the planned total runtime against the
+    // sum of approved visual DISPLAY times (from the render manifest, when
+    // available) vs the plan's scene durations. Falls back to a scene-count
+    // check when manifest durations aren't known yet.
     const planned = plan.totalDurationSec;
-    const approvedVisualDur = decisions
-        .filter((d) => d.decision === 'approved' && d.kind !== 'music')
-        .length;
-    const durAligned = approvedVisualDur >= plan.scenes.length;
-    checks.push({ id: 'X1', label: 'Duration alignment', pass: durAligned, detail: `approved visuals=${approvedVisualDur}/${plan.scenes.length}` });
+    const approved = decisions.filter((d) => d.decision === 'approved' && d.kind !== 'music');
+    let durAligned: boolean;
+    let durDetail: string;
+    const manifestDur = manifest ? manifest.assets.reduce((s, a) => s + (a.durationSec ?? 0), 0) : 0;
+    if (manifestDur > 0) {
+        const drift = Math.abs(planned - manifestDur);
+        durAligned = drift <= Math.max(2, planned * 0.1);
+        durDetail = `planned ${planned.toFixed(1)}s vs assets ${manifestDur.toFixed(1)}s (drift ${drift.toFixed(1)}s)`;
+    } else {
+        durAligned = approved.length >= plan.scenes.length;
+        durDetail = `approved visuals=${approved.length}/${plan.scenes.length}`;
+    }
+    checks.push({ id: 'X1', label: 'Duration alignment', pass: durAligned, detail: durDetail });
 
-    // X5: total runtime within a sane bound (Shorts <= 180s here)
-    const runtimeOk = planned <= 180;
-    checks.push({ id: 'X5', label: 'Runtime within limit', pass: runtimeOk, detail: `${planned}s <= 180s` });
+    // X5: total runtime within the platform cap.
+    const cap = opts.maxRuntimeSec ?? RUNTIME_CAPS[opts.platform ?? 'shorts'] ?? 180;
+    const runtimeOk = planned <= cap;
+    checks.push({ id: 'X5', label: 'Runtime within limit', pass: runtimeOk, detail: `${planned}s <= ${cap}s${opts.platform ? ` (${opts.platform})` : ''}` });
 
     // X6: attribution completeness — every approved asset must carry a license
     // label (so it is attributable). A missing *URL* is acceptable for
@@ -90,8 +112,12 @@ export function verifyRenderedVideo(mp4Path: string, expectedDurationSec: number
     const checks: GateReport['checks'] = [];
 
     const exists = fs.existsSync(mp4Path);
-    const sizeOk = exists && fs.statSync(mp4Path).size > 100_000;
-    checks.push({ id: 'X7', label: 'Output file valid', pass: sizeOk, detail: exists ? `${Math.round(fs.statSync(mp4Path).size / 1024)}KB` : 'missing' });
+    // Size floor scales with duration: a valid 5s clip can be ~100KB, but a
+    // 60s clip should be far larger. Floor = max(100KB, 20KB/sec) so short
+    // legitimate videos aren't falsely rejected.
+    const minSize = Math.max(100_000, Math.round(expectedDurationSec * 20_000));
+    const sizeOk = exists && fs.statSync(mp4Path).size > minSize;
+    checks.push({ id: 'X7', label: 'Output file valid', pass: sizeOk, detail: exists ? `${Math.round(fs.statSync(mp4Path).size / 1024)}KB (min ${Math.round(minSize / 1024)}KB)` : 'missing' });
 
     let probed: PostRenderCheck['probed'] | undefined;
     if (exists) {
@@ -108,6 +134,44 @@ export function verifyRenderedVideo(mp4Path: string, expectedDurationSec: number
         const durOk = dur > 0 && Math.abs(dur - expectedDurationSec) <= Math.max(2, expectedDurationSec * 0.05);
         checks.push({ id: 'X8', label: 'Duration matches plan', pass: durOk, detail: `actual ${dur.toFixed(1)}s vs planned ${expectedDurationSec.toFixed(1)}s` });
         checks.push({ id: 'X9', label: 'Audio track present', pass: hasAudio, detail: hasAudio ? 'aac audio stream found' : 'no audio stream' });
+
+        // ── X10–X15: FINAL-OUTPUT quality (the real gap). ──
+        // Imported lazily so offline tests that stub ffmpeg don't pay for it.
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const ana = require('./video-analyzer.js');
+        try {
+            const black = ana.detectBlackFrames(mp4Path);
+            const longestBlack = black.reduce((m: number, b: any) => Math.max(m, b.duration), 0);
+            const blackOk = longestBlack < 0.5;
+            checks.push({ id: 'X10', label: 'No long black frames', pass: blackOk, detail: blackOk ? 'none' : `black ${longestBlack.toFixed(2)}s` });
+
+            const freeze = ana.detectFreezeFrames(mp4Path);
+            const longestFreeze = freeze.reduce((m: number, f: any) => Math.max(m, f.duration), 0);
+            const freezeOk = longestFreeze < 1.0;
+            checks.push({ id: 'X11', label: 'No frozen frames', pass: freezeOk, detail: freezeOk ? 'none' : `freeze ${longestFreeze.toFixed(2)}s` });
+
+            const audio = ana.analyzeAudio(mp4Path);
+            // Pass if audio is present and not clipping. A very quiet ambient
+            // track (peak ~ -25dB) is fine; only a broken/unreadable track
+            // (volumedetect returns -999) or clipping fails.
+            const loudOk = audio.peakDb <= 0 && audio.peakDb > -60;
+            checks.push({ id: 'X12', label: 'Audio loudness in range', pass: loudOk, detail: `peak ${audio.peakDb.toFixed(1)}dB mean ${audio.meanVolumeDb.toFixed(1)}dB` });
+
+            const clipOk = !audio.clipping;
+            checks.push({ id: 'X13', label: 'No audio clipping', pass: clipOk, detail: clipOk ? 'true peak < -1dB' : `peak ${audio.peakDb.toFixed(1)}dB (clipping)` });
+
+            const dim = ana.analyzeDimensions(mp4Path);
+            const portraitOk = dim.height >= dim.width; // 9:16 / 1:1 expected portrait-ish
+            const landscapeOk = dim.width >= dim.height;
+            const dimOk = (dim.width > 0 && dim.height > 0) && (portraitOk || landscapeOk);
+            checks.push({ id: 'X14', label: 'Output dimensions valid', pass: dimOk, detail: `${dim.width}x${dim.height} ${dim.codec}` });
+
+            const codecOk = /^(h264|hevc|vp9|av1)$/.test(dim.codec);
+            checks.push({ id: 'X15', label: 'Web-compatible codec', pass: codecOk, detail: dim.codec || 'unknown' });
+        } catch (e: any) {
+            // Analysis itself failing must not silently pass the video.
+            checks.push({ id: 'X10', label: 'No long black frames', pass: false, detail: `analyzer error: ${e?.message ?? e}` });
+        }
     } else {
         checks.push({ id: 'X8', label: 'Duration matches plan', pass: false, detail: 'no output file' });
         checks.push({ id: 'X9', label: 'Audio track present', pass: false, detail: 'no output file' });

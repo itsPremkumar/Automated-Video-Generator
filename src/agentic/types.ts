@@ -94,5 +94,6 @@ export interface RenderManifest {
     generatedAt: string;
 }
 
-export const assetId = (kind: AssetKind, sceneIndex: number, candidateIndex: number): string =>
-    `${kind}_s${sceneIndex}_c${candidateIndex}`;
+export function assetId(kind: AssetKind, sceneIndex: number, candidateIndex: number): string {
+    return `${kind}_s${sceneIndex}_c${candidateIndex}`;
+}
