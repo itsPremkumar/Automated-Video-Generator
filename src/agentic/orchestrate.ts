@@ -1149,6 +1149,10 @@ export async function renderAgenticWithRemotion(
         imageFormat: 'jpeg',
         timeoutInMilliseconds: 1000 * 60 * 9,
         framesPerLambda: null as any,
+        // Use a system Chrome when provided (e.g. CHROME_EXECUTABLE on a laptop
+        // that has Google Chrome installed) instead of Remotion's bundled
+        // Chromium download. Falls back to bundled Chromium when unset.
+        ...(process.env.CHROME_EXECUTABLE ? { chromeExecutable: process.env.CHROME_EXECUTABLE } : {}),
     });
     // Phase 8.4 post-render check applies here too.
     res.postRender = verifyRenderedVideo(out, totalFrames / fps);
