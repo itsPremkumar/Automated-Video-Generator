@@ -169,23 +169,28 @@ export async function runAgenticPipeline(
     let sharedImagePool: { url: string }[] = [];
     const getImagePool = async () => {
         if (sharedImagePool.length > 0) return sharedImagePool;
+        const DEAD_HOSTS = /flickr\.com|staticflickr\.com|live\.staticflickr/i;
+        const seen = new Set<string>();
+        const add = (url?: string) => {
+            if (url && !DEAD_HOSTS.test(url) && !seen.has(url)) { seen.add(url); sharedImagePool.push({ url }); }
+        };
         // Try several query variants so a weak/empty topic noun still yields a
         // real, on-topic pool (e.g. "walking" -> "person walking" -> title).
         const variants = [topicNoun, `${topicNoun} photo`, (req.title || '').trim(), `person ${topicNoun}`]
             .map((s) => s.trim()).filter(Boolean);
+        // Pull from EVERY working provider (Pexels + Pixabay + Wikimedia +
+        // Internet Archive + Openverse) so the agentic system uses the full
+        // media library, not just Pexels. searchImages = Pexels; fetchVisualsForScene
+        // already walks the rest of the ladder internally.
         for (const q of variants) {
-            try {
-                const pool = await searchImages(q, 12, 2, plan.orientation, 1);
-                if (pool.length > 0) {
-                    sharedImagePool = pool.map((p) => ({ url: p.url }));
-                    break;
-                }
-            } catch { /* try next variant */ }
+            try { (await searchImages(q, 12, 2, plan.orientation, 1)).forEach((p) => add(p.url)); } catch { /* next */ }
+            try { const r = await fetchVisualsForScene([q], false, plan.orientation); if (r) add(Array.isArray(r) ? r[0]?.url : r.url); } catch { /* next */ }
+            if (sharedImagePool.length >= 12) break;
         }
         if (sharedImagePool.length === 0) {
             try {
                 const res = await fetchVisualsForScene([topicNoun], false, plan.orientation);
-                if (res) sharedImagePool = [{ url: res.url }];
+                if (res) add(Array.isArray(res) ? res[0]?.url : res.url);
             } catch { /* ignore */ }
         }
         return sharedImagePool;
