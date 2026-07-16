@@ -425,7 +425,7 @@ async function buildSfxLayer(
 
 export async function renderAgenticSlideshow(
     res: PipelineResult,
-    opts: { outPath?: string; crossfadeSec?: number; burnCaptions?: boolean; sfx?: boolean; transition?: string } = {},
+    opts: { outPath?: string; crossfadeSec?: number; burnCaptions?: boolean; sfx?: boolean; transition?: string; preset?: string; kinetic?: boolean } = {},
 ): Promise<string> {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const ffmpeg: string = require('ffmpeg-static');
@@ -438,6 +438,14 @@ export async function renderAgenticSlideshow(
     const visuals = res.manifest.assets.filter((a) => a.kind !== 'music');
     const music = res.manifest.assets.find((a) => a.kind === 'music');
     if (visuals.length === 0) throw new Error('No approved visuals to render.');
+
+    // ── Editing engine v1: compute the per-scene style plan (transitions,
+    //    color grade, kinetic text). Deterministic from title + preset. ──
+    const { computeStylePlan, gradeFilter, xfadeName } = await import('./style-engine.js');
+    const stylePlan = computeStylePlan(res.plan, {
+        preset: (opts.preset as any) ?? 'cinematic',
+        kinetic: opts.kinetic,
+    });
 
     const xf = opts.crossfadeSec ?? 0.5;
     const burn = opts.burnCaptions ?? true;
@@ -482,27 +490,36 @@ export async function renderAgenticSlideshow(
         }
     }
 
-    // ── Each scene: scale+pad, optional Ken Burns zoom, hold for its VO duration. ──
+    // ── Each scene: scale+pad, optional Ken Burns zoom, color grade, hold for VO. ──
     const W = 720, H = 1280;
     const sceneFilters = visuals.map((a, i) => {
         const dur = a.durationSec ?? 4;
         // Gentle Ken Burns zoom (spec 7.1). Comma inside the min() expression is
-        // escaped as '\,' and NO single quotes (filtergraph isn't shell-parsed).
+        // escaped as '\\,' and NO single quotes (filtergraph isn't shell-parsed).
         const zoom = a.kind === 'image' ? `,zoompan=z=min(zoom+0.0008\\,1.04):d=1:s=${W}x${H}` : '';
+        // Editing engine v1: per-scene color grade (no LUT file needed).
+        const grade = gradeFilter(stylePlan.scenes[i]?.grade ?? 'neutral');
         const tag = '[' + i + ':v]';
-        return `${tag}scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS${zoom},format=yuv420p[v${i}]`;
+        return `${tag}scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS${zoom},${grade},format=yuv420p[v${i}]`;
     });
 
-    // ── Concat the scene videos with crossfade transitions (fade if >1 scene). ──
+    // ── Concat the scene videos with per-scene transitions from the style plan. ──
     let videoChain: string;
     if (visuals.length === 1) {
         videoChain = '[v0]';
     } else {
-        // chain crossfades pairwise
+        // chain transitions pairwise; a 'cut' = hard concat (no overlap),
+        // otherwise xfade with the chosen transition name.
         let prev = 'v0';
         for (let i = 1; i < visuals.length; i++) {
+            const tk: any = stylePlan.scenes[i]?.transitionIn ?? 'fade';
             const outTag = i === visuals.length - 1 ? 'vout' : 'vx' + i;
-            sceneFilters.push(`[${prev}][v${i}]xfade=transition=fade:duration=${xf}:offset=${offsetFor(visuals, i, xf)}[${outTag}]`);
+            if (tk === 'cut') {
+                sceneFilters.push(`[${prev}][v${i}]concat=n=2:v=1:a=0[${outTag}]`);
+            } else {
+                const xname = xfadeName(tk);
+                sceneFilters.push(`[${prev}][v${i}]xfade=transition=${xname}:duration=${xf}:offset=${offsetFor(visuals, i, xf)}[${outTag}]`);
+            }
             prev = outTag;
         }
         videoChain = '[vout]';
@@ -514,10 +531,34 @@ export async function renderAgenticSlideshow(
 
     // ── Caption burn-in (subtitles filter) applied to the chained video. ──
     if (captionFile) {
-        // In an ffmpeg filtergraph, colons must be escaped as '\:' and backslashes
+        // In an ffmpeg filtergraph, colons must be escaped as '\\:' and backslashes
         // as '/'. Do NOT wrap the path in quotes (filtergraph isn't shell-parsed).
         vfArgs.push(`${videoChain}subtitles=${escapeFilterPath(captionFile)}:force_style='FontSize=28,PrimaryColour=&Hffffff&,OutlineColour=&H000000&,Outline=2,Alignment=2'[vcap]`);
         videoMap = '[vcap]';
+    }
+    // ── Editing engine v1: kinetic text overlays (lower-third reveal + word-pop). ──
+    // Each cue is placed at its absolute timeline position. drawtext enable= drives
+    // the on/off window; a tiny fade gives the "pop". Apostrophes are swapped for ’
+    // because drawtext breaks on bare single quotes in the text string.
+    if (stylePlan && opts.kinetic !== false) {
+        let t = 0;
+        const sceneStarts = visuals.map((a) => { const s = t; t += (a.durationSec ?? 4); return s; });
+        let ktag = videoMap;
+        for (let i = 0; i < visuals.length; i++) {
+            const base = sceneStarts[i];
+            for (const cue of stylePlan.scenes[i]?.kinetic ?? []) {
+                const start = (base + cue.atSec).toFixed(2);
+                const end = (base + cue.atSec + (cue.kind === 'wordpop' ? 0.9 : 2.6)).toFixed(2);
+                const safe = cue.text.replace(/'/g, '’').replace(/:/g, '\\:');
+                if (cue.kind === 'lowerthird') {
+                    vfArgs.push(`${ktag}drawtext=text='${safe}':fontcolor=white:fontsize=34:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=h-text_h-90:enable='between(t\\,${start}\\,${end})':alpha='if(lt(t\\,${start}+0.25)\\,((t-${start})/0.25)\\,if(gt(t\\,${end}-0.3)\\,(((${end}-t)/0.3))\\,1))'[k${i}]`);
+                } else {
+                    vfArgs.push(`${ktag}drawtext=text='${safe}':fontcolor=white:fontsize=64:fontcolor_expr=white:box=1:boxcolor=black@0.0:borderw=3:bordercolor=yellow:x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t\\,${start}\\,${end})':alpha='if(lt(t\\,${start}+0.15)\\,((t-${start})/0.15)\\,if(gt(t\\,${end}-0.2)\\,(((${end}-t)/0.2))\\,1))'[k${i}]`);
+                }
+                ktag = `[k${i}]`;
+            }
+        }
+        if (ktag !== videoMap) { videoMap = ktag; }
     }
     // Phase 2.3 — cinematic vignette over the final video chain.
     vfArgs.push(`${videoMap}vignette=PI/5[vig]`);
