@@ -5,6 +5,15 @@ export function browserLogic(): string {
 let currentBrowserType = 'media';
 let currentParentPath = '';
 
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function openSystemBrowser(type) {
     console.log('Opening browser for:', type);
     currentBrowserType = type;
@@ -100,8 +109,8 @@ async function loadSidebar() {
         const drivesRes = await fetch('/api/fs/drives');
         const drivesJson = await drivesRes.json();
         if (drivesJson.success && drivesList) {
-            drivesList.innerHTML = drivesJson.data.map(d => 
-                '<div class="sidebar-item" data-path="' + d + '"><span>💽</span> ' + d + ' Drive</div>'
+            drivesList.innerHTML = drivesJson.data.map(d =>
+                '<div class="sidebar-item" data-path="' + escapeHtml(d) + '"><span>💽</span> ' + escapeHtml(d) + ' Drive</div>'
             ).join('');
         }
     } catch (e) {

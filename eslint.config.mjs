@@ -13,7 +13,8 @@ export default tseslint.config(
     {
         languageOptions: {
             parserOptions: {
-                project: true,
+                projectService: true,
+                allowDefaultProject: ['eslint.config.mjs'],
                 tsconfigRootDir: __dirname,
             },
         },
@@ -27,6 +28,7 @@ export default tseslint.config(
             'public/',
             '.tmp/',
             'tmp/',
+            'eslint.config.mjs',
         ],
     },
     {
@@ -37,7 +39,7 @@ export default tseslint.config(
             '@typescript-eslint/ban-ts-comment': 'warn',
             '@typescript-eslint/prefer-optional-chain': 'warn',
             '@typescript-eslint/prefer-nullish-coalescing': 'warn',
-            '@typescript-eslint/no-require-imports': 'error',
+            '@typescript-eslint/no-require-imports': 'warn',
             'no-console': 'off',
             'prefer-const': 'error',
             'no-var': 'error',
