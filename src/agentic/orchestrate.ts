@@ -425,7 +425,7 @@ async function buildSfxLayer(
 
 export async function renderAgenticSlideshow(
     res: PipelineResult,
-    opts: { outPath?: string; crossfadeSec?: number; burnCaptions?: boolean; sfx?: boolean; transition?: string; preset?: string; kinetic?: boolean } = {},
+    opts: { outPath?: string; crossfadeSec?: number; burnCaptions?: boolean; sfx?: boolean; transition?: string; preset?: string; kinetic?: boolean; kenBurns?: boolean } = {},
 ): Promise<string> {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const ffmpeg: string = require('ffmpeg-static');
@@ -496,7 +496,9 @@ export async function renderAgenticSlideshow(
         const dur = a.durationSec ?? 4;
         // Gentle Ken Burns zoom (spec 7.1). Comma inside the min() expression is
         // escaped as '\\,' and NO single quotes (filtergraph isn't shell-parsed).
-        const zoom = a.kind === 'image' ? `,zoompan=z=min(zoom+0.0008\\,1.04):d=1:s=${W}x${H}` : '';
+        // Honors opts.kenBurns (config surface): when false, no zoom on images.
+        const doZoom = a.kind === 'image' && opts.kenBurns !== false;
+        const zoom = doZoom ? `,zoompan=z=min(zoom+0.0008\\,1.04):d=1:s=${W}x${H}` : '';
         // Editing engine v1: per-scene color grade (no LUT file needed).
         const grade = gradeFilter(stylePlan.scenes[i]?.grade ?? 'neutral');
         const tag = '[' + i + ':v]';
@@ -537,9 +539,11 @@ export async function renderAgenticSlideshow(
         videoMap = '[vcap]';
     }
     // ── Editing engine v1: kinetic text overlays (lower-third reveal + word-pop). ──
-    // Each cue is placed at its absolute timeline position. drawtext enable= drives
-    // the on/off window; a tiny fade gives the "pop". Apostrophes are swapped for ’
-    // because drawtext breaks on bare single quotes in the text string.
+    // Each cue is placed at its absolute timeline position via drawtext enable=
+    // (hard on/off window). NOTE: this ffmpeg build does NOT support drawtext's
+    // `alpha` expression ("Not yet implemented"), so we use enable= only — the
+    // text appears/disappears at the window edges, which still reads as a pop.
+    // Apostrophes are swapped for ’ because drawtext breaks on bare single quotes.
     if (stylePlan && opts.kinetic !== false) {
         let t = 0;
         const sceneStarts = visuals.map((a) => { const s = t; t += (a.durationSec ?? 4); return s; });
@@ -551,9 +555,9 @@ export async function renderAgenticSlideshow(
                 const end = (base + cue.atSec + (cue.kind === 'wordpop' ? 0.9 : 2.6)).toFixed(2);
                 const safe = cue.text.replace(/'/g, '’').replace(/:/g, '\\:');
                 if (cue.kind === 'lowerthird') {
-                    vfArgs.push(`${ktag}drawtext=text='${safe}':fontcolor=white:fontsize=34:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=h-text_h-90:enable='between(t\\,${start}\\,${end})':alpha='if(lt(t\\,${start}+0.25)\\,((t-${start})/0.25)\\,if(gt(t\\,${end}-0.3)\\,(((${end}-t)/0.3))\\,1))'[k${i}]`);
+                    vfArgs.push(`${ktag}drawtext=text='${safe}':fontcolor=white:fontsize=34:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=h-text_h-90:enable='between(t\\,${start}\\,${end})'[k${i}]`);
                 } else {
-                    vfArgs.push(`${ktag}drawtext=text='${safe}':fontcolor=white:fontsize=64:fontcolor_expr=white:box=1:boxcolor=black@0.0:borderw=3:bordercolor=yellow:x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t\\,${start}\\,${end})':alpha='if(lt(t\\,${start}+0.15)\\,((t-${start})/0.15)\\,if(gt(t\\,${end}-0.2)\\,(((${end}-t)/0.2))\\,1))'[k${i}]`);
+                    vfArgs.push(`${ktag}drawtext=text='${safe}':fontcolor=yellow:fontsize=64:box=1:boxcolor=black@0.0:borderw=3:bordercolor=yellow:x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t\\,${start}\\,${end})'[k${i}]`);
                 }
                 ktag = `[k${i}]`;
             }

@@ -113,14 +113,17 @@ export function computeStylePlan(
 }
 
 /**
- * Map a TransitionKind to an ffmpeg xfade transition name (the subset ffmpeg
- * supports reliably). 'cut' is handled by the renderer as a hard concat.
+ * Map a TransitionKind to an ffmpeg xfade transition name. IMPORTANT: this
+ * static ffmpeg build (6.1.1-essentials) only implements a SUBSET of xfade
+ * transitions — `fade` and the slide/wipe family work, but `zoomblur*` throws
+ * "Not yet implemented in FFmpeg" (its const table isn't compiled in). So we
+ * collapse zoomblur -> fade and keep slideleft as the only non-fade variant.
  */
 export function xfadeName(kind: TransitionKind): string {
     switch (kind) {
         case 'slide': return 'slideleft';
-        case 'zoomblur': return 'zoomblurin';
-        case 'cut': return 'fade'; // renderer upgrades cuts separately
+        case 'zoomblur': return 'fade'; // zoomblur unsupported in this build
+        case 'cut': return 'fade';      // renderer upgrades cuts to hard concat
         case 'fade':
         default: return 'fade';
     }
