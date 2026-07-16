@@ -58,15 +58,21 @@ export function expandKeywordsHeuristic(scene: ScenePlan, title: string): string
     // Always include the primary topic noun(s) from the title as a fallback phrase.
     const titleWords = clean(title).split(' ').filter((w) => w.length > 3).slice(0, 3).join(' ');
     if (titleWords) out.add(titleWords);
-    // A "<visualPreference> of <topic>" phrase (e.g. "video of lions") improves
-    // stock hit-rate and keeps the test's "includes video" expectation honest.
-    if (base[0] && scene.visualPreference) out.add(`${scene.visualPreference} of ${base[0]}`);
-    return [...out].filter(Boolean).slice(0, 4);
+    // A context phrase (e.g. "wild lions", "lion cub") helps stock hit-rate
+    // WITHOUT the redundant "<kind> of <topic>" framing (the fetcher already
+    // knows the media kind from visualPreference, so "video of lions" is noise).
+    const topicNoun = base[0];
+    if (topicNoun) {
+        const ctx = [`wild ${topicNoun}`, `${topicNoun} nature`, `${topicNoun} close up`];
+        for (const c of ctx) out.add(c);
+    }
+    return [...out].filter(Boolean).slice(0, 5);
 }
 
 /** Write a script from a topic using a simple, deterministic template (no LLM).
  *  Emits [Visual: <keyword>] tags so the project's real parseScript produces
- *  well-keyworded scenes. */
+ *  well-keyworded scenes. Sentences are VARIED (hook / insight / payoff) so the
+ *  voiceover doesn't read as three identical formulaic lines. */
 export function writeScriptHeuristic(topic: string, title: string): string {
     const sentences = topic
         .split(/(?<=[.!?])\s+|\n+/)
@@ -77,16 +83,27 @@ export function writeScriptHeuristic(topic: string, title: string): string {
         return sentences.map((s) => `${s} [Visual: ${kw}]`).join('\n');
     }
     const t = title || topic;
-    // Extract a clean primary visual noun from the topic (e.g. "lions" from
-    // "5 fascinating facts about lions"), lowercased and punctuation-stripped,
-    // so the [Visual: ...] tag drives a sane stock search.
+    // Extract a clean primary visual noun from the topic, lowercased and
+    // punctuation-stripped, so the [Visual: ...] tag drives a sane stock search.
     const topicWords = topic.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter((w) => w.length > 3);
     const kw = topicWords[topicWords.length - 1] ?? t.split(/\s+/).filter((w) => w.length > 3)[0] ?? 'nature';
-    return [
-        `In today's video we explore ${t}. [Visual: ${kw}]`,
-        `Here is what makes ${t} interesting and why it matters. [Visual: ${kw}]`,
-        `Use this insight about ${t} to take your next step. [Visual: ${kw}]`,
-    ].join('\n');
+
+    // Varied opener bank — pick by a stable hash of the topic so the same topic
+    // is always rendered the same way (deterministic) but different topics vary.
+    const hook = (str: string): string => {
+        let h = 0;
+        for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+        const hooks = [
+            `Did you know ${t} is more interesting than most people think? [Visual: ${kw}]`,
+            `Here's something surprising about ${t} you'll want to remember. [Visual: ${kw}]`,
+            `Let's break down ${t} in a way that actually makes sense. [Visual: ${kw}]`,
+            `Most guides get ${t} wrong — here's the real story. [Visual: ${kw}]`,
+        ];
+        return hooks[h % hooks.length];
+    };
+    const insight = `The key detail about ${t} is what separates the beginners from the pros. [Visual: ${kw}]`;
+    const payoff = `Apply this one idea about ${t} and you'll see the difference immediately. [Visual: ${kw}]`;
+    return [hook(topic), insight, payoff].join('\n');
 }
 
 // ── The agent's DECIDE step ────────────────────────────────────────────────

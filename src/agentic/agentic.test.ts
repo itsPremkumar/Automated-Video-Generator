@@ -212,8 +212,14 @@ describe('agent backend (no external AI)', () => {
     test('expands keywords deterministically', () => {
         const scene = { sceneNumber: 1, voiceoverText: 'x', searchKeywords: ['gym'], visualPreference: 'video' as const, durationSec: 5 };
         const kw = expandKeywordsHeuristic(scene, 'Workout Tips');
+        // Primary term preserved + context phrases added (no redundant "<kind> of <term>").
         assert.ok(kw.includes('gym'));
-        assert.ok(kw.some((k) => k.includes('video')));
+        assert.ok(kw.some((k) => k.includes('gym') && k !== 'gym'));
+        // Deterministic: same input => same output.
+        const kw2 = expandKeywordsHeuristic(scene, 'Workout Tips');
+        assert.deepStrictEqual(kw, kw2);
+        // No degenerate keyword that just repeats the media kind.
+        assert.ok(!kw.some((k) => k.startsWith('video of ') || k.startsWith('image of ')));
     });
 
     test('agent approves a passing visual, replaces a failing one', () => {

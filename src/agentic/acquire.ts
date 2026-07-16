@@ -59,12 +59,25 @@ export interface AcquireResult {
 export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPerAsset = 2): Promise<AcquireResult> {
     const ws = createAgenticWorkspace(plan.jobId);
     const candidates: AssetCandidate[] = [];
+    const sceneFetches: Promise<{ i: number; kind: 'image' | 'video'; dir: string; scene: any; fetched: FetchedVisual[] }>[] = [];
 
     for (let i = 0; i < plan.scenes.length; i++) {
         const scene = plan.scenes[i];
         const kind = scene.visualPreference;
         const dir = kind === 'image' ? sceneImageDir(ws, i) : sceneVideoDir(ws, i);
-        const fetched = await deps.fetchVisual(scene.searchKeywords, kind, plan.orientation);
+        // Fetch all scenes in parallel (bounded by the fetcher's own limits).
+        // Rejections are isolated per scene so one bad fetch can't kill the run.
+        sceneFetches.push(
+            deps.fetchVisual(scene.searchKeywords, kind, plan.orientation)
+                .then((fetched) => ({ i, kind, dir, scene, fetched }))
+                .catch((e) => {
+                    console.warn(`⚠ fetch failed for scene ${i}: ${(e as Error)?.message ?? e}`);
+                    return { i, kind, dir, scene, fetched: [] as FetchedVisual[] };
+                }),
+        );
+    }
+    const results = await Promise.all(sceneFetches);
+    for (const { i, kind, dir, scene, fetched } of results) {
         for (let c = 0; c < Math.min(candidatesPerAsset, fetched.length); c++) {
             const f = fetched[c];
             const ext = path.extname(f.url).split('?')[0] || (kind === 'image' ? '.jpg' : '.mp4');

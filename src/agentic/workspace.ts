@@ -78,3 +78,24 @@ export function readJson<T = any>(ws: AgenticWorkspace, relativePath: string): T
         return null;
     }
 }
+
+/**
+ * Prune old workspaces so agentic-pipeline/workspaces never grows unbounded.
+ * Keeps the N most-recent jobs (default 25) and deletes the rest. Safe to call
+ * at the start of every run. Returns the number of workspaces removed.
+ */
+export function pruneWorkspaces(maxKeep = 25, root: string = WORKSPACES_ROOT): number {
+    try {
+        if (!fs.existsSync(root)) return 0;
+        const dirs = fs.readdirSync(root)
+            .map((d) => path.join(root, d))
+            .filter((d) => fs.statSync(d).isDirectory());
+        // Sort oldest-first by mtime.
+        dirs.sort((a, b) => fs.statSync(a).mtimeMs - fs.statSync(b).mtimeMs);
+        const toRemove = dirs.slice(0, Math.max(0, dirs.length - maxKeep));
+        for (const d of toRemove) fs.rmSync(d, { recursive: true, force: true });
+        return toRemove.length;
+    } catch {
+        return 0;
+    }
+}

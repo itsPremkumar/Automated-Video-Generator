@@ -33,6 +33,7 @@ async function main() {
     const sfx = bool('sfx');
     const noDucking = bool('no-ducking');
     const noKenBurns = bool('no-ken-burns');
+    const dryRun = bool('dry-run');
 
     if (noDucking) process.env.AUDIO_DUCK_LEVEL = ''; // empty => ducking expr skipped
     console.log(`\n🎬 Agentic run | backend=${backend} renderer=${renderer} quality=${quality} intro=${introMode} outro=${outroMode}`);
@@ -44,8 +45,20 @@ async function main() {
         if (p.stage === 'voiceover') process.stdout.write('\n');
     };
 
-    const res = await runAgenticPipeline({ topic, title, backend, orientation, preferVisual }, onProgress);
+    const res = await runAgenticPipeline({ topic, title, backend, orientation, preferVisual, dryRun }, onProgress);
     console.log('');
+
+    if (dryRun) {
+        console.log(`\n🔍 DRY RUN — no assets fetched, nothing rendered.`);
+        console.log(`   Title:    ${res.plan.title}`);
+        console.log(`   Scenes:   ${res.plan.scenes.length}  (${res.plan.orientation}, ${res.plan.totalDurationSec}s)`);
+        console.log(`   Per-scene plan:`);
+        for (const s of res.plan.scenes) {
+            console.log(`     #${s.sceneNumber} [${s.visualPreference}] kw: ${s.searchKeywords.join(', ')}`);
+            console.log(`        "${s.voiceoverText}"`);
+        }
+        return;
+    }
 
     console.log(`\n🤖 Agent decided: ${res.decisions.length} assets`);
     for (const d of res.decisions) console.log(`   ${d.assetId}: ${d.decision} — ${d.rationale}`);
@@ -65,11 +78,11 @@ async function main() {
             out = await renderAgenticWithRemotion(res, { intro, outro, kenBurns: !noKenBurns, quality });
         } catch (e: any) {
             console.warn(`⚠ Remotion render failed (${e?.message ?? e}); falling back to ffmpeg.`);
-            out = await renderAgenticSlideshow(res, { crossfadeSec: 0.5, burnCaptions: true });
+            out = await renderAgenticSlideshow(res, { crossfadeSec: 0.5, burnCaptions: true, sfx });
         }
     } else {
         console.log(`\n🎞  Rendering MP4 (ffmpeg-static)...`);
-        out = await renderAgenticSlideshow(res, { crossfadeSec: 0.5, burnCaptions: true });
+        out = await renderAgenticSlideshow(res, { crossfadeSec: 0.5, burnCaptions: true, sfx });
     }
 
     // Phase 8.4 — print post-render verification (X7-X9)

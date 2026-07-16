@@ -30,7 +30,7 @@ import { acquireAssets, AcquireDeps, FetchedVisual } from './acquire.js';
 import { verifyAll, VerifyDeps, VERIFY_PASS_CONFIDENCE } from './verify.js';
 import { runGateway, GatewayDeps } from './gateway.js';
 import { runFinalGate } from './gate.js';
-import { AgenticWorkspace, readJson, writeJson } from './workspace.js';
+import { AgenticWorkspace, readJson, writeJson, pruneWorkspaces } from './workspace.js';
 import { generateAgenticVoiceovers } from './tts.js';
 import { createJob, updateJob, persistJob } from './job.js';
 import { AssetCandidate, AssetDecision, Plan, RenderManifest, assetId } from './types.js';
@@ -53,6 +53,8 @@ export interface PipelineRequest {
     /** Force every scene's visual to image (lighter downloads) or video. */
     preferVisual?: 'image' | 'video';
     agent?: Partial<AgentBackendConfig>; // optional LLM hooks / vision bolt-on
+    /** When true, plan + keyword expansion run but NO network acquire/render. */
+    dryRun?: boolean;
 }
 
 export interface PipelineResult {
@@ -93,6 +95,9 @@ export async function runAgenticPipeline(
     };
     const jobId = req.jobId ?? `job_${Date.now()}`;
 
+    // Phase 0 (#16): prevent unbounded workspace growth on long-running boxes.
+    pruneWorkspaces(Number(process.env.AGENTIC_KEEP_WORKSPACES ?? 25));
+
     // ── STAGE 1: SCRIPT + PLAN (agent writes the script) ──────────────
     const script = cfg.writeScript
         ? await cfg.writeScript(req.topic, req.title)
@@ -114,6 +119,22 @@ export async function runAgenticPipeline(
     }
     if (req.preferVisual) {
         for (const s of plan.scenes) s.visualPreference = req.preferVisual;
+    }
+
+    // ── DRY RUN (#25): preview plan + per-scene keywords, skip network/render. ──
+    if (req.dryRun) {
+        emit({ stage: 'plan', percent: 100, message: `DRY RUN — ${plan.scenes.length} scenes, no assets fetched` });
+        return {
+            backend,
+            plan,
+            workspace: { jobId: 'dry-run', root: '', assetsDir: '', imagesDir: '', videosDir: '', musicDir: '', verificationDir: '' } as AgenticWorkspace,
+            candidates: [],
+            decisions: [],
+            gate: { pass: false, checks: [] },
+            manifest: null as any,
+            voiceovers: null,
+            fullyAgentDriven: backend === 'agent' && !cfg.visionVerify,
+        };
     }
 
     // ── STAGE 2: ACQUIRE (real fetchers) ─────────────────────────────
@@ -354,9 +375,57 @@ function normalizeAudio(src: string): string {
     }
 }
 
+/**
+ * Build a single SFX audio layer (mp3) by resolving each scene's transition SFX
+ * via the existing sfx-selector + free-sfx generators and placing it at the
+ * scene start on a timeline matched to the rendered video. Returns the temp
+ * file path, or null when SFX are disabled / unavailable. (The sfx-selector
+ * logic is preserved and finally USED here — #23.)
+ */
+async function buildSfxLayer(
+    ffmpeg: string,
+    plan: Plan,
+    visuals: { durationSec?: number }[],
+    sfxPlans: { sceneIndex: number; transitionIn: any; transitionOut: any }[],
+    tmpDir: string,
+): Promise<string | null> {
+    try {
+        const { planSceneSfx, resolveSfx } = await import('./sfx-selector.js');
+        void planSceneSfx; // sfxPlans already computed by caller
+        const events: { atMs: number; kind: any }[] = [];
+        let t = 0;
+        for (let i = 0; i < visuals.length; i++) {
+            const dur = (visuals[i].durationSec ?? 4) * 1000;
+            const sp = sfxPlans.find((p) => p.sceneIndex === i);
+            if (sp?.transitionIn) events.push({ atMs: Math.round(t), kind: sp.transitionIn });
+            if (sp?.transitionOut) events.push({ atMs: Math.round(t + dur - 250), kind: sp.transitionOut });
+            t += dur;
+        }
+        const clips = await Promise.all(events.map((e) => resolveSfx(e.kind).then((c) => (c ? { atMs: e.atMs, path: c.localPath } : null))));
+        const valid = clips.filter(Boolean) as { atMs: number; path: string }[];
+        if (valid.length === 0) return null;
+        const totalMs = t;
+        // Mix all SFX onto one quiet bed aligned to the timeline via adelay.
+        const filter = valid
+            .map((c, i) => `[${i}:a]adelay=${c.atMs}|${c.atMs},volume=0.5[a${i}]`)
+            .join(';');
+        const mix = valid.map((_, i) => `[a${i}]`).join('') + `amix=inputs=${valid.length}:duration=first[aout]`;
+        const tmp = `${tmpDir}/_sfx_${Date.now()}.mp3`;
+        const args = [
+            ...valid.flatMap((c) => ['-i', c.path]),
+            '-filter_complex', `${filter};${mix}`,
+            '-t', (totalMs / 1000).toFixed(2), '-c:a', 'libmp3lame', '-y', tmp,
+        ];
+        await new Promise<void>((res, rej) => require('child_process').execFile(ffmpeg, args, { maxBuffer: 1024 * 1024 * 200 }, (e: any) => (e ? rej(e) : res())));
+        return fs.existsSync(tmp) ? tmp : null;
+    } catch {
+        return null;
+    }
+}
+
 export async function renderAgenticSlideshow(
     res: PipelineResult,
-    opts: { outPath?: string; crossfadeSec?: number; burnCaptions?: boolean } = {},
+    opts: { outPath?: string; crossfadeSec?: number; burnCaptions?: boolean; sfx?: boolean; transition?: string } = {},
 ): Promise<string> {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const ffmpeg: string = require('ffmpeg-static');
@@ -485,7 +554,15 @@ export async function renderAgenticSlideshow(
     if (process.env.DEBUG_FF) { console.error('FILTER_COMPLEX:\n' + [...vfArgs, ...(audioFilter ? [audioFilter] : [])].join(';\n')); }
     await runFfmpeg(pass1);
 
-    // ── PASS 2: duck + mux background music under the voiceover. ──
+    // ── PASS 2: duck + mux background music + optional SFX under the voiceover. ──
+    let sfxLayer: string | null = null;
+    if (opts.sfx && music && fs.existsSync(music.localPath)) {
+        try {
+            const { planSceneSfx } = await import('./sfx-selector.js');
+            const sfxPlans = planSceneSfx(res.plan);
+            sfxLayer = await buildSfxLayer(ffmpeg, res.plan, visuals, sfxPlans, outDir);
+        } catch { sfxLayer = null; }
+    }
     if (music && fs.existsSync(music.localPath)) {
         // Phase 4.1 — side-chain ducking: music dips to AUDIO_DUCK_LEVEL during
         // speech (from caption/VO segments) and rises to AUDIO_FULL_LEVEL in gaps.
@@ -493,15 +570,23 @@ export async function renderAgenticSlideshow(
         const full = parseFloat(process.env.AUDIO_FULL_LEVEL ?? '0.18');
         const duckExpr = buildDuckExpression(visuals, full, duck);
         const volFilter = duckExpr ? `volume=eval=frame:volume='${duckExpr}'` : `volume=${full}`;
+        const inputs: string[] = ['-i', silent, '-i', music.localPath];
+        let fc = `[1:a]${volFilter}[a]`;
+        if (sfxLayer && fs.existsSync(sfxLayer)) {
+            inputs.push('-i', sfxLayer);
+            fc += `;[2:a]volume=0.6[sfx];[0:a][a][sfx]amix=inputs=3:duration=shortest[aout]`;
+        } else {
+            fc += `;[0:a][a]amix=inputs=2:duration=shortest[aout]`;
+        }
         const pass2 = [
-            '-i', silent,
-            '-i', music.localPath,
-            '-filter_complex', `[1:a]${volFilter}[a];[0:a][a]amix=inputs=2:duration=shortest[aout]`,
+            ...inputs,
+            '-filter_complex', fc,
             '-map', '0:v:0', '-map', '[aout]',
             '-c:v', 'copy', '-c:a', 'aac', '-b:a', '128k', '-shortest', '-y', out,
         ];
         await runFfmpeg(pass2);
         fs.rmSync(silent, { force: true });
+        if (sfxLayer) fs.rmSync(sfxLayer, { force: true });
     } else {
         fs.renameSync(silent, out);
     }
