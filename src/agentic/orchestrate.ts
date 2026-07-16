@@ -182,7 +182,7 @@ export async function runAgenticPipeline(
     const STOP = new Set(['a','an','the','of','for','to','and','or','in','on','with','about','facts','fact','benefits','benefit','how','what','why','tips','ways','things','5','3','10','top','best','amazing','fascinating','interesting','daily','changed','change','vs']);
     const topicNoun = ((req.topic || plan.title || 'video') as string)
         .toLowerCase().split(/\s+/).filter((w) => w && !STOP.has(w.replace(/[^a-z]/g, ''))).join(' ') || 'video';
-    let sharedImagePool: { url: string }[] = [];
+    const sharedImagePool: { url: string }[] = [];
     // Video-first consistency: if any scene prefers video, build the shared pool
     // video-first (Pexels/Pixabay/Wikimedia/Archive video), then image as
     // fallback. This makes "video first, then image" true on BOTH the pool path
