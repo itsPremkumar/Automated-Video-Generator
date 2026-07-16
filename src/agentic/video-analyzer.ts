@@ -38,7 +38,12 @@ export interface AudioAnalysis {
  * Returns frames longer than `minDur` seconds; empty = clean.
  */
 export function detectBlackFrames(mp4: string, minDur = 0.3): BlackFrame[] {
-    const out = runFilter(mppegArgs(mp4, `blackdetect=d=${minDur}:pic_th=0.10:pix_th=0.15`), 'blackdetect');
+    // NOTE: only `pix_th` (per-pixel luma threshold) is valid on this ffmpeg
+    // build. The legacy `pic_th` option is rejected/mis-parsed and falsely
+    // flags the ENTIRE clip as black (black_duration == video length). Using
+    // `pix_th=0.15` alone reports real black frames correctly (verified: a
+    // valid render yields zero black_start lines).
+    const out = runFilter(mppegArgs(mp4, `blackdetect=d=${minDur}:pix_th=0.15`), 'blackdetect');
     const frames: BlackFrame[] = [];
     const re = /black_start:([\d.]+)\s+black_end:([\d.]+)\s+black_duration:([\d.]+)/g;
     let m: RegExpExecArray | null;

@@ -80,10 +80,11 @@ test('verifyRenderedVideo: detects a valid tiny MP4 and confirms audio/video', (
     ], { stdio: 'ignore' });
     assert.ok(fs.statSync(p).size > 100_000, 'sanity: generated mp4 should exceed 100KB');
     const r = verifyRenderedVideo(p, 4);
-    // testsrc has black borders, so the new X10 (black-frame) check correctly
-    // flags it. Every OTHER check (X7-X9, X11-X15) must pass on a valid clip.
+    // testsrc is a valid clip: its black BORDERS are not fully-black frames, so
+    // X10 correctly PASSES. A TRULY black clip is still caught (see
+    // video-analyzer.test.ts). Every check must pass on this valid clip.
     const failed = r.checks.filter((c) => !c.pass).map((c) => c.id);
-    assert.deepEqual(failed, ['X10'], 'unexpected failures: ' + JSON.stringify(r.checks));
+    assert.deepEqual(failed, [], 'unexpected failures: ' + JSON.stringify(r.checks));
     assert.ok(r.probed?.hasVideo);
     assert.ok(r.probed?.hasAudio);
     assert.ok(Math.abs(r.probed!.durationSec - 4) < 0.3);

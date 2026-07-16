@@ -42,9 +42,13 @@ function makeBlack(): string {
 describe('video-analyzer on a moving test pattern (testsrc)', () => {
     let clip: string;
     test('setup: generate clip', () => { clip = makeTestsrc(); assert.ok(fs.existsSync(clip)); });
-    test('black detector FINDS testsrc black borders (X10 works)', () => {
+    test('black detector does NOT false-positive on testsrc borders (X10 accurate)', () => {
+        // testsrc has thin black BORDERS but a bright animated CENTER, so it is
+        // NOT a fully-black frame. The corrected pix_th detector must NOT flag
+        // it (this is the bug we fixed: the old pic_th option falsely flagged
+        // the entire clip). A TRULY black clip is still detected (see below).
         const b = detectBlackFrames(clip);
-        assert.ok(b.length > 0, 'testsrc has black borders -> blackdetect should fire');
+        assert.equal(b.length, 0, 'testsrc center is bright -> no fully-black frame');
     });
     test('no freeze frames on animated pattern (X11)', () => {
         const f = detectFreezeFrames(clip);
@@ -61,12 +65,13 @@ describe('video-analyzer on a moving test pattern (testsrc)', () => {
         assert.equal(d.height, 1280);
         assert.equal(d.codec, 'h264');
     });
-    test('verifyRenderedVideo: non-black checks all pass; X7/X10 flag synthetic-clip traits only', () => {
+    test('verifyRenderedVideo: non-black checks pass; only X7 flags synthetic-clip size', () => {
         const r = verifyRenderedVideo(clip, 4);
         const failed = r.checks.filter((c) => !c.pass).map((c) => c.id);
-        // testsrc is a synthetic pattern: tiny file (X7) + black borders (X10).
-        // Both are CORRECT detections; real agentic videos won't hit these.
-        assert.deepEqual(failed, ['X7', 'X10'], 'unexpected failures: ' + JSON.stringify(failed));
+        // testsrc is a tiny synthetic pattern so it fails X7 (size). Its black
+        // BORDERS are not fully-black frames, so X10 now correctly PASSES
+        // (the old pic_th option was a false-positive we fixed).
+        assert.deepEqual(failed, ['X7'], 'unexpected failures: ' + JSON.stringify(failed));
     });
     test('cleanup', () => { try { fs.rmSync(clip); } catch { /* */ } });
 });

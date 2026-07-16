@@ -68,11 +68,18 @@ export async function generateAgenticVoiceovers(
     fs.mkdirSync(audioDir, { recursive: true });
 
     // ── Try the real Edge-TTS engine (or Kokoro/etc. fallback chain). ──
+    // Hard wall-clock timeout: node-edge-tts has no internal timeout, so an
+    // unreachable network would hang the whole render forever. Bound it and
+    // fall back to tones if voice generation can't finish in time.
     try {
         const { generateVoiceovers } = await import('../lib/voice-generator.js');
-        const map = await generateVoiceovers(toEngineScenes(plan) as any, audioDir, {
-            voice: voice ?? plan.voice,
-        } as any);
+        const map = await withTimeout(
+            generateVoiceovers(toEngineScenes(plan) as any, audioDir, {
+                voice: voice ?? plan.voice,
+            } as any),
+            25_000,
+            'voice generation timed out (network/Edge-TTS unreachable)',
+        );
         const scenes: SceneVoiceover[] = [];
         let ok = 0;
         for (const s of plan.scenes) {
@@ -94,10 +101,21 @@ export async function generateAgenticVoiceovers(
         // Partial success: fill missing scenes with tones (don't fail the job).
         return fillMissing(plan, scenes, audioDir, /*driven*/ ok > 0);
     } catch (e: any) {
-        // Engine not available / threw -> agent fallback to tones (still a real video).
+        // Engine not available / threw / timed out -> agent fallback to tones (still a real video).
         console.warn(`⚠ voice engine unavailable ("${e?.message}"); using agent tone fallback.`);
         return fillMissing(plan, [], audioDir, false);
     }
+}
+
+/** Reject if `promise` doesn't settle within `ms`. Never hangs the render. */
+function withTimeout<T>(promise: Promise<T>, ms: number, msg: string): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error(msg)), ms);
+        promise.then(
+            (v) => { clearTimeout(t); resolve(v); },
+            (e) => { clearTimeout(t); reject(e); },
+        );
+    });
 }
 
 function fillMissing(plan: Plan, have: SceneVoiceover[], audioDir: string, driven: boolean): VoiceoverResult {

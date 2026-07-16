@@ -531,12 +531,33 @@ export async function renderAgenticSlideshow(
     const vfArgs = [...sceneFilters];
     let videoMap = videoChain;
 
-    // ── Caption burn-in (subtitles filter) applied to the chained video. ──
+    // ── Caption burn-in. ──
+    // The ffmpeg `subtitles` filter (libass) is broken on this static Windows
+    // build — it fails to initialise and renders the WHOLE clip black instead
+    // of erroring. So we burn captions with `drawtext` (libfreetype), which
+    // works. Each caption segment becomes a lower-third drawtext shown only
+    // during its time window.
     if (captionFile) {
-        // In an ffmpeg filtergraph, colons must be escaped as '\\:' and backslashes
-        // as '/'. Do NOT wrap the path in quotes (filtergraph isn't shell-parsed).
-        vfArgs.push(`${videoChain}subtitles=${escapeFilterPath(captionFile)}:force_style='FontSize=28,PrimaryColour=&Hffffff&,OutlineColour=&H000000&,Outline=2,Alignment=2'[vcap]`);
-        videoMap = '[vcap]';
+        let ctag = videoChain;
+        let ci = 0;
+        let tBase = 0;
+        for (const a of visuals) {
+            const dur = a.durationSec ?? 4;
+            const segs = (a.captionSegments && a.captionSegments.length
+                ? a.captionSegments
+                : [{ text: (res.plan.scenes[a.sceneIndex] && res.plan.scenes[a.sceneIndex].voiceoverText) || '', startMs: 0, endMs: Math.round(dur * 1000) }]);
+            for (const s of segs) {
+                const start = (tBase + s.startMs / 1000).toFixed(2);
+                const end = (tBase + s.endMs / 1000).toFixed(2);
+                const safe = s.text.replace(/'/g, '’').replace(/:/g, '\\:').replace(/\n/g, ' ');
+                const out = `c${ci}`;
+                vfArgs.push(`${ctag}drawtext=text='${safe}':fontcolor=white:fontsize=30:box=1:boxcolor=black@0.5:boxborderw=10:line_spacing=4:x=(w-text_w)/2:y=h-text_h-120:enable='between(t\\,${start}\\,${end})'[${out}]`);
+                ctag = `[${out}]`;
+                ci++;
+            }
+            tBase += dur;
+        }
+        videoMap = ctag;
     }
     // ── Editing engine v1: kinetic text overlays (lower-third reveal + word-pop). ──
     // Each cue is placed at its absolute timeline position via drawtext enable=
