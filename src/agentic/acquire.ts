@@ -23,6 +23,7 @@ import {
 } from './workspace.js';
 import { AssetCandidate, Plan } from './types.js';
 import { inputAssetPath } from '../lib/path-safety.js';
+import { aiVerifyAsset } from './ai-verify.js';
 
 /** Ensure every candidate carries an attribution label so the final gate (X6)
  *  can never be blocked by a *missing metadata string* — only by a truly
@@ -50,6 +51,11 @@ export interface AcquireDeps {
     download: (url: string, dir: string, filename: string) => Promise<string>;
     /** Returns candidate music tracks. */
     fetchMusic: (query: string, count: number) => Promise<FetchedVisual[]>;
+    /** OPTIONAL — AI verification (opt-in). When present AND cfg.aiVerify.verifyOnAcquire
+     *  is on, each materialised candidate is AI-scored; a failing (non-null)
+     *  score drops the candidate. Absent -> no AI check (signal gates only). */
+    cfg?: import('./config.js').AgenticConfig;
+    brain?: import('./brain.js').AgentBrain;
 }
 
 /**
@@ -189,6 +195,17 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                 localPath = destPath;
             }
             const lic = normalizeLicense(f);
+            // OPT-IN AI verify (acquire stage): score the materialised
+            // candidate with the agent's own model. A non-null FAILING score
+            // drops this candidate (next source in the ladder is tried). A
+            // null result (no model / offline) is ignored -> signal gates decide.
+            if (deps.brain && deps.cfg?.aiVerify?.verifyOnAcquire) {
+                const ai = await aiVerifyAsset(localPath, kind, scene.searchKeywords, deps.cfg, deps.brain);
+                if (ai && !ai.pass) {
+                    console.warn(`⚠ ai(acquire) rejected scene ${i} cand ${c + 1}: ${ai.reason} (conf ${ai.confidence})`);
+                    continue;
+                }
+            }
             candidates.push({
                 kind,
                 sceneIndex: i,

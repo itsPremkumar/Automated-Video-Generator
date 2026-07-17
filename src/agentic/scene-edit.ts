@@ -18,6 +18,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { AgenticWorkspace, readJson, writeJson } from './workspace.js';
 import { Plan, ScenePlan, AssetCandidate } from './types.js';
+import { inputAssetPath } from '../lib/path-safety.js';
+
+function resolveLocalAssetPath(p: string): string | null {
+    const fp = inputAssetPath(p);
+    return fs.existsSync(fp) ? fp : null;
+}
 
 function planPath(ws: AgenticWorkspace): string {
     return path.join(ws.root, 'plan.json');
@@ -68,6 +74,7 @@ export function updateScene(
     ws: AgenticWorkspace,
     index: number,
     patch: Partial<Pick<ScenePlan, 'voiceoverText' | 'searchKeywords' | 'durationSec' | 'localAsset' | 'visualPreference'>>,
+    ai?: { aiVerify?: import('./config.js').AgenticConfig['aiVerify']; brain?: import('./brain.js').AgentBrain },
 ): Plan {
     const plan = readPlan(ws);
     const scene = plan.scenes[index];
@@ -77,6 +84,19 @@ export function updateScene(
     if (patch.durationSec !== undefined) scene.durationSec = patch.durationSec;
     if (patch.localAsset !== undefined) scene.localAsset = patch.localAsset;
     if (patch.visualPreference !== undefined) scene.visualPreference = patch.visualPreference;
+    // OPT-IN AI verify (edit stage): when verifyOnEdit is on and a localAsset
+    // file exists, score it with the agent's own model and record the verdict
+    // on the scene so the next render's X16 + the plan reflect it. A null
+    // result (no model / offline) is ignored. Never throws / never blocks.
+    if (ai?.aiVerify?.verifyOnEdit && ai.brain && scene.localAsset) {
+        const fp = resolveLocalAssetPath(scene.localAsset);
+        if (fp) {
+            const kind = /\.(mp4|mov|webm|m4v)$/i.test(fp) ? 'video' : /\.(mp3|wav|ogg|m4a)$/i.test(fp) ? 'audio' : 'image';
+            import('./ai-verify.js').then((m) => m.aiVerifyAsset(fp, kind, scene.searchKeywords ?? [], { aiVerify: ai.aiVerify } as any, ai.brain!))
+                .then((score) => { if (score) (scene as any).aiVerified = { pass: score.pass, confidence: score.confidence, reason: score.reason }; })
+                .catch(() => { /* ignore */ });
+        }
+    }
     return writePlan(ws, plan);
 }
 

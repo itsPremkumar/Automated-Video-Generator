@@ -158,6 +158,8 @@ export async function autoRunVideo(
                 intro: cfg.intro ?? (cfg.hookFirst ? { title: req.title, subtitle: 'AI-generated', durationSec: 2.5 } : undefined),
                 outro: cfg.outro ?? { ctaText: 'Subscribe for more', showSubscribe: true, hashtags: ['#shorts', '#ai'], durationSec: 3 },
                 jCutSec: cfg.jCutSec ?? 0.4,
+                // OPT-IN AI verify (render stage) — flows to verifyRenderedVideo X16.
+                aiVerify: cfg.aiVerify,
             };
             let out: string;
             if ((opts.renderer ?? cfg.renderer) === 'remotion' && !soften) {

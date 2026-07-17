@@ -464,6 +464,14 @@ export async function runAgenticPipeline(
             return tracks;
         },
     };
+    // OPT-IN AI verify (acquire stage): hand the resolved config + a brain to
+    // acquireAssets. When cfg.aiVerify.verifyOnAcquire is on, each materialised
+    // candidate is AI-scored with the agent's own model; a failing (non-null)
+    // score drops the candidate. When off / no model, acquire.ts ignores this.
+    if (cfg.aiVerify?.enabled) {
+        acquireDeps.cfg = cfg as any;
+        acquireDeps.brain = new AgentBrain();
+    }
     const { workspace, candidates } = await acquireAssets(plan, acquireDeps, req.candidatesPerAsset ?? 2);
     emit({ stage: 'acquire', percent: 100, message: `Acquired ${candidates.length} candidates` });
     // Persist the plan so a later agent run can edit/reorder scenes via the
@@ -709,7 +717,7 @@ async function buildSfxLayer(
 
 export async function renderAgenticSlideshow(
     res: PipelineResult,
-    opts: { outPath?: string; crossfadeSec?: number; burnCaptions?: boolean; sfx?: boolean; transition?: string; preset?: string; kinetic?: boolean; kenBurns?: boolean; dimensions?: { w: number; h: number }; captions?: 'burned' | 'karaoke' | 'none'; intro?: { title: string; subtitle?: string; durationSec?: number }; outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number }; jCutSec?: number } = {},
+    opts: { outPath?: string; crossfadeSec?: number; burnCaptions?: boolean; sfx?: boolean; transition?: string; preset?: string; kinetic?: boolean; kenBurns?: boolean; dimensions?: { w: number; h: number }; captions?: 'burned' | 'karaoke' | 'none'; intro?: { title: string; subtitle?: string; durationSec?: number }; outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number }; jCutSec?: number; aiVerify?: import('./config.js').AgenticConfig['aiVerify'] } = {},
 ): Promise<string> {
     
     const ffmpeg: string = require('ffmpeg-static');
@@ -1185,7 +1193,14 @@ export async function renderAgenticSlideshow(
     // ── Phase 8.4: POST-RENDER quality verification (X7-X9). ──
     // expectedDur is computed per render path above (segmented: sum of clip
     // durations with no crossfade; default: intro+scenes+outro minus xfade overlap).
-    res.postRender = await verifyRenderedVideo(out, expectedDur);
+    // OPT-IN AI verify (render stage): when cfg.aiVerify.verifyOnRender is on,
+    // score one extracted frame with the agent's own model (X16). Off by default.
+    const aiBrain = opts.aiVerify?.verifyOnRender ? new AgentBrain() : undefined;
+    res.postRender = await verifyRenderedVideo(out, expectedDur, {
+        aiVerify: opts.aiVerify,
+        brain: aiBrain,
+        keywords: res.plan.scenes.flatMap((s) => s.searchKeywords ?? []),
+    });
     return out;
 }
 
@@ -1425,7 +1440,7 @@ export function writeDecisionsReport(res: PipelineResult): string {
  */
 export async function renderAgenticWithRemotion(
     res: PipelineResult,
-    opts: { brand?: { primaryColor?: string; accentColor?: string; fontFamily?: string; logoPath?: string }; intro?: { title: string; subtitle?: string; durationSec?: number }; outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number }; kenBurns?: boolean; quality?: 'draft' | 'medium' | 'high'; preset?: string; kinetic?: boolean; dimensions?: { w: number; h: number }; crossfadeSec?: number } = {},
+    opts: { brand?: { primaryColor?: string; accentColor?: string; fontFamily?: string; logoPath?: string }; intro?: { title: string; subtitle?: string; durationSec?: number }; outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number }; kenBurns?: boolean; quality?: 'draft' | 'medium' | 'high'; preset?: string; kinetic?: boolean; dimensions?: { w: number; h: number }; crossfadeSec?: number; aiVerify?: import('./config.js').AgenticConfig['aiVerify'] } = {},
 ): Promise<string> {
      
     const { bundle } = require('@remotion/bundler');
@@ -1557,7 +1572,11 @@ export async function renderAgenticWithRemotion(
         try {
             const o = await renderOne(a.w, a.h, a.s);
             if (a.s === '') primary = o;
-            res.postRender = await verifyRenderedVideo(o, totalFrames / fps);
+            res.postRender = await verifyRenderedVideo(o, totalFrames / fps, {
+                aiVerify: opts.aiVerify,
+                brain: opts.aiVerify?.verifyOnRender ? new AgentBrain() : undefined,
+                keywords: res.plan.scenes.flatMap((s) => s.searchKeywords ?? []),
+            });
         } catch (e) {
             console.warn(`⚠ remotion aspect ${a.s || 'native'} failed: ${(e as Error).message}`);
         }

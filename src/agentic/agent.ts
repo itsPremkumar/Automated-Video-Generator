@@ -43,6 +43,8 @@ export interface AgentBackendConfig {
     expandKeywords?: (scene: ScenePlan, title: string) => Promise<string[]>;
     /** Optional vision scorer (e.g. verifyMedia with Gemini) — bolt-on, not required. */
     visionVerify?: (filePath: string, keywords: string[]) => Promise<{ passes: boolean; confidence: number; reason: string }>;
+    /** OPT-IN AI verification config (reuses the running agent's own model). Off by default. */
+    aiVerify?: import('./config.js').AgenticConfig['aiVerify'];
 }
 
 // ── Built-in, key-free agent intelligence ───────────────────────────────────

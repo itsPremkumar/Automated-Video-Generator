@@ -98,6 +98,34 @@ export interface AgenticConfig {
 
     /** ── Branding (optional) ── */
     brand?: { watermark?: string; accent?: string };
+
+    /**
+     * AI visual/audio verification — OPT-IN, zero extra cost.
+     * Reuses the AGENT'S OWN running model (via AgentBrain) when that model
+     * is multimodal. No separate API key, no paid service. When disabled
+     * (default) or when the agent model has no vision / is offline, every
+     * check silently returns null and the deterministic signal gates decide.
+     * AI scores AUGMENT the signal gates (AND-ed), never replace them.
+     */
+    aiVerify?: {
+        enabled: boolean;                 // master toggle — DEFAULT false
+        /** Minimum confidence (0-10) for an asset to pass AI review. */
+        minConfidence?: number;            // default 6
+        /** Per-stage opt-in (each independent). */
+        verifyOnAcquire?: boolean;        // asset collection
+        verifyOnApprove?: boolean;        // before approving each asset
+        verifyOnEdit?: boolean;           // after scene edits
+        verifyOnRender?: boolean;         // final rendered MP4
+        /** What to check. */
+        checkSubjectMatch?: boolean;       // does media show the scene's subject? (the "lino vs forest" gap)
+        checkWatermark?: boolean;          // default true
+        checkSafety?: boolean;            // default true
+        /** Audio (music + voiceover) AI checks — uses the agent's own text
+         *  model on available transcripts; never blocks when none exist. */
+        checkMusicMood?: boolean;         // does music match the video mood?
+        checkSpeechClarity?: boolean;      // is the voiceover clear / on-topic?
+        checkBackgroundNoise?: boolean;     // is background noise acceptable?
+    };
 }
 
 /** Built-in presets — each is a partial AgenticConfig the user can extend. */
@@ -154,6 +182,25 @@ export function resolveConfig(input: Partial<AgenticConfig>): AgenticConfig {
     merged.maxAttempts ??= 3;
     merged.renderer ??= 'ffmpeg';
     merged.pruneWorkspaces ??= 2;
+    // AI verification — OPT-IN, off by default. When enabled, every sub-flag
+    // defaults to the master toggle so `enabled:true` turns everything on.
+    const av = input.aiVerify;
+    if (av) {
+        merged.aiVerify = {
+            enabled: av.enabled ?? false,
+            minConfidence: av.minConfidence ?? 6,
+            verifyOnAcquire: av.verifyOnAcquire ?? av.enabled ?? false,
+            verifyOnApprove: av.verifyOnApprove ?? av.enabled ?? false,
+            verifyOnEdit: av.verifyOnEdit ?? av.enabled ?? false,
+            verifyOnRender: av.verifyOnRender ?? av.enabled ?? false,
+            checkSubjectMatch: av.checkSubjectMatch ?? true,
+            checkWatermark: av.checkWatermark ?? true,
+            checkSafety: av.checkSafety ?? true,
+            checkMusicMood: av.checkMusicMood ?? av.enabled ?? false,
+            checkSpeechClarity: av.checkSpeechClarity ?? av.enabled ?? false,
+            checkBackgroundNoise: av.checkBackgroundNoise ?? av.enabled ?? false,
+        };
+    }
     // Pro-edit (human-feel) defaults — free, rule-based, on by default.
     merged.hookFirst ??= true;
     merged.variablePacing ??= true;

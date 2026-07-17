@@ -7,6 +7,7 @@
  */
 
 import { AssetCandidate, AssetDecision, Plan, RenderManifest } from './types.js';
+import { aiVerifyAsset } from './ai-verify.js';
 
 export interface GateReport {
     pass: boolean;
@@ -104,12 +105,11 @@ export interface PostRenderCheck {
     probed?: { durationSec: number; hasVideo: boolean; hasAudio: boolean; codec?: string };
 }
 
-export async function verifyRenderedVideo(mp4Path: string, expectedDurationSec: number): Promise<PostRenderCheck> {
-    
+export async function verifyRenderedVideo(mp4Path: string, expectedDurationSec: number, opts?: { aiVerify?: import('./config.js').AgenticConfig['aiVerify']; brain?: import('./brain.js').AgentBrain; keywords?: string[] }): Promise<PostRenderCheck> {
     const ffmpeg: string = require('ffmpeg-static');
-    const { spawn } = require('child_process');
-    const fs = require('fs');
-    const checks: GateReport['checks'] = [];
+        const { spawn } = require('child_process');
+        const fs = require('fs');
+        const checks: GateReport['checks'] = [];
 
     const exists = fs.existsSync(mp4Path);
     // Size floor scales with duration. Factor is conservative: it must catch
@@ -187,6 +187,34 @@ export async function verifyRenderedVideo(mp4Path: string, expectedDurationSec: 
     } else {
         checks.push({ id: 'X8', label: 'Duration matches plan', pass: false, detail: 'no output file' });
         checks.push({ id: 'X9', label: 'Audio track present', pass: false, detail: 'no output file' });
+    }
+
+    // ── X16: OPT-IN AI verify of the final video (uses the agent's
+    // own model). Skipped unless opts.aiVerify.verifyOnRender is on AND a
+    // brain is supplied. A null result (no model / offline) never blocks.
+    if (opts?.aiVerify?.verifyOnRender && opts?.brain) {
+        try {
+            const frameDir = mp4Path + '.ai-frame';
+            fs.mkdirSync(frameDir, { recursive: true });
+            const frame = require('path').join(frameDir, 'f.jpg');
+            await new Promise<void>((res) => {
+                const c = spawn(ffmpeg, ['-y', '-ss', '00:00:00.5', '-i', mp4Path, '-frames:v', '1', frame], { stdio: 'ignore' });
+                const t = setTimeout(() => { try { c.kill('SIGKILL'); } catch { /* */ } res(); }, 20000);
+                c.on('close', () => { clearTimeout(t); res(); });
+                c.on('error', () => { clearTimeout(t); res(); });
+            });
+            if (fs.existsSync(frame)) {
+                const ai = await aiVerifyAsset(frame, 'video', opts.keywords ?? [], opts.aiVerify as any, opts.brain);
+                if (ai) {
+                    checks.push({ id: 'X16', label: 'AI content verification', pass: ai.pass, detail: ai.pass ? `ai-ok conf ${ai.confidence}` : `ai-flag: ${ai.reason}` });
+                } else {
+                    checks.push({ id: 'X16', label: 'AI content verification', pass: true, detail: 'skipped (no model / offline)' });
+                }
+                try { fs.rmSync(frameDir, { recursive: true, force: true }); } catch { /* */ }
+            }
+        } catch {
+            checks.push({ id: 'X16', label: 'AI content verification', pass: true, detail: 'skipped (extract failed)' });
+        }
     }
 
     return { path: mp4Path, checks, pass: checks.every((c) => c.pass), probed };

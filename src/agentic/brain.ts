@@ -181,38 +181,60 @@ export class AgentBrain {
         return order;
     }
 
-    /** B3 / B9 — vision check on a local image/video frame. Returns null if no vision model. */
+    /**
+     * B3 / B9 — vision check on a local image/video frame.
+     * Uses the agent's OWN model when it is multimodal: either the OpenRouter
+     * free vision model (if a key is set) OR a local Ollama vision model
+     * (if ollamaUrl is set). Returns null when no multimodal model is
+     * configured, offline, or the call fails — callers fall back to signal gates.
+     * ZERO extra cost: no separate key, rides the running agent model.
+     */
     async visionVerify(filePath: string, keywords: string[]): Promise<{ passes: boolean; confidence: number; reason: string } | null> {
-        if (!this.o.openRouterKey || !this.o.visionModel) return null;
+        const hasVision = Boolean(this.o.openRouterKey && this.o.visionModel) || Boolean(this.o.ollamaUrl && this.o.ollamaModel);
+        if (!hasVision) return null;
         try {
             const b64 = readFileSync(filePath).toString('base64');
             const ctrl = new AbortController();
             const t = setTimeout(() => ctrl.abort(), this.o.timeoutMs ?? 20000);
-            const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${this.o.openRouterKey}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: this.o.visionModel,
-                    messages: [
-                        { role: 'system', content: 'You verify whether an image depicts the given subjects. Reply ONLY JSON {"passes":bool,"confidence":0-10,"reason":"..."}.' },
-                        {
-                            role: 'user',
-                            content: [
+            const isOR = Boolean(this.o.openRouterKey && this.o.visionModel);
+            const url = isOR ? 'https://openrouter.ai/api/v1/chat/completions' : `${this.o.ollamaUrl!.replace(/\/$/, '')}/api/chat`;
+            const headers: Record<string, string> = isOR
+                ? { 'Authorization': `Bearer ${this.o.openRouterKey}`, 'Content-Type': 'application/json' }
+                : { 'Content-Type': 'application/json' };
+            const model = isOR ? this.o.visionModel! : this.o.ollamaModel!;
+            const body: any = {
+                model,
+                messages: [
+                    { role: 'system', content: 'You verify whether an image depicts the given subjects. Reply ONLY JSON {"passes":bool,"confidence":0-10,"reason":"..."}.' },
+                    {
+                        role: 'user',
+                        content: isOR
+                            ? [
                                 { type: 'text', text: `Does this image depict: ${keywords.join(', ')}?` },
                                 { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}` } },
+                            ]
+                            : [
+                                { role: 'user', content: `Does this image depict: ${keywords.join(', ')}?` },
+                                { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}` } },
                             ],
-                        },
-                    ],
-                }),
-                signal: ctrl.signal,
-            } as any);
+                    },
+                ],
+            };
+            if (!isOR) { body.format = 'json'; body.stream = false; }
+            const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal: ctrl.signal } as any);
             clearTimeout(t);
             if (!res.ok) return null;
             const j = await res.json();
-            const text = j?.choices?.[0]?.message?.content ?? '';
+            const text = isOR ? (j?.choices?.[0]?.message?.content ?? '') : (j?.message?.content ?? '');
             return extractJSON<{ passes: boolean; confidence: number; reason: string }>(text);
         } catch {
             return null;
         }
+    }
+
+    /** Key-free text completion (rides the agent's own model). Exposed for
+     *  audio/transcript QA in ai-verify.ts. Returns null on any failure. */
+    completeJSON<T>(system: string, prompt: string, schemaHint: string): Promise<T | null> {
+        return completeJSON<T>(this.o, system, prompt, schemaHint);
     }
 }
