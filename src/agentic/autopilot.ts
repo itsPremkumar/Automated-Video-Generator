@@ -162,7 +162,16 @@ export async function autoRunVideo(
             let out: string;
             if ((opts.renderer ?? cfg.renderer) === 'remotion' && !soften) {
                 try {
-                    out = await renderAgenticWithRemotion(res, { kenBurns: true, quality: 'draft' });
+                    out = await renderAgenticWithRemotion(res, {
+                    kenBurns: renderOpts.kenBurns,
+                    quality: 'draft',
+                    preset: renderOpts.preset,
+                    kinetic: renderOpts.kinetic,
+                    dimensions: renderOpts.dimensions,
+                    crossfadeSec: renderOpts.crossfadeSec,
+                    intro: renderOpts.intro,
+                    outro: renderOpts.outro,
+                });
                 } catch (e: any) {
                     emit('warn', `Remotion failed (${e?.message ?? e}); ffmpeg fallback`);
                     out = await renderAgenticSlideshow(res, renderOpts);

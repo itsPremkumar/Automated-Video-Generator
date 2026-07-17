@@ -1150,7 +1150,7 @@ export function writeDecisionsReport(res: PipelineResult): string {
  */
 export async function renderAgenticWithRemotion(
     res: PipelineResult,
-    opts: { brand?: { primaryColor?: string; accentColor?: string; fontFamily?: string; logoPath?: string }; intro?: { title: string; subtitle?: string; durationSec: number }; outro?: { ctaText: string; showSubscribe: boolean; hashtags?: string[]; durationSec: number }; kenBurns?: boolean; quality?: 'draft' | 'medium' | 'high' } = {},
+    opts: { brand?: { primaryColor?: string; accentColor?: string; fontFamily?: string; logoPath?: string }; intro?: { title: string; subtitle?: string; durationSec?: number }; outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number }; kenBurns?: boolean; quality?: 'draft' | 'medium' | 'high'; preset?: string; kinetic?: boolean; dimensions?: { w: number; h: number }; crossfadeSec?: number } = {},
 ): Promise<string> {
      
     const { bundle } = require('@remotion/bundler');
@@ -1176,6 +1176,11 @@ export async function renderAgenticWithRemotion(
     const ffmpegBin: string = require('ffmpeg-static');
     const { execFileSync } = require('child_process');
     const targetH = opts.quality === 'draft' ? 1280 : 1920;
+    // A1/A2/A3 — compute the per-scene style plan so the Remotion composition
+    // can apply transitions, grades, and kinetic cues (parity with ffmpeg path).
+    const { computeStylePlan } = await import('./style-engine.js');
+    const _sp = computeStylePlan(res.plan, { preset: (opts.preset as any) ?? 'cinematic', kinetic: opts.kinetic });
+    const styleByScene = new Map(_sp.scenes.map((s: any) => [s.sceneIndex, s]));
     for (const a of res.manifest.assets) {
         const src = a.localPath;
         const destName = `s${a.sceneIndex}_${a.kind}_${path.basename(src).replace(/[^a-zA-Z0-9._-]/g, '_')}`;
@@ -1201,6 +1206,7 @@ export async function renderAgenticWithRemotion(
             fs.copyFileSync(a.audioPath, adest);
             audioRel = path.join('agentic-assets', String(res.workspace.jobId), adestName).replace(/\\/g, '/');
         }
+        const sty = styleByScene.get(a.sceneIndex);
         assetsForComposition.push({
             kind: a.kind,
             sceneIndex: a.sceneIndex,
@@ -1208,6 +1214,12 @@ export async function renderAgenticWithRemotion(
             audioPath: audioRel,
             durationSec: a.durationSec,
             captionSegments: a.captionSegments ?? [],
+            // A1/A2/A3 — drive the Remotion composition to parity with ffmpeg.
+            transitionIn: (sty?.transitionIn ?? 'fade') as any,
+            grade: (sty?.grade ?? 'neutral') as any,
+            kinetic: (sty?.kinetic ?? []) as any,
+            textConfig: { position: 'bottom', fontSize: 48 },
+            hasVoice: a.kind !== 'music' && Boolean(a.audioPath),
             license: a.license,
         });
     }
@@ -1221,6 +1233,10 @@ export async function renderAgenticWithRemotion(
         introCard: opts.intro,
         outroCard: opts.outro,
         kenBurns: opts.kenBurns ?? true,
+        // A6 — aspect-aware dimensions + A1 crossfade length.
+        width: opts.dimensions?.w,
+        height: opts.dimensions?.h,
+        crossfadeSec: opts.crossfadeSec ?? 0.5,
     };
     const totalFrames = Math.max(
         30,
@@ -1232,29 +1248,45 @@ export async function renderAgenticWithRemotion(
     const bundleLoc = await bundle(path.resolve(process.cwd(), 'remotion/index.ts'), () => undefined, {
         webpackCacheDisabled: true,
     });
-    const composition = await selectComposition({ serveUrl: bundleLoc, id: 'AgenticVideo', inputProps, ...{} });
     const outDir = res.workspace.root + '/render';
     fs.mkdirSync(outDir, { recursive: true });
-    const out = outDir + '/' + res.workspace.jobId + '_remotion.mp4';
     const crf = opts.quality === 'high' ? 18 : opts.quality === 'draft' ? 28 : 23;
-
-    await renderMedia({
-        composition,
-        serveUrl: bundleLoc,
-        codec: 'h264',
-        outputLocation: out,
-        inputProps,
-        crf,
-        concurrency: 1,
-        imageFormat: 'jpeg',
-        timeoutInMilliseconds: 1000 * 60 * 9,
-        framesPerLambda: null as any,
-        // Use a system Chrome when provided (e.g. CHROME_EXECUTABLE on a laptop
-        // that has Google Chrome installed) instead of Remotion's bundled
-        // Chromium download. Falls back to bundled Chromium when unset.
-        ...(process.env.CHROME_EXECUTABLE ? { chromeExecutable: process.env.CHROME_EXECUTABLE } : {}),
-    });
-    // Phase 8.4 post-render check applies here too.
-    res.postRender = verifyRenderedVideo(out, totalFrames / fps);
-    return out;
+    const renderOne = async (w: number | undefined, h: number | undefined, suffix: string): Promise<string> => {
+        const aspectProps = { ...inputProps, width: w, height: h };
+        const composition = await selectComposition({ serveUrl: bundleLoc, id: 'AgenticVideo', inputProps: aspectProps });
+        const out = outDir + '/' + res.workspace.jobId + '_remotion' + suffix + '.mp4';
+        await renderMedia({
+            composition,
+            serveUrl: bundleLoc,
+            codec: 'h264',
+            outputLocation: out,
+            inputProps: aspectProps,
+            crf,
+            concurrency: 1,
+            imageFormat: 'jpeg',
+            timeoutInMilliseconds: 1000 * 60 * 9,
+            framesPerLambda: null as any,
+            ...(process.env.CHROME_EXECUTABLE ? { chromeExecutable: process.env.CHROME_EXECUTABLE } : {}),
+        });
+        return out;
+    };
+    // A9 — multi-aspect: render 9:16 (native), 16:9, 1:1. The composition's
+    // calculateMetadata honours the width/height passed per aspect.
+    const aspects: { w?: number; h?: number; s: string }[] = [
+        { w: opts.dimensions?.w, h: opts.dimensions?.h, s: '' },
+        { w: 1920, h: 1080, s: '_16x9' },
+        { w: 1080, h: 1080, s: '_1x1' },
+    ];
+    let primary = '';
+    for (const a of aspects) {
+        try {
+            const o = await renderOne(a.w, a.h, a.s);
+            if (a.s === '') primary = o;
+            res.postRender = verifyRenderedVideo(o, totalFrames / fps);
+        } catch (e) {
+            console.warn(`⚠ remotion aspect ${a.s || 'native'} failed: ${(e as Error).message}`);
+        }
+    }
+    if (!primary) throw new Error('Remotion: all aspect renders failed');
+    return primary;
 }
