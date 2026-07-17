@@ -111,7 +111,17 @@ function SceneCard({ asset, fps, durationInFrames, kenBurns }: { asset: AgenticV
             {visuals.map((v) =>
                 isVideoFile ? (
                     <Sequence key={v.sceneIndex} durationInFrames={durationInFrames}>
+                        {/* A10: brand-colored backing so a missing/black transcode
+                            shows the brand color, never pure black. */}
+                        <AbsoluteFill style={{ backgroundColor: '#0F3460' }} />
                         <Video src={staticFile(v.localPath)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        {/* A4: gradient + vignette for caption legibility on video. */}
+                        <AbsoluteFill
+                            style={{
+                                background:
+                                    'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.0) 40%), radial-gradient(circle, rgba(0,0,0,0) 55%, rgba(0,0,0,0.45) 100%)',
+                            }}
+                        />
                     </Sequence>
                 ) : (
                     <KenBurnsImage key={v.sceneIndex} src={v.localPath} durationInFrames={durationInFrames} kenBurns={kenBurns} />
