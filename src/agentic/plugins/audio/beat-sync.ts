@@ -267,7 +267,7 @@ function snapToBeat(targetTime: number, beats: BeatInfo, cfg: BeatSyncConfig): n
     const maxInterval = Math.min(cfg.maxCutInterval ?? Infinity, beatDur * 4);
 
     // Find nearest beat
-    let nearest = times.reduce((prev, curr) =>
+    const nearest = times.reduce((prev, curr) =>
         Math.abs(curr - targetTime) < Math.abs(prev - targetTime) ? curr : prev
     );
 

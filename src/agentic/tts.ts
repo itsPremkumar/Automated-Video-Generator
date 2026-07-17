@@ -89,7 +89,7 @@ export async function generateAgenticVoiceovers(
                     sceneIndex: s.sceneNumber - 1,
                     audioPath: r.path,
                     durationSec: r.duration || s.durationSec,
-                    captionSegments: (r.captionSegments && r.captionSegments.length)
+                    captionSegments: (r.captionSegments?.length)
                         ? r.captionSegments
                         : [{ text: s.voiceoverText, startMs: 0, endMs: Math.round((r.duration || s.durationSec) * 1000) }],
                 });

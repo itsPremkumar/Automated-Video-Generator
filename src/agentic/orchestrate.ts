@@ -946,7 +946,7 @@ export async function renderAgenticSlideshow(
                     ci++;
                 }
             } else {
-                const segs = (a.captionSegments && a.captionSegments.length
+                const segs = (a.captionSegments?.length
                     ? a.captionSegments
                     : [{ text: scText, startMs: 0, endMs: Math.round(dur * 1000) }]);
                 for (const s of segs) {
