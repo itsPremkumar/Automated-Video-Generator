@@ -27,7 +27,7 @@ import { verifyRenderedVideo, PostRenderCheck } from './gate.js';
 import { inputAssetPath } from '../lib/path-safety.js';
 import { exportMultiAspect, generateFreeMetadata, renderThumbnail, wordTimingsFromScript } from './export.js';
 
-import { buildPlan } from './plan.js';
+import { buildPlan, applyProEdits } from './plan.js';
 import { acquireAssets, AcquireDeps, FetchedVisual } from './acquire.js';
 import { verifyAll, VerifyDeps, VERIFY_PASS_CONFIDENCE } from './verify.js';
 import { runGateway, GatewayDeps } from './gateway.js';
@@ -77,6 +77,10 @@ export interface PipelineRequest {
     localAssets?: string[];
     /** User-supplied default image/video (input/input-assets/) last-resort fallback. */
     defaultVisual?: string;
+    /** Pro-edit: lead with the most intriguing scene. */
+    hookFirst?: boolean;
+    /** Pro-edit: alternate scene durations so the rhythm breathes. */
+    variablePacing?: boolean;
 }
 
 export interface PipelineResult {
@@ -132,6 +136,14 @@ export async function runAgenticPipeline(
         voice: req.voice,
         musicQuery: req.musicQuery,
     }, parseScript);
+
+    // Pro-edit transforms (free, rule-based): hook-first reorder + variable
+    // pacing. Pure data change on the plan before any media is fetched.
+    // Default ON (matches resolveConfig hard defaults) unless explicitly false.
+    applyProEdits(plan, {
+        hookFirst: req.hookFirst ?? true,
+        variablePacing: req.variablePacing ?? true,
+    });
 
     // Agent expands keywords per scene (optional bolt-on; default heuristic).
     for (const s of plan.scenes) {
@@ -576,7 +588,7 @@ async function buildSfxLayer(
 
 export async function renderAgenticSlideshow(
     res: PipelineResult,
-    opts: { outPath?: string; crossfadeSec?: number; burnCaptions?: boolean; sfx?: boolean; transition?: string; preset?: string; kinetic?: boolean; kenBurns?: boolean; dimensions?: { w: number; h: number }; captions?: 'burned' | 'karaoke' | 'none' } = {},
+    opts: { outPath?: string; crossfadeSec?: number; burnCaptions?: boolean; sfx?: boolean; transition?: string; preset?: string; kinetic?: boolean; kenBurns?: boolean; dimensions?: { w: number; h: number }; captions?: 'burned' | 'karaoke' | 'none'; intro?: { title: string; subtitle?: string; durationSec?: number }; outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number }; jCutSec?: number } = {},
 ): Promise<string> {
     
     const ffmpeg: string = require('ffmpeg-static');
@@ -602,6 +614,35 @@ export async function renderAgenticSlideshow(
     const visuals = res.manifest.assets.filter((a) => a.kind !== 'music');
     const music = res.manifest.assets.find((a) => a.kind === 'music');
     if (visuals.length === 0) throw new Error('No approved visuals to render.');
+
+    // ── Pro-edit: branded intro/outro title cards (cold-open + CTA close). ──
+    // Generated as small standalone clips, then woven into the video chain.
+    const CARD_W = opts.dimensions?.w ?? 720, CARD_H = opts.dimensions?.h ?? 1280;
+    const introClip = opts.intro ? outDir + '/_intro_' + res.workspace.jobId + '.mp4' : null;
+    const outroClip = opts.outro ? outDir + '/_outro_' + res.workspace.jobId + '.mp4' : null;
+    const makeCard = async (outPath: string, title: string, subtitle: string | undefined, dur: number, bg: string, fg: string): Promise<void> => {
+        const t = title.replace(/'/g, '’').replace(/:/g, '\\:');
+        const s = (subtitle ?? '').replace(/'/g, '’').replace(/:/g, '\\:');
+        const vf = [
+            `color=c=${bg}:s=${CARD_W}x${CARD_H}:d=${dur}`,
+            `drawtext=${FONT_ARG}text='${t}':fontcolor=${fg}:fontsize=58:box=1:boxcolor=${bg}@0.0:borderw=0:x=(w-text_w)/2:y=h/2-(text_h/2)${s ? `:fontsize=58` : ''}`,
+            s ? `drawtext=${FONT_ARG}text='${s}':fontcolor=${fg}@0.8:fontsize=30:x=(w-text_w)/2:y=h/2+50` : '',
+        ].filter(Boolean).join(',');
+        await new Promise<void>((resolve, reject) => {
+            const { execFile } = require('child_process');
+            execFile(ffmpeg, ['-f', 'lavfi', '-i', vf, '-t', String(dur), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-y', outPath],
+                (err: any, _stdout: string, stderr: string) => err ? reject(new Error('card render failed: ' + (stderr || '').trim())) : resolve());
+        });
+    };
+    if (introClip) await makeCard(introClip, opts.intro!.title, opts.intro!.subtitle, opts.intro!.durationSec ?? 2.5, '#0F3460', '#ffffff');
+    if (outroClip) {
+        const cta = (opts.outro!.ctaText || 'Subscribe').replace(/'/g, '’').replace(/:/g, '\\:');
+        const tags = (opts.outro!.hashtags || []).join(' ');
+        const sub = (opts.outro!.showSubscribe ? 'Subscribe for more' : '') + (tags ? (opts.outro!.showSubscribe ? '  ' : '') + tags : '');
+        await makeCard(outroClip, cta, sub || undefined, opts.outro!.durationSec ?? 3, '#FF6B35', '#0a0a12');
+    }
+    const introInputIdx = introClip ? visuals.length : -1;       // appended after scene inputs
+    const outroInputIdx = outroClip ? visuals.length + (introClip ? 1 : 0) : -1;
 
     // ── Editing engine v1: compute the per-scene style plan (transitions,
     //    color grade, kinetic text). Deterministic from title + preset. ──
@@ -630,7 +671,7 @@ export async function renderAgenticSlideshow(
     let captionFile: string | null = null;
     if (burn) {
         const cues: string[] = [];
-        let t = 0;
+        let t = introClip ? (opts.intro!.durationSec ?? 2.5) : 0; // start after the cold-open card
         let n = 1;
         for (const a of visuals) {
             const dur = a.durationSec ?? 4;
@@ -666,25 +707,43 @@ export async function renderAgenticSlideshow(
         // Editing engine v1: per-scene color grade (no LUT file needed).
         const grade = gradeFilter(stylePlan.scenes[i]?.grade ?? 'neutral');
         const tag = '[' + i + ':v]';
-        return `${tag}scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS${zoom},${grade},format=yuv420p[v${i}]`;
+        return `${tag}scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom},${grade},format=yuv420p[v${i}]`;
     });
 
+    // ── Intro/outro clip filters (already WxH; just normalise + trim). ──
+    if (introClip) sceneFilters.push(`[${introInputIdx}:v]trim=duration=${opts.intro!.durationSec ?? 2.5},setpts=PTS-STARTPTS,settb=1/25,format=yuv420p[vintro]`);
+    if (outroClip) sceneFilters.push(`[${outroInputIdx}:v]trim=duration=${opts.outro!.durationSec ?? 3},setpts=PTS-STARTPTS,settb=1/25,format=yuv420p[voutro]`);
+
     // ── Concat the scene videos with per-scene transitions from the style plan. ──
+    // Weave intro (cold-open) and outro (CTA) into the ordered clip list.
+    const orderedTags: string[] = [];
+    const orderedDur: number[] = []; // real duration of each ordered clip
+    if (introClip) { orderedTags.push('vintro'); orderedDur.push(opts.intro!.durationSec ?? 2.5); }
+    for (let i = 0; i < visuals.length; i++) { orderedTags.push('v' + i); orderedDur.push(visuals[i].durationSec ?? 4); }
+    if (outroClip) { orderedTags.push('voutro'); orderedDur.push(opts.outro!.durationSec ?? 3); }
+
     let videoChain: string;
-    if (visuals.length === 1) {
-        videoChain = '[v0]';
+    if (orderedTags.length === 1) {
+        videoChain = '[' + orderedTags[0] + ']';
     } else {
-        // chain transitions pairwise; a 'cut' = hard concat (no overlap),
-        // otherwise xfade with the chosen transition name.
-        let prev = 'v0';
-        for (let i = 1; i < visuals.length; i++) {
-            const tk: any = stylePlan.scenes[i]?.transitionIn ?? 'fade';
-            const outTag = i === visuals.length - 1 ? 'vout' : 'vx' + i;
+        // cursor = absolute end-time of `prev` on the timeline. xfade offset for
+        // the next clip = cursor - xf (overlap xf seconds). After an xfade the
+        // new end = cursor + dur(cur) - xf; after a hard cut it's cursor + dur(cur).
+        let prev = orderedTags[0];
+        let cursor = orderedDur[0];
+        for (let i = 1; i < orderedTags.length; i++) {
+            const cur = orderedTags[i];
+            const isCard = cur === 'vintro' || cur === 'voutro';
+            const tk: any = isCard ? 'fade' : (stylePlan.scenes[i - (introClip ? 1 : 0)]?.transitionIn ?? 'fade');
+            const outTag = i === orderedTags.length - 1 ? 'vout' : 'vx' + i;
             if (tk === 'cut') {
-                sceneFilters.push(`[${prev}][v${i}]concat=n=2:v=1:a=0[${outTag}]`);
+                sceneFilters.push(`[${prev}][${cur}]concat=n=2:v=1:a=0[${outTag}]`);
+                cursor += orderedDur[i];
             } else {
                 const xname = xfadeName(tk);
-                sceneFilters.push(`[${prev}][v${i}]xfade=transition=${xname}:duration=${xf}:offset=${offsetFor(visuals, i, xf)}[${outTag}]`);
+                const off = Math.max(0, cursor - xf);
+                sceneFilters.push(`[${prev}][${cur}]xfade=transition=${xname}:duration=${xf}:offset=${off}[${outTag}]`);
+                cursor = cursor + orderedDur[i] - xf;
             }
             prev = outTag;
         }
@@ -692,6 +751,8 @@ export async function renderAgenticSlideshow(
     }
 
     const videoInputs = visuals.flatMap((v) => ['-loop', '1', '-i', v.localPath]);
+    if (introClip) videoInputs.push('-i', introClip);
+    if (outroClip) videoInputs.push('-i', outroClip);
     const vfArgs = [...sceneFilters];
     let videoMap = videoChain;
 
@@ -747,7 +808,7 @@ export async function renderAgenticSlideshow(
     // text appears/disappears at the window edges, which still reads as a pop.
     // Apostrophes are swapped for ’ because drawtext breaks on bare single quotes.
     if (stylePlan && opts.kinetic !== false) {
-        let t = 0;
+        let t = introClip ? (opts.intro!.durationSec ?? 2.5) : 0; // start after the cold-open card
         const sceneStarts = visuals.map((a) => { const s = t; t += (a.durationSec ?? 4); return s; });
         let ktag = videoMap;
         for (let i = 0; i < visuals.length; i++) {
@@ -771,18 +832,31 @@ export async function renderAgenticSlideshow(
     videoMap = '[vig]';
 
     // ── Concatenate per-scene voiceover audio into one track. ──
+    // Pro-edit: J-cut — each scene's VO starts `jCutSec` BEFORE its picture
+    // (audio leads picture). Implemented by placing each VO on an absolute
+    // timeline via adelay + amix (instead of a plain sequential concat).
     const voScenes = visuals.filter((a) => a.audioPath && fs.existsSync(a.audioPath));
     let audioInputArgs: string[] = [];
     let audioFilter: string | null = null;
     let audioMap: string[] = [];
+    const jCut = opts.jCutSec && opts.jCutSec > 0 ? opts.jCutSec : 0;
     if (voScenes.length > 0) {
         audioInputArgs = voScenes.flatMap((a) => ['-i', a.audioPath!]);
-        // Audio inputs are appended AFTER the video inputs, so their file index
-        // starts at visuals.length (input 0..n-1 are the stills).
-        const base = visuals.length;
-        const aTags = voScenes.map((_, i) => `[${base + i}:a]`);
-        const concatA = aTags.join('') + `concat=n=${voScenes.length}:v=0:a=1[aout]`;
-        audioFilter = concatA;
+        // Audio inputs are appended AFTER all video inputs (stills + intro/outro
+        // cards), so their file index starts after the video input count.
+        const videoInputCount = visuals.length + (introClip ? 1 : 0) + (outroClip ? 1 : 0);
+        const base = videoInputCount;
+        const introDur = introClip ? (opts.intro!.durationSec ?? 2.5) : 0;
+        const delayed: string[] = [];
+        voScenes.forEach((_, i) => {
+            // picture start of scene i on the timeline (after intro, with xfade overlap)
+            const picStart = introDur + offsetFor(visuals, i, xf);
+            // J-cut: audio leads picture by jCut (first scene starts at its picture)
+            const audioStart = Math.max(0, picStart - (i === 0 ? 0 : jCut));
+            delayed.push(`[${base + i}:a]adelay=delays=${(audioStart * 1000).toFixed(0)}:all=1[a${i}]`);
+        });
+        const mix = delayed.map((_, i) => `[a${i}]`).join('') + `amix=inputs=${voScenes.length}:duration=longest:normalize=0[aout]`;
+        audioFilter = [...delayed, mix].join(';');
         audioMap = ['-map', '[aout]'];
     }
 

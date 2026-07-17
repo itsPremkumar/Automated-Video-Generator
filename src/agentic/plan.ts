@@ -55,3 +55,52 @@ export function deriveMusicQuery(scenes: ScenePlan[]): string {
     if (/(sad|loss|story|emotion)/.test(all)) return 'emotional piano cinematic';
     return 'ambient lofi chill';
 }
+
+/**
+ * applyProEdits — pure, offline "human editor" transforms on the plan:
+ *  1. Hook-first reorder: move the most surprising/intriguing scene to the
+ *     open (pro editors lead with the hook, not a flat list).
+ *  2. Variable pacing: alternate scene lengths so the rhythm breathes
+ *     (uniform duration reads as templated/AI).
+ * Both are rule-based (no LLM, $0). Mutates + returns the plan.
+ */
+const HOOK_WORDS = /\b(did you know|secret|surprising|shock|never|revealed?|hidden|myth|trick|insane|unbelievable|fact)\b/i;
+export function applyProEdits(plan: Plan, opts: { hookFirst?: boolean; variablePacing?: boolean } = {}): Plan {
+    const scenes = plan.scenes;
+    if (scenes.length === 0) return plan;
+
+    // 1. Hook-first: pick the scene whose text best matches a "hook" pattern,
+    //    tie-broken by longest word count (more detail = stronger claim).
+    if (opts.hookFirst) {
+        let bestIdx = 0;
+        let bestScore = -1;
+        scenes.forEach((s, i) => {
+            const txt = s.voiceoverText || '';
+            let score = 0;
+            if (HOOK_WORDS.test(txt)) score += 100;
+            score += txt.split(/\s+/).filter(Boolean).length; // longer = more substance
+            if (score > bestScore) { bestScore = score; bestIdx = i; }
+        });
+        if (bestIdx !== 0) {
+            const [hook] = scenes.splice(bestIdx, 1);
+            scenes.unshift(hook);
+        }
+        // renumber
+        scenes.forEach((s, i) => { s.sceneNumber = i + 1; });
+    }
+
+    // 2. Variable pacing: base ± variation by position. First scene shorter
+    //    (punchy open), middle scenes alternate, last scene longer (CTA beat).
+    if (opts.variablePacing) {
+        const base = 4;
+        scenes.forEach((s, i) => {
+            let d = base;
+            if (i === 0) d = 3;                                 // punchy hook
+            else if (i === scenes.length - 1) d = 5;           // lingering close
+            else d = base + (i % 2 === 1 ? 1 : -1);           // breathe: 5/3/5/3...
+            s.durationSec = Math.max(2, d);
+        });
+        plan.totalDurationSec = scenes.reduce((acc, s) => acc + s.durationSec, 0);
+    }
+    return plan;
+}

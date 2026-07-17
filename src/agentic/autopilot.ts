@@ -133,7 +133,7 @@ export async function autoRunVideo(
                 emit('error', `post-render checks failed: ${failed}`);
             } else {
             const res = await runAgenticPipeline(
-                { ...req, preferVisual: req.preferVisual ?? cfg.preferVisual, candidatesPerAsset: req.candidatesPerAsset ?? cfg.candidatesPerAsset, voice: req.voice ?? cfg.voice, musicQuery: req.musicQuery ?? cfg.musicQuery, localAssets: req.localAssets ?? cfg.localAssets, defaultVisual: req.defaultVisual ?? cfg.defaultVisual },
+                { ...req, preferVisual: req.preferVisual ?? cfg.preferVisual, candidatesPerAsset: req.candidatesPerAsset ?? cfg.candidatesPerAsset, voice: req.voice ?? cfg.voice, musicQuery: req.musicQuery ?? cfg.musicQuery, localAssets: req.localAssets ?? cfg.localAssets, defaultVisual: req.defaultVisual ?? cfg.defaultVisual, hookFirst: req.hookFirst ?? cfg.hookFirst, variablePacing: req.variablePacing ?? cfg.variablePacing },
                 (p: PipelineProgress) => {
                 if (p.stage === 'gate') emit(p.message.includes('PASS') ? 'info' : 'warn', `gate: ${p.message}`);
             });
@@ -154,6 +154,10 @@ export async function autoRunVideo(
                 crossfadeSec: soften ? 0.3 : 0.5,
                 captions: (cfg.captions as any) ?? 'burned',
                 dimensions: cfg.aspect === '16:9' ? { w: 1280, h: 720 } : cfg.aspect === '1:1' ? { w: 1080, h: 1080 } : { w: 720, h: 1280 },
+                // ── Pro-edit (human-feel) ──
+                intro: cfg.intro ?? (cfg.hookFirst ? { title: req.title, subtitle: 'AI-generated', durationSec: 2.5 } : undefined),
+                outro: cfg.outro ?? { ctaText: 'Subscribe for more', showSubscribe: true, hashtags: ['#shorts', '#ai'], durationSec: 3 },
+                jCutSec: cfg.jCutSec ?? 0.4,
             };
             let out: string;
             if ((opts.renderer ?? cfg.renderer) === 'remotion' && !soften) {

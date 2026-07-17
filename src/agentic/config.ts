@@ -73,6 +73,19 @@ export interface AgenticConfig {
      *  default.mp4 fallback). */
     defaultVisual?: string;
 
+    /** ── Pro-edit (human-feel) toggles ── */
+    /** Lead with the most intriguing scene instead of a flat list order. */
+    hookFirst?: boolean;
+    /** Alternate scene durations so the rhythm breathes (uniform = templated). */
+    variablePacing?: boolean;
+    /** Branded intro title card (cold-open). */
+    intro?: { title: string; subtitle?: string; durationSec?: number };
+    /** Branded outro CTA card. */
+    outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number };
+    /** J-cut: next scene's voiceover leads its picture by this many seconds
+     *  (audio cuts early, picture follows) — the #1 "human editor" tell. */
+    jCutSec?: number;
+
     /** ── Self-heal / automation ── */
     backend?: 'agent' | 'vision';
     maxAttempts?: number;            // autopilot retry budget (default 3)
@@ -137,6 +150,10 @@ export function resolveConfig(input: Partial<AgenticConfig>): AgenticConfig {
     merged.maxAttempts ??= 3;
     merged.renderer ??= 'ffmpeg';
     merged.pruneWorkspaces ??= 2;
+    // Pro-edit (human-feel) defaults — free, rule-based, on by default.
+    merged.hookFirst ??= true;
+    merged.variablePacing ??= true;
+    merged.jCutSec ??= 0.4;
     return merged;
 }
 

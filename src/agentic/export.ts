@@ -44,8 +44,10 @@ export function exportMultiAspect(srcMp4: string, aspects: Aspect[] = ['9:16', '
     for (const a of aspects) {
         const { w, h } = ASPECT_DIMS[a];
         const dest = path.join(dir, `${base}_${a.replace(':', 'x')}.mp4`);
-        // scale to fit, then pad to the target aspect (no crop, no distortion).
-        const filter = `scale=w='if(gt(iw/ih,${w}/${h}),-${w},-2)':h='if(gt(iw/ih,${w}/${h}),-2,-${h})',pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,setsar=1`;
+        // scale to fit (preserve aspect, decrease), then pad to target aspect.
+        // Using force_original_aspect_ratio=decrease avoids the -2 parity
+        // failure that broke 1:1 / 16:9 from a 9:16 source.
+        const filter = `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,setsar=1`;
         try {
             execFileSync(ffmpeg, ['-y', '-i', srcMp4, '-vf', filter, '-c:a', 'copy', '-movflags', '+faststart', dest], { stdio: 'ignore' });
             if (fs.existsSync(dest)) out.push(dest);
