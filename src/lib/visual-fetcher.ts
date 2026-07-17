@@ -2,11 +2,12 @@ import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
 import { config } from 'dotenv';
-import { spawnSync } from 'child_process';
+import { spawnSync, spawn } from 'child_process';
 import { logInfo, resolveProjectPath } from '../runtime';
 import { generateContent as ollamaGenerateContent } from './ollama-client';
 import { searchOpenverseImages } from './openverse-fetcher';
 import { wikiProvider, archiveProvider, freeVideoDownloader } from './free-video/index';
+import { freeImageAdapter } from './free-image/index';
 
 // @ts-ignore - ffprobe-static types
 import ffprobePath from 'ffprobe-static';
@@ -241,35 +242,33 @@ export const calculateSafeTrimAfterFrames = (
  * We trim a few frames from the end because some stock clips report a
  * slightly longer duration than the actually seekable final frame.
  */
-export function getVideoMetadata(filePath: string, renderFps: number = DEFAULT_RENDER_FPS): VideoMetadata {
+export async function getVideoMetadata(filePath: string, renderFps: number = DEFAULT_RENDER_FPS): Promise<VideoMetadata> {
     try {
         const ffprobeCmd = typeof ffprobePath === 'string' ? ffprobePath : (ffprobePath as any)?.path || 'ffprobe';
-        const probe = spawnSync(
-            ffprobeCmd,
-            [
-                '-v',
-                'quiet',
-                '-count_frames',
-                '-print_format',
-                'json',
-                '-show_entries',
-                'format=duration:stream=codec_type,duration,avg_frame_rate,r_frame_rate,nb_frames,nb_read_frames',
+        // Use an async spawn with a hard timeout instead of spawnSync: a
+        // stalled ffprobe on a RAM-starved box would otherwise block the
+        // whole Node process permanently (spawnSync can't be interrupted
+        // mid-fork). On timeout / failure we return an empty result and the
+        // caller falls back to conservative defaults.
+        const timeoutMs = Number(process.env.AGENTIC_FFPROBE_TIMEOUT_MS || 15000);
+        const out = await new Promise<string>((resolve, reject) => {
+            const child = spawn(ffprobeCmd, [
+                '-v', 'quiet', '-count_frames',
+                '-print_format', 'json',
+                '-show_entries', 'format=duration:stream=codec_type,duration,avg_frame_rate,r_frame_rate,nb_frames,nb_read_frames',
                 filePath,
-            ],
-            { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] },
-        );
-        if (probe.error) throw probe.error;
-        if (probe.status !== 0) throw new Error(probe.stderr?.trim() || 'FFprobe failed');
-        const parsed = JSON.parse(probe.stdout) as {
+            ], { encoding: 'utf-8' as const, stdio: ['pipe', 'pipe', 'pipe'] } as any);
+            let stdout = '';
+            let stderr = '';
+            const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } reject(new Error('ffprobe timed out')); }, timeoutMs);
+            child.stdout?.on('data', (d: Buffer) => { stdout += d.toString(); });
+            child.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
+            child.on('error', (e: Error) => { clearTimeout(t); reject(e); });
+            child.on('close', (code: number) => { clearTimeout(t); if (code !== 0) reject(new Error(stderr?.trim() || 'FFprobe failed')); else resolve(stdout); });
+        });
+        const parsed = JSON.parse(out) as {
             format?: { duration?: string };
-            streams?: Array<{
-                codec_type?: string;
-                duration?: string;
-                avg_frame_rate?: string;
-                r_frame_rate?: string;
-                nb_frames?: string;
-                nb_read_frames?: string;
-            }>;
+            streams?: Array<{ codec_type?: string; duration?: string; avg_frame_rate?: string; r_frame_rate?: string; nb_frames?: string; nb_read_frames?: string }>;
         };
 
         const videoStream = parsed.streams?.find((stream) => stream.codec_type === 'video') ?? parsed.streams?.[0];
@@ -294,7 +293,7 @@ export function getVideoMetadata(filePath: string, renderFps: number = DEFAULT_R
             };
         }
     } catch {
-        // ffprobe not available or returned invalid metadata
+        // ffprobe not available, timed out, or returned invalid metadata
     }
 
     const estimatedDuration = estimateVideoDurationFromSize(filePath);
@@ -315,8 +314,8 @@ export function getVideoMetadata(filePath: string, renderFps: number = DEFAULT_R
  * Get video duration in seconds using ffprobe
  * Falls back to file size estimation if ffprobe unavailable
  */
-export function getVideoDuration(filePath: string): number {
-    return getVideoMetadata(filePath).durationSeconds;
+export async function getVideoDuration(filePath: string): Promise<number> {
+    return (await getVideoMetadata(filePath)).durationSeconds;
 }
 
 /**
@@ -774,6 +773,33 @@ export async function searchImages(
 }
 
 /**
+ * Search the 4 free, no-key image providers (Wikimedia Commons, Internet
+ * Archive, NASA, Met Museum) via the free-image adapter, and map their
+ * ImageResult shape into this module's MediaAsset shape so they slot into the
+ * existing fetch ladder. Returns [] on any failure (kept optional/safe).
+ */
+export async function searchFreeImages(
+    query: string,
+    count: number = 3,
+    orientation: 'portrait' | 'landscape' | 'square' = 'portrait',
+): Promise<MediaAsset[]> {
+    try {
+        const sources = await freeImageAdapter.searchAll(query, { count, orientation });
+        const all: any[] = sources.flatMap((s) => s.results);
+        if (all.length === 0) return [];
+        return all.slice(0, count).map((r) => ({
+            type: 'image' as const,
+            url: r.downloadUrl || r.thumbnailUrl || '',
+            width: r.width ?? 0,
+            height: r.height ?? 0,
+            photographer: r.creator || r.provider || 'free-image',
+        }));
+    } catch {
+        return [];
+    }
+}
+
+/**
  * Search for videos on Pixabay
  */
 export async function searchPixabayVideos(
@@ -1058,6 +1084,22 @@ export async function fetchVisualsForScene(
             }
         }
 
+        // Free-image fallback (Wikimedia / Internet Archive / NASA / Met Museum).
+        // No API key required. Adds 4 more free sources beyond Openverse.
+        for (const q of individualQueries) {
+            try {
+                const freeImages = await searchFreeImages(q, 3, orientation === 'none' ? 'portrait' : orientation);
+                if (freeImages.length > 0) {
+                    console.log(`🎨 [FETCH] ✅ Found image on free-image: ${freeImages[0].url} (${freeImages[0].width}x${freeImages[0].height})`);
+                    cache[cacheKey] = freeImages[0];
+                    saveCache(cache);
+                    return freeImages[0];
+                }
+            } catch (e) {
+                console.log(`⚠ free-image search failed for "${q}": ${(e as Error)?.message ?? e}`);
+            }
+        }
+
         // console.log('🎨 [FETCH] ⚠️ No visuals found for this query');
         return null;
     } catch (error: any) {
@@ -1109,7 +1151,7 @@ export async function downloadMedia(
                 let videoDuration: number | undefined;
                 let videoTrimAfterFrames: number | undefined;
                 if (filename.endsWith('.mp4') || filename.endsWith('.webm') || filename.endsWith('.mov')) {
-                    const videoMetadata = getVideoMetadata(outputPath);
+                    const videoMetadata = await getVideoMetadata(outputPath);
                     videoDuration = videoMetadata.durationSeconds;
                     videoTrimAfterFrames = videoMetadata.trimAfterFrames;
                 }
@@ -1186,7 +1228,7 @@ export async function downloadMedia(
                 });
                 response.data.pipe(writer);
 
-                const finalize = () => {
+                const finalize = async () => {
                     if (settled) {
                         return;
                     }
@@ -1216,7 +1258,7 @@ export async function downloadMedia(
                     let videoDuration: number | undefined;
                     let videoTrimAfterFrames: number | undefined;
                     if (filename.endsWith('.mp4') || filename.endsWith('.webm') || filename.endsWith('.mov')) {
-                        const videoMetadata = getVideoMetadata(outputPath);
+                        const videoMetadata = await getVideoMetadata(outputPath);
                         videoDuration = videoMetadata.durationSeconds;
                         videoTrimAfterFrames = videoMetadata.trimAfterFrames;
                     }

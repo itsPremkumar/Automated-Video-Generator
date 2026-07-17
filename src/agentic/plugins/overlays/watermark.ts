@@ -109,7 +109,7 @@ export const watermarkPlugin: AgenticPlugin = {
                 case 'bl': overlayExpr = `${margin}:H-h-${margin}`; break;
                 case 'br': overlayExpr = `W-w-${margin}:H-h-${margin}`; break;
                 case 'center': overlayExpr = `(W-w)/2:(H-h)/2`; break;
-                case 'custom': overlayExpr = `${cfg.customPos.x}:${cfg.customPos.y}`; break;
+                case 'custom': overlayExpr = `${cfg.customPos?.x ?? 0}:${cfg.customPos?.y ?? 0}`; break;
             }
 
             // Build filter chain
@@ -118,7 +118,7 @@ export const watermarkPlugin: AgenticPlugin = {
 
             // Add animation
             if (cfg.animation !== 'none') {
-                const anim = buildAnimation(cfg.animation, cfg.animDur, cfg.startAt);
+                const anim = buildAnimation(cfg.animation ?? 'none', cfg.animDur ?? 1, cfg.startAt ?? 0);
                 filter = filter.replace('[wm]', `[wm]${anim}[wma]`).replace('[wm]', '[wma]');
             }
 

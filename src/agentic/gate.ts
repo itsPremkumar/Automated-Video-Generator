@@ -104,17 +104,15 @@ export interface PostRenderCheck {
     probed?: { durationSec: number; hasVideo: boolean; hasAudio: boolean; codec?: string };
 }
 
-export function verifyRenderedVideo(mp4Path: string, expectedDurationSec: number): PostRenderCheck {
-     
+export async function verifyRenderedVideo(mp4Path: string, expectedDurationSec: number): Promise<PostRenderCheck> {
+    
     const ffmpeg: string = require('ffmpeg-static');
-    const { execFileSync } = require('child_process');
+    const { spawn } = require('child_process');
     const fs = require('fs');
     const checks: GateReport['checks'] = [];
 
     const exists = fs.existsSync(mp4Path);
-    // Size floor scales with duration: a valid 5s clip can be ~100KB, but a
-    // 60s clip should be far larger. Floor = max(100KB, 20KB/sec) so short
-    // legitimate videos aren't falsely rejected.
+    // Size floor scales with duration.
     const minSize = Math.max(100_000, Math.round(expectedDurationSec * 20_000));
     const sizeOk = exists && fs.statSync(mp4Path).size > minSize;
     checks.push({ id: 'X7', label: 'Output file valid', pass: sizeOk, detail: exists ? `${Math.round(fs.statSync(mp4Path).size / 1024)}KB (min ${Math.round(minSize / 1024)}KB)` : 'missing' });
@@ -122,7 +120,19 @@ export function verifyRenderedVideo(mp4Path: string, expectedDurationSec: number
     let probed: PostRenderCheck['probed'] | undefined;
     if (exists) {
         let raw = '';
-        try { raw = execFileSync(ffmpeg, ['-i', mp4Path], { stderr: 'pipe' }).toString(); } catch (e: any) { raw = (e.stderr || '').toString(); }
+        const probe = await new Promise<string>((resolve) => {
+            try {
+                const child = spawn(ffmpeg, ['-i', mp4Path], { stdio: ['pipe', 'pipe', 'pipe'] } as any);
+                let o = '';
+                let e = '';
+                const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } resolve(e); }, Number(process.env.AGENTIC_FFMPEG_TIMEOUT_MS || 20000));
+                child.stdout?.on('data', (d: Buffer) => { o += d.toString(); });
+                child.stderr?.on('data', (d: Buffer) => { e += d.toString(); });
+                child.on('error', () => { clearTimeout(t); resolve(e); });
+                child.on('close', () => { clearTimeout(t); resolve(e); });
+            } catch { resolve(''); }
+        });
+        raw = probe;
         // Accept ANY video stream (h264, hevc, vp9, …), not just h264, so the
         // post-render check never falsely fails on a valid non-h264 encode.
         const hasVideo = /Video:/.test(raw) && !/Video: none/.test(raw);
@@ -140,17 +150,17 @@ export function verifyRenderedVideo(mp4Path: string, expectedDurationSec: number
          
         const ana = require('./video-analyzer.js');
         try {
-            const black = ana.detectBlackFrames(mp4Path);
+            const black = await ana.detectBlackFrames(mp4Path);
             const longestBlack = black.reduce((m: number, b: any) => Math.max(m, b.duration), 0);
             const blackOk = longestBlack < 0.5;
             checks.push({ id: 'X10', label: 'No long black frames', pass: blackOk, detail: blackOk ? 'none' : `black ${longestBlack.toFixed(2)}s` });
 
-            const freeze = ana.detectFreezeFrames(mp4Path);
+            const freeze = await ana.detectFreezeFrames(mp4Path);
             const longestFreeze = freeze.reduce((m: number, f: any) => Math.max(m, f.duration), 0);
             const freezeOk = longestFreeze < 1.0;
             checks.push({ id: 'X11', label: 'No frozen frames', pass: freezeOk, detail: freezeOk ? 'none' : `freeze ${longestFreeze.toFixed(2)}s` });
 
-            const audio = ana.analyzeAudio(mp4Path);
+            const audio = await ana.analyzeAudio(mp4Path);
             // Pass if audio is present and not clipping. A very quiet ambient
             // track (peak ~ -25dB) is fine; only a broken/unreadable track
             // (volumedetect returns -999) or clipping fails.
@@ -160,7 +170,7 @@ export function verifyRenderedVideo(mp4Path: string, expectedDurationSec: number
             const clipOk = !audio.clipping;
             checks.push({ id: 'X13', label: 'No audio clipping', pass: clipOk, detail: clipOk ? 'true peak < -1dB' : `peak ${audio.peakDb.toFixed(1)}dB (clipping)` });
 
-            const dim = ana.analyzeDimensions(mp4Path);
+            const dim = await ana.analyzeDimensions(mp4Path);
             const portraitOk = dim.height >= dim.width; // 9:16 / 1:1 expected portrait-ish
             const landscapeOk = dim.width >= dim.height;
             const dimOk = (dim.width > 0 && dim.height > 0) && (portraitOk || landscapeOk);

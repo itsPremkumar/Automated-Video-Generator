@@ -94,7 +94,7 @@ export const punchInPlugin: AgenticPlugin = {
             if (points.length === 0) return scene;
 
             // Build zoompan filter expression with keyframes
-            const zoomExpr = buildZoompanExpression(points, durationSec, cfg.defaults.easing);
+            const zoomExpr = buildZoompanExpression(points, durationSec, cfg.defaults?.easing ?? 'linear');
             if (!zoomExpr) return scene;
 
             // Inject zoom into scene filter chain

@@ -65,7 +65,7 @@ test('chunkCues: enforces a minimum 500ms display', () => {
     assert.equal(out[0].endMs - out[0].startMs, 500);
 });
 
-test('verifyRenderedVideo: detects a valid tiny MP4 and confirms audio/video', () => {
+test('verifyRenderedVideo: detects a valid tiny MP4 and confirms audio/video', async () => {
      
     const ffmpeg: string = require('ffmpeg-static');
     const { execFileSync } = require('child_process');
@@ -79,7 +79,7 @@ test('verifyRenderedVideo: detects a valid tiny MP4 and confirms audio/video', (
         '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '0', '-c:a', 'aac', '-shortest', '-y', p,
     ], { stdio: 'ignore' });
     assert.ok(fs.statSync(p).size > 100_000, 'sanity: generated mp4 should exceed 100KB');
-    const r = verifyRenderedVideo(p, 4);
+    const r = await verifyRenderedVideo(p, 4);
     // testsrc is a valid clip: its black BORDERS are not fully-black frames, so
     // X10 correctly PASSES. A TRULY black clip is still caught (see
     // video-analyzer.test.ts). Every check must pass on this valid clip.
@@ -91,8 +91,8 @@ test('verifyRenderedVideo: detects a valid tiny MP4 and confirms audio/video', (
     fs.rmSync(p, { force: true });
 });
 
-test('verifyRenderedVideo: fails when file missing', () => {
-    const r = verifyRenderedVideo('/no/such/file.mp4', 5);
+test('verifyRenderedVideo: fails when file missing', async () => {
+    const r = await verifyRenderedVideo('/no/such/file.mp4', 5);
     assert.equal(r.pass, false);
     assert.equal(r.checks.find((c) => c.id === 'X7')!.pass, false);
 });

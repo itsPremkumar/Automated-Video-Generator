@@ -26,6 +26,9 @@ export interface ScenePlan {
      *  scene. When set, the acquire stage uses this file directly instead of
      *  fetching stock (legacy localAsset behaviour, ported to agentic). */
     localAsset?: string;
+    /** User-supplied voiceover audio file bound to this scene (C2). When set,
+     *  the pipeline uses it directly instead of generating TTS for the scene. */
+    personalAudio?: string;
 }
 
 export interface Plan {

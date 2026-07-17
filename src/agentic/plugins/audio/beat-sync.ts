@@ -75,7 +75,7 @@ export const beatSyncPlugin: AgenticPlugin = {
 
             // Align scene boundaries to beats
             const enhancedPlan = { ...plan };
-            let currentTime = cfg.offset;
+            let currentTime: number = cfg.offset ?? 0;
 
             for (const scene of enhancedPlan.scenes) {
                 const duration = scene.durationSec ?? 4;
@@ -172,16 +172,17 @@ async function analyzeWithAubio(trackPath: string): Promise<BeatInfo> {
 
 async function analyzeWithFfmpeg(trackPath: string): Promise<BeatInfo> {
     const { execFile } = await import('child_process');
-    const ffmpeg = (await import('ffmpeg-static')).default;
+    const ffmpegMod: any = (await import('ffmpeg-static')).default;
+    const ffmpegPath: string = (ffmpegMod && typeof ffmpegMod === 'object' && 'path' in ffmpegMod) ? ffmpegMod.path : String(ffmpegMod);
 
     return new Promise((resolve, reject) => {
         // Use astats with metadata=1 to get peak/level info
         // Then post-process to find onsets
-        execFile(ffmpeg, [
+        execFile(ffmpegPath, [
             '-i', trackPath,
             '-af', 'astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.Peak_level',
             '-f', 'null', '-'
-        ], { maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+        ], { maxBuffer: 10 * 1024 * 1024 }, (err: Error | null, stdout: string, stderr: string) => {
             if (err) return reject(err);
 
             // Parse astats output for peaks (simplified onset detection)
@@ -262,8 +263,8 @@ function snapToBeat(targetTime: number, beats: BeatInfo, cfg: BeatSyncConfig): n
     if (times.length === 0) return targetTime;
 
     const beatDur = 60 / tempo;
-    const minInterval = cfg.minCutInterval;
-    const maxInterval = Math.min(cfg.maxCutInterval, beatDur * 4);
+    const minInterval = cfg.minCutInterval ?? 0;
+    const maxInterval = Math.min(cfg.maxCutInterval ?? Infinity, beatDur * 4);
 
     // Find nearest beat
     let nearest = times.reduce((prev, curr) =>

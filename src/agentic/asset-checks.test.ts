@@ -29,29 +29,29 @@ describe('asset-checks', () => {
         assert.ok(fs.existsSync(img) && fs.existsSync(vid));
     });
 
-    test('probeAsset reads image dimensions', () => {
-        const p = probeAsset(img);
+    test('probeAsset reads image dimensions', async () => {
+        const p = await probeAsset(img);
         assert.ok(p);
         assert.equal(p!.width, 1920);
         assert.equal(p!.height, 1080);
     });
 
-    test('I4 passes a high-res image, fails a 240p one', () => {
-        const ok = checkSourceAsset(img, { kind: 'image', minWidth: 480 });
+    test('I4 passes a high-res image, fails a 240p one', async () => {
+        const ok = await checkSourceAsset(img, { kind: 'image', minWidth: 480 });
         assert.equal(ok.find((c) => c.id === 'I4')!.pass, true);
         const smallVid = path.join(dir, 'small.mp4');
         execFileSync(ffmpeg(), ['-y', '-f', 'lavfi', '-i', 'color=c=blue:s=320x240:d=1', '-frames:v', '1', smallVid], { stdio: 'ignore' });
-        const small = checkSourceAsset(smallVid, { kind: 'video', minWidth: 480 });
+        const small = await checkSourceAsset(smallVid, { kind: 'video', minWidth: 480 });
         assert.equal(small.find((c) => c.id === 'V5')!.pass, false, '320px width should fail min 480');
     });
 
-    test('I5 aspect match: 1920x1080 vs 16:9 target passes', () => {
-        const r = checkSourceAsset(img, { kind: 'image', targetAspect: 16 / 9 });
+    test('I5 aspect match: 1920x1080 vs 16:9 target passes', async () => {
+        const r = await checkSourceAsset(img, { kind: 'image', targetAspect: 16 / 9 });
         assert.equal(r.find((c) => c.id === 'I5')!.pass, true);
     });
 
-    test('V4 video duration fit: 3s clip for 2s scene passes', () => {
-        const r = checkSourceAsset(vid, { kind: 'video', sceneNeedSec: 2 });
+    test('V4 video duration fit: 3s clip for 2s scene passes', async () => {
+        const r = await checkSourceAsset(vid, { kind: 'video', sceneNeedSec: 2 });
         assert.equal(r.find((c) => c.id === 'V4')!.pass, true);
     });
 

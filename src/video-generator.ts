@@ -220,7 +220,7 @@ export async function generateVideo(
                         };
 
                         if (isVideo) {
-                            const videoMetadata = getVideoMetadata(targetPath);
+                            const videoMetadata = await getVideoMetadata(targetPath);
                             visual.videoDuration = videoMetadata.durationSeconds;
                             visual.videoTrimAfterFrames = videoMetadata.trimAfterFrames;
                         }
@@ -277,7 +277,7 @@ export async function generateVideo(
                             localPath: toPublicRelativePath(fallbackPathVisuals),
                         };
                         if (!isImage) {
-                            const videoMetadata = getVideoMetadata(fallbackPathVisuals);
+                            const videoMetadata = await getVideoMetadata(fallbackPathVisuals);
                             visual.videoDuration = videoMetadata.durationSeconds;
                             visual.videoTrimAfterFrames = videoMetadata.trimAfterFrames;
                         }

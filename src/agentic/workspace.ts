@@ -26,27 +26,54 @@ export function workspaceRootFor(jobId: string): string {
     return path.join(WORKSPACES_ROOT, jobId);
 }
 
-export function createAgenticWorkspace(jobId: string): AgenticWorkspace {
+function buildWorkspacePaths(jobId: string): AgenticWorkspace {
     const root = workspaceRootFor(jobId);
     const assetsDir = path.join(root, 'assets');
     const imagesDir = path.join(assetsDir, 'images');
     const videosDir = path.join(assetsDir, 'videos');
     const musicDir = path.join(assetsDir, 'music');
     const verificationDir = path.join(root, 'verification');
+    return { jobId, root, assetsDir, imagesDir, videosDir, musicDir, verificationDir };
+}
 
-    for (const dir of [root, assetsDir, imagesDir, videosDir, musicDir, verificationDir]) {
+/**
+ * getAgenticWorkspace — return the workspace for an EXISTING job WITHOUT
+ * touching its downloaded assets. Used by later pipeline stages (gateway,
+ * render) that must read the assets acquire.ts already populated. Calling the
+ * wiping createAgenticWorkspace() here would DELETE those assets and force a
+ * broken "file missing" verify → a network re-fetch hang.
+ */
+export function getAgenticWorkspace(jobId: string): AgenticWorkspace {
+    const ws = buildWorkspacePaths(jobId);
+    for (const dir of [ws.root, ws.assetsDir, ws.imagesDir, ws.videosDir, ws.musicDir, ws.verificationDir]) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+    return ws;
+}
+
+export function createAgenticWorkspace(jobId: string): AgenticWorkspace {
+    const ws = buildWorkspacePaths(jobId);
+    const { imagesDir, videosDir } = ws;
+
+    // Clean stale scene-asset dirs from any previous run so each job
+    // starts from a truly isolated asset set (prevents leftover candidate
+    // files from a prior job poisoning the new render).
+    for (const base of [imagesDir, videosDir]) {
+        try {
+            if (fs.existsSync(base)) {
+                for (const sub of fs.readdirSync(base)) {
+                    const full = path.join(base, sub);
+                    try { fs.rmSync(full, { recursive: true, force: true }); } catch { /* ignore */ }
+                }
+            }
+        } catch { /* ignore */ }
+    }
+
+    for (const dir of [ws.root, ws.assetsDir, ws.imagesDir, ws.videosDir, ws.musicDir, ws.verificationDir]) {
         fs.mkdirSync(dir, { recursive: true });
     }
 
-    return {
-        jobId,
-        root,
-        assetsDir,
-        imagesDir,
-        videosDir,
-        musicDir,
-        verificationDir,
-    };
+    return ws;
 }
 
 /** Per-scene image/video folder, e.g. assets/images/scene_01/ */

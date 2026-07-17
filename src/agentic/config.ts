@@ -68,6 +68,10 @@ export interface AgenticConfig {
      *  addition to) fetched stock. Files are distributed round-robin across
      *  scenes; any scene without a matching local file falls back to fetching. */
     localAssets?: string[];
+    /** C6: user-supplied video clips (per-scene) used directly as scene visuals. */
+    videoClips?: string[];
+    /** C2: user-supplied voiceover audio (per-scene) used instead of TTS. */
+    personalAudio?: string[];
     /** A user-supplied default image/video (in input/input-assets/) used as a
      *  last-resort visual when both fetch and the pool fail (legacy-style
      *  default.mp4 fallback). */

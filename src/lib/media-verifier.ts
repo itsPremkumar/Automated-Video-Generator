@@ -20,14 +20,21 @@ const MEDIA_VERIFICATION_CONFIDENCE = Math.max(
 
 export const MEDIA_VERIFICATION_ENABLED = process.env.MEDIA_VERIFICATION_ENABLED !== 'false';
 
-function runFfmpeg(args: string[]): Buffer | null {
-    try {
-        const result = spawnSync('ffmpeg', args, { stdio: 'pipe', timeout: 15000 });
-        if (result.status !== 0 || result.error) return null;
-        return result.stdout;
-    } catch {
-        return null;
-    }
+function runFfmpeg(args: string[]): Promise<Buffer | null> {
+    return new Promise((resolve) => {
+        try {
+            const { spawn } = require('child_process');
+            const timeoutMs = Number(process.env.AGENTIC_FFMPEG_TIMEOUT_MS || 15000);
+            const child = spawn('ffmpeg', args, { stdio: 'pipe' } as any);
+            const chunks: Buffer[] = [];
+            const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } resolve(null); }, timeoutMs);
+            child.stdout?.on('data', (d: Buffer) => chunks.push(d));
+            child.on('error', () => { clearTimeout(t); resolve(null); });
+            child.on('close', (code: number) => { clearTimeout(t); resolve(code === 0 ? Buffer.concat(chunks) : null); });
+        } catch {
+            resolve(null);
+        }
+    });
 }
 
 export interface VerificationResult {
@@ -48,11 +55,11 @@ const DEFAULT_VISION_OPTS: VisionCheckOptions = {
     checkSafety: true,
 };
 
-function extractVideoFrame(videoPath: string, outputDir: string): string | null {
+async function extractVideoFrame(videoPath: string, outputDir: string): Promise<string | null> {
     const framePath = path.join(outputDir, `verify_frame_${path.basename(videoPath)}.jpg`);
     if (fs.existsSync(framePath)) return framePath;
     try {
-        runFfmpeg(['-y', '-i', videoPath, '-vframes', '1', '-q:v', '3', framePath]);
+        await runFfmpeg(['-y', '-i', videoPath, '-vframes', '1', '-q:v', '3', framePath]);
         return fs.existsSync(framePath) ? framePath : null;
     } catch {
         return null;
@@ -178,7 +185,7 @@ export async function verifyMedia(
     if (isVideo) {
         console.log(`🧐 [VERIFY] Extracting frame from video: ${path.basename(filePath)}`);
         const outputDir = path.dirname(filePath);
-        const frame = extractVideoFrame(filePath, outputDir);
+        const frame = await extractVideoFrame(filePath, outputDir);
         if (!frame) {
             return { passes: true, confidence: 5, reason: 'Could not extract video frame' };
         }

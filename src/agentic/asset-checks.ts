@@ -33,23 +33,39 @@ function ffprobeBin(): string {
     }
 }
 
-/** Probe an image or video file for dimensions + (video) duration/aspect. */
-export function probeAsset(filePath: string): AssetProbe | null {
+/** Probe an image or video file for dimensions + (video) duration/aspect.
+ *  Async with a hard timeout: a stalled ffprobe/ffmpeg spawn on a RAM-starved
+ *  box must not block the whole pipeline (spawnSync can't be interrupted mid-fork). */
+export async function probeAsset(filePath: string): Promise<AssetProbe | null> {
     const bin = ffprobeBin();
+    const runSpawn = (cmd: string, args: string[]): Promise<string> =>
+        new Promise<string>((resolve) => {
+            try {
+                const { spawn } = require('child_process');
+                const timeoutMs = Number(process.env.AGENTIC_FFPROBE_TIMEOUT_MS || 15000);
+                const child = spawn(cmd, args, { encoding: 'utf8' as const, stdio: ['pipe', 'pipe', 'pipe'] } as any);
+                let out = '';
+                let err = '';
+                const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } resolve(''); }, timeoutMs);
+                child.stdout?.on('data', (d: Buffer) => { out += d.toString(); });
+                child.stderr?.on('data', (d: Buffer) => { err += d.toString(); });
+                child.on('error', () => { clearTimeout(t); resolve(''); });
+                child.on('close', () => { clearTimeout(t); resolve(out + '\n' + err); });
+            } catch {
+                resolve('');
+            }
+        });
     let raw = '';
     try {
-        const res = spawnSync(bin, ['-v', 'error', '-show_entries', 'stream=width,height,duration,codec_name,codec_type', '-of', 'default=noprint_wrappers=1', filePath], { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
-        raw = (res.stdout || '') + '\n' + (res.stderr || '');
+        raw = await runSpawn(bin, ['-v', 'error', '-show_entries', 'stream=width,height,duration,codec_name,codec_type', '-of', 'default=noprint_wrappers=1', filePath]);
     } catch {
         return null;
     }
     // If bundled ffprobe missing, fall back to ffmpeg -i parsing.
     if (!raw.includes('width=') && !raw.includes('Stream')) {
-         
         const ffmpeg: string = require('ffmpeg-static');
         try {
-            const r = spawnSync(ffmpeg, ['-i', filePath], { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
-            raw = (r.stdout || '') + '\n' + (r.stderr || '');
+            raw = await runSpawn(ffmpeg, ['-i', filePath]);
         } catch { return null; }
     }
     const wM = raw.match(/width\s*=\s*(\d+)/);
@@ -88,13 +104,13 @@ export interface SourceCheckResult {
  * @param targetAspect expected w/h (e.g. 9/16=0.5625 portrait). Aspect mismatch >15% fails (I5/V6).
  * @param minDurationSec for video, minimum usable length vs scene need (V4).
  */
-export function checkSourceAsset(
+export async function checkSourceAsset(
     filePath: string,
     opts: { kind: 'image' | 'video'; minWidth?: number; targetAspect?: number; sceneNeedSec?: number } = { kind: 'image' },
-): SourceCheckResult[] {
+): Promise<SourceCheckResult[]> {
     const minWidth = opts.minWidth ?? 480;
     const results: SourceCheckResult[] = [];
-    const probe = probeAsset(filePath);
+    const probe = await probeAsset(filePath);
     if (!probe || probe.width === 0) {
         results.push({ id: opts.kind === 'image' ? 'I0' : 'V0', label: 'Asset probeable', pass: false, detail: 'could not read dimensions' });
         return results;

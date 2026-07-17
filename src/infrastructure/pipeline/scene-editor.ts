@@ -94,7 +94,7 @@ export async function updateSceneInJob(
                     localPath: toPublicRelativePath(targetPath),
                 };
                 if (isVideo) {
-                    const meta = getVideoMetadata(targetPath);
+                    const meta = await getVideoMetadata(targetPath);
                     visual.videoDuration = meta.durationSeconds;
                     visual.videoTrimAfterFrames = meta.trimAfterFrames;
                 }

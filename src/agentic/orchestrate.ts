@@ -33,6 +33,10 @@ import { verifyAll, VerifyDeps, VERIFY_PASS_CONFIDENCE } from './verify.js';
 import { runGateway, GatewayDeps } from './gateway.js';
 import { runFinalGate } from './gate.js';
 import { AgenticWorkspace, readJson, writeJson, pruneWorkspaces } from './workspace.js';
+import { archiveJob } from './archive.js';
+import { openReview } from './revision.js';
+import { createPluginRegistry, registerAllPlugins, getPluginRegistry } from './plugins/index.js';
+import { PluginContext } from './plugins/core/types.js';
 import { generateAgenticVoiceovers } from './tts.js';
 import { createJob, updateJob, persistJob } from './job.js';
 import { AssetCandidate, AssetDecision, Plan, RenderManifest, assetId } from './types.js';
@@ -43,6 +47,41 @@ import {
     writeScriptHeuristic,
 } from './agent.js';
 import { AgentBrain } from './brain.js';
+
+/** Hard-timeout wrapper for network/IO promises. A stalled fetch (no response,
+ *  hanging socket) must never block the whole pipeline — reject fast so the
+ *  caller can fall back to a local asset or placeholder. */
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+        p.then(
+            (v) => { clearTimeout(t); resolve(v); },
+            (e) => { clearTimeout(t); reject(e); },
+        );
+    });
+}
+
+const ffprobe: string = (() => { try { return require('ffprobe-static').path; } catch { return 'ffprobe'; } })();
+
+/** Probe an audio file's duration (seconds) via ffprobe; fall back to estimate.
+ *  Async with a hard timeout so a stalled ffprobe spawn can't block the run. */
+export async function estimateAudioDurationSafe(p: string): Promise<number> {
+    try {
+        const { spawn } = require('child_process');
+        const timeoutMs = Number(process.env.AGENTIC_FFPROBE_TIMEOUT_MS || 15000);
+        const out = await new Promise<string>((resolve, reject) => {
+            const child = spawn(ffprobe, ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', p], { encoding: 'utf8' as const, stdio: ['pipe', 'pipe', 'pipe'] } as any);
+            let buf = '';
+            const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } reject(new Error('ffprobe timed out')); }, timeoutMs);
+            child.stdout?.on('data', (d: Buffer) => { buf += d.toString(); });
+            child.on('error', (e: Error) => { clearTimeout(t); reject(e); });
+            child.on('close', (code: number) => { clearTimeout(t); if (code !== 0) reject(new Error('ffprobe failed')); else resolve(buf); });
+        });
+        const d = parseFloat(out.trim());
+        if (!isNaN(d) && d > 0) return Math.ceil(d);
+    } catch { /* fall through */ }
+    return 4;
+}
 
 /**
  * Pure helper: derive the media provider name from a URL host so candidate
@@ -76,6 +115,10 @@ export interface PipelineRequest {
     dryRun?: boolean;
     /** User's own media files (from input/input-assets/) to use per-scene. */
     localAssets?: string[];
+    /** User-supplied video clips (per-scene, index-aligned) used directly as the scene visual. */
+    videoClips?: string[];
+    /** User-supplied voiceover audio (per-scene, index-aligned) used instead of TTS. */
+    personalAudio?: string[];
     /** User-supplied default image/video (input/input-assets/) last-resort fallback. */
     defaultVisual?: string;
     /** Pro-edit: lead with the most intriguing scene. */
@@ -121,6 +164,26 @@ export async function runAgenticPipeline(
         visionVerify: req.agent?.visionVerify,
     };
     const jobId = req.jobId ?? `job_${Date.now()}`;
+    // Initialise the plugin registry for this run so plugins (watermark, LUT,
+    // captions, ducking, transitions…) participate in the pipeline. Failures
+    // here are non-fatal — the pipeline still runs without plugins.
+    try {
+        const pluginCfgPath = path.join(process.cwd(), 'agentic-plugins.config.json');
+        let pluginCfg: any = { plugins: [] };
+        try { if (fs.existsSync(pluginCfgPath)) pluginCfg = JSON.parse(fs.readFileSync(pluginCfgPath, 'utf-8')); } catch { /* defaults */ }
+        const pctx = new PluginContext({ jobId, workspaceRoot: `./agentic-pipeline/workspaces/${jobId}`, config: pluginCfg });
+        const preg = await createPluginRegistry(pctx);
+        registerAllPlugins(preg, pluginCfg);
+    } catch (e) {
+        console.warn(`⚠ plugin registry init skipped: ${(e as Error)?.message ?? e}`);
+    }
+    // Shared topic image pool: fetched ONCE for the whole video so every scene
+    // gets a distinct on-topic photo. Reset per-run (below) so a stale
+    // pool from a previous job can't contaminate this one.
+    const sharedImagePool: { url: string }[] = [];
+    // Reset the shared image pool for THIS run so a stale pool left by a
+    // previous job (with dead/403 URLs) can never contaminate it.
+    sharedImagePool.length = 0;
 
     // Phase 0 (#16): prevent unbounded workspace growth on long-running boxes.
     pruneWorkspaces(Number(process.env.AGENTIC_KEEP_WORKSPACES ?? 25));
@@ -173,6 +236,22 @@ export async function runAgenticPipeline(
         });
         emit({ stage: 'plan', percent: 100, message: `Bound ${req.localAssets.length} local asset(s) to ${plan.scenes.length} scenes` });
     }
+    // C6: user-supplied video clips are bound per-scene and force video preference.
+    if (req.videoClips && req.videoClips.length > 0) {
+        plan.scenes.forEach((s, i) => {
+            const clip = req.videoClips![i % req.videoClips!.length];
+            if (clip) { s.localAsset = path.basename(clip); s.visualPreference = 'video'; }
+        });
+        emit({ stage: 'plan', percent: 100, message: `Bound ${req.videoClips.length} video clip(s) to ${plan.scenes.length} scenes` });
+    }
+    // C2: user-supplied voiceover audio is bound per-scene (consumed in STAGE 2.5).
+    if (req.personalAudio && req.personalAudio.length > 0) {
+        plan.scenes.forEach((s, i) => {
+            const a = req.personalAudio![i % req.personalAudio!.length];
+            if (a) s.personalAudio = path.basename(a);
+        });
+        emit({ stage: 'plan', percent: 100, message: `Bound ${req.personalAudio.length} personal audio track(s)` });
+    }
 
     // ── DRY RUN (#25): preview plan + per-scene keywords, skip network/render. ──
     if (req.dryRun) {
@@ -203,13 +282,20 @@ export async function runAgenticPipeline(
     const STOP = new Set(['a','an','the','of','for','to','and','or','in','on','with','about','facts','fact','benefits','benefit','how','what','why','tips','ways','things','5','3','10','top','best','amazing','fascinating','interesting','daily','changed','change','vs']);
     const topicNoun = ((req.topic || plan.title || 'video') as string)
         .toLowerCase().split(/\s+/).filter((w) => w && !STOP.has(w.replace(/[^a-z]/g, ''))).join(' ') || 'video';
-    const sharedImagePool: { url: string }[] = [];
+    // (sharedImagePool declared earlier, per-run, at the top of the fn)
     // Video-first consistency: if any scene prefers video, build the shared pool
     // video-first (Pexels/Pixabay/Wikimedia/Archive video), then image as
     // fallback. This makes "video first, then image" true on BOTH the pool path
     // and the fetchVisual ladder (which already respects visualPreference).
     const preferVideo = plan.scenes.some((s) => s.visualPreference === 'video');
     const getImagePool = async () => {
+        // Offline short-circuit: when the user supplied their own media
+        // (local assets or video clips), never hit the network for a topic
+        // pool — the scenes are bound to those files and any network
+        // call just wastes time / can hang on a flaky box.
+        if ((req.localAssets && req.localAssets.length > 0) || (req.videoClips && req.videoClips.length > 0)) {
+            return sharedImagePool;
+        }
         if (sharedImagePool.length > 0) return sharedImagePool;
         const DEAD_HOSTS = /flickr\.com|staticflickr\.com|live\.staticflickr/i;
         const seen = new Set<string>();
@@ -236,7 +322,7 @@ export async function runAgenticPipeline(
         }
         if (sharedImagePool.length === 0) {
             try {
-                const res = await fetchVisualsForScene([topicNoun], preferVideo, plan.orientation);
+                const res = await withTimeout(fetchVisualsForScene([topicNoun], preferVideo, plan.orientation), 12000, `fetchVisual[topicNoun]`);
                 if (res) add(Array.isArray(res) ? res[0]?.url : res.url);
             } catch { /* ignore */ }
         }
@@ -288,7 +374,7 @@ export async function runAgenticPipeline(
                     // same top result). The ladder's queries also lead with the
                     // scene's most-specific keyword for extra diversity.
                     const resultIndex = sceneIndex;
-                    const res = await fetchVisualsForScene(q, kind === 'video', orientation, undefined, resultIndex);
+                    const res = await withTimeout(fetchVisualsForScene(q, kind === 'video', orientation, undefined, resultIndex), 12000, `fetchVisual[${q.join(' ')}]`);
                     const arr = !res ? [] : (Array.isArray(res) ? res : [res]);
                     // Reject dead/flaky hosts (Flickr 5xx in this environment) so
                     // the ladder retries with a broader query instead of baking a
@@ -433,6 +519,23 @@ export async function runAgenticPipeline(
         const voByScene = new Map(voiceovers.scenes.map((s) => [s.sceneIndex, s]));
         for (const a of manifest.assets) {
             if (a.kind === 'music') continue;
+            const scene = plan.scenes[a.sceneIndex];
+            // C6: a user video clip's real duration must drive the scene length
+            // (the plan duration may differ); this keeps xfade offsets correct.
+            if (a.kind === 'video' && a.localPath && fs.existsSync(a.localPath)) {
+                const vd = await estimateAudioDurationSafe(a.localPath);
+                if (vd > 0) { a.durationSec = vd; scene.durationSec = vd; }
+            }
+            // C2: prefer user-supplied voiceover over generated TTS/tone.
+            const pa = scene?.personalAudio ? inputAssetPath(scene.personalAudio) : undefined;
+            if (pa && fs.existsSync(pa)) {
+                const dur = await estimateAudioDurationSafe(pa);
+                a.audioPath = pa;
+                a.durationSec = dur;
+                scene.durationSec = dur;
+                a.captionSegments = [{ text: scene.voiceoverText, startMs: 0, endMs: Math.round(dur * 1000) }];
+                continue;
+            }
             const v = voByScene.get(a.sceneIndex);
             if (v) {
                 a.audioPath = v.audioPath;
@@ -533,14 +636,23 @@ function makePlaceholder(keywords: string[], kind: 'image' | 'video' | 'music'):
  * the original on any failure, so the pipeline still has an audio candidate).
  */
 function normalizeAudio(src: string): string {
+    // Re-encoding is a quality nicety (128kbps AAC/mp3 for the bitrate gate),
+    // NOT essential. On RAM-starved boxes spawning ffmpeg synchronously can
+    // block the whole process (execFileSync can't be interrupted mid-fork),
+    // so it is OFF by default and only runs when explicitly opted in. The
+    // bundled/cached tracks are already standards-compliant.
+    if (process.env.AGENTIC_NORMALIZE_MUSIC !== '1') return src;
     if (!src || !fs.existsSync(src)) return src;
-     
+    
     const ffmpeg: string = require('ffmpeg-static');
     const { execFileSync } = require('child_process');
     const os = require('os');
     const out = `${os.tmpdir()}/agentic_music_${Date.now()}_${Math.random().toString(36).slice(2)}.mp3`;
     try {
-        execFileSync(ffmpeg, ['-i', src, '-c:a', 'libmp3lame', '-b:a', '128k', '-y', out], { stdio: 'ignore' });
+        execFileSync(ffmpeg, ['-i', src, '-c:a', 'libmp3lame', '-b:a', '128k', '-y', out], {
+            stdio: 'ignore',
+            timeout: Number(process.env.AGENTIC_FFMPEG_TIMEOUT_MS || 30000),
+        });
         return out;
     } catch {
         return src;
@@ -621,6 +733,14 @@ export async function renderAgenticSlideshow(
     if (!res.manifest) throw new Error('Cannot render: final gate did not produce a render manifest (gate.pass=' + res.gate.pass + ').');
 
     const visuals = res.manifest.assets.filter((a) => a.kind !== 'music');
+    // The plan scene duration (variable pacing) is the authoritative per-scene
+    // length for image/video assets (which have no intrinsic duration). Sync it
+    // onto each visual so EVERY downstream duration read (xfade timeline,
+    // caption windows, expected-duration gate) agrees and X8 stays green.
+    for (const v of visuals) {
+        const sd = res.plan.scenes[v.sceneIndex] && res.plan.scenes[v.sceneIndex].durationSec;
+        if (sd && sd > 0) v.durationSec = sd;
+    }
     const music = res.manifest.assets.find((a) => a.kind === 'music');
     if (visuals.length === 0) throw new Error('No approved visuals to render.');
 
@@ -643,7 +763,7 @@ export async function renderAgenticSlideshow(
                 (err: any, _stdout: string, stderr: string) => err ? reject(new Error('card render failed: ' + (stderr || '').trim())) : resolve());
         });
     };
-    if (introClip) await makeCard(introClip, opts.intro!.title, opts.intro!.subtitle, opts.intro!.durationSec ?? 2.5, '#0F3460', '#ffffff');
+    if (introClip) await makeCard(introClip, opts.intro!.title, opts.intro!.subtitle, opts.intro!.durationSec ?? 2.5, '#2563EB', '#ffffff');
     if (outroClip) {
         const cta = (opts.outro!.ctaText || 'Subscribe').replace(/'/g, '’').replace(/:/g, '\\:');
         const tags = (opts.outro!.hashtags || []).join(' ');
@@ -737,19 +857,24 @@ export async function renderAgenticSlideshow(
         // Editing engine v1: per-scene color grade (no LUT file needed).
         const grade = gradeFilter(stylePlan.scenes[i]?.grade ?? 'neutral');
         const tag = '[' + i + ':v]';
-        return `${tag}scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom},${grade},format=yuv420p[v${i}]`;
+        return `${tag}scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=25,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom},${grade},format=yuv420p[v${i}]`;
     });
 
     // ── Intro/outro clip filters (already WxH; just normalise + trim). ──
-    if (introClip) sceneFilters.push(`[${introInputIdx}:v]trim=duration=${opts.intro!.durationSec ?? 2.5},setpts=PTS-STARTPTS,settb=1/25,format=yuv420p[vintro]`);
-    if (outroClip) sceneFilters.push(`[${outroInputIdx}:v]trim=duration=${opts.outro!.durationSec ?? 3},setpts=PTS-STARTPTS,settb=1/25,format=yuv420p[voutro]`);
+    if (introClip) sceneFilters.push(`[${introInputIdx}:v]fps=25,trim=duration=${opts.intro!.durationSec ?? 2.5},setpts=PTS-STARTPTS,settb=1/25,format=yuv420p[vintro]`);
+    if (outroClip) sceneFilters.push(`[${outroInputIdx}:v]fps=25,trim=duration=${opts.outro!.durationSec ?? 3},setpts=PTS-STARTPTS,settb=1/25,format=yuv420p[voutro]`);
 
     // ── Concat the scene videos with per-scene transitions from the style plan. ──
     // Weave intro (cold-open) and outro (CTA) into the ordered clip list.
     const orderedTags: string[] = [];
     const orderedDur: number[] = []; // real duration of each ordered clip
+    // An image/video asset has no intrinsic "scene duration" — the intended
+    // duration comes from the plan (variable pacing). Use the plan scene
+    // duration so the xfade timeline AND the expected-duration gate agree.
+    const durOf = (a: { sceneIndex: number; durationSec?: number }): number =>
+        (res.plan.scenes[a.sceneIndex] && res.plan.scenes[a.sceneIndex].durationSec) || a.durationSec || 4;
     if (introClip) { orderedTags.push('vintro'); orderedDur.push(opts.intro!.durationSec ?? 2.5); }
-    for (let i = 0; i < visuals.length; i++) { orderedTags.push('v' + i); orderedDur.push(visuals[i].durationSec ?? 4); }
+    for (let i = 0; i < visuals.length; i++) { orderedTags.push('v' + i); orderedDur.push(durOf(visuals[i])); }
     if (outroClip) { orderedTags.push('voutro'); orderedDur.push(opts.outro!.durationSec ?? 3); }
 
     let videoChain: string;
@@ -763,11 +888,17 @@ export async function renderAgenticSlideshow(
         let cursor = orderedDur[0];
         for (let i = 1; i < orderedTags.length; i++) {
             const cur = orderedTags[i];
-            const isCard = cur === 'vintro' || cur === 'voutro';
+            const isCard = prev === 'vintro' || cur === 'voutro';
+            // All transitions use xfade (seamless crossfade, no black gaps).
+            // The intro→first-scene and last-scene→outro used to be hard cuts
+            // via concat, but concat introduced black gaps at the seams.
             const tk: any = isCard ? 'fade' : (stylePlan.scenes[i - (introClip ? 1 : 0)]?.transitionIn ?? 'fade');
             const outTag = i === orderedTags.length - 1 ? 'vout' : 'vx' + i;
             if (tk === 'cut') {
-                sceneFilters.push(`[${prev}][${cur}]concat=n=2:v=1:a=0[${outTag}]`);
+                // concat changes the timebase; reset to 1/25 AND force fps=25 so
+                // the next xfade (which expects a constant 25fps, 1/25 timebase)
+                // links correctly and doesn't mis-read the concatenated duration.
+                sceneFilters.push(`[${prev}][${cur}]concat=n=2:v=1:a=0,settb=1/25,fps=25[${outTag}]`);
                 cursor += orderedDur[i];
             } else {
                 const xname = xfadeName(tk);
@@ -780,7 +911,8 @@ export async function renderAgenticSlideshow(
         videoChain = '[vout]';
     }
 
-    const videoInputs = visuals.flatMap((v) => ['-loop', '1', '-i', v.localPath]);
+    // C6: only loop IMAGE inputs (-loop 1); video clips stream natively.
+    const videoInputs = visuals.flatMap((v) => v.kind === 'image' ? ['-loop', '1', '-i', v.localPath] : ['-i', v.localPath]);
     if (introClip) videoInputs.push('-i', introClip);
     if (outroClip) videoInputs.push('-i', outroClip);
     const vfArgs = [...sceneFilters];
@@ -885,7 +1017,7 @@ export async function renderAgenticSlideshow(
             const audioStart = Math.max(0, picStart - (i === 0 ? 0 : jCut));
             delayed.push(`[${base + i}:a]adelay=delays=${(audioStart * 1000).toFixed(0)}:all=1[a${i}]`);
         });
-        const mix = delayed.map((_, i) => `[a${i}]`).join('') + `amix=inputs=${voScenes.length}:duration=longest:normalize=0[aout]`;
+        const mix = delayed.map((_, i) => `[a${i}]`).join('') + `amix=inputs=${voScenes.length}:duration=longest:normalize=0[aout];[aout]apad[aout2];[aout2]alimiter=limit=0.85:asc=1:level=disabled[aout]`;
         audioFilter = [...delayed, mix].join(';');
         audioMap = ['-map', '[aout]'];
     }
@@ -946,7 +1078,7 @@ export async function renderAgenticSlideshow(
                     kin.push(`drawtext=${FONT_ARG}text='${safe}':fontcolor=${cue.kind === 'wordpop' ? 'yellow' : 'white'}:fontsize=${cue.kind === 'wordpop' ? 64 : 34}:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=${cue.kind === 'wordpop' ? '(h-text_h)/2' : 'h-text_h-90'}:enable='between(t\\,${start}\\,${end})'`);
                 }
             }
-            const vfChain = `[0:v]${!isVideo ? 'loop=loop=-1:size=1,' : ''}scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${grade ? ',' + grade : ''},format=yuv420p,vignette=PI/5${segCaptionArg.length ? ',' + segCaptionArg.join(',') : ''}${kin.length ? ',' + kin.join(',') : ''}[v]`;
+            const vfChain = `[0:v]${!isVideo ? 'loop=loop=-1:size=1,' : ''}fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${grade ? ',' + grade : ''},format=yuv420p,vignette=PI/5${segCaptionArg.length ? ',' + segCaptionArg.join(',') : ''}${kin.length ? ',' + kin.join(',') : ''}[v]`;
             const voPath = clip.kind === 'scene' ? res.voiceovers?.scenes[clip.idx]?.audioPath : undefined;
             const hasVo = !!voPath && fs.existsSync(voPath);
             const inputs: string[] = ['-i', clip.file];
@@ -988,7 +1120,9 @@ export async function renderAgenticSlideshow(
     const introDur = introClip ? (opts.intro!.durationSec ?? 2.5) : 0;
     const outroDur = outroClip ? (opts.outro!.durationSec ?? 3) : 0;
     const scenesDur = visuals.reduce((s, a) => s + (a.durationSec ?? 4), 0);
-    const xfadeOverlap = (visuals.length + (introClip ? 1 : 0) + (outroClip ? 1 : 0) - 1) * xf;
+    // intro->first scene and last scene->outro are hard cuts (no xfade overlap).
+    const xfadeTransitions = (visuals.length + (introClip ? 1 : 0) + (outroClip ? 1 : 0) - 1) - (introClip ? 1 : 0) - (outroClip ? 1 : 0);
+    const xfadeOverlap = xfadeTransitions * xf;
     const totalSec = Math.max(1, introDur + scenesDur + outroDur - xfadeOverlap);
     expectedDur = totalSec;
     silent = outDir + '/_av_' + res.workspace.jobId + '.mp4';
@@ -999,7 +1133,8 @@ export async function renderAgenticSlideshow(
         '-map', videoMap,
         ...(audioMap.length ? audioMap : []),
         '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', '25',
-        ...(audioMap.length ? ['-c:a', 'aac', '-b:a', '128k', '-shortest'] : ['-an']),
+        ...(audioMap.length ? ['-c:a', 'aac', '-b:a', '128k'] : ['-an']),
+        '-t', totalSec.toFixed(2),
         '-y', silent,
     ];
     if (process.env.DEBUG_FF) { console.error('FILTER_COMPLEX:\n' + [...vfArgs, ...(audioFilter ? [audioFilter] : [])].join(';\n')); }
@@ -1050,7 +1185,7 @@ export async function renderAgenticSlideshow(
     // ── Phase 8.4: POST-RENDER quality verification (X7-X9). ──
     // expectedDur is computed per render path above (segmented: sum of clip
     // durations with no crossfade; default: intro+scenes+outro minus xfade overlap).
-    res.postRender = verifyRenderedVideo(out, expectedDur);
+    res.postRender = await verifyRenderedVideo(out, expectedDur);
     return out;
 }
 
@@ -1180,6 +1315,27 @@ async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: st
             `TITLE:\n${mTitle}\n\nDESCRIPTION:\n${mDesc}\n\nHASHTAGS:\n${mHash}\n\nTAGS:\n${mTags}`,
             'utf8');
     } catch { /* optional */ }
+
+    // ── STAGE 18: archive / consolidate this job into <workspace>/archive/ ──
+    try {
+        const arch = archiveJob(res.workspace, mp4);
+        if (arch) console.log(`📦 archived ${arch.totalFiles} files (${arch.totalBytes} bytes) → ${arch.archiveDir}`);
+    } catch { /* archive is best-effort */ }
+
+    // ── STAGE 16: open a client review thread for this draft ──
+    try {
+        openReview(res.workspace, res.workspace.jobId, res.plan.title);
+        console.log(`🔍 review thread opened for "${res.plan.title}" — awaiting client approval`);
+    } catch { /* review thread is best-effort */ }
+
+    // ── Plugin post-render hooks (watermark, captions, transcodes, etc.) ──
+    try {
+        const reg = getPluginRegistry();
+        if (reg) {
+            await reg.invokeOnPostRender(mp4);
+            console.log(`🧩 plugin post-render hooks applied`);
+        }
+    } catch { /* plugin hooks are best-effort */ }
 }
 
 /**
@@ -1401,7 +1557,7 @@ export async function renderAgenticWithRemotion(
         try {
             const o = await renderOne(a.w, a.h, a.s);
             if (a.s === '') primary = o;
-            res.postRender = verifyRenderedVideo(o, totalFrames / fps);
+            res.postRender = await verifyRenderedVideo(o, totalFrames / fps);
         } catch (e) {
             console.warn(`⚠ remotion aspect ${a.s || 'native'} failed: ${(e as Error).message}`);
         }

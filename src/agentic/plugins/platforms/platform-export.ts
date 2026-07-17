@@ -195,9 +195,9 @@ export const platformExportPlugin: AgenticPlugin = {
 
         onPlan: async (plan, ctx) => {
             const cfg = ctx.getConfig<PlatformConfig>('platform-export');
-            const targetPlatforms = cfg.platforms.length > 0 ? cfg.platforms : [cfg.platform];
+            const targetPlatforms = (cfg.platforms?.length ?? 0) > 0 ? (cfg.platforms as string[]) : [cfg.platform ?? 'tiktok'];
 
-            const specs = targetPlatforms.map(p => PLATFORM_SPECS[p]).filter(Boolean);
+            const specs = targetPlatforms.map(p => PLATFORM_SPECS[p as any]).filter(Boolean);
             if (specs.length === 0) return plan;
 
             // Use first platform as primary for plan adjustments
@@ -344,6 +344,7 @@ async function transcodeForPlatform(
     const { execFile } = await import('child_process');
     const { promisify } = await import('util');
     const execAsync = promisify(execFile);
+    const ffmpegPath: string = (ffmpeg && typeof ffmpeg === 'object' && 'path' in ffmpeg) ? (ffmpeg as any).path : String(ffmpeg);
 
     const qualityMap = {
         draft: '28',
@@ -352,12 +353,12 @@ async function transcodeForPlatform(
         lossless: '0',
     };
 
-    const crf = qualityMap[cfg.quality];
-    const [vBitrate, aBitrate] = [spec.bitrate.video, spec.bitrate.audio];
+    const crf = qualityMap[cfg.quality ?? 'high'] ?? '18';
+    const [vBitrate, aBitrate] = [spec.bitrate.video ?? '0k', spec.bitrate.audio ?? '0k'];
 
-    await execAsync(ffmpeg, [
+    await execAsync(ffmpegPath, [
         '-i', input,
-        '-c:v', cfg.codec === 'h264' ? 'libx264' : cfg.codec === 'hevc' ? 'libx265' : cfg.codec,
+        '-c:v', cfg.codec === 'h264' ? 'libx264' : (cfg.codec === 'hevc' ? 'libx265' : (cfg.codec ?? 'libx264')),
         '-crf', crf,
         '-b:v', vBitrate,
         '-maxrate', vBitrate,

@@ -12,6 +12,13 @@
         "resolveJsonModule": true,
         "jsx": "react"
     },
-    "include": ["src/**/*", "remotion/**/*"],
+    "include": [
+        "src/agentic/*.ts",
+        "src/agentic/audio/**/*.ts",
+        "src/infrastructure/**/*.ts",
+        "src/lib/**/*.ts",
+        "src/video-generator.ts",
+        "remotion/**/*.ts"
+    ],
     "exclude": ["node_modules", "dist", "src/agentic/plugins"]
 }

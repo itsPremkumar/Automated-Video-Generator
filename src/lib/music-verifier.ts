@@ -45,30 +45,35 @@ export interface MusicVerifyOptions {
     license?: string;
 }
 
-type FfprobeRunner = (filePath: string) => {
+type FfprobeRunner = (filePath: string) => Promise<{
     status: number;
     stdout: string;
-} | null;
+} | null>;
 
 function resolveFfprobeBin(): string {
     if (typeof ffprobePath === 'string') return ffprobePath;
     return (ffprobePath as any)?.path || 'ffprobe';
 }
 
-/** Default ffprobe runner; injectable for offline tests. */
-export const defaultFfprobeRunner: FfprobeRunner = (filePath: string) => {
+/** Default ffprobe runner; injectable for offline tests.
+ *  Async with a hard timeout: a stalled ffprobe spawn on a RAM-starved box
+ *  must not block the whole pipeline (spawnSync can't be interrupted mid-fork). */
+export const defaultFfprobeRunner: FfprobeRunner = async (filePath: string) => {
     try {
-        // Lazy require to avoid a hard dependency at import time.
-         
-        const { spawnSync } = require('child_process');
+        const { spawn } = require('child_process');
         const bin = resolveFfprobeBin();
-        const result = spawnSync(
-            bin,
-            ['-v', 'quiet', '-print_format', 'json', '-show_format', '-show_streams', filePath],
-            { encoding: 'utf-8', timeout: 15000 } as any,
-        );
-        if (result.error || result.status !== 0) return null;
-        return { status: result.status ?? 0, stdout: result.stdout ?? '' };
+        const timeoutMs = Number(process.env.AGENTIC_FFPROBE_TIMEOUT_MS || 15000);
+        const stdout = await new Promise<string>((resolve, reject) => {
+            const child = spawn(bin, ['-v', 'quiet', '-print_format', 'json', '-show_format', '-show_streams', filePath], { encoding: 'utf-8' as const, stdio: ['pipe', 'pipe', 'pipe'] } as any);
+            let out = '';
+            let err = '';
+            const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } reject(new Error('ffprobe timed out')); }, timeoutMs);
+            child.stdout?.on('data', (d: Buffer) => { out += d.toString(); });
+            child.stderr?.on('data', (d: Buffer) => { err += d.toString(); });
+            child.on('error', (e: Error) => { clearTimeout(t); reject(e); });
+            child.on('close', (code: number) => { clearTimeout(t); if (code !== 0) reject(new Error(err?.trim() || 'ffprobe failed')); else resolve(out); });
+        });
+        return { status: 0, stdout };
     } catch {
         return null;
     }
@@ -97,11 +102,11 @@ function parseFfprobe(stdout: string): {
     }
 }
 
-export function verifyMusic(
+export async function verifyMusic(
     filePath: string,
     opts: MusicVerifyOptions = {},
     runFfprobe: FfprobeRunner = defaultFfprobeRunner,
-): MusicVerificationResult {
+): Promise<MusicVerificationResult> {
     const minDurationSec = opts.minDurationSec ?? 15;
     const minBitrateKbps = opts.minBitrateKbps ?? 96;
     const maxSilenceSec = opts.maxSilenceSec ?? 3;
@@ -115,7 +120,7 @@ export function verifyMusic(
         };
     }
 
-    const probe = runFfprobe(filePath);
+    const probe = await runFfprobe(filePath);
     if (!probe) {
         // Graceful degrade: assume fine if we cannot inspect.
         const sizeKb = fs.statSync(filePath).size / 1024;

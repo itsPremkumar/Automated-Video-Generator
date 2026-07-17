@@ -47,6 +47,24 @@ function sanitizeId(id: string): string {
     return id.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
 }
 
+/** Hard fail-fast wrapper: rejects if `p` doesn't settle within `ms`.
+ * Prevents a stalled/failing endpoint (GitHub/archive.org on a flaky
+ * box) from hanging the whole pipeline — callers fall back to the
+ * cached/local track instead. */
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    const onAbort = () => ctrl.signal.removeEventListener('abort', onAbort);
+    ctrl.signal.addEventListener('abort', onAbort);
+    return Promise.race([
+        p,
+        new Promise<T>((_, rej) => {
+            const t = setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms);
+            ctrl.signal.addEventListener('abort', () => { clearTimeout(t); rej(new Error(`${label} aborted`)); });
+        }),
+    ]).finally(() => { clearTimeout(timer); onAbort(); });
+}
+
 // ─── Open Lofi (CC0) ───────────────────────────────────────────────────────
 class OpenLofiProvider implements FreeMusicProvider {
     readonly name = 'open-lofi';
@@ -56,7 +74,7 @@ class OpenLofiProvider implements FreeMusicProvider {
     private async loadCatalog(): Promise<any[]> {
         if (this.catalog) return this.catalog;
         const CATALOG_URL = 'https://raw.githubusercontent.com/btahir/open-lofi/main/catalog.json';
-        const res = await axios.get(CATALOG_URL, { timeout: 10000 });
+        const res = await withTimeout(axios.get(CATALOG_URL, { timeout: 6000 }), 6000, 'open-lofi catalog');
         const data = res.data as any;
         const cats: Record<string, any> = data.categories || {};
         this.categoryLabel = {};
@@ -103,7 +121,7 @@ class InternetArchiveProvider implements FreeMusicProvider {
     async search(query: string, count = 5): Promise<FreeMusicTrack[]> {
         const q = encodeURIComponent(`(${query}) AND mediatype:audio AND (licenseurl:*)`).replace(/ /g, '+');
         const searchUrl = `https://archive.org/advancedsearch.php?q=${q}&fl[]=identifier&fl[]=title&fl[]=creator&fl[]=licenseurl&rows=${count}&output=json`;
-        const res = await axios.get(searchUrl, { timeout: 10000 });
+        const res = await withTimeout(axios.get(searchUrl, { timeout: 6000 }), 6000, 'internet-archive search');
         const docs = (res.data as any)?.response?.docs || [];
         return docs.map((d: any) => {
             const identifier = d.identifier as string;
@@ -164,7 +182,9 @@ class LocalFreeProvider implements FreeMusicProvider {
 const localProvider = new LocalFreeProvider();
 
 function defaultProviders(): FreeMusicProvider[] {
-    return [new OpenLofiProvider(), new InternetArchiveProvider(), localProvider];
+    // Local first: a cached/__auto__ or user-dropped track resolves
+    // instantly offline; only fall through to network providers if none.
+    return [localProvider, new OpenLofiProvider(), new InternetArchiveProvider()];
 }
 
 export function listFreeMusicProviders(): string[] {
@@ -179,7 +199,7 @@ async function downloadTrack(track: FreeMusicTrack, destPath: string): Promise<v
         fs.copyFileSync(local, destPath);
         return;
     }
-    const res = await axios.get(track.downloadUrl, { responseType: 'arraybuffer', timeout: 30000 });
+    const res = await withTimeout(axios.get(track.downloadUrl, { responseType: 'arraybuffer', timeout: 15000 }), 15000, `download ${track.title}`);
     const buf = Buffer.from(res.data as ArrayBuffer);
     if (!buf || buf.length < 1024) throw new Error(`Downloaded file too small for ${track.title}`);
     fs.mkdirSync(path.dirname(destPath), { recursive: true });

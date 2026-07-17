@@ -133,7 +133,7 @@ export async function autoRunVideo(
                 emit('error', `post-render checks failed: ${failed}`);
             } else {
             const res = await runAgenticPipeline(
-                { ...req, preferVisual: req.preferVisual ?? cfg.preferVisual, candidatesPerAsset: req.candidatesPerAsset ?? cfg.candidatesPerAsset, voice: req.voice ?? cfg.voice, musicQuery: req.musicQuery ?? cfg.musicQuery, localAssets: req.localAssets ?? cfg.localAssets, defaultVisual: req.defaultVisual ?? cfg.defaultVisual, hookFirst: req.hookFirst ?? cfg.hookFirst, variablePacing: req.variablePacing ?? cfg.variablePacing },
+                { ...req, preferVisual: (req.videoClips ?? cfg.videoClips)?.length ? 'video' : (req.preferVisual ?? cfg.preferVisual), candidatesPerAsset: req.candidatesPerAsset ?? cfg.candidatesPerAsset, voice: req.voice ?? cfg.voice, musicQuery: req.musicQuery ?? cfg.musicQuery, localAssets: req.localAssets ?? cfg.localAssets, defaultVisual: req.defaultVisual ?? cfg.defaultVisual, hookFirst: req.hookFirst ?? cfg.hookFirst, variablePacing: req.variablePacing ?? cfg.variablePacing, videoClips: req.videoClips ?? cfg.videoClips, personalAudio: req.personalAudio ?? cfg.personalAudio },
                 (p: PipelineProgress) => {
                 if (p.stage === 'gate') emit(p.message.includes('PASS') ? 'info' : 'warn', `gate: ${p.message}`);
             });

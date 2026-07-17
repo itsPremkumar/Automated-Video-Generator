@@ -15,7 +15,7 @@
 import * as fs from 'fs';
 import {
     AgenticWorkspace,
-    createAgenticWorkspace,
+    getAgenticWorkspace,
     writeJson,
     readJson,
 } from './workspace.js';
@@ -71,7 +71,7 @@ export async function runGateway(plan: Plan, initialCandidates: AssetCandidate[]
     decisions: AssetDecision[];
     manifest: RenderManifest;
 }> {
-    const ws = createAgenticWorkspace(plan.jobId);
+    const ws = getAgenticWorkspace(plan.jobId);
     const candidates = [...initialCandidates];
     const decisions: AssetDecision[] = [];
     const maxRetries = deps.maxReplaceRetries ?? 3;
@@ -79,7 +79,6 @@ export async function runGateway(plan: Plan, initialCandidates: AssetCandidate[]
     // STAGE 3 already ran during acquire; re-run verify on the (possibly replaced) set.
     // For simplicity we verify the working candidate list here.
     const verifications = await verifyAll(candidates, ws, deps);
-
     const verifyById = new Map(verifications.map((v) => [v.assetId, v]));
 
     for (const c of candidates) {

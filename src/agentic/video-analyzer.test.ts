@@ -42,31 +42,27 @@ function makeBlack(): string {
 describe('video-analyzer on a moving test pattern (testsrc)', () => {
     let clip: string;
     test('setup: generate clip', () => { clip = makeTestsrc(); assert.ok(fs.existsSync(clip)); });
-    test('black detector does NOT false-positive on testsrc borders (X10 accurate)', () => {
-        // testsrc has thin black BORDERS but a bright animated CENTER, so it is
-        // NOT a fully-black frame. The corrected pix_th detector must NOT flag
-        // it (this is the bug we fixed: the old pic_th option falsely flagged
-        // the entire clip). A TRULY black clip is still detected (see below).
-        const b = detectBlackFrames(clip);
+    test('black detector does NOT false-positive on testsrc borders (X10 accurate)', async () => {
+        const b = await detectBlackFrames(clip);
         assert.equal(b.length, 0, 'testsrc center is bright -> no fully-black frame');
     });
-    test('no freeze frames on animated pattern (X11)', () => {
-        const f = detectFreezeFrames(clip);
-        assert.equal(f.length, 0);
-    });
-    test('audio measured, not clipping (X12/X13)', () => {
-        const a = analyzeAudio(clip);
-        assert.ok(a.peakDb > -60 && a.peakDb <= 0, `peak ${a.peakDb}`);
-        assert.equal(a.clipping, false);
-    });
-    test('dimensions + codec (X14/X15)', () => {
-        const d = analyzeDimensions(clip);
-        assert.equal(d.width, 720);
-        assert.equal(d.height, 1280);
-        assert.equal(d.codec, 'h264');
-    });
-    test('verifyRenderedVideo: non-black checks pass; only X7 flags synthetic-clip size', () => {
-        const r = verifyRenderedVideo(clip, 4);
+    test('no freeze frames on animated pattern (X11)', async () => {
+            const f = await detectFreezeFrames(clip);
+            assert.equal(f.length, 0);
+        });
+        test('audio measured, not clipping (X12/X13)', async () => {
+            const a = await analyzeAudio(clip);
+            assert.ok(a.peakDb > -60 && a.peakDb <= 0, `peak ${a.peakDb}`);
+            assert.equal(a.clipping, false);
+        });
+        test('dimensions + codec (X14/X15)', async () => {
+            const d = await analyzeDimensions(clip);
+            assert.equal(d.width, 720);
+            assert.equal(d.height, 1280);
+            assert.equal(d.codec, 'h264');
+        });
+    test('verifyRenderedVideo: non-black checks pass; only X7 flags synthetic-clip size', async () => {
+        const r = await verifyRenderedVideo(clip, 4);
         const failed = r.checks.filter((c) => !c.pass).map((c) => c.id);
         // testsrc is a tiny synthetic pattern so it fails X7 (size). Its black
         // BORDERS are not fully-black frames, so X10 now correctly PASSES
@@ -77,9 +73,9 @@ describe('video-analyzer on a moving test pattern (testsrc)', () => {
 });
 
 describe('video-analyzer detects a fully-black clip', () => {
-    test('blackdetect fires (X10)', () => {
+    test('blackdetect fires (X10)', async () => {
         const p = makeBlack();
-        const b = detectBlackFrames(p);
+        const b = await detectBlackFrames(p);
         assert.ok(b.length > 0, 'expected black frames on a black clip');
         fs.rmSync(p, { force: true });
     });

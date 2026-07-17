@@ -58,7 +58,7 @@ export async function verifyAll(
             // STAGE-3 source check (I4/I5): resolution + aspect, catches a 240p
             // upscale or wrong-aspect asset BEFORE it wastes a render.
             try {
-                const sc = checkSourceAsset(c.localPath, { kind: 'image', minWidth: 480, targetAspect: 9 / 16 });
+                const sc = await checkSourceAsset(c.localPath, { kind: 'image', minWidth: 480, targetAspect: 9 / 16 });
                 v.metrics = { ...(v.metrics ?? {}), sourceChecks: sc };
             } catch { /* probe failure is non-fatal */ }
             results.push(v);
@@ -68,14 +68,14 @@ export async function verifyAll(
             const v = toVerification(id, c, r);
             // STAGE-3 source check (V4/V5/V6): resolution/aspect/duration fit.
             try {
-                const sc = checkSourceAsset(c.localPath, { kind: 'video', minWidth: 480, targetAspect: 9 / 16 });
+                const sc = await checkSourceAsset(c.localPath, { kind: 'video', minWidth: 480, targetAspect: 9 / 16 });
                 v.metrics = { ...(v.metrics ?? {}), sourceChecks: sc };
             } catch { /* probe failure is non-fatal */ }
             results.push(v);
             videoResults.push(v);
         } else {
             // music: signal-level check, no vision
-            const mr = verifyMusic(c.localPath, { license: c.license, ...deps.musicOptions }, deps.ffprobe);
+            const mr = await verifyMusic(c.localPath, { license: c.license, ...deps.musicOptions }, deps.ffprobe);
             const v: AssetVerification = {
                 assetId: id,
                 kind: 'music',

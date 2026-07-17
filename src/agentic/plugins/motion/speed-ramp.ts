@@ -68,7 +68,7 @@ export const speedRampPlugin: AgenticPlugin = {
             // Apply scene-specific ramps
             for (let i = 0; i < enhancedPlan.scenes.length; i++) {
                 const scene = enhancedPlan.scenes[i];
-                const ramp = cfg.scenes?.[i] ?? (cfg.defaults.length > 1 ? cfg.defaults : null);
+                const ramp = cfg.scenes?.[i] ?? ((cfg.defaults?.length ?? 0) > 1 ? cfg.defaults : null);
 
                 if (ramp && ramp.length > 1) {
                     scene.speedRamp = normalizeRamp(ramp, scene.durationSec ?? 4, { ...DEFAULT_CONFIG, ...cfg } as any);

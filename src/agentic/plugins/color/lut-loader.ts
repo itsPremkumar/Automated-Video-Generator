@@ -83,7 +83,7 @@ export const lutLoaderPlugin: AgenticPlugin = {
             // Verify LUT directory exists
             const fs = await import('fs');
             const path = await import('path');
-            const lutDir = path.resolve(cfg.lutDir);
+            const lutDir = path.resolve(cfg.lutDir ?? '');
             if (!fs.existsSync(lutDir)) {
                 console.warn(`[lut-loader] LUT directory not found: ${lutDir}`);
             } else {
@@ -117,7 +117,7 @@ export const lutLoaderPlugin: AgenticPlugin = {
             const lutPath = await resolveLUTPath(scene.lut, cfg, ctx);
             if (!lutPath) return scene;
 
-            const intensity = scene.lutIntensity ?? cfg.intensity;
+            const intensity = scene.lutIntensity ?? cfg.intensity ?? 1.0;
             let lutFilter = `lut3d='${lutPath}'`;
 
             // Add blend if intensity < 1.0
@@ -144,7 +144,7 @@ async function resolveLUTPath(lutName: string, cfg: LUTConfig, ctx: any): Promis
     }
 
     // Check in lutDir
-    const lutDir = path.resolve(cfg.lutDir);
+    const lutDir = path.resolve(cfg.lutDir ?? '');
     const candidates = [
         path.join(lutDir, lutName),
         path.join(lutDir, lutName + '.cube'),

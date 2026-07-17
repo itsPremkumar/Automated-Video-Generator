@@ -44,6 +44,9 @@ async function main() {
     // P1a/P1b — local media reuse + default-visual fallback.
     if (arg('local-assets', '')) cfg.localAssets = arg('local-assets', '').split(',').map((s) => s.trim()).filter(Boolean);
     if (arg('default-visual', '')) cfg.defaultVisual = arg('default-visual', '');
+    // C6 / C2: user-supplied video clips + personal voiceover audio (per-scene, comma-separated).
+    if (arg('video-clips', '')) cfg.videoClips = arg('video-clips', '').split(',').map((s) => s.trim()).filter(Boolean);
+    if (arg('personal-audio', '')) cfg.personalAudio = arg('personal-audio', '').split(',').map((s) => s.trim()).filter(Boolean);
     if (bool('no-sfx')) cfg.sfx = false;
     if (arg('grade', '')) cfg.grade = arg('grade', '') as any;
     if (arg('transition', '')) cfg.transition = arg('transition', '') as any;

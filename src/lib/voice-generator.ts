@@ -89,6 +89,7 @@ function getAudioDuration(filePath: string, text: string): number {
 // ─── Text / file helpers ──────────────────────────────────────────────────────
 
 function cleanVoiceoverText(text: string): string {
+    if (!text) return '';
     return text
         .replace(/"/g, "'")
         .replace(/\n/g, ' ')
@@ -129,13 +130,15 @@ function getWindowsVoiceCulture(config: VoiceConfig): string {
     const requested = (config.language || '').toLowerCase().trim();
     if (requested && WINDOWS_SAPI_LANGUAGE_MAP[requested]) return WINDOWS_SAPI_LANGUAGE_MAP[requested];
 
-    const voicePrefix = config.voice.split('-').slice(0, 2).join('-');
+    const voice = config.voice || '';
+    const voicePrefix = voice.split('-').slice(0, 2).join('-');
     if (/^[a-z]{2}-[A-Z]{2}$/.test(voicePrefix)) return voicePrefix;
     return WINDOWS_SAPI_LANGUAGE_MAP.english;
 }
 
 function getWindowsSapiRate(config: VoiceConfig): number {
-    const numericRate = Number.parseInt(config.rate.replace('%', ''), 10);
+    const rate = config.rate || '0%';
+    const numericRate = Number.parseInt(rate.replace('%', ''), 10);
     if (!Number.isFinite(numericRate)) return 0;
     return Math.max(-10, Math.min(10, Math.round(numericRate / 10)));
 }
