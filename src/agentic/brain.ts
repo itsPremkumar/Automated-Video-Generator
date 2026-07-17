@@ -160,6 +160,47 @@ export class AgentBrain {
         return r?.query?.trim() || null;
     }
 
+    /** B3 — pick the strongest hook scene (index) for a cold-open. */
+    async hookScene(sceneTexts: string[]): Promise<number | null> {
+        const r = await completeJSON<{ hookIndex: number }>(this.o,
+            'You are a retention editor. Given scene narrations (1-indexed), pick the SINGLE most curiosity-driving / emotionally striking scene to open the video (the hook). Output its 1-based index.',
+            sceneTexts.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+            '{"hookIndex":3}');
+        const i = (r?.hookIndex ?? 0) - 1;
+        return (i >= 0 && i < sceneTexts.length) ? i : null;
+    }
+
+    /** B6 — per-scene pacing (relative emphasis 0.5-1.5) for emotional beats. */
+    async paceScenes(sceneTexts: string[]): Promise<number[] | null> {
+        const r = await completeJSON<{ weights: number[] }>(this.o,
+            'You are a film editor. Given scene narrations (1-indexed), return a pacing weight per scene (0.5=brief, 1.0=normal, 1.5=linger) so emotional beats breathe. Same length as input.',
+            sceneTexts.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+            '{"weights":[1,0.8,1.5,1]}');
+        const w = (r?.weights || []).map((x) => Math.max(0.5, Math.min(1.5, Number(x) || 1)));
+        return w.length === sceneTexts.length ? w : null;
+    }
+
+    /** B11 — A/B title variants for testing thumbnails/CTR. */
+    async titleVariants(title: string, scenes: string[]): Promise<string[] | null> {
+        const r = await completeJSON<{ variants: string[] }>(this.o,
+            'You are a YouTube/Shorts title strategist. Given a working title and scenes, return 3 distinct, clickable title variants (curiosity/value/list-style mix). No duplicates.',
+            `Title: ${title}\nScenes:\n${scenes.map((s, i) => `${i + 1}. ${s}`).join('\n')}`,
+            '{"variants":["...","...","..."]}');
+        const v = (r?.variants || []).map((s) => s.trim()).filter(Boolean).slice(0, 3);
+        return v.length ? v : null;
+    }
+
+    /** B12 — platform-tailor the cut (aspect + caption style + hook length). */
+    async tailorForPlatform(platform: 'tiktok' | 'youtube' | 'instagram' | 'reels', title: string, scenes: string[]): Promise<{ aspect: string; captionStyle: 'karaoke' | 'burned' | 'none'; hookSec: number } | null> {
+        const r = await completeJSON<{ aspect: string; captionStyle: string; hookSec: number }>(this.o,
+            `You are a platform strategist. Given the platform (${platform}), title and scenes, return the best aspect ratio, caption style, and hook length (seconds) for max retention on that platform.`,
+            `Title: ${title}\nScenes:\n${scenes.map((s, i) => `${i + 1}. ${s}`).join('\n')}`,
+            '{"aspect":"9:16","captionStyle":"karaoke","hookSec":3}');
+        if (!r?.aspect) return null;
+        const cs = r.captionStyle === 'none' ? 'none' : r.captionStyle === 'burned' ? 'burned' : 'karaoke';
+        return { aspect: r.aspect, captionStyle: cs, hookSec: Math.max(1, Math.min(8, Number(r.hookSec) || 3)) };
+    }
+
     /** B10 — compelling, SEO-friendly metadata. */
     async generateMetadata(title: string, scenes: string[]): Promise<{ title: string; description: string; hashtags: string[] } | null> {
         const r = await completeJSON<{ title: string; description: string; hashtags: string[] }>(this.o,

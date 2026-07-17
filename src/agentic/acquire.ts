@@ -230,6 +230,18 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
             ? f.localPath
             : await deps.download(f.url, ws.musicDir, filename);
         const lic = normalizeLicense(f);
+        // OPT-IN AI music-mood check (acquire stage): music has no speech
+        // transcript, so we judge mood-fit from the plan's intended mood
+        // (plan.musicQuery) against the track's tags/source. A non-null
+        // FAILING score drops this candidate. A null result is ignored.
+        if (deps.brain && deps.cfg?.aiVerify?.verifyOnAcquire && deps.cfg?.aiVerify?.checkMusicMood) {
+            const proxy = `intended mood: ${plan.musicQuery}; track source: ${f.source || 'free-music'}`;
+            const ai = await aiVerifyAsset(localPath, 'audio', [plan.musicQuery], deps.cfg, deps.brain, proxy);
+            if (ai && !ai.pass) {
+                console.warn(`⚠ ai(acquire) rejected music cand ${c + 1}: ${ai.reason} (conf ${ai.confidence})`);
+                continue;
+            }
+        }
         candidates.push({
             kind: 'music',
             sceneIndex: -1,

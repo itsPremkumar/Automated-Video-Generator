@@ -60,6 +60,13 @@ export interface AgenticConfig {
     /** ── Captions ── */
     captions?: CaptionStyle;         // burned (default) | none | karaoke
 
+    /** ── Platform tailoring (B12) ── */
+    /** When set, the agent brain tailors aspect + caption style + hook length
+     *  for the target platform (e.g. 'tiktok' | 'youtube' | 'instagram' | 'reels').
+     *  Model-driven when a free model is configured; heuristic fallback keeps
+     *  the existing preset/aspect/captions when not. */
+    platform?: 'tiktok' | 'youtube' | 'instagram' | 'reels';
+
     /** ── Sourcing ── */
     preferVisual?: 'image' | 'video';
     candidatesPerAsset?: number;     // assets fetched per scene (default 4)

@@ -62,8 +62,8 @@ describe('agentic/visibility (contact sheet + decisions report)', () => {
         };
     });
 
-    it('produces a valid contact-sheet PNG showing every approved asset', () => {
-        const cs = makeContactSheet(res);
+    it('produces a valid contact-sheet PNG showing every approved asset', async () => {
+        const cs = await makeContactSheet(res);
         assert.ok(cs && fs.existsSync(cs), 'contact sheet created');
         const sig = fs.readFileSync(cs!).slice(0, 8).toString('hex');
         assert.equal(sig, '89504e470d0a1a0a', 'valid PNG signature');

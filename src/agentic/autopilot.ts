@@ -19,6 +19,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { runAgenticPipeline, PipelineRequest, PipelineProgress, renderAgenticSlideshow, renderAgenticWithRemotion } from './orchestrate.js';
 import { PipelineResult } from './orchestrate.js';
+import { AgentBrain } from './brain.js';
 
 export interface AutoRunEvent {
     t: number;
@@ -146,14 +147,29 @@ export async function autoRunVideo(
             }
             emit('info', `pipeline OK — rendering (${opts.renderer ?? cfg.renderer ?? 'ffmpeg'}, preset ${cfg.preset ?? 'cinematic'})`);
             const soften = process.env.AGENTIC_RENDER_SOFTEN === '1';
+            // B12 — platform tailoring: when cfg.platform is set, let the agent
+            // brain pick aspect + caption style + hook length for that platform
+            // (model when configured; heuristic/identity otherwise).
+            let platAspect = cfg.aspect;
+            let platCaptions = cfg.captions;
+            if (cfg.platform) {
+                try {
+                    const bt = await new AgentBrain().tailorForPlatform(cfg.platform, cfg.title ?? '', (res.plan?.scenes ?? []).map((s) => s.voiceoverText));
+                    if (bt) {
+                        platAspect = bt.aspect as any;
+                        platCaptions = bt.captionStyle as any;
+                        emit('info', `B12 platform tailoring (${cfg.platform}): aspect=${bt.aspect} captions=${bt.captionStyle} hookSec=${bt.hookSec}`);
+                    }
+                } catch { /* heuristic fallback already in cfg */ }
+            }
             const renderOpts = {
                 preset: cfg.preset ?? 'cinematic',
                 sfx: cfg.sfx,
                 kinetic: cfg.kineticText !== false && !soften,
                 kenBurns: cfg.kenBurns !== false,
                 crossfadeSec: soften ? 0.3 : 0.5,
-                captions: (cfg.captions as any) ?? 'burned',
-                dimensions: cfg.aspect === '16:9' ? { w: 1280, h: 720 } : cfg.aspect === '1:1' ? { w: 1080, h: 1080 } : { w: 720, h: 1280 },
+                captions: (platCaptions as any) ?? 'burned',
+                dimensions: platAspect === '16:9' ? { w: 1280, h: 720 } : platAspect === '1:1' ? { w: 1080, h: 1080 } : { w: 720, h: 1280 },
                 // ── Pro-edit (human-feel) ──
                 intro: cfg.intro ?? (cfg.hookFirst ? { title: req.title, subtitle: 'AI-generated', durationSec: 2.5 } : undefined),
                 outro: cfg.outro ?? { ctaText: 'Subscribe for more', showSubscribe: true, hashtags: ['#shorts', '#ai'], durationSec: 3 },

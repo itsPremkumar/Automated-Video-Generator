@@ -70,28 +70,35 @@ export async function deriveMusicQueryAdvanced(scenes: ScenePlan[], title: strin
 /**
  * applyProEdits — pure, offline "human editor" transforms on the plan:
  *  1. Hook-first reorder: move the most surprising/intriguing scene to the
- *     open (pro editors lead with the hook, not a flat list).
+ *     open (pro editors lead with the hook, not a flat list). Uses the agent
+ *     brain's B3 hookScene when a model is configured; rule-based fallback.
  *  2. Variable pacing: alternate scene lengths so the rhythm breathes
- *     (uniform duration reads as templated/AI).
- * Both are rule-based (no LLM, $0). Mutates + returns the plan.
+ *     (uniform duration reads as templated/AI). Uses brain's B6 paceScenes
+ *     when available; rule-based fallback.
+ * Both are $0. Mutates + returns the plan.
  */
 const HOOK_WORDS = /\b(did you know|secret|surprising|shock|never|revealed?|hidden|myth|trick|insane|unbelievable|fact)\b/i;
-export function applyProEdits(plan: Plan, opts: { hookFirst?: boolean; variablePacing?: boolean } = {}): Plan {
+export async function applyProEdits(plan: Plan, opts: { hookFirst?: boolean; variablePacing?: boolean; brain?: import('./brain.js').AgentBrain } = {}): Promise<Plan> {
     const scenes = plan.scenes;
     if (scenes.length === 0) return plan;
 
-    // 1. Hook-first: pick the scene whose text best matches a "hook" pattern,
-    //    tie-broken by longest word count (more detail = stronger claim).
+    // 1. Hook-first: prefer the brain's B3 pick; fall back to pattern+length.
     if (opts.hookFirst) {
         let bestIdx = 0;
-        let bestScore = -1;
-        scenes.forEach((s, i) => {
-            const txt = s.voiceoverText || '';
-            let score = 0;
-            if (HOOK_WORDS.test(txt)) score += 100;
-            score += txt.split(/\s+/).filter(Boolean).length; // longer = more substance
-            if (score > bestScore) { bestScore = score; bestIdx = i; }
-        });
+        if (opts.brain) {
+            const picked = await opts.brain.hookScene(scenes.map((s) => s.voiceoverText));
+            if (picked != null && picked >= 0 && picked < scenes.length) bestIdx = picked;
+        }
+        if (bestIdx === 0) {
+            let bestScore = -1;
+            scenes.forEach((s, i) => {
+                const txt = s.voiceoverText || '';
+                let score = 0;
+                if (HOOK_WORDS.test(txt)) score += 100;
+                score += txt.split(/\s+/).filter(Boolean).length; // longer = more substance
+                if (score > bestScore) { bestScore = score; bestIdx = i; }
+            });
+        }
         if (bestIdx !== 0) {
             const [hook] = scenes.splice(bestIdx, 1);
             scenes.unshift(hook);
@@ -100,16 +107,21 @@ export function applyProEdits(plan: Plan, opts: { hookFirst?: boolean; variableP
         scenes.forEach((s, i) => { s.sceneNumber = i + 1; });
     }
 
-    // 2. Variable pacing: base ± variation by position. First scene shorter
-    //    (punchy open), middle scenes alternate, last scene longer (CTA beat).
+    // 2. Variable pacing: brain B6 weights when available; else rule-based.
     if (opts.variablePacing) {
         const base = 4;
+        let weights: number[] | null = null;
+        if (opts.brain) weights = await opts.brain.paceScenes(scenes.map((s) => s.voiceoverText));
         scenes.forEach((s, i) => {
-            let d = base;
-            if (i === 0) d = 3;                                 // punchy hook
-            else if (i === scenes.length - 1) d = 5;           // lingering close
-            else d = base + (i % 2 === 1 ? 1 : -1);           // breathe: 5/3/5/3...
-            s.durationSec = Math.max(2, d);
+            if (weights) {
+                s.durationSec = Math.max(2, Math.round(base * (weights[i] ?? 1)));
+            } else {
+                let d = base;
+                if (i === 0) d = 3;                                 // punchy hook
+                else if (i === scenes.length - 1) d = 5;           // lingering close
+                else d = base + (i % 2 === 1 ? 1 : -1);           // breathe: 5/3/5/3...
+                s.durationSec = Math.max(2, d);
+            }
         });
         plan.totalDurationSec = scenes.reduce((acc, s) => acc + s.durationSec, 0);
     }

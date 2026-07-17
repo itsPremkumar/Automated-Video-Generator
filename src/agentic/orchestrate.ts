@@ -24,6 +24,7 @@ import { downloadMedia } from '../lib/visual-fetcher.js';
 import { verifyMedia } from '../lib/media-verifier.js';
 import { resolveFreeBackgroundMusic } from '../lib/free-music.js';
 import { verifyRenderedVideo, PostRenderCheck } from './gate.js';
+import { aiVerifyAsset } from './ai-verify.js';
 import { inputAssetPath } from '../lib/path-safety.js';
 import { exportMultiAspect, generateFreeMetadata, renderThumbnail, wordTimingsFromScript } from './export.js';
 
@@ -141,6 +142,8 @@ export interface PipelineResult {
     fullyAgentDriven: boolean;
     /** Phase 8.4 — post-render output validation (X7-X9), populated after render. */
     postRender?: import('./gate.js').PostRenderCheck;
+    /** OPT-IN AI verify config (threaded from render opts) for per-aspect X16. */
+    aiVerify?: import('./config.js').AgenticConfig['aiVerify'];
 }
 
 export interface PipelineProgress {
@@ -205,12 +208,13 @@ export async function runAgenticPipeline(
         musicQuery: req.musicQuery,
     }, parseScript);
 
-    // Pro-edit transforms (free, rule-based): hook-first reorder + variable
-    // pacing. Pure data change on the plan before any media is fetched.
+    // Pro-edit transforms (free): hook-first reorder + variable pacing.
+    // Uses the agent brain's B3/B6 when a model is configured, else rule-based.
     // Default ON (matches resolveConfig hard defaults) unless explicitly false.
-    applyProEdits(plan, {
+    await applyProEdits(plan, {
         hookFirst: req.hookFirst ?? true,
         variablePacing: req.variablePacing ?? true,
+        brain,
     });
 
     // Agent expands keywords per scene (optional bolt-on; agent brain or
@@ -427,7 +431,7 @@ export async function runAgenticPipeline(
                         const def = req.defaultVisual ? useDefaultVisual() : '';
                         if (!def) {
                             const ph = makePlaceholder([filename.replace(/\.[^.]+$/, '')], 'image');
-                            try { require('fs').copyFileSync(ph, local); } catch { /* ignore */ }
+                            try { require('fs').copyFileSync(ph, local); } catch (e) { console.warn(`⚠ placeholder copy failed for ${filename}: ${(e as Error)?.message}`); }
                         }
                         return def || local;
                     }
@@ -438,7 +442,7 @@ export async function runAgenticPipeline(
             const def = req.defaultVisual ? useDefaultVisual() : '';
             if (!def) {
                 const ph = makePlaceholder([filename.replace(/\\.[^.]+$/, '')], 'image');
-                try { require('fs').copyFileSync(ph, local); } catch { /* ignore */ }
+                try { require('fs').copyFileSync(ph, local); } catch (e) { console.warn(`⚠ placeholder copy failed for ${filename}: ${(e as Error)?.message}`); }
             }
             return def || local;
         },
@@ -588,7 +592,7 @@ export async function runAgenticPipeline(
         voiceovers,
         fullyAgentDriven: backend === 'agent' && !cfg.visionVerify,
     };
-    const contactSheet = makeContactSheet(res);
+    const contactSheet = await makeContactSheet(res);
     const decisionsReport = writeDecisionsReport(res);
 
     return res;
@@ -602,12 +606,29 @@ export async function runAgenticPipeline(
  * path. (Heavy cinematic Remotion rendering remains the separate, existing flow.)
  */
 /**
+ * runFfmpeg — async ffmpeg runner with a hard kill timeout. Mirrors export.ts.
+ * Avoids execFileSync, which blocks the Node event loop permanently on a
+ * RAM-starved box (spawnSync/execFileSync cannot be interrupted mid-fork).
+ * Resolves to the child exit code (never throws).
+ */
+function runFfmpeg(args: string[], timeoutMs = 60000): Promise<number> {
+    return new Promise((resolve) => {
+        const { spawn } = require('child_process');
+        const ffmpeg: string = require('ffmpeg-static');
+        const child = spawn(ffmpeg, args, { stdio: 'ignore' });
+        const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* noop */ } resolve(-1); }, timeoutMs);
+        child.on('error', () => { clearTimeout(t); resolve(-1); });
+        child.on('close', (code: number | null) => { clearTimeout(t); resolve(code ?? -1); });
+    });
+}
+
+/**
  * makePlaceholder — generate a real, renderable image for a keyword when the
  * live fetcher fails (network/provider 5xx). Uses the bundled ffmpeg to paint a
  * solid card with the keyword text. Keeps the pipeline end-to-end even offline.
  */
 function makePlaceholder(keywords: string[], kind: 'image' | 'video' | 'music'): string {
-     
+    
     const ffmpeg: string = require('ffmpeg-static');
     const { execFileSync } = require('child_process');
     const os = require('os');
@@ -1187,7 +1208,7 @@ export async function renderAgenticSlideshow(
     }
 
     // ── Phase 7.3 output artifacts (thumbnail, details, copy sidecars). ──
-    await writeOutputArtifacts(res, out, outDir);
+    await writeOutputArtifacts(res, out, outDir, opts.aiVerify);
     fs.rmSync(srtPath, { force: true });
 
     // ── Phase 8.4: POST-RENDER quality verification (X7-X9). ──
@@ -1284,14 +1305,12 @@ function escapeFilterPath(p: string): string {
 }
 
 /** Phase 7.3 — emit thumbnail.jpg, subtitles sidecars, details.txt, scene-data copy. */
-async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: string): Promise<void> {
+async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: string, aiVerify?: import('./config.js').AgenticConfig['aiVerify']): Promise<void> {
     const brain = new AgentBrain();
-     
-    const ffmpeg: string = require('ffmpeg-static');
-    const { execFileSync } = require('child_process');
+    
     const base = outDir + '/' + res.workspace.jobId;
     try {
-        execFileSync(ffmpeg, ['-i', mp4, '-ss', '00:00:01', '-vframes', '1', '-y', base + '_thumbnail.jpg'], { stdio: 'ignore' });
+        await runFfmpeg(['-i', mp4, '-ss', '00:00:01', '-vframes', '1', '-y', base + '_thumbnail.jpg']);
     } catch { /* thumbnail optional */ }
     // Copy caption sidecars next to the video.
     if (res.voiceovers?.sidecars) {
@@ -1308,7 +1327,20 @@ async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: st
     // Branded thumbnail from the first frame.
     try { await renderThumbnail(mp4, res.plan); } catch { /* optional */ }
     // Multi-aspect copies (9:16 + 16:9 + 1:1) for cross-platform publishing.
-    try { await exportMultiAspect(mp4, ['9:16', '16:9', '1:1']); } catch { /* optional */ }
+    let aspectPaths: string[] = [];
+    try { aspectPaths = await exportMultiAspect(mp4, ['9:16', '16:9', '1:1']); } catch { /* optional */ }
+    // Per-aspect AI check (X16 family): when verifyOnRender is on, score each
+    // cropped export too, so a subject lost in a 9:16 crop is caught. A null
+    // result (no model / offline) is ignored -> signal gates decide.
+    if (aiVerify?.verifyOnRender && brain.modelEnabled && aspectPaths.length) {
+        const keywords = res.plan.scenes.flatMap((s) => s.searchKeywords);
+        for (const ap of aspectPaths) {
+            try {
+                const ai = await aiVerifyAsset(ap, 'video', keywords, { aiVerify } as any, brain);
+                if (ai && !ai.pass) console.warn(`⚠ ai(per-aspect ${ap}) failed: ${ai.reason} (conf ${ai.confidence})`);
+            } catch { /* optional */ }
+        }
+    }
     // Social-ready metadata (B10 — agent brain produces richer title/
     // description when a free model is configured; heuristic fallback).
     try {
@@ -1326,8 +1358,17 @@ async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: st
             mHash = f.hashtags;
             mTags = f.tags.join(', ');
         }
+        // B11 — A/B title variants for thumbnail/CTR testing (model when
+        // configured, else omitted). Appended so they're available to publish.
+        let variantBlock = '';
+        try {
+            const variants = await brain.titleVariants(res.plan.title, res.plan.scenes.map((s) => s.voiceoverText));
+            if (variants && variants.length) {
+                variantBlock = `\n\nA/B TITLE VARIANTS (CTR test):\n` + variants.map((v, i) => `  ${i + 1}. ${v}`).join('\n');
+            }
+        } catch { /* optional */ }
         fs.writeFileSync(base + '_metadata.txt',
-            `TITLE:\n${mTitle}\n\nDESCRIPTION:\n${mDesc}\n\nHASHTAGS:\n${mHash}\n\nTAGS:\n${mTags}`,
+            `TITLE:\n${mTitle}\n\nDESCRIPTION:\n${mDesc}\n\nHASHTAGS:\n${mHash}\n\nTAGS:\n${mTags}${variantBlock}`,
             'utf8');
     } catch { /* optional */ }
 
@@ -1361,9 +1402,7 @@ async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: st
  * approved. The agent is the sole approver (no human gate); this is the audit
  * artefact that proves it. Pure ffmpeg, offline.
  */
-export function makeContactSheet(res: PipelineResult): string | null {
-    const ffmpeg: string = require('ffmpeg-static');
-    const { execFileSync } = require('child_process');
+export async function makeContactSheet(res: PipelineResult): Promise<string | null> {
     const os = require('os');
     const wsRoot = res.workspace.root;
     const imgs: string[] = [];
@@ -1377,7 +1416,7 @@ export function makeContactSheet(res: PipelineResult): string | null {
      // for very short clips (ss=0 can miss the first decodable frame).
      const frame = `${os.tmpdir()}/cs_frame_${res.workspace.jobId}_${d.sceneIndex}.png`;
      try {
-         execFileSync(ffmpeg, ['-y', '-ss', '00:00:00.1', '-i', c.localPath, '-frames:v', '1', frame], { stdio: 'ignore' });
+         await runFfmpeg(['-y', '-ss', '00:00:00.1', '-i', c.localPath, '-frames:v', '1', frame]);
          if (fs.existsSync(frame)) imgs.push(frame);
      } catch { /* skip unreadable video */ }
         }
@@ -1386,13 +1425,13 @@ export function makeContactSheet(res: PipelineResult): string | null {
     const cols = Math.min(imgs.length, 3);
     const out = `${wsRoot}/contact-sheet.png`;
     try {
-        execFileSync(ffmpeg, [
+        await runFfmpeg([
             '-y', ...imgs.flatMap((p) => ['-i', p]),
             '-filter_complex',
             imgs.map((_, i) => `[${i}:v]scale=360:640[s${i}]`).join(';') + ';' +
             imgs.map((_, i) => `[s${i}]`).join('') + `vstack=inputs=${imgs.length}`,
             `-frames:v`, '1', out,
-        ], { stdio: 'ignore' });
+        ]);
         return fs.existsSync(out) ? out : null;
     } catch {
         return null;
@@ -1463,8 +1502,6 @@ export async function renderAgenticWithRemotion(
     // Cap source resolution so Remotion/Chrome doesn't decode 4K originals on a
     // RAM-starved box. The composition outputs 1080x1920; transcode to 720p for
     // draft, 1080p otherwise — fast and light via ffmpeg.
-    const ffmpegBin: string = require('ffmpeg-static');
-    const { execFileSync } = require('child_process');
     const targetH = opts.quality === 'draft' ? 1280 : 1920;
     // A1/A2/A3 — compute the per-scene style plan so the Remotion composition
     // can apply transitions, grades, and kinetic cues (parity with ffmpeg path).
@@ -1478,11 +1515,12 @@ export async function renderAgenticWithRemotion(
         try {
             if (a.kind === 'video' && /\.(mp4|webm|mov|m4v)$/i.test(src) && fs.existsSync(src)) {
                 // Downscale + normalize so Chrome renders light.
-                execFileSync(ffmpegBin, [
+                const code = await runFfmpeg([
                     '-i', src, '-vf', `scale=-2:${targetH}`, '-c:v', 'libx264',
                     '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-crf', '23',
                     '-c:a', 'aac', '-y', dest,
-                ], { stdio: 'ignore' });
+                ]);
+                if (code !== 0) fs.copyFileSync(src, dest);
             } else {
                 fs.copyFileSync(src, dest);
             }
