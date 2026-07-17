@@ -42,6 +42,7 @@ import {
     expandKeywordsHeuristic,
     writeScriptHeuristic,
 } from './agent.js';
+import { AgentBrain } from './brain.js';
 
 /**
  * Pure helper: derive the media provider name from a URL host so candidate
@@ -125,9 +126,13 @@ export async function runAgenticPipeline(
     pruneWorkspaces(Number(process.env.AGENTIC_KEEP_WORKSPACES ?? 25));
 
     // ── STAGE 1: SCRIPT + PLAN (agent writes the script) ──────────────
-    const script = cfg.writeScript
-        ? await cfg.writeScript(req.topic, req.title)
-        : writeScriptHeuristic(req.topic, req.title);
+    // AgentBrain makes the advanced decision (free model when configured),
+    // falling back to the heuristic when offline / no key / model error.
+    const brain = new AgentBrain();
+    const brainScript = (cfg.writeScript ? await cfg.writeScript(req.topic, req.title) : null)
+        ?? (await brain.writeScript(req.topic, req.title))
+        ?? writeScriptHeuristic(req.topic, req.title);
+    const script = brainScript;
 
     const plan = await buildPlan(script, {
         jobId,
@@ -145,11 +150,15 @@ export async function runAgenticPipeline(
         variablePacing: req.variablePacing ?? true,
     });
 
-    // Agent expands keywords per scene (optional bolt-on; default heuristic).
+    // Agent expands keywords per scene (optional bolt-on; agent brain or
+    // default heuristic). The brain produces contextually rich, scene-specific
+    // queries; falls back to the heuristic when offline / no key.
     for (const s of plan.scenes) {
+        const base = s.voiceoverText || s.searchKeywords.join(' ');
         s.searchKeywords = cfg.expandKeywords
             ? await cfg.expandKeywords(s, req.title)
-            : expandKeywordsHeuristic(s, req.title);
+            : (await brain.expandKeywords(base, req.title))
+                ?? expandKeywordsHeuristic(s, req.title);
     }
     if (req.preferVisual) {
         for (const s of plan.scenes) s.visualPreference = req.preferVisual;
@@ -938,7 +947,7 @@ export async function renderAgenticSlideshow(
     }
 
     // ── Phase 7.3 output artifacts (thumbnail, details, copy sidecars). ──
-    writeOutputArtifacts(res, out, outDir);
+    await writeOutputArtifacts(res, out, outDir);
     fs.rmSync(srtPath, { force: true });
 
     // ── Phase 8.4: POST-RENDER quality verification (X7-X9). ──
@@ -1030,7 +1039,8 @@ function escapeFilterPath(p: string): string {
 }
 
 /** Phase 7.3 — emit thumbnail.jpg, subtitles sidecars, details.txt, scene-data copy. */
-function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: string): void {
+async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: string): Promise<void> {
+    const brain = new AgentBrain();
      
     const ffmpeg: string = require('ffmpeg-static');
     const { execFileSync } = require('child_process');
@@ -1054,11 +1064,25 @@ function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: string):
     try { renderThumbnail(mp4, res.plan); } catch { /* optional */ }
     // Multi-aspect copies (9:16 + 16:9 + 1:1) for cross-platform publishing.
     try { exportMultiAspect(mp4, ['9:16', '16:9', '1:1']); } catch { /* optional */ }
-    // Social-ready metadata (no LLM, fully offline).
+    // Social-ready metadata (B10 — agent brain produces richer title/
+    // description when a free model is configured; heuristic fallback).
     try {
-        const meta = generateFreeMetadata(res.plan);
+        const brainMeta = await brain.generateMetadata(res.plan.title, res.plan.scenes.map((s) => s.voiceoverText));
+        let mTitle: string, mDesc: string, mHash: string, mTags: string;
+        if (brainMeta) {
+            mTitle = brainMeta.title;
+            mDesc = brainMeta.description;
+            mHash = brainMeta.hashtags.join(' ');
+            mTags = brainMeta.hashtags.join(', ');
+        } else {
+            const f = generateFreeMetadata(res.plan);
+            mTitle = f.title;
+            mDesc = f.description;
+            mHash = f.hashtags;
+            mTags = f.tags.join(', ');
+        }
         fs.writeFileSync(base + '_metadata.txt',
-            `TITLE:\n${meta.title}\n\nDESCRIPTION:\n${meta.description}\n\nHASHTAGS:\n${meta.hashtags}\n\nTAGS:\n${meta.tags.join(', ')}`,
+            `TITLE:\n${mTitle}\n\nDESCRIPTION:\n${mDesc}\n\nHASHTAGS:\n${mHash}\n\nTAGS:\n${mTags}`,
             'utf8');
     } catch { /* optional */ }
 }

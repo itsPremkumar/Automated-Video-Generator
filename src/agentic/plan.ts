@@ -10,6 +10,7 @@
 
 import { parseScript, ParsedScript } from '../lib/script-parser.js';
 import { Plan, ScenePlan } from './types.js';
+import { AgentBrain } from './brain.js';
 
 export interface PlanOptions {
     jobId: string;
@@ -34,7 +35,7 @@ function toScenePlans(parsed: ParsedScript): ScenePlan[] {
 export async function buildPlan(script: string, opts: PlanOptions, parser: Parser = parseScript): Promise<Plan> {
     const parsed = await parser(script);
     const scenes = toScenePlans(parsed);
-    const defaultMusic = opts.musicQuery?.trim() || deriveMusicQuery(scenes);
+    const defaultMusic = opts.musicQuery?.trim() || (await deriveMusicQueryAdvanced(scenes, opts.title));
     return {
         jobId: opts.jobId,
         title: opts.title,
@@ -54,6 +55,16 @@ export function deriveMusicQuery(scenes: ScenePlan[]): string {
     if (/(tech|future|robot|ai|code)/.test(all)) return 'electronic synthwave tech';
     if (/(sad|loss|story|emotion)/.test(all)) return 'emotional piano cinematic';
     return 'ambient lofi chill';
+}
+
+/** B7 — advanced music-mood decision via the agent brain, with heuristic fallback. */
+export async function deriveMusicQueryAdvanced(scenes: ScenePlan[], title: string): Promise<string> {
+    try {
+        const brain = new AgentBrain();
+        const q = await brain.deriveMusic(scenes.map((s) => s.voiceoverText || s.searchKeywords.join(' ')), title);
+        if (q && q.length > 1) return q;
+    } catch { /* fall through */ }
+    return deriveMusicQuery(scenes);
 }
 
 /**
