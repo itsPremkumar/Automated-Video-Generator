@@ -687,6 +687,7 @@ export async function renderAgenticSlideshow(
             cp.on('error', (e: any) => reject(e));
             cp.on('close', (code: number) => {
                 if (code === 0) return resolve();
+                console.error('[ffmpeg stderr tail]\n' + buf.split('\n').slice(-25).join('\n'));
                 reject(new Error('ffmpeg failed (exit ' + code + ')'));
             });
         });
@@ -889,13 +890,108 @@ export async function renderAgenticSlideshow(
         audioMap = ['-map', '[aout]'];
     }
 
+    // ── PASS 1 (segmented / C1): render each ordered clip as an independent
+    // segment, then concat. A failed segment is isolated + retried without
+    // losing the whole timeline. Off by default; enable with AGENTIC_SEGMENTED=1.
+    // The proven single-pass below remains the default path. ──
+    const segmented = process.env.AGENTIC_SEGMENTED === '1';
+    let silent: string;
+    let expectedDur = 0;
+    if (segmented) {
+        const introDur = introClip ? (opts.intro!.durationSec ?? 2.5) : 0;
+        const outroDur = outroClip ? (opts.outro!.durationSec ?? 3) : 0;
+        const scenesDur = visuals.reduce((s, a) => s + (a.durationSec ?? 4), 0);
+        const xfadeOverlap = (visuals.length + (introClip ? 1 : 0) + (outroClip ? 1 : 0) - 1) * xf;
+        const segFiles: string[] = [];
+        const ordered: { file: string; dur: number; kind: 'card' | 'scene'; idx: number }[] = [];
+        if (introClip) ordered.push({ file: introClip, dur: introDur, kind: 'card', idx: -1 });
+        visuals.forEach((a, i) => ordered.push({ file: a.localPath, dur: res.plan.scenes[i]?.durationSec ?? a.durationSec ?? 4, kind: 'scene', idx: i }));
+        if (outroClip) ordered.push({ file: outroClip, dur: outroDur, kind: 'card', idx: -1 });
+        // Segmented path has no crossfade, so expected = sum of all clip durations.
+        expectedDur = Math.max(0.1, introDur + visuals.reduce((s, a) => s + (a.durationSec ?? 4), 0) + outroDur);
+        for (let ci = 0; ci < ordered.length; ci++) {
+            const clip = ordered[ci];
+            const seg = outDir + '/_seg_' + res.workspace.jobId + '_' + ci + '.mp4';
+            const dur = clip.dur;
+            const isVideo = /\.(mp4|webm|mov|m4v)$/i.test(clip.file);
+            const doZoom = clip.kind === 'scene' && !isVideo && opts.kenBurns !== false;
+            const zoom = doZoom ? `,zoompan=z=zoom+0.0008:d=1:s=${W}x${H}` : '';
+            const grade = clip.kind === 'scene' ? gradeFilter(stylePlan.scenes[clip.idx]?.grade ?? 'neutral') : '';
+            // Per-segment caption SRT (relative t, starts at 0).
+            let segCaptionArg: string[] = [];
+            let segSrt: string | null = null;
+            if (clip.kind === 'scene' && burn) {
+                const a = visuals[clip.idx];
+                const raw = a.captionSegments?.length
+                    ? a.captionSegments
+                    : [{ text: res.plan.scenes[a.sceneIndex]?.voiceoverText ?? '', startMs: 0, endMs: Math.round(dur * 1000) }];
+                const cues = chunkCues(raw).map((s, n) => `${n + 1}\n${fmtSrt(s.startMs / 1000)} --> ${fmtSrt(s.endMs / 1000)}\n${s.text.replace(/\n/g, ' ')}\n`).join('\n');
+                if (cues.trim()) {
+                    const srRel = `agentic-pipeline/workspaces/${res.workspace.jobId}/render/_segsrt_${res.workspace.jobId}_${ci}.srt`;
+                    const sr = path.resolve(process.cwd(), srRel).replace(/\\/g, '/');
+                    fs.mkdirSync(path.dirname(sr), { recursive: true });
+                    fs.writeFileSync(sr, cues, 'utf8');
+                    segSrt = sr;
+                    // Reference RELATIVE path (ffmpeg subtitles filter chokes on C:\ drive colon).
+                    segCaptionArg = ['subtitles=' + srRel];
+                }
+            }
+            // Per-segment kinetic (relative t).
+            const kin: string[] = [];
+            if (clip.kind === 'scene' && stylePlan && opts.kinetic !== false) {
+                for (const cue of stylePlan.scenes[clip.idx]?.kinetic ?? []) {
+                    const start = cue.atSec.toFixed(2);
+                    const end = (cue.atSec + (cue.kind === 'wordpop' ? 0.9 : 2.6)).toFixed(2);
+                    const safe = cue.text.replace(/'/g, '’').replace(/:/g, '\\:');
+                    kin.push(`drawtext=${FONT_ARG}text='${safe}':fontcolor=${cue.kind === 'wordpop' ? 'yellow' : 'white'}:fontsize=${cue.kind === 'wordpop' ? 64 : 34}:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=${cue.kind === 'wordpop' ? '(h-text_h)/2' : 'h-text_h-90'}:enable='between(t\\,${start}\\,${end})'`);
+                }
+            }
+            const vfChain = `[0:v]${!isVideo ? 'loop=loop=-1:size=1,' : ''}scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${grade ? ',' + grade : ''},format=yuv420p,vignette=PI/5${segCaptionArg.length ? ',' + segCaptionArg.join(',') : ''}${kin.length ? ',' + kin.join(',') : ''}[v]`;
+            const voPath = clip.kind === 'scene' ? res.voiceovers?.scenes[clip.idx]?.audioPath : undefined;
+            const hasVo = !!voPath && fs.existsSync(voPath);
+            const inputs: string[] = ['-i', clip.file];
+            if (hasVo) inputs.push('-i', voPath);
+            else inputs.push('-f', 'lavfi', '-i', `anullsrc=channel_layout=mono:sample_rate=44100`);
+            // Audio: voiceover (resampled) or silent track; both trimmed to clip duration so
+            // every segment has an identical video+audio stream layout (concat demuxer requires it).
+            const af = hasVo
+                ? `[1:a]aresample=44100,atrim=0:${dur},asetpts=PTS-STARTPTS[a]`
+                : `[1:a]atrim=0:${dur},asetpts=PTS-STARTPTS[a]`;
+            const fc = vfChain + ';' + af;
+            const args: string[] = [
+                ...inputs,
+                '-filter_complex', fc,
+                '-map', '[v]', '-map', '[a]',
+                '-t', String(dur), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', '25',
+                '-c:a', 'aac', '-shortest', '-y', seg,
+            ];
+            let lastErr: any;
+            for (let attempt = 0; attempt < 3; attempt++) {
+                try { await runFfmpeg(args, dur); break; } catch (e) { lastErr = e; console.warn(`⚠ segment ${ci} attempt ${attempt + 1} failed, retrying`); }
+            }
+            if (!fs.existsSync(seg)) throw lastErr ?? new Error(`segment ${ci} failed`);
+            segFiles.push(seg);
+        }
+        // Concat segments (stream-copy, no re-encode between cuts).
+        const list = outDir + '/_concat_' + res.workspace.jobId + '.txt';
+        fs.writeFileSync(list, segFiles.map((f) => `file '${f.replace(/\\/g, '/')}'`).join('\n'), 'utf8');
+        silent = outDir + '/_av_' + res.workspace.jobId + '.mp4';
+        await new Promise<void>((resolve, reject) => {
+            execFile(ffmpeg, ['-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', silent],
+                (err: any) => err ? reject(new Error('concat failed: ' + err)) : resolve());
+        });
+    }
+
+    else {
+
     // ── PASS 1: video (+ captions) and audio (voiceover) combined. ──
     const introDur = introClip ? (opts.intro!.durationSec ?? 2.5) : 0;
     const outroDur = outroClip ? (opts.outro!.durationSec ?? 3) : 0;
     const scenesDur = visuals.reduce((s, a) => s + (a.durationSec ?? 4), 0);
     const xfadeOverlap = (visuals.length + (introClip ? 1 : 0) + (outroClip ? 1 : 0) - 1) * xf;
     const totalSec = Math.max(1, introDur + scenesDur + outroDur - xfadeOverlap);
-    const silent = outDir + '/_av_' + res.workspace.jobId + '.mp4';
+    expectedDur = totalSec;
+    silent = outDir + '/_av_' + res.workspace.jobId + '.mp4';
     const pass1: string[] = [
         ...videoInputs,
         ...audioInputArgs,
@@ -908,6 +1004,7 @@ export async function renderAgenticSlideshow(
     ];
     if (process.env.DEBUG_FF) { console.error('FILTER_COMPLEX:\n' + [...vfArgs, ...(audioFilter ? [audioFilter] : [])].join(';\n')); }
     await runFfmpeg(pass1, totalSec);
+    }
 
     // ── PASS 2: duck + mux background music + optional SFX under the voiceover. ──
     let sfxLayer: string | null = null;
@@ -951,10 +1048,8 @@ export async function renderAgenticSlideshow(
     fs.rmSync(srtPath, { force: true });
 
     // ── Phase 8.4: POST-RENDER quality verification (X7-X9). ──
-    // Expected duration = sum of scene durations MINUS crossfade overlaps, so
-    // the check matches the actual crossfaded timeline (not the naive sum).
-    const xfDur = xf * Math.max(0, visuals.length - 1);
-    const expectedDur = Math.max(0.1, visuals.reduce((s, a) => s + (a.durationSec ?? 4), 0) - xfDur);
+    // expectedDur is computed per render path above (segmented: sum of clip
+    // durations with no crossfade; default: intro+scenes+outro minus xfade overlap).
     res.postRender = verifyRenderedVideo(out, expectedDur);
     return out;
 }
