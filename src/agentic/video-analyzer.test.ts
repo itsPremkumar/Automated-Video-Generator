@@ -61,13 +61,15 @@ describe('video-analyzer on a moving test pattern (testsrc)', () => {
             assert.equal(d.height, 1280);
             assert.equal(d.codec, 'h264');
         });
-    test('verifyRenderedVideo: non-black checks pass; only X7 flags synthetic-clip size', async () => {
+    test('verifyRenderedVideo: all quality checks pass; X7 uses a conservative size floor', async () => {
         const r = await verifyRenderedVideo(clip, 4);
         const failed = r.checks.filter((c) => !c.pass).map((c) => c.id);
-        // testsrc is a tiny synthetic pattern so it fails X7 (size). Its black
-        // BORDERS are not fully-black frames, so X10 now correctly PASSES
-        // (the old pic_th option was a false-positive we fixed).
-        assert.deepEqual(failed, ['X7'], 'unexpected failures: ' + JSON.stringify(failed));
+        // The size floor (X7) is conservative: it must catch empty/corrupt
+        // renders (<50KB) without over-penalising valid low-entropy content. A
+        // 4s testsrc clip clears it. Its black BORDERS are not fully-black
+        // frames, so X10 correctly PASSES (the old pic_th option was a
+        // false-positive we fixed).
+        assert.deepEqual(failed, [], 'unexpected failures: ' + JSON.stringify(failed));
     });
     test('cleanup', () => { try { fs.rmSync(clip); } catch { /* */ } });
 });

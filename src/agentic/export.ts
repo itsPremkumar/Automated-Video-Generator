@@ -31,13 +31,26 @@ export const ASPECT_DIMS: Record<Aspect, { w: number; h: number }> = {
 const FFMPEG = () => require('ffmpeg-static') as string;
 
 /**
+ * Async ffmpeg runner with a hard timeout. Avoids execFileSync, which blocks
+ * the Node event loop permanently on a RAM-starved box (spawnSync/execFileSync
+ * cannot be interrupted mid-fork). Resolves to the child exit code.
+ */
+function runFfmpeg(args: string[], timeoutMs = 180000): Promise<number> {
+    return new Promise((resolve) => {
+        const { spawn } = require('child_process');
+        const child = spawn(FFMPEG(), args, { stdio: 'ignore' });
+        const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* noop */ } resolve(-1); }, timeoutMs);
+        child.on('error', () => { clearTimeout(t); resolve(-1); });
+        child.on('close', (code: number | null) => { clearTimeout(t); resolve(code ?? -1); });
+    });
+}
+
+/**
  * Re-scale an already-rendered MP4 into one or more aspect ratios (e.g. push
  * the portrait cut to YouTube as 16:9). Pure ffmpeg scale+pad, offline, free.
  * Returns the list of produced file paths.
  */
-export function exportMultiAspect(srcMp4: string, aspects: Aspect[] = ['9:16', '16:9', '1:1']): string[] {
-    const ffmpeg = FFMPEG();
-    const { execFileSync } = require('child_process');
+export async function exportMultiAspect(srcMp4: string, aspects: Aspect[] = ['9:16', '16:9', '1:1']): Promise<string[]> {
     const out: string[] = [];
     const dir = path.dirname(srcMp4);
     const base = path.basename(srcMp4, path.extname(srcMp4));
@@ -49,8 +62,8 @@ export function exportMultiAspect(srcMp4: string, aspects: Aspect[] = ['9:16', '
         // failure that broke 1:1 / 16:9 from a 9:16 source.
         const filter = `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,setsar=1`;
         try {
-            execFileSync(ffmpeg, ['-y', '-i', srcMp4, '-vf', filter, '-c:a', 'copy', '-movflags', '+faststart', dest], { stdio: 'ignore' });
-            if (fs.existsSync(dest)) out.push(dest);
+            const code = await runFfmpeg(['-y', '-i', srcMp4, '-vf', filter, '-c:a', 'copy', '-movflags', '+faststart', dest]);
+            if (code === 0 && fs.existsSync(dest)) out.push(dest);
         } catch (e) {
             console.warn(`⚠ multi-aspect ${a} failed: ${(e as Error).message}`);
         }
@@ -66,7 +79,7 @@ export function generateFreeMetadata(plan: Plan): { title: string; description: 
     const title = plan.title?.trim() || 'AI-Generated Video';
     // Description: opening hook (scene 0) + bulleted facts + soft CTA.
     const hook = plan.scenes[0]?.voiceoverText || '';
-    const bullets = plan.scenes.slice(1).map((s) => `• ${s.voiceoverText}`).join('\n');
+    const bullets = plan.scenes.slice(1).map((s) => `• ${s.voiceoverText || ''}`).join('\n');
     const description = [
         hook,
         '',
@@ -74,9 +87,13 @@ export function generateFreeMetadata(plan: Plan): { title: string; description: 
         '',
         '#Shorts #AI #facts',
     ].join('\n').trim();
-    // Hashtags: de-duplicated keywords + fixed reach tags.
+    // Hashtags: de-duplicated keywords + fixed reach tags. Scene fields are
+    // optional, so guard every access (a Plan from any source must not crash).
     const kw = new Set<string>();
-    plan.scenes.forEach((s) => s.searchKeywords.forEach((k) => k.replace(/\s+/g, '').toLowerCase().split(',').forEach((t) => t && kw.add(t))));
+    for (const s of plan.scenes) {
+        const terms = (s.searchKeywords || []).flatMap((k) => k.replace(/\s+/g, '').toLowerCase().split(','));
+        for (const t of terms) if (t) kw.add(t);
+    }
     const hashtags = Array.from(kw).slice(0, 8).map((k) => '#' + k).join(' ') + ' #ai #shorts #viral';
     return { title, description, hashtags, tags: Array.from(kw).slice(0, 8) };
 }
@@ -85,9 +102,8 @@ export function generateFreeMetadata(plan: Plan): { title: string; description: 
  * Branded thumbnail: a title card with the video title over the first frame.
  * Pure ffmpeg drawtext, offline, free. Returns the thumbnail path or null.
  */
-export function renderThumbnail(srcMp4: string, plan: Plan): string | null {
+export async function renderThumbnail(srcMp4: string, plan: Plan): Promise<string | null> {
     const ffmpeg = FFMPEG();
-    const { execFileSync } = require('child_process');
     const fs = require('fs');
     const dir = path.dirname(srcMp4);
     const base = path.basename(srcMp4, path.extname(srcMp4));
@@ -99,8 +115,8 @@ export function renderThumbnail(srcMp4: string, plan: Plan): string | null {
     for (const c of fontCandidates) if (fs.existsSync(c)) { fontArg = `fontfile='${c}':`; break; }
     const filter = `drawtext=${fontArg}text='${title}':fontcolor=white:fontsize=48:box=1:boxcolor=black@0.55:boxborderw=20:line_spacing=8:x=(w-text_w)/2:y=(h-text_h)/2`;
     try {
-        execFileSync(ffmpeg, ['-y', '-ss', '00:00:01', '-i', srcMp4, '-frames:v', '1', '-vf', filter, out], { stdio: 'ignore' });
-        return fs.existsSync(out) ? out : null;
+        const code = await runFfmpeg(['-y', '-ss', '00:00:01', '-i', srcMp4, '-frames:v', '1', '-vf', filter, out]);
+        return code === 0 && fs.existsSync(out) ? out : null;
     } catch {
         return null;
     }

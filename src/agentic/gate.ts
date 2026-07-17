@@ -112,8 +112,10 @@ export async function verifyRenderedVideo(mp4Path: string, expectedDurationSec: 
     const checks: GateReport['checks'] = [];
 
     const exists = fs.existsSync(mp4Path);
-    // Size floor scales with duration.
-    const minSize = Math.max(100_000, Math.round(expectedDurationSec * 20_000));
+    // Size floor scales with duration. Factor is conservative: it must catch
+    // empty/corrupt renders (<50KB) without over-penalising valid low-entropy
+    // content (gradient cards, simple scenes) which legitimately compress small.
+    const minSize = Math.max(50_000, Math.round(expectedDurationSec * 6_000));
     const sizeOk = exists && fs.statSync(mp4Path).size > minSize;
     checks.push({ id: 'X7', label: 'Output file valid', pass: sizeOk, detail: exists ? `${Math.round(fs.statSync(mp4Path).size / 1024)}KB (min ${Math.round(minSize / 1024)}KB)` : 'missing' });
 

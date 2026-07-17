@@ -52,8 +52,8 @@ describe('free export features (offline)', () => {
         assert.deepEqual(ASPECT_DIMS['1:1'], { w: 1080, h: 1080 });
     });
 
-    test('exportMultiAspect returns [] when source missing (safe, no throw)', () => {
-        const out = exportMultiAspect('/nonexistent/file.mp4', ['9:16']);
+    test('exportMultiAspect returns [] when source missing (safe, no throw)', async () => {
+        const out = await exportMultiAspect('/nonexistent/file.mp4', ['9:16']);
         assert.deepEqual(out, []);
     });
 });

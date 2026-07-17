@@ -1291,9 +1291,9 @@ async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: st
 
     // ── FREE advanced exports (offline, $0) ──
     // Branded thumbnail from the first frame.
-    try { renderThumbnail(mp4, res.plan); } catch { /* optional */ }
+    try { await renderThumbnail(mp4, res.plan); } catch { /* optional */ }
     // Multi-aspect copies (9:16 + 16:9 + 1:1) for cross-platform publishing.
-    try { exportMultiAspect(mp4, ['9:16', '16:9', '1:1']); } catch { /* optional */ }
+    try { await exportMultiAspect(mp4, ['9:16', '16:9', '1:1']); } catch { /* optional */ }
     // Social-ready metadata (B10 — agent brain produces richer title/
     // description when a free model is configured; heuristic fallback).
     try {
