@@ -592,7 +592,7 @@ export async function renderAgenticSlideshow(
 ): Promise<string> {
     
     const ffmpeg: string = require('ffmpeg-static');
-    const { execFile } = require('child_process');
+    const { execFile, spawn } = require('child_process');
     // Pin a real font file so drawtext never touches fontconfig (which is broken
     // on this box and would otherwise hang/error the render). Falls back gracefully
     // if the path is missing (ffmpeg then uses its built-in default).
@@ -654,13 +654,33 @@ export async function renderAgenticSlideshow(
 
     const xf = opts.crossfadeSec ?? 0.5;
     const burn = opts.burnCaptions ?? true;
-    const runFfmpeg = (args: string[]): Promise<void> =>
-        new Promise<void>((resolve, reject) =>
-            execFile(ffmpeg, args, { maxBuffer: 1024 * 1024 * 400 }, (err: Error | null, _stdout: string, stderr: string) => {
-                if (err) return reject(new Error('ffmpeg failed:\n' + (stderr || '').trim()));
-                resolve();
-            }),
-        );
+    // ── ffmpeg runner with live progress reporting (C3). ──
+    // Parses `time=HH:MM:SS.ms` from stderr to print a render percentage.
+    const runFfmpeg = (args: string[], totalSec = 0): Promise<void> =>
+        new Promise<void>((resolve, reject) => {
+            const cp = spawn(ffmpeg, args, { stdio: ['ignore', 'ignore', 'pipe'] });
+            let lastPct = -1;
+            let buf = '';
+            cp.stderr.on('data', (d: Buffer) => {
+                buf += d.toString();
+                const m = /time=(\d+):(\d+):(\d+\.\d+)/.exec(buf);
+                if (m && totalSec > 0) {
+                    const secs = (+m[1]) * 3600 + (+m[2]) * 60 + parseFloat(m[3]);
+                    const pct = Math.min(99, Math.round((secs / totalSec) * 100));
+                    if (pct !== lastPct) {
+                        lastPct = pct;
+                        console.log(`  · render ${pct}%`);
+                    }
+                }
+                // keep only the tail so the regex stays cheap
+                if (buf.length > 4096) buf = buf.slice(-2048);
+            });
+            cp.on('error', (e: any) => reject(e));
+            cp.on('close', (code: number) => {
+                if (code === 0) return resolve();
+                reject(new Error('ffmpeg failed (exit ' + code + ')'));
+            });
+        });
 
     // ── Build a temporary SRT of the whole timeline for caption burn-in. ──
     // NOTE: the ffmpeg `subtitles` filter rejects absolute Windows paths that
@@ -861,6 +881,11 @@ export async function renderAgenticSlideshow(
     }
 
     // ── PASS 1: video (+ captions) and audio (voiceover) combined. ──
+    const introDur = introClip ? (opts.intro!.durationSec ?? 2.5) : 0;
+    const outroDur = outroClip ? (opts.outro!.durationSec ?? 3) : 0;
+    const scenesDur = visuals.reduce((s, a) => s + (a.durationSec ?? 4), 0);
+    const xfadeOverlap = (visuals.length + (introClip ? 1 : 0) + (outroClip ? 1 : 0) - 1) * xf;
+    const totalSec = Math.max(1, introDur + scenesDur + outroDur - xfadeOverlap);
     const silent = outDir + '/_av_' + res.workspace.jobId + '.mp4';
     const pass1: string[] = [
         ...videoInputs,
@@ -873,7 +898,7 @@ export async function renderAgenticSlideshow(
         '-y', silent,
     ];
     if (process.env.DEBUG_FF) { console.error('FILTER_COMPLEX:\n' + [...vfArgs, ...(audioFilter ? [audioFilter] : [])].join(';\n')); }
-    await runFfmpeg(pass1);
+    await runFfmpeg(pass1, totalSec);
 
     // ── PASS 2: duck + mux background music + optional SFX under the voiceover. ──
     let sfxLayer: string | null = null;
