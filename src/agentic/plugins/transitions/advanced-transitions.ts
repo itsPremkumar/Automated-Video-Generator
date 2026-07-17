@@ -65,7 +65,6 @@ export const transitionsPlugin: AgenticPlugin = {
         version: '1.0.0',
         description: 'Advanced transitions: whip pan, glitch, light leak, morph cut, match cut',
         author: 'Agentic Video Team',
-        category: PluginCategory.TRANSITION,
         tags: ['transition', 'xfade', 'whip', 'glitch', 'morph', 'match', 'lightleak'],
     },
 
@@ -85,7 +84,7 @@ export const transitionsPlugin: AgenticPlugin = {
 
             // Assign transitions per scene
             for (const scene of enhanced.scenes) {
-                const sceneCfg = cfg.scenes?.find(s => s.sceneIndex === scene.sceneIndex - 1);
+                const sceneCfg = cfg.scenes?.find(s => s.sceneIndex === scene.sceneNumber);
                 scene.transition = sceneCfg?.type ?? cfg.defaultType;
                 scene.transitionParams = sceneCfg?.params ?? {};
                 scene.transitionDuration = cfg.duration;
@@ -127,6 +126,7 @@ export const transitionsPlugin: AgenticPlugin = {
                         outputs: [`x${i}`],
                         enabled: true,
                         order: 1000 + i,
+                        metadata: {},
                     });
                     prevLabel = `x${i}`;
                     cursor += duration - 0.1; // overlap
@@ -141,12 +141,13 @@ export const transitionsPlugin: AgenticPlugin = {
                         outputs: [`x${i}`],
                         enabled: true,
                         order: 1000 + i,
+                        metadata: {},
                     });
                     prevLabel = `x${i}`;
                     cursor += duration - 0.15;
                 } else if (transitionType === 'lightLeak') {
                     // Light leak overlay
-                    const leakAsset = params.asset ?? await findLightLeakAsset(ctx);
+                    const leakAsset: string = params.asset ?? (await findLightLeakAsset(ctx)) ?? '';
                     if (leakAsset) {
                         enhanced.filters.push({
                             id: `lightleak-${i}`,
@@ -156,6 +157,7 @@ export const transitionsPlugin: AgenticPlugin = {
                             outputs: [`x${i}`],
                             enabled: true,
                             order: 1000 + i,
+                            metadata: {},
                         });
                         prevLabel = `x${i}`;
                         cursor += duration;
@@ -170,6 +172,7 @@ export const transitionsPlugin: AgenticPlugin = {
                         outputs: [`x${i}`],
                         enabled: true,
                         order: 1000 + i,
+                        metadata: {},
                     });
                     prevLabel = `x${i}`;
                     cursor += duration - 0.1;
@@ -184,6 +187,7 @@ export const transitionsPlugin: AgenticPlugin = {
                         outputs: [`x${i}`],
                         enabled: true,
                         order: 1000 + i,
+                        metadata: {},
                     });
                     prevLabel = `x${i}`;
                     cursor += duration;
@@ -198,6 +202,7 @@ export const transitionsPlugin: AgenticPlugin = {
                         outputs: [`x${i}`],
                         enabled: true,
                         order: 1000 + i,
+                        metadata: {},
                     });
                     prevLabel = `x${i}`;
                     cursor += scenes[i].durationSec ?? 4 - duration;

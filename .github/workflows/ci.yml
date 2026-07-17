@@ -43,8 +43,8 @@ jobs:
 
     test:
         name: Unit Tests
-        # Pinned to Node 22: unit tests are verified green on Node 22 locally
-        # (60/60 pass). Node 20 occasionally flakes in this node:test suite.
+        # Pinned to Node 22: full unit suite (225 tests) verified green on Node 22
+        # locally. Node 20 occasionally flakes in this node:test suite.
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4

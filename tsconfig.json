@@ -13,12 +13,8 @@
         "jsx": "react"
     },
     "include": [
-        "src/agentic/*.ts",
-        "src/agentic/audio/**/*.ts",
-        "src/infrastructure/**/*.ts",
-        "src/lib/**/*.ts",
-        "src/video-generator.ts",
+        "src/**/*.ts",
         "remotion/**/*.ts"
     ],
-    "exclude": ["node_modules", "dist", "src/agentic/plugins"]
+    "exclude": ["node_modules", "dist", "dist-electron"]
 }

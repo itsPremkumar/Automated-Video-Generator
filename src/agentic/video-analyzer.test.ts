@@ -82,3 +82,20 @@ describe('video-analyzer detects a fully-black clip', () => {
         fs.rmSync(p, { force: true });
     });
 });
+
+describe('X7 size-floor boundary (conservative, RAM-safe)', () => {
+    test('a valid 4s clip clears the conservative floor', async () => {
+        const clip = makeTestsrc();
+        const r = await verifyRenderedVideo(clip, 4);
+        const x7 = r.checks.find((c) => c.id === 'X7');
+        assert.ok(x7, 'X7 present');
+        assert.equal(x7!.pass, true, 'valid clip must pass X7: ' + x7!.detail);
+        fs.rmSync(clip, { force: true });
+    });
+    test('a non-existent / empty file fails X7', async () => {
+        const r = await verifyRenderedVideo('/tmp/does-not-exist-xyz.mp4', 4);
+        const x7 = r.checks.find((c) => c.id === 'X7');
+        assert.ok(x7, 'X7 present');
+        assert.equal(x7!.pass, false, 'missing file must fail X7');
+    });
+});
