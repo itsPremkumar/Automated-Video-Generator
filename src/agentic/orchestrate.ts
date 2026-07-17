@@ -1137,11 +1137,12 @@ export async function renderAgenticWithRemotion(
 
     const fps = 30;
     const publicDir = path.resolve(process.cwd(), 'public');
-    const assetDir = path.join(publicDir, 'agentic-assets');
-    // Start clean so a previous run's transcoded assets never leak into this job
-    // (staticFile() resolves by filename; stale files would corrupt the render).
-    fs.rmSync(assetDir, { recursive: true, force: true });
-    fs.mkdirSync(assetDir, { recursive: true });
+    // Job-specific subdir so two concurrent runs never clobber each other's
+    // transcoded assets (staticFile() resolves by filename). Only THIS job's
+    // subdir is cleared — the parent agentic-assets/ is left intact.
+    const jobAssetDir = path.join(publicDir, 'agentic-assets', String(res.workspace.jobId));
+    fs.rmSync(jobAssetDir, { recursive: true, force: true });
+    fs.mkdirSync(jobAssetDir, { recursive: true });
 
     const assetsForComposition: any[] = [];
     // Cap source resolution so Remotion/Chrome doesn't decode 4K originals on a
@@ -1153,7 +1154,7 @@ export async function renderAgenticWithRemotion(
     for (const a of res.manifest.assets) {
         const src = a.localPath;
         const destName = `s${a.sceneIndex}_${a.kind}_${path.basename(src).replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-        const dest = path.join(assetDir, destName);
+        const dest = path.join(jobAssetDir, destName);
         try {
             if (a.kind === 'video' && /\.(mp4|webm|mov|m4v)$/i.test(src) && fs.existsSync(src)) {
                 // Downscale + normalize so Chrome renders light.
@@ -1171,14 +1172,14 @@ export async function renderAgenticWithRemotion(
         let audioRel: string | undefined;
         if (a.audioPath && fs.existsSync(a.audioPath)) {
             const adestName = `s${a.sceneIndex}_audio.${a.audioPath.split('.').pop()}`;
-            const adest = path.join(assetDir, adestName);
+            const adest = path.join(jobAssetDir, adestName);
             fs.copyFileSync(a.audioPath, adest);
-            audioRel = path.join('agentic-assets', adestName).replace(/\\/g, '/');
+            audioRel = path.join('agentic-assets', String(res.workspace.jobId), adestName).replace(/\\/g, '/');
         }
         assetsForComposition.push({
             kind: a.kind,
             sceneIndex: a.sceneIndex,
-            localPath: path.join('agentic-assets', destName).replace(/\\/g, '/'),
+            localPath: path.join('agentic-assets', String(res.workspace.jobId), destName).replace(/\\/g, '/'),
             audioPath: audioRel,
             durationSec: a.durationSec,
             captionSegments: a.captionSegments ?? [],
