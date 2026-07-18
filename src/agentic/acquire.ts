@@ -15,9 +15,29 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { AgenticWorkspace, createAgenticWorkspace, sceneImageDir, sceneVideoDir, writeJson } from './workspace.js';
-import { AssetCandidate, Plan } from './types.js';
+import { AssetCandidate, Plan, ScenePlan } from './types.js';
 import { inputAssetPath } from '../lib/path-safety.js';
 import { aiVerifyAsset } from './ai-verify.js';
+
+/**
+ * Run async producers with a bounded concurrency. `tasks` is an array of
+ * zero-arg thunks returning a Promise. At most `limit` run at once; results
+ * are returned in the original task order. Each thunk's own error handling is
+ * the caller's responsibility (this just bounds how many fire simultaneously).
+ */
+export async function mapWithConcurrencyLimit<T>(tasks: (() => Promise<T>)[], limit: number): Promise<T[]> {
+    const out: T[] = new Array(tasks.length);
+    let cursor = 0;
+    async function worker(): Promise<void> {
+        while (cursor < tasks.length) {
+            const idx = cursor++;
+            out[idx] = await tasks[idx]();
+        }
+    }
+    const workers = Array.from({ length: Math.min(limit, tasks.length) }, () => worker());
+    await Promise.all(workers);
+    return out;
+}
 
 /** Ensure every candidate carries an attribution label so the final gate (X6)
  *  can never be blocked by a *missing metadata string* — only by a truly
@@ -112,13 +132,9 @@ export interface AcquireResult {
 export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPerAsset = 2): Promise<AcquireResult> {
     const ws = createAgenticWorkspace(plan.jobId);
     const candidates: AssetCandidate[] = [];
-    const sceneFetches: Promise<{
-        i: number;
-        kind: 'image' | 'video';
-        dir: string;
-        scene: any;
-        fetched: FetchedVisual[];
-    }>[] = [];
+    const sceneFetches: Array<
+        () => Promise<{ i: number; kind: 'image' | 'video'; dir: string; scene: ScenePlan; fetched: FetchedVisual[] }>
+    > = [];
 
     for (let i = 0; i < plan.scenes.length; i++) {
         const scene = plan.scenes[i];
@@ -152,9 +168,10 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
             // File missing → fall through to stock fetch below.
         }
 
-        // Fetch all scenes in parallel (bounded by the fetcher's own limits).
+        // Fetch all scenes with a bounded concurrency so a 20-scene plan does
+        // not fire 20 simultaneous outbound API calls (rate-limit / memory).
         // Rejections are isolated per scene so one bad fetch can't kill the run.
-        sceneFetches.push(
+        sceneFetches.push(() =>
             deps
                 .fetchVisual(scene.searchKeywords, kind, plan.orientation, i)
                 .then((fetched) => ({ i, kind, dir, scene, fetched }))
@@ -164,7 +181,8 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                 }),
         );
     }
-    const results = await Promise.all(sceneFetches);
+    const MAX_CONCURRENT_FETCHES = 6;
+    const results = await mapWithConcurrencyLimit(sceneFetches, MAX_CONCURRENT_FETCHES);
     for (const { i, kind, dir, scene, fetched } of results) {
         // No stock candidates for this scene → generate an offline fallback
         // (asset-creator / ffmpeg) instead of leaving the scene blank.

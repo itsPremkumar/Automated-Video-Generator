@@ -13,7 +13,7 @@
  * fall back to the heuristic when the result is `null`.
  */
 
-import { readFileSync } from 'fs';
+import { readFileSync, statSync } from 'fs';
 
 export interface BrainOptions {
     /** OpenRouter API key (free tier). When set, text decisions use a free model. */
@@ -28,6 +28,10 @@ export interface BrainOptions {
     visionModel?: string;
     /** Timeout (ms) per model call. Defaults to 20s. */
     timeoutMs?: number;
+    /** Max image size (bytes) fed to visionVerify before it safely returns null
+     *  (falls back to the signal gate). Protects the heap on RAM-constrained boxes.
+     *  Defaults to 8MB. */
+    maxImageBytes?: number;
     /** Max total model calls allowed for this brain instance (budget). Off/undefined = unlimited. */
     maxCalls?: number;
     /** Consecutive failures that trip the circuit-breaker (stops all model calls). Off/undefined = disabled. */
@@ -355,6 +359,19 @@ export class AgentBrain {
         const hasVision =
             Boolean(this.o.openRouterKey && this.o.visionModel) || Boolean(this.o.ollamaUrl && this.o.ollamaModel);
         if (!hasVision) return null;
+        // Size guard: base64 inflates by ~33%, so a large image can blow the
+        // heap on a RAM-constrained box. Refuse oversized inputs and fall back
+        // to the signal gate (callers already handle null as "no vision check").
+        const maxBytes = this.o.maxImageBytes ?? 8 * 1024 * 1024; // default 8MB
+        let size: number;
+        try {
+            size = statSync(filePath).size;
+        } catch {
+            return null;
+        }
+        if (size > maxBytes) {
+            return null;
+        }
         return this.guarded(async () => {
             const b64 = readFileSync(filePath).toString('base64');
             const ctrl = new AbortController();
