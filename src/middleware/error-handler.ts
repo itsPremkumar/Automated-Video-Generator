@@ -1,6 +1,7 @@
 import { ErrorRequestHandler, RequestHandler } from 'express';
 import { ZodError } from 'zod';
 import { AppError, isAppError, NotFoundError, RequestValidationError } from '../lib/errors';
+import { redactSecretsIn } from '../agentic/operations/security.js';
 import { getRequestId, getRequestLogger } from './request-context';
 
 function normalizeError(error: unknown): AppError {
@@ -38,11 +39,14 @@ export const errorHandler: ErrorRequestHandler = (error, _req, res, next) => {
     const normalized = normalizeError(error);
     const logger = getRequestLogger(res);
     const requestId = getRequestId(res);
+    // Redact any secret-shaped values from error details before logging or
+    // returning them in the response (defense-in-depth; never leak keys).
+    const safeDetails = normalized.details !== undefined ? redactSecretsIn(normalized.details) : undefined;
     const logContext = {
         code: normalized.code,
         requestId,
         statusCode: normalized.statusCode,
-        details: normalized.details,
+        details: safeDetails,
     };
 
     if (normalized.statusCode >= 500) {
@@ -56,6 +60,6 @@ export const errorHandler: ErrorRequestHandler = (error, _req, res, next) => {
         error: normalized.expose ? normalized.message : 'Internal server error',
         code: normalized.code,
         requestId,
-        ...(normalized.expose && normalized.details !== undefined ? { details: normalized.details } : {}),
+        ...(normalized.expose && safeDetails !== undefined ? { details: safeDetails } : {}),
     });
 };

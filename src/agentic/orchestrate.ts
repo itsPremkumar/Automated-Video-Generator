@@ -1007,14 +1007,20 @@ export async function renderAgenticSlideshow(
     const ffmpeg: string = require('ffmpeg-static');
     const { execFile, spawn } = require('child_process');
     // Pin a real font file so drawtext never touches fontconfig (which is broken
-    // on this box and would otherwise hang/error the render). Falls back gracefully
-    // if the path is missing (ffmpeg then uses its built-in default).
+    // on minimal/CI builds and would otherwise hang/error the render). Resolve
+    // OS-aware: Windows, then macOS, then Linux. Falls back gracefully if no
+    // candidate exists (ffmpeg then uses its built-in default).
     const FONT_FILE = (() => {
+        const home = process.env.HOME || process.env.USERPROFILE || '';
         const candidates = [
             'C:/Windows/Fonts/arial.ttf',
             'C:/Windows/Fonts/seguiemj.ttf',
+            home && `${home}/Library/Fonts/Arial.ttf`,
+            '/Library/Fonts/Arial.ttf',
+            '/System/Library/Fonts/Supplemental/Arial.ttf',
             '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-        ];
+            '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+        ].filter(Boolean) as string[];
         for (const c of candidates) if (fs.existsSync(c)) return c;
         return '';
     })();

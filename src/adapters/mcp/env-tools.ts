@@ -5,10 +5,12 @@ import { resolveProjectPath } from '../../shared/runtime/paths';
 
 const ENV_FILE = resolveProjectPath('.env');
 
-export async function readEnvConfig(showSecrets?: boolean) {
+export async function readEnvConfig(_showSecrets?: boolean) {
     if (!fs.existsSync(ENV_FILE)) return {};
     const config = dotenv.parse(fs.readFileSync(ENV_FILE, 'utf-8'));
-    if (showSecrets) return config;
+    // NEVER return raw secret values, even in "show" mode — the admin tool
+    // is for verifying config presence/shape, not extracting keys. Mask
+    // anything secret-shaped (matches the same classes as security.redactSecrets).
     const masked: Record<string, string> = {};
     for (const key of Object.keys(config)) {
         const value = config[key];

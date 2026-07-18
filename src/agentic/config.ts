@@ -365,11 +365,6 @@ export function loadConfig(path?: string): Partial<AgenticConfig> {
 
 /** Convert a resolved config into the PipelineRequest + render opts the engine uses. */
 export function configToRequest(cfg: AgenticConfig) {
-    const merged = configToRequest_buildReq(cfg);
-    return merged;
-}
-
-function configToRequest_buildReq(cfg: AgenticConfig) {
     return {
         req: {
             topic: cfg.topic,
