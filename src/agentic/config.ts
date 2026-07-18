@@ -215,6 +215,13 @@ export interface AgenticConfig {
         verifyOnApprove?: boolean; // before approving each asset
         verifyOnEdit?: boolean; // after scene edits
         verifyOnRender?: boolean; // final rendered MP4
+        /**
+         * M8 — strength of the post-render gate.
+         *  - 'signal' (default): only structural/signal checks (X7-X15).
+         *  - 'vision': additionally sample N frames from the finished MP4 and
+         *    run AI subject/watermark/safety verification on each (fail-closed).
+         */
+        finalMode?: 'signal' | 'vision';
         /** What to check. */
         checkSubjectMatch?: boolean; // does media show the scene's subject? (the "lino vs forest" gap)
         checkWatermark?: boolean; // default true

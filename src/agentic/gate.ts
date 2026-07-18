@@ -8,6 +8,7 @@
 
 import { AssetCandidate, AssetDecision, Plan, RenderManifest } from './types.js';
 import { aiVerifyAsset } from './ai-verify.js';
+import { verifyFinalRender } from '../lib/media-verifier.js';
 
 export interface GateReport {
     pass: boolean;
@@ -290,6 +291,22 @@ export async function verifyRenderedVideo(
     // own model). Skipped unless opts.aiVerify.verifyOnRender is on AND a
     // brain is supplied. A null result (no model / offline) never blocks.
     if (opts?.aiVerify?.verifyOnRender && opts?.brain) {
+        // M8: final-mode vision gate — sample multiple frames from the finished
+        // MP4 and verify each (fail-closed). Replaces the single-frame path.
+        if (opts.aiVerify.finalMode === 'vision') {
+            const vr = await verifyFinalRender(mp4Path, opts.keywords ?? [], {
+                checkWatermark: opts.aiVerify.checkWatermark !== false,
+                checkSafety: opts.aiVerify.checkSafety !== false,
+                failClosed: true,
+                sampleFrames: 3,
+            });
+            checks.push({
+                id: 'X16',
+                label: 'AI content verification (final/vision)',
+                pass: vr.passes && vr.confidence >= (opts.aiVerify.minConfidence ?? 6),
+                detail: vr.passes ? `ai-ok conf ${vr.confidence}` : `ai-flag: ${vr.reason}`,
+            });
+        } else {
         try {
             const frameDir = mp4Path + '.ai-frame';
             fs.mkdirSync(frameDir, { recursive: true });
@@ -345,6 +362,7 @@ export async function verifyRenderedVideo(
                 pass: true,
                 detail: 'skipped (extract failed)',
             });
+        }
         }
     }
 
