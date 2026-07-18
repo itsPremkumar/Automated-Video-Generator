@@ -26,6 +26,7 @@ import { resolveFreeBackgroundMusic } from '../lib/free-music.js';
 import { verifyRenderedVideo, PostRenderCheck } from './gate.js';
 import { aiVerifyAsset } from './ai-verify.js';
 import { inputAssetPath } from '../lib/path-safety.js';
+import { ffmpegDrawtextEscape } from '../lib/ffmpeg-text.js';
 import { exportMultiAspect, generateFreeMetadata, renderThumbnail, wordTimingsFromScript } from './export.js';
 
 import { buildPlan, applyProEdits } from './plan.js';
@@ -875,7 +876,7 @@ function makePlaceholder(keywords: string[], kind: 'image' | 'video' | 'music'):
     const color = kind === 'video' ? '0x2a9d8f' : '0x264653';
     // Escape apostrophes/quotes so the drawtext filtergraph (single-quoted text)
     // doesn't break on words like "today's" or "lion's".
-    const safeLabel = label.replace(/'/g, '’').replace(/:/g, ' ').slice(0, 40);
+    const safeLabel = ffmpegDrawtextEscape(label).slice(0, 40);
     execFileSync(
         ffmpeg,
         [
@@ -1052,8 +1053,8 @@ export async function renderAgenticSlideshow(
         bg: string,
         fg: string,
     ): Promise<void> => {
-        const t = title.replace(/'/g, '’').replace(/:/g, '\\:');
-        const s = (subtitle ?? '').replace(/'/g, '’').replace(/:/g, '\\:');
+        const t = ffmpegDrawtextEscape(title);
+        const s = ffmpegDrawtextEscape(subtitle ?? '');
         const vf = [
             `color=c=${bg}:s=${CARD_W}x${CARD_H}:d=${dur}`,
             `drawtext=${FONT_ARG}text='${t}':fontcolor=${fg}:fontsize=58:box=1:boxcolor=${bg}@0.0:borderw=0:x=(w-text_w)/2:y=h/2-(text_h/2)${s ? `:fontsize=58` : ''}`,
@@ -1081,7 +1082,7 @@ export async function renderAgenticSlideshow(
             '#ffffff',
         );
     if (outroClip) {
-        const cta = (opts.outro!.ctaText || 'Subscribe').replace(/'/g, '’').replace(/:/g, '\\:');
+        const cta = ffmpegDrawtextEscape(opts.outro?.ctaText || 'Subscribe');
         const tags = (opts.outro!.hashtags || []).join(' ');
         const sub =
             (opts.outro!.showSubscribe ? 'Subscribe for more' : '') +
@@ -1280,7 +1281,7 @@ export async function renderAgenticSlideshow(
                 for (const wseg of words) {
                     const start = (tBase + wseg.startMs / 1000).toFixed(2);
                     const end = (tBase + wseg.endMs / 1000).toFixed(2);
-                    const safe = wseg.word.replace(/'/g, '’').replace(/:/g, '\\:');
+                    const safe = ffmpegDrawtextEscape(wseg.word);
                     const out = `c${ci}`;
                     // current word highlighted yellow, rest of sentence dim white below
                     vfArgs.push(
@@ -1296,7 +1297,7 @@ export async function renderAgenticSlideshow(
                 for (const s of segs) {
                     const start = (tBase + s.startMs / 1000).toFixed(2);
                     const end = (tBase + s.endMs / 1000).toFixed(2);
-                    const safe = s.text.replace(/'/g, '’').replace(/:/g, '\\:').replace(/\\n/g, ' ');
+                    const safe = ffmpegDrawtextEscape(s.text).replace(/\n/g, ' ');
                     const out = `c${ci}`;
                     vfArgs.push(
                         `${ctag}drawtext=${FONT_ARG}text='${safe}':fontcolor=white:fontsize=30:box=1:boxcolor=black@0.5:boxborderw=10:line_spacing=4:x=(w-text_w)/2:y=h-text_h-120:enable='between(t\\,${start}\\,${end})'[${out}]`,

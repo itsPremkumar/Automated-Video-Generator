@@ -4,6 +4,7 @@ import { AxiosInstance } from 'axios';
 import { createHttpClient, headContentLength } from '../http-client.js';
 import { withRetry, getAvailablePath, getExistingFileSize, sanitizeFilename } from '../utils.js';
 import { VideoResult, DownloadResult } from '../models.js';
+import { isSafeUrl } from '../../../lib/net-safety.js';
 
 /**
  * Error thrown when a streaming download accepts the connection but then stops
@@ -143,7 +144,13 @@ export class FreeDownloadManager {
             headers.Range = `bytes=${resumeFromBytes}-`;
         }
 
+        const safe = isSafeUrl(url);
+        if (!safe.ok) {
+            throw new Error(`refused unsafe download URL: ${safe.reason}`);
+        }
+
         const response = await this.client.get(url, { responseType: 'stream', headers });
+
         const supportsResume = response.status === 206;
         const writeStream = fs.createWriteStream(partPath, { flags: supportsResume ? 'a' : 'w' });
         let downloadedThisSession = supportsResume ? resumeFromBytes : 0;

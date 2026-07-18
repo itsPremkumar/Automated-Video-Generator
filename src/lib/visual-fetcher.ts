@@ -13,6 +13,7 @@ export { freeImageAdapter } from './free-image/index';
 // @ts-ignore - ffprobe-static types
 import ffprobePath from 'ffprobe-static';
 import { getCached as assetGetCached, storeCached as assetStoreCached } from './asset-cache.js';
+import { isSafeUrl } from './net-safety.js';
 
 // Load environment variables from .env file
 config({ path: resolveProjectPath('.env') });
@@ -1241,6 +1242,10 @@ export async function downloadMedia(
         const startTime = Date.now();
 
         try {
+            const safe = isSafeUrl(url);
+            if (!safe.ok) {
+                throw new Error(`refused unsafe download URL: ${safe.reason}`);
+            }
             const response = await axios.get(url, {
                 responseType: 'stream',
                 timeout: 60000,
