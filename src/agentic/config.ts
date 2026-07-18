@@ -131,10 +131,31 @@ export interface CaptionTheme {
 export const CAPTION_THEME_PRESETS: Record<string, CaptionTheme> = {
     minimal: { fontScale: 1.0, color: '#FFFFFF', bg: null, outline: '#000000', bold: false, position: 'bottom' },
     bold: { fontScale: 1.15, color: '#FFFFFF', bg: null, outline: '#000000', bold: true, position: 'bottom' },
-    highContrast: { fontScale: 1.1, color: '#FFFF00', bg: 'rgba(0,0,0,0.55)', outline: '#000000', bold: true, position: 'bottom' },
-    softCard: { fontScale: 1.0, color: '#FFFFFF', bg: 'rgba(0,0,0,0.45)', outline: '#222222', bold: false, position: 'bottom' },
+    highContrast: {
+        fontScale: 1.1,
+        color: '#FFFF00',
+        bg: 'rgba(0,0,0,0.55)',
+        outline: '#000000',
+        bold: true,
+        position: 'bottom',
+    },
+    softCard: {
+        fontScale: 1.0,
+        color: '#FFFFFF',
+        bg: 'rgba(0,0,0,0.45)',
+        outline: '#222222',
+        bold: false,
+        position: 'bottom',
+    },
     centerPop: { fontScale: 1.2, color: '#FFFFFF', bg: null, outline: '#000000', bold: true, position: 'center' },
-    topTag: { fontScale: 0.95, color: '#FFFFFF', bg: 'rgba(0,0,0,0.5)', outline: '#000000', bold: false, position: 'top' },
+    topTag: {
+        fontScale: 0.95,
+        color: '#FFFFFF',
+        bg: 'rgba(0,0,0,0.5)',
+        outline: '#000000',
+        bold: false,
+        position: 'top',
+    },
 };
 
 /**

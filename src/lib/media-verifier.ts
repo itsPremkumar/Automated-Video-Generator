@@ -327,7 +327,11 @@ export async function verifyFinalRender(
     opts: VisionCheckOptions = DEFAULT_VISION_OPTS,
 ): Promise<VerificationResult> {
     if (!MEDIA_VERIFICATION_ENABLED) {
-        return { passes: true, confidence: 10, reason: 'Media verification disabled (MEDIA_VERIFICATION_ENABLED=false)' };
+        return {
+            passes: true,
+            confidence: 10,
+            reason: 'Media verification disabled (MEDIA_VERIFICATION_ENABLED=false)',
+        };
     }
     const ext = path.extname(filePath).toLowerCase();
     const isVideo = ['.mp4', '.webm', '.mov', '.m4v', '.avi'].includes(ext);
@@ -357,9 +361,10 @@ export async function verifyFinalRender(
         }
         let r: VerificationResult;
         try {
-            r = AI_PROVIDER === 'gemini' && GEMINI_API_KEY
-                ? await verifyWithGemini(base64, keywordStr, 'image/jpeg', opts)
-                : await verifyWithOllama(base64, keywordStr, opts);
+            r =
+                AI_PROVIDER === 'gemini' && GEMINI_API_KEY
+                    ? await verifyWithGemini(base64, keywordStr, 'image/jpeg', opts)
+                    : await verifyWithOllama(base64, keywordStr, opts);
         } catch (err: any) {
             r = unavailableResult(`AI provider unavailable: ${err.message}`, opts);
         }

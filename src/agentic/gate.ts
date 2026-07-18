@@ -307,62 +307,68 @@ export async function verifyRenderedVideo(
                 detail: vr.passes ? `ai-ok conf ${vr.confidence}` : `ai-flag: ${vr.reason}`,
             });
         } else {
-        try {
-            const frameDir = mp4Path + '.ai-frame';
-            fs.mkdirSync(frameDir, { recursive: true });
-            const frame = require('path').join(frameDir, 'f.jpg');
-            await new Promise<void>((res) => {
-                const c = spawn(ffmpeg, ['-y', '-ss', '00:00:00.5', '-i', mp4Path, '-frames:v', '1', frame], {
-                    stdio: 'ignore',
+            try {
+                const frameDir = mp4Path + '.ai-frame';
+                fs.mkdirSync(frameDir, { recursive: true });
+                const frame = require('path').join(frameDir, 'f.jpg');
+                await new Promise<void>((res) => {
+                    const c = spawn(ffmpeg, ['-y', '-ss', '00:00:00.5', '-i', mp4Path, '-frames:v', '1', frame], {
+                        stdio: 'ignore',
+                    });
+                    const t = setTimeout(() => {
+                        try {
+                            c.kill('SIGKILL');
+                        } catch {
+                            /* */
+                        }
+                        res();
+                    }, 20000);
+                    c.on('close', () => {
+                        clearTimeout(t);
+                        res();
+                    });
+                    c.on('error', () => {
+                        clearTimeout(t);
+                        res();
+                    });
                 });
-                const t = setTimeout(() => {
+                if (fs.existsSync(frame)) {
+                    const ai = await aiVerifyAsset(
+                        frame,
+                        'video',
+                        opts.keywords ?? [],
+                        opts.aiVerify as any,
+                        opts.brain,
+                    );
+                    if (ai) {
+                        checks.push({
+                            id: 'X16',
+                            label: 'AI content verification',
+                            pass: ai.pass,
+                            detail: ai.pass ? `ai-ok conf ${ai.confidence}` : `ai-flag: ${ai.reason}`,
+                        });
+                    } else {
+                        checks.push({
+                            id: 'X16',
+                            label: 'AI content verification',
+                            pass: true,
+                            detail: 'skipped (no model / offline)',
+                        });
+                    }
                     try {
-                        c.kill('SIGKILL');
+                        fs.rmSync(frameDir, { recursive: true, force: true });
                     } catch {
                         /* */
                     }
-                    res();
-                }, 20000);
-                c.on('close', () => {
-                    clearTimeout(t);
-                    res();
-                });
-                c.on('error', () => {
-                    clearTimeout(t);
-                    res();
-                });
-            });
-            if (fs.existsSync(frame)) {
-                const ai = await aiVerifyAsset(frame, 'video', opts.keywords ?? [], opts.aiVerify as any, opts.brain);
-                if (ai) {
-                    checks.push({
-                        id: 'X16',
-                        label: 'AI content verification',
-                        pass: ai.pass,
-                        detail: ai.pass ? `ai-ok conf ${ai.confidence}` : `ai-flag: ${ai.reason}`,
-                    });
-                } else {
-                    checks.push({
-                        id: 'X16',
-                        label: 'AI content verification',
-                        pass: true,
-                        detail: 'skipped (no model / offline)',
-                    });
                 }
-                try {
-                    fs.rmSync(frameDir, { recursive: true, force: true });
-                } catch {
-                    /* */
-                }
+            } catch {
+                checks.push({
+                    id: 'X16',
+                    label: 'AI content verification',
+                    pass: true,
+                    detail: 'skipped (extract failed)',
+                });
             }
-        } catch {
-            checks.push({
-                id: 'X16',
-                label: 'AI content verification',
-                pass: true,
-                detail: 'skipped (extract failed)',
-            });
-        }
         }
     }
 
