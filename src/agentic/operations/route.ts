@@ -36,6 +36,16 @@ export type TaskKind =
     | 'voiceover'
     | 'download_image'
     | 'download_video'
+    | 'convert'
+    | 'to_gif'
+    | 'convert_audio'
+    | 'images_to_video'
+    | 'video_to_images'
+    | 'social_download'
+    | 'separate_audio'
+    | 'separate_video'
+    | 'mute_video'
+    | 'write_script'
     | 'full_video'
     | 'unknown';
 
@@ -96,7 +106,7 @@ function classifyOne(t: string): RoutedTask {
         const kw = extractPhrase(t) || t.replace(/.*?(image|photo|picture|pic|of)\s*/i, '').replace(/\b(download|get|fetch|give me|find|search|please|for me)\b/gi, '').trim();
         return { kind: 'download_image', summary: `Download a free image for "${kw}"`, args: { keyword: kw }, confidence: 0.9 };
     }
-    if (/\b(download|get|fetch|give me|find|search)\b/.test(low) && /\b(video|footage|clip)\b/.test(low) && !/\bmerge|combine|join\b/.test(low)) {
+    if (/\b(download|get|fetch|find|search)\b/.test(low) && /\b(video|footage|clip)\b/.test(low) && !/\bmerge|combine|join\b/.test(low)) {
         const kw = extractPhrase(t) || t.replace(/.*?(video|footage|clip|of)\s*/i, '').replace(/\b(download|get|fetch|give me|find|search|please|for me)\b/gi, '').trim();
         return { kind: 'download_video', summary: `Download a free video for "${kw}"`, args: { keyword: kw }, confidence: 0.9 };
     }
@@ -141,9 +151,9 @@ function classifyOne(t: string): RoutedTask {
         return { kind: 'rotate', summary: `Rotate ${deg}°`, args: { deg }, confidence: 0.85 };
     }
 
-    // ── EXTRACT AUDIO ──
-    if (/\b(extract|rip|pull|get)\b.*\b(audio|sound|music|mp3)\b/.test(low) || /\b(audio|mp3)\s*(from|of)\b/.test(low)) {
-        return { kind: 'extract_audio', summary: 'Extract audio track from video', args: {}, confidence: 0.9 };
+    // ── EXTRACT / SEPARATE AUDIO ──
+    if (/\b(extract|rip|pull|get|separate)\b.*\b(audio|sound|music|mp3)\b/.test(low) || /\b(audio|mp3)\s*(from|of)\b/.test(low) || /\b(audio only|just the audio|audio by itself)\b/.test(low)) {
+        return { kind: 'separate_audio', summary: 'Extract audio stream', args: {}, confidence: 0.9 };
     }
 
     // ── ADD CAPTIONS ──
@@ -211,6 +221,55 @@ function classifyOne(t: string): RoutedTask {
     if (/\b(voice ?over|narration|speak|read (this|aloud)|tts|say this)\b/.test(low)) {
         const text = extractPhrase(t) || t.replace(/.*?(voice ?over|narration|speak|read|say this|tts)\s*(this|aloud|me)?\s*/i, '').trim();
         return { kind: 'voiceover', summary: `Generate voiceover${text ? ` for "${text.slice(0, 40)}…"` : ''}`, args: { text }, confidence: 0.9 };
+    }
+
+    // ── CONVERT (format/container) ──
+    if (/\b(convert|transcode|change (format|to)|re-?encode|export)\b/.test(low) && !/\b(audio|mp3|wav|ogg|m4a)\b/.test(low)) {
+        const fmt = (t.match(/\b(mp4|webm|mov|mkv|avi|m4v)\b/i) || [])[1]?.toLowerCase();
+        const imgs = /\b(gif)\b/.test(low);
+        if (imgs) return { kind: 'to_gif', summary: 'Export as GIF', args: {}, confidence: 0.85 };
+        return { kind: 'convert', summary: `Convert to .${fmt ?? 'mp4'}`, args: { target: fmt ?? 'mp4' }, confidence: 0.85 };
+    }
+
+    // ── CONVERT AUDIO ──
+    if (/\b(convert|change|re-?encode)\b.*\b(audio|mp3|wav|ogg|m4a)\b/.test(low) || /\b(to mp3|to wav|to m4a)\b/.test(low)) {
+        const fmt = (t.match(/\b(mp3|wav|ogg|m4a)\b/i) || [])[1]?.toLowerCase() ?? 'mp3';
+        return { kind: 'convert_audio', summary: `Convert audio to .${fmt}`, args: { target: fmt }, confidence: 0.85 };
+    }
+
+    // ── IMAGE(S) -> VIDEO ──
+    if (/\b(slideshow|image.?to.?video|photos? to video|make (a )?video (from|out of) (images?|photos?)|turn (images?|photos?) into)\b/.test(low)) {
+        const dir = extractPaths(t).length ? undefined : (t.match(/(?:from|of|in)\s+([^\n]+\/)/) || [])[1];
+        return { kind: 'images_to_video', summary: 'Make a video from images', args: { folder: dir }, confidence: 0.85 };
+    }
+
+    // ── VIDEO -> IMAGES (frames) ──
+    if (/\b(video.?to.?images?|extract frames?|pull frames?|frame (grab|extract)|poster frames?)\b/.test(low)) {
+        return { kind: 'video_to_images', summary: 'Extract frames from video', args: {}, confidence: 0.85 };
+    }
+
+    // ── SOCIAL DOWNLOAD (YouTube/TikTok/etc.) ──
+    if (/\b(download|grab|rip|save)\b/.test(low) && /https?:\/\//.test(t) && /\b(youtube|yt\.|youtu\.be|tiktok|instagram|twitter|fb\.|facebook|vimeo|reddit)\b|\byoutu/.test(low)) {
+        const url = (t.match(/https?:\/\/[^\s"']+/) || [])[0];
+        const mode = /\baudio\b/.test(low) ? 'audio' : 'both';
+        return { kind: 'social_download', summary: `Download from ${url?.slice(0, 40)}`, args: { url, mode }, confidence: 0.9 };
+    }
+
+    // ── SEPARATE AUDIO / VIDEO / MUTE ──
+    if (/\b(separate|extract|pull out|split off)\b.*\b(audio|sound|voice)\b/.test(low) || /\b(just the audio|audio only|audio by itself)\b/.test(low)) {
+        return { kind: 'separate_audio', summary: 'Extract audio stream', args: {}, confidence: 0.85 };
+    }
+    if (/\b(separate|extract|pull out|split off)\b.*\b(video|visual|footage)\b/.test(low) || /\b(video only|silent video|no audio)\b/.test(low)) {
+        return { kind: 'separate_video', summary: 'Extract silent video stream', args: {}, confidence: 0.85 };
+    }
+    if (/\b(mute|remove (the )?audio|strip audio|silence the audio)\b/.test(low)) {
+        return { kind: 'mute_video', summary: 'Mute video', args: {}, confidence: 0.85 };
+    }
+
+    // ── WRITE SCRIPT ──
+    if (/\b(write|draft|generate|create|make)\b.*\b(script|script for|screenplay|video script)\b/.test(low) || /\b(script (for|about|on))\b/.test(low)) {
+        const topic = extractPhrase(t) || t.replace(/.*?(script|screenplay|about|for|on)\s*/i, '').replace(/\b(write|draft|generate|create|make|please|a|an|me|this)\b/gi, '').trim();
+        return { kind: 'write_script', summary: `Write script${topic ? ` for "${topic}"` : ''}`, args: { topic: topic || t }, confidence: 0.85 };
     }
 
     // ── FULL VIDEO ──

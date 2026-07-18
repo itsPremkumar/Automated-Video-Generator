@@ -30,11 +30,13 @@ Two ways to drive it:
 
 2. **Granular MCP tools** (for power users / agents): each task is also a
    discrete tool — `merge_videos`, `trim_video`, `crop_video`, `resize_video`,
-   `rotate_video`, `extract_audio`, `split_video`, `add_captions`,
+   `rotate_video`, `separate_audio`, `split_video`, `add_captions`,
    `add_music`, `add_audio_track`, `localize_video`, `grade_video`,
    `slow_motion`, `speed_ramp`, `add_watermark`, `add_lower_third`,
    `add_progress_bar`, `derive_outputs`, `make_voiceover`, `download_image`,
-   `download_video`.
+   `download_video`, `convert_video`, `to_gif`, `convert_audio`,
+   `images_to_video`, `video_to_images`, `social_download`, `separate_video`,
+   `mute_video`, `write_script`.
 
 ## Available single tasks
 
@@ -57,6 +59,16 @@ Two ways to drive it:
 | `derive` | Multi-aspect + thumbnail from a file | ffmpeg |
 | `voiceover` | Text -> mp3 (Edge-TTS) | generateVoiceovers |
 | `download_image` / `download_video` | Free CC media by keyword | fetchVisualsForScene |
+| `convert` | Re-container / re-encode (mp4/webm/mov/mkv/avi/m4v) | ffmpeg |
+| `to_gif` | Export clip as animated GIF | ffmpeg palettegen |
+| `convert_audio` | Convert audio to mp3/wav/ogg/m4a | ffmpeg |
+| `images_to_video` | Slideshow from images (Ken-Burns) | ffmpeg loop/zoompan |
+| `video_to_images` | Extract frames as PNGs | ffmpeg fps filter |
+| `social_download` | Download from YouTube/TikTok/IG (free, yt-dlp) | SocialDownloadAppService |
+| `separate_audio` | Extract audio stream to file | ffmpeg |
+| `separate_video` | Extract silent video stream | ffmpeg |
+| `mute_video` | Remove audio from video | ffmpeg -an |
+| `write_script` | Write a video script from a topic (FREE, no key) | writeScriptHeuristic (+optional Ollama) |
 | `full_video` | End-to-end generation (the ONLY path that touches the full pipeline) | runAgenticPipeline |
 
 ## Quality gate

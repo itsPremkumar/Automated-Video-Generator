@@ -177,7 +177,7 @@ describe('route.ts intent classification (heuristic, no model)', () => {
     test('classifies crop to 9:16', () => { const t = single('crop this video to 9:16 for tiktok'); assert.equal(t.kind, 'crop'); assert.equal(t.args.preset, '9:16'); });
     test('classifies resize', () => { assert.equal(single('resize this to 360x640').kind, 'resize'); });
     test('classifies rotate', () => { const t = single('rotate the clip 90 degrees'); assert.equal(t.kind, 'rotate'); assert.equal(t.args.deg, 90); });
-    test('classifies extract audio', () => { assert.equal(single('extract audio from my video').kind, 'extract_audio'); });
+    test('classifies extract audio', () => { assert.equal(single('extract audio from my video').kind, 'separate_audio'); });
     test('classifies voiceover', () => { const t = single('generate a voiceover of "welcome to my channel"'); assert.equal(t.kind, 'voiceover'); assert.ok((t.args.text || '').includes('welcome')); });
     test('classifies download image', () => { assert.equal(single('download an image of a coffee cup').kind, 'download_image'); });
     test('classifies download video', () => { assert.equal(single('download a video of a city').kind, 'download_video'); });

@@ -15,7 +15,7 @@ describe('route.ts intent classification (heuristic, no model)', () => {
     test('classifies crop to 9:16', () => { const t = single('crop this video to 9:16 for tiktok'); assert.equal(t.kind, 'crop'); assert.equal(t.args.preset, '9:16'); });
     test('classifies resize', () => { const t = single('resize this to 360x640'); assert.equal(t.kind, 'resize'); });
     test('classifies rotate', () => { const t = single('rotate the clip 90 degrees'); assert.equal(t.kind, 'rotate'); assert.equal(t.args.deg, 90); });
-    test('classifies extract audio', () => { const t = single('extract audio from my video'); assert.equal(t.kind, 'extract_audio'); });
+    test('classifies extract audio', () => { const t = single('extract audio from my video'); assert.equal(t.kind, 'separate_audio'); });
     test('classifies voiceover', () => { const t = single('generate a voiceover of "welcome to my channel"'); assert.equal(t.kind, 'voiceover'); assert.ok((t.args.text || '').includes('welcome')); });
     test('classifies download image', () => { const t = single('download an image of a coffee cup'); assert.equal(t.kind, 'download_image'); });
     test('classifies download video', () => { const t = single('download a video of a city'); assert.equal(t.kind, 'download_video'); });
@@ -30,5 +30,15 @@ describe('route.ts intent classification (heuristic, no model)', () => {
     test('classifies lower third', () => { const t = single('add lower third Title'); assert.equal(t.kind, 'lower_third'); });
     test('classifies progress bar', () => { const t = single('add progress bar'); assert.equal(t.kind, 'progress_bar'); });
     test('classifies derive', () => { const t = single('make a square version'); assert.equal(t.kind, 'derive'); });
+    test('classifies convert', () => { const t = single('convert this to webm'); assert.equal(t.kind, 'convert'); });
+    test('classifies gif', () => { const t = single('export this as a gif'); assert.equal(t.kind, 'to_gif'); });
+    test('classifies convert audio', () => { const t = single('convert audio to mp3'); assert.equal(t.kind, 'convert_audio'); });
+    test('classifies images to video', () => { const t = single('make a slideshow from my photos'); assert.equal(t.kind, 'images_to_video'); });
+    test('classifies video to images', () => { const t = single('extract frames from this video'); assert.equal(t.kind, 'video_to_images'); });
+    test('classifies social download', () => { const t = single('download https://youtu.be/abc123'); assert.equal(t.kind, 'social_download'); });
+    test('classifies separate audio', () => { const t = single('extract the audio from my video'); assert.equal(t.kind, 'separate_audio'); });
+    test('classifies separate video', () => { const t = single('give me just the silent video'); assert.equal(t.kind, 'separate_video'); });
+    test('classifies mute', () => { const t = single('mute this video'); assert.equal(t.kind, 'mute_video'); });
+    test('classifies write script', () => { const t = single('write a script about climate change'); assert.equal(t.kind, 'write_script'); });
     test('detects 2-step chain', () => { const t = routeTask('crop to 9:16 then add music'); assert.ok(isChain(t)); assert.equal(t.chain.length, 2); });
 });
