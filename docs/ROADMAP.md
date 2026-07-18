@@ -20,8 +20,8 @@ Architecture detail lives in [Architecture Refactor Roadmap](./ARCHITECTURE_REFA
 
 ## Creator workflow
 
-- More reusable templates for Shorts, Reels, explainers, and promos
-- Better subtitle styling and theme presets
+- [x] More reusable templates for Shorts, Reels, explainers, and promos — `format` presets (shorts/reels/tiktok/square/landscape/explainer/promo)
+- [x] Better subtitle styling and theme presets — `captionTheme` presets (minimal/bold/highContrast/softCard/centerPop/topTag), wired into the burned-caption renderer
 - Easier asset overrides and fallback media handling
 - Better preview flows before full rendering
 

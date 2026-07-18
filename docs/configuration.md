@@ -46,6 +46,55 @@ These sources are always available and require no environment variables. They ac
 | Subtitles | Auto-generated subtitle overlays |
 | Thumbnails | Auto-generated for completed videos |
 
+## Templates, Formats & Caption Themes (agentic pipeline)
+
+The agentic pipeline (`npm run agentic`) accepts named presets so you don't have
+to hand-tune every knob. All are free, deterministic, and offline.
+
+### Video-type templates (`videoType`)
+Selects the editorial voice (pacing, transitions, grade, caption style):
+`facts`, `tutorial`, `news`, `story`, `product`, `motivational`, `nature`.
+
+### Format presets (`format`)
+Quick aspect/orientation for a target surface. Explicit `orientation`/`aspect`
+still override the format when both are set.
+
+| `format` | Orientation | Aspect |
+|----------|-------------|--------|
+| `shorts`, `reels`, `tiktok`, `promo` | portrait | 9:16 |
+| `square` | portrait | 1:1 |
+| `landscape`, `explainer` | landscape | 16:9 |
+
+### Caption themes (`captionTheme`)
+Controls the burned-in caption look (color, size, box, vertical position).
+Leave unset for the historical default.
+
+| `captionTheme` | Look |
+|----------------|------|
+| `minimal` | white, no box, bottom |
+| `bold` | white, bold, bottom |
+| `highContrast` | yellow on dark box, bottom |
+| `softCard` | white on soft dark card, bottom |
+| `centerPop` | large white, centered |
+| `topTag` | small white on box, top |
+
+Example config fragment:
+
+```json
+{ "topic": "How black holes bend light", "format": "shorts", "videoType": "facts", "captionTheme": "highContrast" }
+```
+
+## Voice Cloning (optional, GPU)
+
+To narrate in your own cloned voice, run the Voicebox backend, then:
+
+```bash
+npm run voicebox:clone path/to/your-voice.wav "verbatim transcript of the clip"
+```
+
+This registers a cloned profile and writes `VOICEBOX_PROFILE_ID` to `.env`.
+See [VOICE_CLONING_GUIDE.md](./VOICE_CLONING_GUIDE.md) for details.
+
 ## Next Steps
 
 - [Usage Guide](usage) — Learn how to generate videos
