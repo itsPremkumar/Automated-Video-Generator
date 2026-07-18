@@ -284,7 +284,12 @@ async function generateSceneVoiceoverWithVoiceboxWrapper(
 
     try {
         const language = config.language || 'en';
-        await generateVoiceoverWithVoicebox(cleanText, outputPath, language);
+        const profileId = process.env.VOICEBOX_PROFILE_ID;
+        const engine = process.env.VOICEBOX_ENGINE || 'chatterbox_turbo';
+        await generateVoiceoverWithVoicebox(cleanText, outputPath, language, {
+            engine,
+            profileId,
+        });
         assertGeneratedAudioFile(outputPath);
         return { path: outputPath, duration: getAudioDuration(outputPath, scene.voiceoverText) };
     } catch (error: any) {

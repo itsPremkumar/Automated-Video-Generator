@@ -390,3 +390,51 @@ Kokoro-82M on the RTX 3050 (819 MB VRAM used, system RAM untouched).
   (the model stays warm in VRAM for the next segment; kill the backend to free it).
 - fails safe: if backend unreachable / no `VOICEBOX_PROFILE_ID` / engine can't
   load, it throws and the caller (`voice-generator.ts`) falls back to Edge-TTS.
+
+### 10.7 Clone YOUR real voice (end-to-end, verified on this box)
+
+Voicebox is **profile-based**: narration runs through a *voice profile*. For a
+cloned voice you register a `cloned` profile, give it a ~10-30s reference clip of
+your real voice, then point the pipeline at that profile. Verified working on the
+RTX 3050: a Chatterbox-Turbo clone generated a 4.96s clip in your (placeholder)
+voice using ~3.8 GB VRAM.
+
+**One-time registration** (backend must be running, see §10.2):
+
+```bash
+# 1. Create a CLONED profile backed by chatterbox-turbo (MIT, ~4GB VRAM footprint)
+curl -X POST http://127.0.0.1:17493/profiles -H "Content-Type: application/json" \
+  -d '{"name":"My Real Voice","voice_type":"cloned","default_engine":"chatterbox_turbo"}'
+# -> {"id":"<CLONE_PROFILE_ID>", ...}
+
+# 2. Upload a clean 10-30s clip of YOUR voice + verbatim transcript
+curl -X POST http://127.0.0.1:17493/profiles/<CLONE_PROFILE_ID>/samples \
+  -F "file=@C:/path/to/your-voice.wav" \
+  -F "reference_text=the exact words you spoke in the clip"
+```
+
+**Or use the bundled setup script** (does both steps + writes `.env`):
+
+```bash
+node scripts/setup-voicebox-clone.mjs C:/path/to/your-voice.wav "verbatim transcript of the clip"
+```
+
+Then `.env` already has (set during integration):
+
+```
+TTS_PROVIDER=voicebox
+VOICEBOX_API_URL=http://127.0.0.1:17493
+VOICEBOX_ENGINE=chatterbox_turbo
+VOICEBOX_PROFILE_ID=<your cloned profile id>
+```
+
+The agentic pipeline (`src/lib/voice-generator.ts` → `generateVoiceoverWithVoicebox`)
+now narrates EVERY scene in your cloned voice. Each scene: `POST /speak`
+{text, profile, engine:"chatterbox_turbo"} → poll status → `GET /audio/{id}` → WAV.
+
+**VRAM note:** Chatterbox-Turbo is ~4 GB; on the 4 GB RTX 3050 it loads at
+~3.8 GB (OS + CUDA overhead leaves little headroom). It fits, but do NOT also run
+the Remotion GPU render on the dGPU simultaneously — let Voicebox use the dGPU,
+Remotion uses the iGPU. If you hit CUDA OOM, switch `VOICEBOX_ENGINE` to
+`chatterbox` (multilingual, ~3.2 GB) or use the lighter Kokoro narrator
+(`VOICEBOX_ENGINE=kokoro` + a Kokoro **preset** profile — no cloning, ~0.8 GB VRAM).
