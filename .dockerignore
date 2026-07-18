@@ -11,6 +11,7 @@ public/visuals/
 .vscode/
 .idea/
 .env
+.venv/
 .video-cache.json
 .mcp-jobs.json
 *.log

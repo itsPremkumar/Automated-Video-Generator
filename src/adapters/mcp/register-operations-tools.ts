@@ -19,6 +19,11 @@ import { gradeVideo } from '../../agentic/operations/grade.js';
 import { slowMotion, speedRamp } from '../../agentic/operations/motion.js';
 import { addWatermark, addLowerThird, addProgressBar } from '../../agentic/operations/overlay.js';
 import { deriveFromVideo } from '../../agentic/operations/derivative.js';
+import { removeSilence } from '../../agentic/operations/silence.js';
+import { detectScenes } from '../../agentic/operations/scene.js';
+import { autoReframe } from '../../agentic/operations/reframe.js';
+import { reduceNoise } from '../../agentic/operations/noise.js';
+import { applyBrandKit } from '../../agentic/operations/brand.js';
 import { doTask } from '../../agentic/operations/dispatch.js';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -92,4 +97,14 @@ export function registerOperationsTools(server: McpServer) {
         async (a: any) => { const r = await downloadImageByKeyword(a.keyword, a.out); return okr(r.ok, r.output, r.detail); });
     server.registerTool('download_video', { title: 'Download Video by Keyword', description: 'Fetch a free CC video for a keyword.', inputSchema: z.object({ keyword: z.string().min(1), out: z.string().optional() }) as any },
         async (a: any) => { const r = await downloadVideoByKeyword(a.keyword, a.out); return okr(r.ok, r.output, r.detail); });
+    server.registerTool('remove_silence', { title: 'Remove Silence', description: 'Cut silent gaps from a video/audio using ffmpeg silencedetect (free, CPU-only).', inputSchema: z.object({ file: z.string(), out: z.string().optional(), noise: z.number().default(-35), minDur: z.number().default(0.5) }) as any },
+        async (a: any) => { const r = await removeSilence(a.file, a.out, { noise: a.noise, minDur: a.minDur }); return okr(r.ok, r.output, r.detail); });
+    server.registerTool('detect_scenes', { title: 'Detect Scenes', description: 'Detect scene cuts / build chapters from a video (free, CPU-only).', inputSchema: z.object({ file: z.string(), out: z.string().optional() }) as any },
+        async (a: any) => { const r = await detectScenes(a.file, a.out); return okr(r.ok, r.output, r.detail); });
+    server.registerTool('auto_reframe', { title: 'Auto Reframe', description: 'Crop/reframe to a target aspect (9:16 / 1:1 / 16:9) focusing on the active region (free, CPU-only).', inputSchema: z.object({ file: z.string(), out: z.string().optional(), preset: z.enum(['9:16', '1:1', '16:9']).default('9:16') }) as any },
+        async (a: any) => { const r = await autoReframe(a.file, a.out, { preset: a.preset }); return okr(r.ok, r.output, r.detail); });
+    server.registerTool('reduce_noise', { title: 'Reduce Noise', description: 'Light denoise / smoothing for audio+video (free, CPU-only).', inputSchema: z.object({ file: z.string(), out: z.string().optional(), audio: z.enum(['off', 'light', 'medium', 'heavy']).default('medium'), video: z.number().default(0) }) as any },
+        async (a: any) => { const r = await reduceNoise(a.file, a.out, { audio: a.audio, video: a.video }); return okr(r.ok, r.output, r.detail); });
+    server.registerTool('apply_brand_kit', { title: 'Apply Brand Kit', description: 'Burn-in a brand kit (logo + color + name/handle) onto a video (free, CPU-only).', inputSchema: z.object({ file: z.string(), out: z.string().optional(), logo: z.string().optional(), color: z.string().default('#101010'), name: z.string().optional() }) as any },
+        async (a: any) => { const r = await applyBrandKit(a.file, { name: a.name, logo: a.logo, color: a.color }, a.out); return okr(r.ok, r.output, r.detail); });
 }

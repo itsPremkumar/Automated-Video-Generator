@@ -23,6 +23,11 @@ import { gradeVideo, GradeResult } from './grade.js';
 import { slowMotion, speedRamp, MotionResult } from './motion.js';
 import { addWatermark, addLowerThird, addProgressBar, OverlayResult } from './overlay.js';
 import { deriveFromVideo, DerivativeResult } from './derivative.js';
+import { removeSilence } from './silence.js';
+import { detectScenes } from './scene.js';
+import { autoReframe } from './reframe.js';
+import { reduceNoise } from './noise.js';
+import { applyBrandKit } from './brand.js';
 import * as path from 'path';
 import { RouteResult, RoutedTask, RoutedChain, isChain, routeTask } from './route.js';
 import { runAgenticPipeline } from '../orchestrate.js';
@@ -166,6 +171,31 @@ async function runOne(task: RoutedTask, input: RunInput): Promise<DispatchResult
         case 'download_video': {
             const r: MediaResult = await downloadVideoByKeyword(a.keyword, input.out);
             return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
+        }
+        case 'remove_silence': {
+            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'remove_silence needs an input file' };
+            const r = await removeSilence(f, input.out, { noise: a.noise, minDur: a.minDur });
+            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
+        }
+        case 'detect_scenes': {
+            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'detect_scenes needs an input file' };
+            const r = await detectScenes(f, input.out, { mode: a.mode ?? 'detect', duration: a.duration });
+            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail + (r.cuts ? ` (${r.cuts.length} cuts)` : '') };
+        }
+        case 'auto_reframe': {
+            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'auto_reframe needs an input file' };
+            const r = await autoReframe(f, input.out, { preset: a.preset ?? a.aspect ?? '9:16' });
+            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
+        }
+        case 'reduce_noise': {
+            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'reduce_noise needs an input file' };
+            const r = await reduceNoise(f, input.out, { audio: a.strength ?? a.audio ?? 'medium', video: a.video ?? 0 });
+            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
+        }
+        case 'apply_brand_kit': {
+            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'apply_brand_kit needs an input file' };
+            const r = await applyBrandKit(f, { name: a.name ?? a.handle, color: a.color, logo: a.logo, tagline: a.tagline, intro: a.intro, outro: a.outro, bars: a.bars }, input.out);
+            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
         }
         case 'full_video': {
             const res = await runAgenticPipeline({ topic: a.topic || 'video', title: a.topic || 'Video', backend: 'agent', orientation: input.orientation ?? 'portrait' });

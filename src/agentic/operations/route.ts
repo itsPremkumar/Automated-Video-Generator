@@ -46,6 +46,11 @@ export type TaskKind =
     | 'separate_video'
     | 'mute_video'
     | 'write_script'
+    | 'remove_silence'
+    | 'detect_scenes'
+    | 'auto_reframe'
+    | 'reduce_noise'
+    | 'apply_brand_kit'
     | 'full_video'
     | 'unknown';
 
@@ -270,6 +275,30 @@ function classifyOne(t: string): RoutedTask {
     if (/\b(write|draft|generate|create|make)\b.*\b(script|script for|screenplay|video script)\b/.test(low) || /\b(script (for|about|on))\b/.test(low)) {
         const topic = extractPhrase(t) || t.replace(/.*?(script|screenplay|about|for|on)\s*/i, '').replace(/\b(write|draft|generate|create|make|please|a|an|me|this)\b/gi, '').trim();
         return { kind: 'write_script', summary: `Write script${topic ? ` for "${topic}"` : ''}`, args: { topic: topic || t }, confidence: 0.85 };
+    }
+
+    // ── REMOVE SILENCE ──
+    if (/\b(remove|cut|delete|trim).*\b(silence|silent|dead air|pauses?)\b/.test(low) || /\b(remove silence)\b/.test(low)) {
+        return { kind: 'remove_silence', summary: 'Remove silent gaps', args: {}, confidence: 0.9 };
+    }
+    // ── DETECT SCENES ──
+    if (/\b(detect|find|mark).*\b(scene|chapter)\b/.test(low) || /\b(scene detect|auto[- ]?chapter)\b/.test(low)) {
+        const mode = /chapter/.test(low) ? 'chapters' : 'detect';
+        return { kind: 'detect_scenes', summary: 'Detect scene cuts / chapters', args: { mode }, confidence: 0.9 };
+    }
+    // ── AUTO REFRAME ──
+    if (/\b(reframe|crop to|resize to|make (it )?(9:16|16:9|1:1|square|vertical|portrait))\b/.test(low)) {
+        const aspect = /16:9/.test(low) ? '16:9' : /1:1|square/.test(low) ? '1:1' : '9:16';
+        return { kind: 'auto_reframe', summary: `Reframe to ${aspect}`, args: { aspect, preset: aspect }, confidence: 0.9 };
+    }
+    // ── REDUCE NOISE ──
+    if (/\b(denoise|reduce noise|clean up (the )?(audio|video)|fix (the )?noise)\b/.test(low)) {
+        return { kind: 'reduce_noise', summary: 'Reduce noise', args: { strength: 'medium' }, confidence: 0.9 };
+    }
+    // ── BRAND KIT ──
+    if (/\b(brand|watermark with|add (my )?logo|apply (my )?brand)\b/.test(low)) {
+        const handle = (t.match(/@([\w.]+)/) || [])[1];
+        return { kind: 'apply_brand_kit', summary: 'Apply brand kit', args: { name: handle, handle, bars: true }, confidence: 0.88 };
     }
 
     // ── FULL VIDEO ──
