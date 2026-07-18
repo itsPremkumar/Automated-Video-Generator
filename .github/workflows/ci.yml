@@ -61,10 +61,10 @@ jobs:
         permissions:
             contents: read
             packages: write
-        env:
-            # GHCR repository names MUST be lowercase.
-            IMAGE: ghcr.io/${{ toLower(github.repository) }}
         steps:
+            - name: Compute lowercase image name (GHCR requires lowercase)
+              id: img
+              run: echo "image=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
             - uses: actions/checkout@v4
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
@@ -84,8 +84,8 @@ jobs:
                   platforms: linux/amd64
                   push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
                   tags: |
-                      ${{ env.IMAGE }}:latest
-                      ${{ env.IMAGE }}:${{ github.sha }}
+                      ${{ steps.img.outputs.image }}:latest
+                      ${{ steps.img.outputs.image }}:${{ github.sha }}
                   # GitHub cache speeds up rebuilds (free, no registry pull).
                   cache-from: type=gha
                   cache-to: type=gha,mode=max
