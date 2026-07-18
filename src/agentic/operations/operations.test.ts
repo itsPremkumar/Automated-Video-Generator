@@ -40,16 +40,24 @@ const ffprobe: string = (() => {
 })();
 
 // Some ffmpeg builds (e.g. minimal apt ffmpeg, or stripped static
-// binaries) omit non-free/GPL filters like drawtext. Skip filter-dependent
-// integration tests gracefully when the required filter is unavailable so CI
-// on a minimal ffmpeg stays green (the test still runs on full builds).
-function ffmpegHasFilter(name: string): boolean {
+// binaries) list drawtext in -filters but can't actually run it because
+// fontconfig/libfreetype are missing ("Filter not found" at runtime).
+// Skip filter-dependent integration tests gracefully when the filter can't
+// really run, so CI on a minimal ffmpeg stays green (the test still
+// runs on full builds).
+function ffmpegCanRun(vf: string): boolean {
     try {
         const { execFileSync } = require('child_process');
-        const out = execFileSync(ffmpeg, ['-filters']).toString();
-        return out.includes(name);
+        const tmpOut = path.join(os.tmpdir(), `ffprobe-smoke-${Date.now()}.mp4`);
+        execFileSync(
+            ffmpeg,
+            ['-f', 'lavfi', '-i', 'color=c=blue:s=64x64:d=0.1', '-vf', vf, '-frames:v', '1', '-y', tmpOut],
+            { stdio: 'ignore' },
+        );
+        try { fs.unlinkSync(tmpOut); } catch { /* ignore */ }
+        return true;
     } catch {
-        return true; // if we can't probe, don't skip (let the op surface real errors)
+        return false; // filter present in -filters but can't execute -> treat as unavailable
     }
 }
 
@@ -180,7 +188,7 @@ describe('new single-task ops (real ffmpeg)', () => {
     });
 
     test('watermark -> valid clip', async () => {
-        if (!ffmpegHasFilter('drawtext')) return; // skip: minimal ffmpeg build
+        if (!ffmpegCanRun('drawtext')) return; // skip: minimal ffmpeg build
         const a = makeClip('wm.mp4', 2, 'red');
         const out = path.join(tmp, 'wm-out.mp4');
         const r = await addWatermark(a, 'BRAND', out);
@@ -198,6 +206,7 @@ describe('new single-task ops (real ffmpeg)', () => {
     });
 
     test('add captions from text -> valid clip', async () => {
+        if (!ffmpegCanRun('drawtext')) return; // skip: minimal ffmpeg build
         const a = makeClip('cap.mp4', 2, 'blue');
         const out = path.join(tmp, 'cap-out.mp4');
         const r = await addCaptionsFromText(a, 'Hello world', out);
