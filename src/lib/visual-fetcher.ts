@@ -153,11 +153,26 @@ export function invalidateCachedVisual(keywords: string[], orientation: 'portrai
     }
 }
 
+/** Hard cap on cache entries; evict oldest insertions beyond this. */
+const CACHE_MAX_ENTRIES = 2000;
+
 function saveCache(cache: VideoCache): void {
     try {
-        const entries = Object.keys(cache).length;
-        fs.writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2));
-        // console.log(`📦 [CACHE] Saved ${entries} entries to cache`);
+        // Bound unbounded growth: if the cache exceeds the cap, drop the
+        // oldest entries (FIFO on insertion order) before persisting.
+        let keys = Object.keys(cache);
+        if (keys.length > CACHE_MAX_ENTRIES) {
+            const overflow = keys.length - CACHE_MAX_ENTRIES;
+            for (const k of keys.slice(0, overflow)) delete cache[k];
+            keys = Object.keys(cache);
+        }
+        const payload = JSON.stringify(cache, null, 2);
+        // Atomic write: write to a temp file then rename so a crash mid-write
+        // can never leave a truncated/corrupt .video-cache.json (lost-update
+        // / corruption race under concurrency).
+        const tmp = `${CACHE_FILE}.${process.pid}.tmp`;
+        fs.writeFileSync(tmp, payload);
+        fs.renameSync(tmp, CACHE_FILE);
     } catch (error: any) {
         // console.error(`📦 [CACHE] Error saving cache: ${error.message}`);
     }

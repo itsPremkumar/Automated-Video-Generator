@@ -1,9 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { spawnSync } from 'child_process';
+import { spawnSync, spawn } from 'child_process';
 import axios from 'axios';
 import { generateContentWithImage as ollamaGenerateWithImage } from './ollama-client';
 import { logInfo } from '../runtime';
+import { ffmpegPath } from './ffmpeg.js';
 
 const console = {
     log: (...args: unknown[]) => logInfo(...args),
@@ -23,9 +24,9 @@ export const MEDIA_VERIFICATION_ENABLED = process.env.MEDIA_VERIFICATION_ENABLED
 function runFfmpeg(args: string[]): Promise<Buffer | null> {
     return new Promise((resolve) => {
         try {
-            const { spawn } = require('child_process');
+            const bin = ffmpegPath();
             const timeoutMs = Number(process.env.AGENTIC_FFMPEG_TIMEOUT_MS || 15000);
-            const child = spawn('ffmpeg', args, { stdio: 'pipe' } as any);
+            const child = spawn(bin, args, { stdio: 'pipe' } as any);
             const chunks: Buffer[] = [];
             const t = setTimeout(() => {
                 try {
