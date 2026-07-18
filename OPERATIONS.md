@@ -89,6 +89,19 @@ merge/trim/crop is caught and reported, not silently shipped.
 - `src/agentic/operations/overlay.ts` — watermark / lower-third / progress-bar
 - `src/agentic/operations/derivative.ts` — derive (multi-aspect + thumbnail)
 - `src/agentic/operations/voiceover.ts`, `download-media.ts` — voiceover / download
+- `src/agentic/operations/convert.ts` — convert / to_gif / convert_audio
+- `src/agentic/operations/image-video.ts` — images_to_video / video_to_images
+- `src/agentic/operations/social-dl.ts` — social_download (yt-dlp, free)
+- `src/agentic/operations/demux.ts` — separate_audio / separate_video / mute_video
+- `src/agentic/operations/script.ts` — write_script (free heuristic)
 - `src/agentic/operations/route.ts` — intent router (heuristic, no paid key)
 - `src/agentic/operations/dispatch.ts` — runs single task or chain + quality gate
 - `src/adapters/mcp/register-operations-tools.ts` — MCP tool wiring
+
+## 100% free, no paid keys
+
+Every capability above is backed by ffmpeg-static (already in the repo),
+Edge-TTS (no key), free CC media fetchers, or free yt-dlp for social
+downloads. Script writing uses a built-in free heuristic (no API key); if a
+local Ollama model is available it is used as an optional upgrade. No
+OpenAI/Gemini/paid API is required for any single task.
