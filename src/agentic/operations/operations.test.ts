@@ -39,6 +39,20 @@ const ffprobe: string = (() => {
     }
 })();
 
+// Some ffmpeg builds (e.g. minimal apt ffmpeg, or stripped static
+// binaries) omit non-free/GPL filters like drawtext. Skip filter-dependent
+// integration tests gracefully when the required filter is unavailable so CI
+// on a minimal ffmpeg stays green (the test still runs on full builds).
+function ffmpegHasFilter(name: string): boolean {
+    try {
+        const { execFileSync } = require('child_process');
+        const out = execFileSync(ffmpeg, ['-filters']).toString();
+        return out.includes(name);
+    } catch {
+        return true; // if we can't probe, don't skip (let the op surface real errors)
+    }
+}
+
 // Use the OS temp dir (works for ffmpeg.exe on Windows AND system ffmpeg on
 // Linux/macOS — avoids a hardcoded Windows path that breaks CI on Linux).
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), '_ops-test-'));
@@ -166,6 +180,7 @@ describe('new single-task ops (real ffmpeg)', () => {
     });
 
     test('watermark -> valid clip', async () => {
+        if (!ffmpegHasFilter('drawtext')) return; // skip: minimal ffmpeg build
         const a = makeClip('wm.mp4', 2, 'red');
         const out = path.join(tmp, 'wm-out.mp4');
         const r = await addWatermark(a, 'BRAND', out);
