@@ -62,6 +62,51 @@ export function buildFallbackSegments(text: string, durationSeconds: number): Ca
 }
 
 /**
+ * Offline word-timing heuristic (Tier-1 #3).
+ *
+ * When a voice engine returns an audio file but NO word-level boundaries
+ * (non-Edge engines, user-supplied personalAudio, or the tone fallback), we
+ * still want captions that appear WORD-BY-WORD rather than all-at-once. This
+ * estimates per-word timing from syllable counts — no network, no native
+ * binary, zero cost. (A real forced-aligner like whisper.cpp gives ground-
+ * truth boundaries; this heuristic is the dependency-free offline default.)
+ *
+ * Heuristic: ~165ms per syllable, clamped to [120ms, 600ms] per word, with a
+ * 40ms inter-word gap; the whole sequence is stretched/compressed to fill
+ * `durationMs` so cues track the spoken audio as closely as possible.
+ */
+export function syllableWordTimings(text: string, durationMs: number): CaptionSegment[] {
+    const clean = (text || '').trim();
+    if (!clean) return [];
+    const words = clean.split(/\s+/).filter(Boolean);
+    if (words.length === 0) return [];
+    const dur = Math.max(400, Math.round(durationMs));
+
+    // Estimate raw weight per word (syllables), then normalize to fill `dur`.
+    const est = (w: string) => {
+        const syl = Math.max(1, (w.toLowerCase().match(/[aeiouyà-ÿ]+/g) || []).length);
+        return Math.min(600, Math.max(120, syl * 165));
+    };
+    const weights = words.map(est);
+    let raw = weights.reduce((a, b) => a + b, 0) + 40 * (words.length - 1);
+    if (raw <= 0) raw = words.length; // safety
+    const scale = dur / raw;
+
+    const segs: CaptionSegment[] = [];
+    let cur = 0;
+    for (let i = 0; i < words.length; i++) {
+        const w = weights[i] * scale;
+        const start = Math.round(cur);
+        const end = Math.round(cur + w);
+        segs.push({ text: words[i], startMs: start, endMs: Math.max(end, start + 80) });
+        cur = end + 40 * scale;
+    }
+    // Pin the final cue to the audio end so the last word doesn't vanish early.
+    if (segs.length) segs[segs.length - 1].endMs = Math.max(segs[segs.length - 1].endMs, dur);
+    return segs;
+}
+
+/**
  * Return the caption segment active at a given time offset (ms) within a scene,
  * or null if none is active. Used by the render overlay.
  */

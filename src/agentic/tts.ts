@@ -16,7 +16,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Plan, ScenePlan } from './types.js';
 import { AgenticWorkspace } from './workspace.js';
-import { CaptionSegment, writeCaptionSidecars } from '../lib/captions.js';
+import { CaptionSegment, writeCaptionSidecars, syllableWordTimings } from '../lib/captions.js';
 
  
 const ffmpeg: string = require('ffmpeg-static');
@@ -91,7 +91,7 @@ export async function generateAgenticVoiceovers(
                     durationSec: r.duration || s.durationSec,
                     captionSegments: (r.captionSegments?.length)
                         ? r.captionSegments
-                        : [{ text: s.voiceoverText, startMs: 0, endMs: Math.round((r.duration || s.durationSec) * 1000) }],
+                        : syllableWordTimings(s.voiceoverText, Math.round((r.duration || s.durationSec) * 1000)),
                 });
                 ok++;
             }
@@ -128,12 +128,10 @@ function fillMissing(plan: Plan, have: SceneVoiceover[], audioDir: string, drive
         const existing = byIdx.get(idx);
         if (existing) { scenes.push(existing); continue; }
         const t = toneForScene(s.voiceoverText, s.durationSec, idx);
-        // Sentence-length caption fallback from the scene text.
-        const caps: CaptionSegment[] = [{
-            text: s.voiceoverText,
-            startMs: 0,
-            endMs: Math.round(t.durationSec * 1000),
-        }];
+        // Word-paced caption fallback from the scene text (offline heuristic,
+        // no network / native binary). Produces word-by-word cues instead of a
+        // single all-at-once block so burned captions read naturally.
+        const caps: CaptionSegment[] = syllableWordTimings(s.voiceoverText, Math.round(t.durationSec * 1000));
         scenes.push({ sceneIndex: idx, audioPath: t.audioPath, durationSec: t.durationSec, captionSegments: caps });
     }
     const sidecars = writeCaptionSidecars(audioDir, toCaptionScenes(plan, scenes), { baseName: 'subtitles' });

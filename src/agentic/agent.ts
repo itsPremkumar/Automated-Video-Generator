@@ -45,6 +45,8 @@ export interface AgentBackendConfig {
     visionVerify?: (filePath: string, keywords: string[]) => Promise<{ passes: boolean; confidence: number; reason: string }>;
     /** OPT-IN AI verification config (reuses the running agent's own model). Off by default. */
     aiVerify?: import('./config.js').AgenticConfig['aiVerify'];
+    /** Agent brain budget / circuit-breaker (optional). */
+    brain?: { maxCalls?: number; maxFails?: number };
 }
 
 // ── Built-in, key-free agent intelligence ───────────────────────────────────

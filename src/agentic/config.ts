@@ -27,14 +27,30 @@ export type MusicIntensity = 'calm' | 'mid' | 'energetic';
  * template tunes it for the genre), then explicit user overrides win last.
  */
 export const VIDEO_TYPE_PROFILES: Record<VideoType, Partial<AgenticConfig>> = {
-    facts:        { kineticText: true, transition: 'fade', grade: 'cinematic', musicIntensity: 'mid', captions: 'burned' },
-    tutorial:     { kineticText: true, transition: 'slide', grade: 'neutral', musicIntensity: 'calm', captions: 'burned', sfx: true },
-    news:         { kineticText: false, transition: 'cut', grade: 'cool', musicIntensity: 'mid', captions: 'burned', orientation: 'landscape', aspect: '16:9' },
-    story:        { kineticText: true, transition: 'fade', grade: 'warm', musicIntensity: 'calm', captions: 'burned' },
-    product:      { kineticText: true, transition: 'slide', grade: 'vivid', musicIntensity: 'energetic', captions: 'burned', sfx: true },
-    motivational: { kineticText: true, transition: 'zoomblur', grade: 'cinematic', musicIntensity: 'energetic', captions: 'karaoke' },
-    nature:       { kineticText: false, transition: 'fade', grade: 'cinematic', musicIntensity: 'calm', captions: 'burned' },
+    facts:        { kineticText: true, transition: 'fade', grade: 'cinematic', musicIntensity: 'mid', captions: 'burned', hookFirst: true, variablePacing: true, jCutSec: 0.4 },
+    tutorial:     { kineticText: true, transition: 'slide', grade: 'neutral', musicIntensity: 'calm', captions: 'burned', sfx: true, hookFirst: false, variablePacing: false, jCutSec: 0.2 },
+    news:         { kineticText: false, transition: 'cut', grade: 'cool', musicIntensity: 'mid', captions: 'burned', orientation: 'landscape', aspect: '16:9', hookFirst: false, variablePacing: false, jCutSec: 0.1 },
+    story:        { kineticText: true, transition: 'fade', grade: 'warm', musicIntensity: 'calm', captions: 'burned', hookFirst: true, variablePacing: true, jCutSec: 0.6 },
+    product:      { kineticText: true, transition: 'slide', grade: 'vivid', musicIntensity: 'energetic', captions: 'burned', sfx: true, hookFirst: true, variablePacing: true, jCutSec: 0.3 },
+    motivational: { kineticText: true, transition: 'zoomblur', grade: 'cinematic', musicIntensity: 'energetic', captions: 'karaoke', hookFirst: true, variablePacing: true, jCutSec: 0.5 },
+    nature:       { kineticText: false, transition: 'fade', grade: 'cinematic', musicIntensity: 'calm', captions: 'burned', hookFirst: false, variablePacing: true, jCutSec: 0.8 },
 };
+
+/** Human-readable names for discovery / docs / UI dropdowns. */
+export const VIDEO_TYPE_LABELS: Record<VideoType, string> = {
+    facts: 'Facts / Educational',
+    tutorial: 'Tutorial / How-to',
+    news: 'News / Timely',
+    story: 'Story / Narrative',
+    product: 'Product / Promo',
+    motivational: 'Motivational / Quote',
+    nature: 'Nature / Ambient',
+};
+
+/** List the available template ids + labels (for CLI help / docs). */
+export function listTemplates(): { id: VideoType; label: string }[] {
+    return (Object.keys(VIDEO_TYPE_PROFILES) as VideoType[]).map((id) => ({ id, label: VIDEO_TYPE_LABELS[id] }));
+}
 
 export interface AgenticConfig {
     /** Topic + title are the only REQUIRED inputs — everything else is optional. */
@@ -59,6 +75,10 @@ export interface AgenticConfig {
 
     /** ── Captions ── */
     captions?: CaptionStyle;         // burned (default) | none | karaoke
+    /** Extra languages for subtitle sidecars (Tier-1 #2). Each produces a
+     *  `<name>.<lang>.srt` next to the native SRT, translated by the agent's
+     *  own free model. Offline / no-model → sidecar still emitted (untranslated). */
+    languages?: string[];            // e.g. ['es','fr','hi','ta']
 
     /** ── Platform tailoring (B12) ── */
     /** When set, the agent brain tailors aspect + caption style + hook length
@@ -105,6 +125,11 @@ export interface AgenticConfig {
 
     /** ── Branding (optional) ── */
     brand?: { watermark?: string; accent?: string };
+
+    /** ── Agent brain budget / circuit-breaker (optional) ── */
+    /** When set, caps total model calls per run and trips the breaker after
+     *  `fails` consecutive failures — pipeline falls back to heuristics. */
+    brain?: { maxCalls?: number; maxFails?: number };
 
     /**
      * AI visual/audio verification — OPT-IN, zero extra cost.

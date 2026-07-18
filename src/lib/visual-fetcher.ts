@@ -8,9 +8,11 @@ import { generateContent as ollamaGenerateContent } from './ollama-client';
 import { searchOpenverseImages } from './openverse-fetcher';
 import { wikiProvider, archiveProvider, freeVideoDownloader } from './free-video/index';
 import { freeImageAdapter } from './free-image/index';
+export { freeImageAdapter } from './free-image/index';
 
 // @ts-ignore - ffprobe-static types
 import ffprobePath from 'ffprobe-static';
+import { getCached as assetGetCached, storeCached as assetStoreCached } from './asset-cache.js';
 
 // Load environment variables from .env file
 config({ path: resolveProjectPath('.env') });
@@ -1130,7 +1132,25 @@ export async function downloadMedia(
 ): Promise<DownloadResult> {
     const outputPath = path.join(outputDir, filename);
 
-    // console.log(`\n⬇️ [DOWNLOAD] Starting download...`);
+    // GLOBAL CACHE HIT: reuse a previously-downloaded copy of this exact URL
+    // (keyed by hash) to skip the network entirely. TTL 0 = cache forever.
+    const cached = assetGetCached(url, 0);
+    if (cached && cached !== outputPath) {
+        try {
+            fs.mkdirSync(outputDir, { recursive: true });
+            fs.copyFileSync(cached, outputPath);
+            let videoDuration: number | undefined;
+            let videoTrimAfterFrames: number | undefined;
+            if (filename.endsWith('.mp4') || filename.endsWith('.webm') || filename.endsWith('.mov')) {
+                const vm = await getVideoMetadata(outputPath);
+                videoDuration = vm.durationSeconds;
+                videoTrimAfterFrames = vm.trimAfterFrames;
+            }
+            return { path: outputPath, videoDuration, videoTrimAfterFrames };
+        } catch { /* fall through to live download */ }
+    }
+
+    // Create directory if it doesn't exist
     // console.log(`⬇️ [DOWNLOAD] URL: ${url}`);
     // console.log(`⬇️ [DOWNLOAD] Output: ${outputPath}`);
     // console.log(`⬇️ [DOWNLOAD] Max retries: ${retries}`);
@@ -1253,6 +1273,9 @@ export async function downloadMedia(
                     const stats = fs.statSync(outputPath);
                     // console.log(`⬇️ [DOWNLOAD] ✅ Complete in ${elapsed}ms`);
                     // console.log(`⬇️ [DOWNLOAD] File size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+
+                    // Mirror into the global asset cache for future jobs.
+                    assetStoreCached(url, outputPath);
 
                     // Get video duration if it's a video file
                     let videoDuration: number | undefined;

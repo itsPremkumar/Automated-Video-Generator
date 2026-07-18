@@ -84,6 +84,7 @@ input/input-scripts.json.bak-*
 # Planning docs in agentic-pipeline/ (README.md, VERIFICATION_MATRIX.md,
 # AGENT_TOOLS_AND_PHASES.md) and the source under src/agentic/ stay tracked.
 agentic-pipeline/workspaces/
+agentic-pipeline/.asset-cache/
 agentic-pipeline/**/*.candidate.*
 *.candidate.jpg
 *.candidate.mp4

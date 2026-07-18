@@ -16,6 +16,7 @@ import {
     serializeCaptions,
     serializeCaptionsToSrt,
     serializeCaptionsToVtt,
+    syllableWordTimings,
     writeCaptionSidecars,
     type CaptionSegment,
 } from './captions';
@@ -207,4 +208,22 @@ test('writeCaptionSidecars writes nothing when no scene has text', () => {
     const written = writeCaptionSidecars(dir, [{ text: '', durationSeconds: 2 }]);
     assert.deepEqual(written, []);
     assert.equal(fs.existsSync(path.join(dir, 'subtitles.srt')), false);
+});
+
+test('syllableWordTimings produces word-by-word cues filling the duration', () => {
+    const segs = syllableWordTimings('The quick brown fox jumps', 4000);
+    assert.equal(segs.length, 5);
+    // first word starts at 0, last word ends at/after the audio duration
+    assert.equal(segs[0].startMs, 0);
+    assert.ok(segs[segs.length - 1].endMs >= 4000 - 1);
+    // monotonic + non-overlapping
+    for (let i = 1; i < segs.length; i++) {
+        assert.ok(segs[i].startMs >= segs[i - 1].endMs);
+    }
+    // every word is preserved as its own cue text
+    assert.deepEqual(segs.map((s) => s.text), ['The', 'quick', 'brown', 'fox', 'jumps']);
+});
+
+test('syllableWordTimings returns empty for blank text', () => {
+    assert.deepEqual(syllableWordTimings('   ', 1000), []);
 });

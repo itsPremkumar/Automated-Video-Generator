@@ -28,6 +28,10 @@ export interface BrainOptions {
     visionModel?: string;
     /** Timeout (ms) per model call. Defaults to 20s. */
     timeoutMs?: number;
+    /** Max total model calls allowed for this brain instance (budget). Off/undefined = unlimited. */
+    maxCalls?: number;
+    /** Consecutive failures that trip the circuit-breaker (stops all model calls). Off/undefined = disabled. */
+    maxFails?: number;
 }
 
 const DEFAULT_OR_MODEL = 'meta-llama/llama-3.1-8b-instruct:free';
@@ -127,75 +131,109 @@ function extractJSON<T>(text: string): T | null {
 
 export class AgentBrain {
     private o: BrainOptions;
+    private callsUsed = 0;
+    private failStreak = 0;
+    private tripped = false;
     constructor(opts?: BrainOptions) {
         this.o = opts ?? envOpts();
+        if (this.o.maxCalls === 0) this.tripped = true; // zero budget => disabled
     }
-    get modelEnabled(): boolean { return hasModel(this.o); }
+    get modelEnabled(): boolean { return hasModel(this.o) && !this.tripped; }
+    /** Calls remaining under the budget (Infinity if unlimited). */
+    get callsRemaining(): number { return this.o.maxCalls ? Math.max(0, this.o.maxCalls - this.callsUsed) : Infinity; }
+    /** True once the circuit-breaker has tripped (over budget or too many fails). */
+    get isTripped(): boolean { return this.tripped; }
+
+    /**
+     * Budget + circuit-breaker guard around any model call.
+     *  - If tripped or over budget, returns null WITHOUT touching the network.
+     *  - On a null/undefined result, counts a consecutive failure; trips after
+     *    `maxFails` in a row. On a truthy result the failure streak resets.
+     */
+    private async guarded<T>(work: () => Promise<T | null>): Promise<T | null> {
+        if (this.tripped) return null;
+        if (this.o.maxCalls && this.callsUsed >= this.o.maxCalls) { this.tripped = true; return null; }
+        this.callsUsed++;
+        try {
+            const r = await work();
+            if (r == null) {
+                this.failStreak++;
+                if (this.o.maxFails && this.failStreak >= this.o.maxFails) this.tripped = true;
+            } else {
+                this.failStreak = 0;
+            }
+            return r;
+        } catch {
+            this.failStreak++;
+            if (this.o.maxFails && this.failStreak >= this.o.maxFails) this.tripped = true;
+            return null;
+        }
+    }
 
     /** B1 — write an engaging, narrative-arc script. Falls back to heuristic. */
     async writeScript(topic: string, title: string): Promise<string | null> {
-        const r = await completeJSON<{ script: string }>(this.o,
+        const r = await this.guarded(() => completeJSON<{ script: string }>(this.o,
             'You are a short-form video scriptwriter. Write a tight, natural, engaging script with a hook, build, and payoff. 3-5 short sentences. No hashtags, no markup.',
             `Topic: ${topic}\nTitle: ${title}`,
-            '{"script":"..."}');
+            '{"script":"..."}'));
         return r?.script?.trim() || null;
     }
 
     /** B2 — contextually rich, scene-specific search keywords. */
     async expandKeywords(sceneText: string, title: string, n = 5): Promise<string[] | null> {
-        const r = await completeJSON<{ keywords: string[] }>(this.o,
+        const r = await this.guarded(() => completeJSON<{ keywords: string[] }>(this.o,
             `You are a stock-media search expert. Given a scene's narration, return ${n} diverse, specific, visually-descriptive search queries (e.g. "barista pouring latte art", not "coffee nature"). No repeats.`,
             `Title: ${title}\nScene narration: ${sceneText}`,
-            '{"keywords":["...","..."]}');
+            '{"keywords":["...","..."}'));
         const k = (r?.keywords || []).map((s) => s.trim()).filter(Boolean).slice(0, n);
         return k.length ? k : null;
     }
 
     /** B7 — match music to the video's emotional arc. */
     async deriveMusic(sceneTexts: string[], title: string): Promise<string | null> {
-        const r = await completeJSON<{ query: string }>(this.o,
+        const r = await this.guarded(() => completeJSON<{ query: string }>(this.o,
             'You are a music supervisor. Given a video\'s scenes, return ONE short free-stock-music search query (mood + genre + tempo) that fits the emotional arc and platform (short-form vertical).',
             `Title: ${title}\nScenes:\n${sceneTexts.map((s, i) => `${i + 1}. ${s}`).join('\n')}`,
-            '{"query":"..."}');
+            '{"query":"..."}'));
         return r?.query?.trim() || null;
     }
 
     /** B3 — pick the strongest hook scene (index) for a cold-open. */
     async hookScene(sceneTexts: string[]): Promise<number | null> {
-        const r = await completeJSON<{ hookIndex: number }>(this.o,
+        const r = await this.guarded(() => completeJSON<{ hookIndex: number }>(this.o,
             'You are a retention editor. Given scene narrations (1-indexed), pick the SINGLE most curiosity-driving / emotionally striking scene to open the video (the hook). Output its 1-based index.',
             sceneTexts.map((s, i) => `${i + 1}. ${s}`).join('\n'),
-            '{"hookIndex":3}');
+            '{"hookIndex":3}'));
         const i = (r?.hookIndex ?? 0) - 1;
         return (i >= 0 && i < sceneTexts.length) ? i : null;
     }
 
     /** B6 — per-scene pacing (relative emphasis 0.5-1.5) for emotional beats. */
     async paceScenes(sceneTexts: string[]): Promise<number[] | null> {
-        const r = await completeJSON<{ weights: number[] }>(this.o,
+        const r = await this.guarded(() => completeJSON<{ weights: number[] }>(this.o,
             'You are a film editor. Given scene narrations (1-indexed), return a pacing weight per scene (0.5=brief, 1.0=normal, 1.5=linger) so emotional beats breathe. Same length as input.',
             sceneTexts.map((s, i) => `${i + 1}. ${s}`).join('\n'),
-            '{"weights":[1,0.8,1.5,1]}');
+            '{"weights":[1,0.8,1.5,1]}'));
         const w = (r?.weights || []).map((x) => Math.max(0.5, Math.min(1.5, Number(x) || 1)));
         return w.length === sceneTexts.length ? w : null;
     }
 
     /** B11 — A/B title variants for testing thumbnails/CTR. */
     async titleVariants(title: string, scenes: string[]): Promise<string[] | null> {
-        const r = await completeJSON<{ variants: string[] }>(this.o,
+        const r = await this.guarded(() => completeJSON<{ variants: string[] }>(this.o,
             'You are a YouTube/Shorts title strategist. Given a working title and scenes, return 3 distinct, clickable title variants (curiosity/value/list-style mix). No duplicates.',
             `Title: ${title}\nScenes:\n${scenes.map((s, i) => `${i + 1}. ${s}`).join('\n')}`,
-            '{"variants":["...","...","..."]}');
+            '{"variants":["...","...","..."]}'));
         const v = (r?.variants || []).map((s) => s.trim()).filter(Boolean).slice(0, 3);
         return v.length ? v : null;
     }
 
     /** B12 — platform-tailor the cut (aspect + caption style + hook length). */
     async tailorForPlatform(platform: 'tiktok' | 'youtube' | 'instagram' | 'reels', title: string, scenes: string[]): Promise<{ aspect: string; captionStyle: 'karaoke' | 'burned' | 'none'; hookSec: number } | null> {
-        const r = await completeJSON<{ aspect: string; captionStyle: string; hookSec: number }>(this.o,
+        const r = await this.guarded(() => completeJSON<{ aspect: string; captionStyle: string; hookSec: number }>(this.o,
             `You are a platform strategist. Given the platform (${platform}), title and scenes, return the best aspect ratio, caption style, and hook length (seconds) for max retention on that platform.`,
             `Title: ${title}\nScenes:\n${scenes.map((s, i) => `${i + 1}. ${s}`).join('\n')}`,
-            '{"aspect":"9:16","captionStyle":"karaoke","hookSec":3}');
+            '{"aspect":"9:16","captionStyle":"karaoke","hookSec":3}'));
         if (!r?.aspect) return null;
         const cs = r.captionStyle === 'none' ? 'none' : r.captionStyle === 'burned' ? 'burned' : 'karaoke';
         return { aspect: r.aspect, captionStyle: cs, hookSec: Math.max(1, Math.min(8, Number(r.hookSec) || 3)) };
@@ -203,20 +241,20 @@ export class AgentBrain {
 
     /** B10 — compelling, SEO-friendly metadata. */
     async generateMetadata(title: string, scenes: string[]): Promise<{ title: string; description: string; hashtags: string[] } | null> {
-        const r = await completeJSON<{ title: string; description: string; hashtags: string[] }>(this.o,
+        const r = await this.guarded(() => completeJSON<{ title: string; description: string; hashtags: string[] }>(this.o,
             'You are a YouTube/Shorts SEO expert. Write a clickable title, a 2-3 sentence description, and 5-8 relevant hashtags.',
             `Working title: ${title}\nScenes:\n${scenes.map((s, i) => `${i + 1}. ${s}`).join('\n')}`,
-            '{"title":"...","description":"...","hashtags":["...","..."]}');
+            '{"title":"...","description":"...","hashtags":["...","..."]}'));
         if (!r?.title) return null;
         return { title: r.title, description: r.description ?? '', hashtags: (r.hashtags || []).slice(0, 8) };
     }
 
     /** B5 — full narrative reorder (returns ordered scene indices). */
     async narrativeOrder(sceneTexts: string[]): Promise<number[] | null> {
-        const r = await completeJSON<{ order: number[] }>(this.o,
+        const r = await this.guarded(() => completeJSON<{ order: number[] }>(this.o,
             'You are a story editor. Given scene narrations (1-indexed), return the best viewing order for a hook→build→payoff→CTA arc. Output the 1-based indices in new order.',
             sceneTexts.map((s, i) => `${i + 1}. ${s}`).join('\n'),
-            '{"order":[3,1,2,...]}');
+            '{"order":[3,1,2,...]}'));
         const order = (r?.order || []).map((n) => n - 1).filter((i) => i >= 0 && i < sceneTexts.length);
         if (order.length !== sceneTexts.length) return null;
         return order;
@@ -233,7 +271,7 @@ export class AgentBrain {
     async visionVerify(filePath: string, keywords: string[]): Promise<{ passes: boolean; confidence: number; reason: string } | null> {
         const hasVision = Boolean(this.o.openRouterKey && this.o.visionModel) || Boolean(this.o.ollamaUrl && this.o.ollamaModel);
         if (!hasVision) return null;
-        try {
+        return this.guarded(async () => {
             const b64 = readFileSync(filePath).toString('base64');
             const ctrl = new AbortController();
             const t = setTimeout(() => ctrl.abort(), this.o.timeoutMs ?? 20000);
@@ -268,14 +306,12 @@ export class AgentBrain {
             const j = await res.json();
             const text = isOR ? (j?.choices?.[0]?.message?.content ?? '') : (j?.message?.content ?? '');
             return extractJSON<{ passes: boolean; confidence: number; reason: string }>(text);
-        } catch {
-            return null;
-        }
+        });
     }
 
     /** Key-free text completion (rides the agent's own model). Exposed for
      *  audio/transcript QA in ai-verify.ts. Returns null on any failure. */
     completeJSON<T>(system: string, prompt: string, schemaHint: string): Promise<T | null> {
-        return completeJSON<T>(this.o, system, prompt, schemaHint);
+        return this.guarded(() => completeJSON<T>(this.o, system, prompt, schemaHint));
     }
 }

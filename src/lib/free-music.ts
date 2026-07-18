@@ -17,6 +17,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import axios from 'axios';
 import { logInfo, logWarn, resolveProjectPath } from '../runtime';
+import { getCached as assetGetCached, storeCached as assetStoreCached } from './asset-cache.js';
 
 const console = {
     log: (...args: unknown[]) => logInfo('[FREE-MUSIC]', ...args),
@@ -197,13 +198,24 @@ async function downloadTrack(track: FreeMusicTrack, destPath: string): Promise<v
         if (!local) throw new Error(`Local track not found: ${track.id}`);
         fs.mkdirSync(path.dirname(destPath), { recursive: true });
         fs.copyFileSync(local, destPath);
+        assetStoreCached(track.downloadUrl, destPath);
         return;
+    }
+    // GLOBAL CACHE HIT: reuse a previously-downloaded copy of this exact track.
+    const cached = assetGetCached(track.downloadUrl, 0);
+    if (cached && cached !== destPath) {
+        try {
+            fs.mkdirSync(path.dirname(destPath), { recursive: true });
+            fs.copyFileSync(cached, destPath);
+            return;
+        } catch { /* fall through to live download */ }
     }
     const res = await withTimeout(axios.get(track.downloadUrl, { responseType: 'arraybuffer', timeout: 15000 }), 15000, `download ${track.title}`);
     const buf = Buffer.from(res.data as ArrayBuffer);
     if (!buf || buf.length < 1024) throw new Error(`Downloaded file too small for ${track.title}`);
     fs.mkdirSync(path.dirname(destPath), { recursive: true });
     fs.writeFileSync(destPath, buf);
+    assetStoreCached(track.downloadUrl, destPath);
 }
 
 export interface ResolveFreeMusicOptions {

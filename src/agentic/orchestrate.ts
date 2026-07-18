@@ -194,7 +194,7 @@ export async function runAgenticPipeline(
     // ── STAGE 1: SCRIPT + PLAN (agent writes the script) ──────────────
     // AgentBrain makes the advanced decision (free model when configured),
     // falling back to the heuristic when offline / no key / model error.
-    const brain = new AgentBrain();
+    const brain = new AgentBrain(cfg.brain ? { maxCalls: cfg.brain.maxCalls, maxFails: cfg.brain.maxFails } : undefined);
     const brainScript = (cfg.writeScript ? await cfg.writeScript(req.topic, req.title) : null)
         ?? (await brain.writeScript(req.topic, req.title))
         ?? writeScriptHeuristic(req.topic, req.title);
@@ -474,7 +474,7 @@ export async function runAgenticPipeline(
     // score drops the candidate. When off / no model, acquire.ts ignores this.
     if (cfg.aiVerify?.enabled) {
         acquireDeps.cfg = cfg as any;
-        acquireDeps.brain = new AgentBrain();
+        acquireDeps.brain = new AgentBrain(cfg.brain ? { maxCalls: cfg.brain.maxCalls, maxFails: cfg.brain.maxFails } : undefined);
     }
     const { workspace, candidates } = await acquireAssets(plan, acquireDeps, req.candidatesPerAsset ?? 2);
     emit({ stage: 'acquire', percent: 100, message: `Acquired ${candidates.length} candidates` });
@@ -738,7 +738,7 @@ async function buildSfxLayer(
 
 export async function renderAgenticSlideshow(
     res: PipelineResult,
-    opts: { outPath?: string; crossfadeSec?: number; burnCaptions?: boolean; sfx?: boolean; transition?: string; preset?: string; kinetic?: boolean; kenBurns?: boolean; dimensions?: { w: number; h: number }; captions?: 'burned' | 'karaoke' | 'none'; intro?: { title: string; subtitle?: string; durationSec?: number }; outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number }; jCutSec?: number; aiVerify?: import('./config.js').AgenticConfig['aiVerify'] } = {},
+    opts: { outPath?: string; crossfadeSec?: number; burnCaptions?: boolean; sfx?: boolean; transition?: string; preset?: string; kinetic?: boolean; kenBurns?: boolean; dimensions?: { w: number; h: number }; captions?: 'burned' | 'karaoke' | 'none'; intro?: { title: string; subtitle?: string; durationSec?: number }; outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number }; jCutSec?: number; aiVerify?: import('./config.js').AgenticConfig['aiVerify']; languages?: string[] } = {},
 ): Promise<string> {
     
     const ffmpeg: string = require('ffmpeg-static');
@@ -1208,7 +1208,7 @@ export async function renderAgenticSlideshow(
     }
 
     // ── Phase 7.3 output artifacts (thumbnail, details, copy sidecars). ──
-    await writeOutputArtifacts(res, out, outDir, opts.aiVerify);
+    await writeOutputArtifacts(res, out, outDir, opts.aiVerify, opts.languages);
     fs.rmSync(srtPath, { force: true });
 
     // ── Phase 8.4: POST-RENDER quality verification (X7-X9). ──
@@ -1305,7 +1305,7 @@ function escapeFilterPath(p: string): string {
 }
 
 /** Phase 7.3 — emit thumbnail.jpg, subtitles sidecars, details.txt, scene-data copy. */
-async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: string, aiVerify?: import('./config.js').AgenticConfig['aiVerify']): Promise<void> {
+async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: string, aiVerify?: import('./config.js').AgenticConfig['aiVerify'], languages?: string[]): Promise<void> {
     const brain = new AgentBrain();
     
     const base = outDir + '/' + res.workspace.jobId;
@@ -1316,6 +1316,31 @@ async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: st
     if (res.voiceovers?.sidecars) {
         for (const sc of res.voiceovers.sidecars) {
             try { fs.copyFileSync(sc, base + '_' + sc.split(/[\\/]/).pop()); } catch { /* ignore */ }
+        }
+    }
+    // Tier-1 #2: multi-language subtitle sidecars. Translate the native SRT
+    // into each requested language via the agent's own free model; if no model
+    // is configured (offline) the sidecar is still emitted (untranslated), so
+    // the pipeline never blocks.
+    if (languages && languages.length) {
+        const nativeSrt = (res.voiceovers?.sidecars ?? []).find((s) => s.endsWith('.srt'));
+        if (nativeSrt && fs.existsSync(nativeSrt)) {
+            try {
+                const { localizeSrtSidecars } = await import('./localize.js');
+                const out = await localizeSrtSidecars({
+                    srcSrtPath: nativeSrt,
+                    outDir,
+                    baseName: res.workspace.jobId,
+                    languages,
+                    brain,
+                });
+                for (const p of out) {
+                    try { fs.copyFileSync(p, base + '_' + p.split(/[\\/]/).pop()); } catch { /* ignore */ }
+                }
+                if (out.length) console.log(`🌐 localized subtitles: ${out.length} language(s) -> ${out.map((p) => p.split(/[\\/]/).pop()).join(', ')}`);
+            } catch (e: any) {
+                console.warn(`⚠ subtitle localization skipped: ${e?.message ?? e}`);
+            }
         }
     }
     const hashtags = res.plan.scenes.flatMap((s) => s.searchKeywords).slice(0, 8).map((k) => '#' + k.replace(/\s+/g, '')).join(' ');
@@ -1371,6 +1396,25 @@ async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: st
             `TITLE:\n${mTitle}\n\nDESCRIPTION:\n${mDesc}\n\nHASHTAGS:\n${mHash}\n\nTAGS:\n${mTags}${variantBlock}`,
             'utf8');
     } catch { /* optional */ }
+
+    // ── Tier-3 #8: publish adapter — emit a publish manifest (+ optional
+    //    YouTube upload helper). Zero-cost; never blocks the pipeline. ──
+    try {
+        const { writePublishManifest } = await import('./publish.js');
+        const fm = generateFreeMetadata(res.plan);
+        const manifest = writePublishManifest({
+            jobId: res.workspace.jobId,
+            deliverablesDir: outDir,
+            cfg: res.plan as unknown as import('./config.js').AgenticConfig,
+            title: fm.title,
+            description: fm.description,
+            hashtags: fm.hashtags,
+            languages: languages ?? [],
+        });
+        console.log(`📤 publish manifest: ${manifest.targets.length} platform target(s) → ${res.workspace.jobId}_publish-manifest.json`);
+    } catch (e: any) {
+        console.warn(`⚠ publish manifest skipped: ${e?.message ?? e}`);
+    }
 
     // ── STAGE 18: archive / consolidate this job into <workspace>/archive/ ──
     try {

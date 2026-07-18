@@ -176,6 +176,8 @@ export async function autoRunVideo(
                 jCutSec: cfg.jCutSec ?? 0.4,
                 // OPT-IN AI verify (render stage) — flows to verifyRenderedVideo X16.
                 aiVerify: cfg.aiVerify,
+                // Tier-1 #2: multi-language subtitle sidecars.
+                languages: cfg.languages,
             };
             let out: string;
             if ((opts.renderer ?? cfg.renderer) === 'remotion' && !soften) {

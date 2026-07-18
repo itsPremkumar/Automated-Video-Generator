@@ -80,7 +80,9 @@ export function generateFallbackVisual(
         fs.mkdirSync(dir, { recursive: true });
         let localPath: string;
         if (kind === 'video') {
-            localPath = creator.createKenBurnsClip({ out, text: label, w: 720, h: 1280, duration: 4 });
+            // KenBurns needs a source image; generate one first, then animate it.
+            const imgPath = creator.createBackgroundImage({ out: out.replace(/\.mp4$/, '_src.jpg'), text: label, w: 720, h: 1280 });
+            localPath = creator.createKenBurnsClip({ src: imgPath, out, duration: 4, zoom: 1.15 });
         } else {
             localPath = creator.createBackgroundImage({ out, text: label, w: 720, h: 1280 });
         }

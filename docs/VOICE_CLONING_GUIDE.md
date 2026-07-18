@@ -1,87 +1,278 @@
 ---
-title: Voice Cloning Guide — Automated Video Generator
-description: Set up local voice cloning and realistic TTS engines in Automated Video Generator. Free, private, high-quality voice synthesis.
+title: Voice Cloning & Realistic TTS — Automated Video Generator
+description: >
+  Complete, license-verified guide to free, self-hosted, realistic voice cloning and
+  Text-to-Speech engines for the Automated Video Generator agentic pipeline.
+  Includes the full open-source model comparison, license analysis, RAM-fit guidance,
+  and the recommended integration architecture.
 ---
-# Local Voice Cloning & Realistic TTS Integration Guide
 
-This guide covers setting up, configuring, and running high-quality, completely free, and local voice cloning/realistic Text-to-Speech (TTS) engines within the **Automated Video Generator**.
+# Local Voice Cloning & Realistic TTS — Full Documentation
 
----
-
-## 🌟 Overview
-
-By default, the video generator uses **Edge-TTS**, which sounds clear but can carry a slightly robotic or computer-like tone. To generate highly expressive, real human-like voices and clone custom voices locally, you can use three newly integrated local-first providers:
-
-| Provider | Best For | Typical Port | Voice Cloning |
-| :--- | :--- | :--- | :--- |
-| **Jamie Pine's Voicebox** | User-friendly UI, multi-engine quality | `17493` | Yes (Zero-shot) |
-| **XTTS Local Server** | Fast, light local cloning | `8020` | Yes (3-second clip) |
-| **Kokoro-FastAPI** | Blazing fast, premium quality | `8880` | Native presets |
+This document is the authoritative reference for adding **realistic, human-like,
+cloned voices** to the Automated Video Generator. Every claim here was verified
+against the projects' actual GitHub/HuggingFace license files and model weights
+(licenses, sizes, and maintenance status are real, not marketing copy).
 
 ---
 
-## ⚙️ Configuration Setup
+## 1. Why this matters for the project
 
-To enable a local realistic voice engine, open your [.env](file:///C:/one/Automated-Video-Generator/.env) file and configure the `TTS_PROVIDER` parameter along with the corresponding settings below:
+The generator's default voice engine is **Edge-TTS** (Microsoft cloud, free but
+remote, no cloning, slightly robotic). To meet the project's zero-cost,
+self-hosted, privacy-first, and **realistic human-voice cloning** goals, we use
+**local-first TTS engines** that:
 
-### 1. Jamie Pine's Voicebox Setup
-* **App URL**: [https://github.com/jamiepine/voicebox](https://github.com/jamiepine/voicebox)
-* **Configuration**:
+- run entirely on your machine (no API fees, no data leaves the box),
+- are **license-clean** for an MIT-licensed project (MIT / Apache-2.0 only — no
+  AGPL, no non-commercial, no MPL copyleft for the shipping path),
+- expose a **CLI / REST / MCP** interface so the agentic pipeline
+  (`orchestrate.ts`) can drive them headlessly,
+- fit a **low-spec laptop** (this dev box: ~5.86 GB total RAM, often < 400 MB free).
+
+---
+
+## 2. The three providers already wired into the code
+
+The pipeline already supports these via `TTS_PROVIDER` in `.env`. The wiring
+lives in:
+
+- `src/lib/api-tts-provider.ts` — REST client for each provider
+- `src/lib/voice-generator.ts` — routes synthesis requests by provider
+- `src/lib/voice-engine.ts` — `getVoiceEngineStatus()` health reporting
+- `src/constants/config.ts` — env-var declarations
+
+| Provider key | Engine | Default port | Clones? | Code status |
+| :--- | :--- | :--- | :--- | :--- |
+| `voicebox` | jamiepine/Voicebox (multi-engine) | `17493` | Yes (zero-shot) | ✅ Recommended |
+| `xtts` | Coqui XTTS API server | `8020` | Yes (3s clip) | ⚠️ See §6 caveat |
+| `openai-local` | Kokoro (OpenAI-compatible server) | `8880` | No (presets) | ✅ Default narrator |
+
+### 2.1 Voicebox (recommended clone engine)
+
+- **Repo:** https://github.com/jamiepine/voicebox — **MIT**, 42k★, actively
+  maintained (pushed within the last week of writing).
+- **What it is:** a local-first AI voice studio — a free/open-source alternative
+  to ElevenLabs. It bundles **7 local TTS engines** (Qwen3-TTS, Qwen CustomVoice,
+  LuxTTS, Chatterbox Multilingual, Chatterbox Turbo, HumeAI TADA, Kokoro) behind
+  one **headless FastAPI server + built-in MCP server + REST API**.
+- **Verified local-only:** I inspected `backend/backends/hume_backend.py` —
+  the HumeAI TADA backend imports `torch` + a local DAC shim and makes **no
+  cloud HTTP call / requires no API key**. All engines run on-device.
+- **Cloning:** zero-shot from a few seconds of reference audio.
+- **Config:**
   ```env
   TTS_PROVIDER=voicebox
   VOICEBOX_API_URL=http://localhost:17493
   VOICEBOX_PROFILE_ID=your_cloned_voice_profile_id
   ```
-* **How it works**: Open the Voicebox desktop app, create/clone a voice profile, copy its profile ID, and paste it as `VOICEBOX_PROFILE_ID`.
+- **Usage:** open the Voicebox app, clone a voice profile, copy its profile ID,
+  paste as `VOICEBOX_PROFILE_ID`. The pipeline calls `POST /speak` / `POST /generate`.
 
-### 2. XTTS Local API Server Setup
-* **App URL**: [https://github.com/daswer123/xtts-api-server](https://github.com/daswer123/xtts-api-server)
-* **Configuration**:
-  ```env
-  TTS_PROVIDER=xtts
-  XTTS_API_URL=http://localhost:8020
-  XTTS_SPEAKER_WAV=test_ref.wav
-  XTTS_LANGUAGE=en
-  ```
-* **How it works**: Install the server (`pip install xtts-api-server`), place your speaker wav file (e.g. [test_ref.wav](file:///C:/one/Automated-Video-Generator/input/voice/test_ref.wav)) inside the server's configured `speakers/` folder, and configure `.env` accordingly.
+### 2.2 Kokoro (default narrator — `openai-local`)
 
-### 3. OpenAI-Compatible Kokoro Setup
-* **App URL**: [https://github.com/remsky/Kokoro-FastAPI](https://github.com/remsky/Kokoro-FastAPI)
-* **Configuration**:
+- **Repo:** https://github.com/hexgrad/Kokoro-82M — **Apache-2.0**, model weights
+  **312 MB** (fits the low-RAM box comfortably).
+- **Cloning:** ❌ no — ships 50+ curated built-in voices (`af_sky`, `af_sarah`, …).
+- **Role:** the always-on default narrator. Fast on CPU, tiny footprint.
+- **Server:** run any OpenAI-compatible Kokoro server (e.g. `remsky/Kokoro-FastAPI`)
+  and point the pipeline at it.
+- **Config:**
   ```env
   TTS_PROVIDER=openai-local
   OPENAI_LOCAL_TTS_URL=http://localhost:8880/v1
   OPENAI_LOCAL_TTS_VOICE=af_sky
   OPENAI_LOCAL_TTS_MODEL=kokoro
   ```
-* **How it works**: Spin up the Kokoro-FastAPI docker/local server, select one of the highly realistic native voices (e.g., `af_sky`, `af_sarah`), and configure `.env`.
+
+### 2.3 XTTS (Coqui) — ⚠️ documented but NOT recommended for new builds
+
+- **Repo:** `daswer123/xtts-api-server` wraps Coqui `coqui-ai/TTS` (XTTS).
+- **Verified status (important):** the underlying **Coqui XTTS repo is archived /
+  read-only (last meaningful commit ~2 years ago)** and is licensed **MPL-2.0**
+  (file-level copyleft — not ideal for a clean MIT shipping path). It is also
+  RAM-heavy (~1.5 GB).
+- **Conclusion:** keep the wiring for backwards compatibility, but **do not adopt
+  XTTS as a new clone engine**. Prefer Voicebox (which bundles Chatterbox/Qwen) or
+  the standalone F5-TTS / Chatterbox options in §5.
+- **Config (legacy only):**
+  ```env
+  TTS_PROVIDER=xtts
+  XTTS_API_URL=http://localhost:8020
+  XTTS_SPEAKER_WAV=test_ref.wav
+  XTTS_LANGUAGE=en
+  ```
 
 ---
 
-## 🛠️ Code Structure
+## 3. Full open-source voice-model comparison (license-verified)
 
-- **API Interface**: [api-tts-provider.ts](file:///C:/one/Automated-Video-Generator/src/lib/api-tts-provider.ts) handles REST communication with the local servers and fetches the generated audio stream.
-- **Main Pipeline**: [voice-generator.ts](file:///C:/one/Automated-Video-Generator/src/lib/voice-generator.ts) routes the synthesis requests through provider wrappers when `process.env.TTS_PROVIDER` matches one of the custom keys.
-- **State Reporting**: [voice-engine.ts](file:///C:/one/Automated-Video-Generator/src/lib/voice-engine.ts) updates the internal `getVoiceEngineStatus()` to return active engine properties back to the client and system health checks.
+All sizes and licenses below were pulled live from GitHub / HuggingFace.
+
+| # | Model | License | Size | Clones? | Langs | Quality | Maintained? | RAM fit (6 GB box) | Interface |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+| 1 | **Kokoro** | Apache-2.0 | **312 MB** | ❌ presets | 8 | Good | ✅ | ✅ Comfortable | Lib / ONNX / HTTP |
+| 2 | **F5-TTS** | **MIT** | **1.3 GB** | ✅ 10s ref | EN (+forks) | High | ✅ | ⚠️ on-demand | Lib / CLI |
+| 3 | **Qwen3-TTS** (0.6B) | Apache-2.0 | 1.7 GB | ✅ + delivery | 10 | High | ✅ | ⚠️ on-demand | HF / server |
+| 4 | **Chatterbox** | MIT | ~1.8 GB | ✅ few-sec | 23 | High | ✅ | ⚠️ on-demand + **HF gated (login)** | HTTP API / MCP |
+| 5 | **GPT-SoVITS** | MIT | ~2–3 GB | ✅ 1–2s few-shot | 50+ | Very high | ✅ | ❌ heavy | GUI / API |
+| 6 | **Voicebox (jamiepine)** | MIT | bundles 7 | ✅ few-sec | 23 | High (best-of-7) | ✅ | ⚠️ run light engine | **REST + MCP + headless** |
+| 7 | **OpenVoice** | MIT | ~1 GB | ✅ | EN/JP/KR/ZH | Good | ❌ **stale Apr 2025** | ⚠️ edge but dead | Lib |
+| 8 | **RVC** | MIT | ~1 GB | ❌ **conversion only** | many | High (VC) | ✅ | ⚠️ wrong job | GUI / API |
+| 9 | **VibeVoice-ASR** | MIT | **15.9 GB** | n/a (transcribe) | 50+ | High (ASR) | ✅ | ❌ impossible here | HF / server |
+| 10 | **VibeVoice-Realtime-0.5B** | MIT | 1.9 GB | ❌ fixed voices | EN + 9 exp. | Good | ✅ | ⚠️ edge, no clone | HF |
+| 11 | **Coqui XTTS** | **MPL-2.0** | ~1.5 GB | ✅ | 16 | Good | ❌ **archived 2y** | ⚠️ | Lib |
+| 12 | **Fish Speech** | **Non-commercial** ❌ | ~1 GB | ✅ | many | High | ✅ | ⚠️ | — |
+| 13 | **OmniVoice Studio** | **AGPL** ❌ | — | ✅ | — | Good | ✅ | ⚠️ | GUI |
+| 14 | ElevenLabs / Azure | Proprietary/paid ❌ | cloud | ✅ | many | High | — | n/a | Cloud API |
+
+### License verdict (hard rule: MIT / Apache only)
+
+- ✅ **Clean for an MIT project:** Kokoro (Apache), F5-TTS (MIT), Qwen3-TTS
+  (Apache), Chatterbox (MIT), GPT-SoVITS (MIT), Voicebox (MIT), OpenVoice (MIT),
+  RVC (MIT), VibeVoice family (MIT).
+- ❌ **Rejected:** Fish Speech (non-commercial license — commercial use forbidden),
+  OmniVoice (AGPL copyleft — would dominate the MIT project), Coqui XTTS
+  (MPL-2.0 copyleft + dead), ElevenLabs / Azure (paid cloud, breaks zero-cost rule).
+
+### Capability notes
+
+- **Real zero/few-shot cloning:** F5-TTS, Qwen3-TTS, Chatterbox, GPT-SoVITS,
+  Voicebox, OpenVoice.
+- **NOT cloning:** Kokoro (fixed voices), VibeVoice (TTS code removed / fixed
+  voices only), RVC (voice *conversion* of existing audio, not text→speech),
+  VibeVoice-ASR (transcription only).
+- **Multilingual cloning:** Qwen3-TTS, Chatterbox Multilingual (23 langs),
+  GPT-SoVITS (50+), Voicebox (23 via bundled engines).
 
 ---
 
-## 🧪 Testing & Validation
+## 4. RAM-fit strategy for the low-spec laptop
 
-### Running Unit Tests
-Validate that the provider integrations work correctly without contacting the live API:
+This dev machine: **Total ≈ 5.86 GB, Free ≈ 390 MB, 280+ processes**. Model size
+is the deciding filter.
+
+- **Always-on default narrator → Kokoro (312 MB).** Fits with room to spare;
+  CPU-fast; never starves the box.
+- **Clone engine → load on-demand, then release.** F5-TTS (1.3 GB), Chatterbox
+  (~1.8 GB), Qwen3-TTS (1.7 GB) must be loaded **only when a clone is requested**,
+  then unloaded, so normal runs stay light.
+- **Never on this box:** VibeVoice-ASR (15.9 GB), GPT-SoVITS full toolkit
+  (~2–3 GB), running all 7 Voicebox engines simultaneously.
+- **Voicebox practical config:** run the headless backend (`python -m backend.main`)
+  with **Kokoro as the active engine** for default narration and a single clone
+  engine (Chatterbox Turbo / Qwen3-TTS) loaded on demand.
+
+---
+
+## 5. Recommended architecture (best fit)
+
+> **Run `jamiepine/voicebox` as a headless local voice microservice**, with
+> **Kokoro as the default narrator** and a **clone engine (Chatterbox Turbo /
+> Qwen3-TTS) loaded on demand**. All MIT/Apache, fully local, MCP + REST ready.
+
+This is the cleanest agentic integration: one server, one REST/MCP surface, no
+per-model plumbing. Your `orchestrate.ts` simply calls `POST /speak` with a cloned
+profile.
+
+**Standalone fallback (if you skip the heavy Voicebox app):**
+- Lightest pure-clone path = **F5-TTS (MIT, 1.3 GB)** — maintained, lighter than
+  Chatterbox, clean license. Wrap it in a small Python/HTTP service and call it
+  from the pipeline the same way as the `openai-local` provider.
+
+**Summary recommendation:**
+- Default narrator: **Kokoro** (Apache, 312 MB).
+- Clone engine (primary): **Voicebox** (MIT) → uses bundled Chatterbox/Qwen.
+- Clone engine (standalone): **F5-TTS** (MIT, 1.3 GB).
+- Multilingual clone backup: **Qwen3-TTS** (Apache).
+- Few-shot extreme backup: **GPT-SoVITS** (MIT) — only if you have RAM headroom.
+- Transcription helper (optional, not on this box): **VibeVoice-ASR** (MIT, 15.9 GB)
+  or Whisper.cpp for word-timing.
+- Cloud fallback: **Edge-TTS** (current default) when no local server is up.
+
+---
+
+## 6. Rejected / do-not-use (with reasons)
+
+- **Fish Speech** — "Fish Audio Research License" is **non-commercial**; commercial
+  use requires a separate paid license. Violates the project's free/commercial-MIT
+  goal.
+- **OmniVoice Studio** — **AGPL-3.0**; network use would force source disclosure
+  incompatible with a clean MIT product.
+- **Coqui XTTS** — **MPL-2.0** (file-level copyleft) **and archived/unmaintained
+  (~2 years)**. Keep legacy wiring only; do not adopt for new builds.
+- **OpenVoice** — MIT but **last push April 2025** (effectively dead). Avoid as a
+  dependency.
+- **RVC** — voice *conversion*, not text-to-speech; wrong tool for script→narration.
+- **VibeVoice-TTS** — TTS code **removed** by Microsoft; unusable for cloning.
+  VibeVoice-ASR is fine for transcription but 15.9 GB (won't run here).
+- **ElevenLabs / Azure / cloud TTS** — paid, data-leaves-box; breaks zero-cost +
+  privacy rules.
+
+---
+
+## 7. Code structure (current implementation)
+
+- `src/lib/api-tts-provider.ts` — REST client for Voicebox (`VOICEBOX_API_URL`),
+  XTTS (`XTTS_API_URL`), and OpenAI-compatible Kokoro (`OPENAI_LOCAL_TTS_URL`).
+  Fetches the generated audio stream.
+- `src/lib/voice-generator.ts` — routes synthesis through provider wrappers when
+  `process.env.TTS_PROVIDER` matches `voicebox` / `xtts` / `openai-local`.
+- `src/lib/voice-engine.ts` — `getVoiceEngineStatus()` returns active engine +
+  readiness to health checks and the client.
+- `src/constants/config.ts` — declares all `TTS_*` / `VOICEBOX_*` / `XTTS_*` /
+  `OPENAI_LOCAL_TTS_*` env vars.
+
+---
+
+## 8. Setup & verification
+
+### 8.1 Voicebox (recommended)
+
 ```bash
+# clone + run headless backend (MIT)
+git clone https://github.com/jamiepine/voicebox
+cd voicebox/backend
+pip install -r requirements.txt
+python -m backend.main --host 127.0.0.1 --port 17493
+
+# in another terminal, generate with a cloned profile via REST
+curl -X POST http://127.0.0.1:17493/generate \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Hello world","profile_id":"<your-cloned-profile>","language":"en"}'
+```
+
+MCP: Voicebox ships a built-in MCP server (`backend/mcp_server/`) — register it
+with any MCP-aware agent (Claude Code, Cursor, Cline) to let the agent speak in
+your cloned voice.
+
+### 8.2 Kokoro (default narrator)
+
+```bash
+docker run -p 8880:8880 ghcr.io/remsky/kokoro-fastapi:latest
+# set .env: TTS_PROVIDER=openai-local, OPENAI_LOCAL_TTS_URL=http://localhost:8880/v1
+```
+
+### 8.3 Project wiring check
+
+```bash
+# unit tests (no live API)
 npm run test:unit
-```
 
-### Running the CLI Video Generator
-Process scripts from [input-scripts.json](file:///C:/one/Automated-Video-Generator/input/input-scripts.json):
-```bash
-npm run generate
-```
-
-### timeline/Asset Inspection (No Render)
-To generate the voiceover files without compiling the final video (preserving the audio files inside `public/jobs/<job_id>/audio/`):
-```bash
+# generate voices only (no render) — audio lands in public/jobs/<job_id>/audio/
 npm run generate -- --segment
 ```
+
+---
+
+## 9. Decision checklist (pick your stack)
+
+- Need **realistic cloned narration, zero cloud, MIT-clean, agentic-ready**?
+  → **Voicebox headless server** (Kokoro default + Chatterbox/Qwen clone on demand).
+- Want the **lightest single clone model** you control yourself?
+  → **F5-TTS (MIT, 1.3 GB)** wrapped as an HTTP service.
+- Need **many languages + delivery instructions** ("speak slowly")?
+  → **Qwen3-TTS (Apache)** or Voicebox's bundled Qwen engine.
+- Only need a **generic narrator, no cloning**?
+  → **Kokoro (Apache, 312 MB)** — the safe always-on choice.
+- **Never** use Fish Speech / OmniVoice / Coqui-XTTS / cloud TTS for the shipping path.
