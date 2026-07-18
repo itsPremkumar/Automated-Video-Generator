@@ -20,12 +20,22 @@ const MEDIA_VERIFICATION_CONFIDENCE = Math.max(
 
 export const MEDIA_VERIFICATION_ENABLED = process.env.MEDIA_VERIFICATION_ENABLED !== 'false';
 
+function ffmpegBin(): string {
+    // Prefer the bundled ffmpeg-static binary (zero config, no system ffmpeg
+    // required). Fall back to a bare 'ffmpeg' only if the package is missing.
+    try {
+        return require('ffmpeg-static');
+    } catch {
+        return 'ffmpeg';
+    }
+}
+
 function runFfmpeg(args: string[]): Promise<Buffer | null> {
     return new Promise((resolve) => {
         try {
             const { spawn } = require('child_process');
             const timeoutMs = Number(process.env.AGENTIC_FFMPEG_TIMEOUT_MS || 15000);
-            const child = spawn('ffmpeg', args, { stdio: 'pipe' } as any);
+            const child = spawn(ffmpegBin(), args, { stdio: 'pipe' } as any);
             const chunks: Buffer[] = [];
             const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } resolve(null); }, timeoutMs);
             child.stdout?.on('data', (d: Buffer) => chunks.push(d));
