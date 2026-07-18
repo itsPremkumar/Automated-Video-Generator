@@ -27,6 +27,7 @@ import { verifyRenderedVideo, PostRenderCheck } from './gate.js';
 import { aiVerifyAsset } from './ai-verify.js';
 import { inputAssetPath } from '../lib/path-safety.js';
 import { ffmpegDrawtextEscape } from '../lib/ffmpeg-text.js';
+import { runFfmpeg as runFfmpegShared, FfmpegError } from '../lib/ffmpeg.js';
 import { exportMultiAspect, generateFreeMetadata, renderThumbnail, wordTimingsFromScript } from './export.js';
 
 import { buildPlan, applyProEdits } from './plan.js';
@@ -827,28 +828,18 @@ export async function runAgenticPipeline(
  * RAM-starved box (spawnSync/execFileSync cannot be interrupted mid-fork).
  * Resolves to the child exit code (never throws).
  */
+/**
+ * Run an ffmpeg command, returning its exit code (or -1 on timeout/spawn
+ * failure). Delegates to the shared runner in src/lib/ffmpeg.ts so there is a
+ * single ffmpeg invocation path (consistent binary resolution, timeout, kill).
+ */
 function runFfmpeg(args: string[], timeoutMs = 60000): Promise<number> {
-    return new Promise((resolve) => {
-        const { spawn } = require('child_process');
-        const ffmpeg: string = require('ffmpeg-static');
-        const child = spawn(ffmpeg, args, { stdio: 'ignore' });
-        const t = setTimeout(() => {
-            try {
-                child.kill('SIGKILL');
-            } catch {
-                /* noop */
-            }
-            resolve(-1);
-        }, timeoutMs);
-        child.on('error', () => {
-            clearTimeout(t);
-            resolve(-1);
+    return runFfmpegShared(args, { timeoutMs })
+        .then((r) => r.code)
+        .catch((err: unknown) => {
+            if (err instanceof FfmpegError) return err.code ?? -1;
+            return -1;
         });
-        child.on('close', (code: number | null) => {
-            clearTimeout(t);
-            resolve(code ?? -1);
-        });
-    });
 }
 
 /**
