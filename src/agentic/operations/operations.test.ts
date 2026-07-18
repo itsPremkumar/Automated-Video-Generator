@@ -54,7 +54,11 @@ function ffmpegCanRun(vf: string): boolean {
             ['-f', 'lavfi', '-i', 'color=c=blue:s=64x64:d=0.1', '-vf', vf, '-frames:v', '1', '-y', tmpOut],
             { stdio: 'ignore' },
         );
-        try { fs.unlinkSync(tmpOut); } catch { /* ignore */ }
+        try {
+            fs.unlinkSync(tmpOut);
+        } catch {
+            /* ignore */
+        }
         return true;
     } catch {
         return false; // filter present in -filters but can't execute -> treat as unavailable
