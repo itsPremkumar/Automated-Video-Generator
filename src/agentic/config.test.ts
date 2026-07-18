@@ -1,6 +1,16 @@
 import assert from 'node:assert';
 import { test } from 'node:test';
-import { resolveConfig, listTemplates, VIDEO_TYPE_PROFILES, VIDEO_TYPE_LABELS } from './config.js';
+import {
+    resolveConfig,
+    listTemplates,
+    VIDEO_TYPE_PROFILES,
+    VIDEO_TYPE_LABELS,
+    CAPTION_THEME_PRESETS,
+    VIDEO_FORMAT_PRESETS,
+    resolveCaptionTheme,
+    listCaptionThemes,
+    listFormats,
+} from './config.js';
 import type { VideoType } from './config.js';
 
 test('resolveConfig applies a videoType template on top of the preset', () => {
@@ -45,4 +55,38 @@ test('all 7 templates have a label and are listed', () => {
 test('unknown videoType falls back to empty template (no crash)', () => {
     const cfg = resolveConfig({ topic: 't', videoType: 'facts' as VideoType });
     assert.ok(cfg.aspect); // still resolves hard defaults
+});
+
+test('video-format preset overrides orientation + aspect', () => {
+    const shorts = resolveConfig({ topic: 't', format: 'shorts' });
+    assert.strictEqual(shorts.orientation, 'portrait');
+    assert.strictEqual(shorts.aspect, '9:16');
+
+    const square = resolveConfig({ topic: 't', format: 'square' });
+    assert.strictEqual(square.orientation, 'portrait');
+    assert.strictEqual(square.aspect, '1:1');
+
+    const explainer = resolveConfig({ topic: 't', format: 'explainer' });
+    assert.strictEqual(explainer.orientation, 'landscape');
+    assert.strictEqual(explainer.aspect, '16:9');
+
+    // explicit orientation override still wins over the format preset
+    const override = resolveConfig({ topic: 't', format: 'shorts', orientation: 'landscape' });
+    assert.strictEqual(override.orientation, 'landscape');
+});
+
+test('caption theme presets are all valid and resolvable', () => {
+    const ids = Object.keys(CAPTION_THEME_PRESETS);
+    assert.ok(ids.length >= 4);
+    for (const id of ids) {
+        const t = resolveCaptionTheme(id);
+        assert.ok(t.color.startsWith('#'));
+        assert.ok(['bottom', 'center', 'top'].includes(t.position));
+        assert.ok(t.fontScale > 0);
+    }
+    // unknown name falls back to minimal
+    assert.strictEqual(resolveCaptionTheme('nope').position, 'bottom');
+    // listers return every preset
+    assert.strictEqual(listCaptionThemes().length, ids.length);
+    assert.strictEqual(listFormats().length, Object.keys(VIDEO_FORMAT_PRESETS).length);
 });

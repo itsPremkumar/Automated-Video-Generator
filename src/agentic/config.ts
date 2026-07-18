@@ -114,6 +114,62 @@ export const VIDEO_TYPE_LABELS: Record<VideoType, string> = {
     nature: 'Nature / Ambient',
 };
 
+/**
+ * Caption theme presets — "Better subtitle styling and theme presets" from the
+ * roadmap. Each is a self-contained look the user can name instead of hand-
+ * tuning drawtext args. `fontScale` is relative to a 1080p-height baseline
+ * (1.0 ≈ readable default); `position` is vertical anchor.
+ */
+export interface CaptionTheme {
+    fontScale: number;
+    color: string;
+    bg: string | null; // backing box color (null = none)
+    outline: string;
+    bold: boolean;
+    position: 'bottom' | 'center' | 'top';
+}
+export const CAPTION_THEME_PRESETS: Record<string, CaptionTheme> = {
+    minimal: { fontScale: 1.0, color: '#FFFFFF', bg: null, outline: '#000000', bold: false, position: 'bottom' },
+    bold: { fontScale: 1.15, color: '#FFFFFF', bg: null, outline: '#000000', bold: true, position: 'bottom' },
+    highContrast: { fontScale: 1.1, color: '#FFFF00', bg: 'rgba(0,0,0,0.55)', outline: '#000000', bold: true, position: 'bottom' },
+    softCard: { fontScale: 1.0, color: '#FFFFFF', bg: 'rgba(0,0,0,0.45)', outline: '#222222', bold: false, position: 'bottom' },
+    centerPop: { fontScale: 1.2, color: '#FFFFFF', bg: null, outline: '#000000', bold: true, position: 'center' },
+    topTag: { fontScale: 0.95, color: '#FFFFFF', bg: 'rgba(0,0,0,0.5)', outline: '#000000', bold: false, position: 'top' },
+};
+
+/**
+ * Video format presets — quick aspect/orientation selectors for the common
+ * social surfaces named in the roadmap (Shorts / Reels / explainers / promos).
+ */
+export interface VideoFormat {
+    orientation: Orientation;
+    aspect: AspectKind;
+}
+export const VIDEO_FORMAT_PRESETS: Record<string, VideoFormat> = {
+    shorts: { orientation: 'portrait', aspect: '9:16' },
+    reels: { orientation: 'portrait', aspect: '9:16' },
+    tiktok: { orientation: 'portrait', aspect: '9:16' },
+    square: { orientation: 'portrait', aspect: '1:1' },
+    landscape: { orientation: 'landscape', aspect: '16:9' },
+    explainer: { orientation: 'landscape', aspect: '16:9' },
+    promo: { orientation: 'portrait', aspect: '9:16' },
+};
+
+/** Resolve a caption theme name to its preset (falls back to minimal). */
+export function resolveCaptionTheme(name?: string): CaptionTheme {
+    return (name && CAPTION_THEME_PRESETS[name]) || CAPTION_THEME_PRESETS.minimal;
+}
+
+/** List caption themes for discovery / UI dropdowns. */
+export function listCaptionThemes(): { id: string; label: string }[] {
+    return Object.keys(CAPTION_THEME_PRESETS).map((id) => ({ id, label: id }));
+}
+
+/** List video formats for discovery / UI dropdowns. */
+export function listFormats(): { id: string; label: string }[] {
+    return Object.keys(VIDEO_FORMAT_PRESETS).map((id) => ({ id, label: id }));
+}
+
 /** List the available template ids + labels (for CLI help / docs). */
 export function listTemplates(): { id: VideoType; label: string }[] {
     return (Object.keys(VIDEO_TYPE_PROFILES) as VideoType[]).map((id) => ({ id, label: VIDEO_TYPE_LABELS[id] }));
@@ -142,6 +198,13 @@ export interface AgenticConfig {
 
     /** ── Captions ── */
     captions?: CaptionStyle; // burned (default) | none | karaoke
+    /** Named caption theme preset id (see CAPTION_THEME_PRESETS). Resolves to
+     *  a concrete look (font size/color/position/box) at render time. */
+    captionTheme?: string;
+    /** Named video-format preset id (see VIDEO_FORMAT_PRESETS): shortcuts the
+     *  common social surfaces — shorts/reels/tiktok (9:16), square (1:1),
+     *  landscape/explainer (16:9), promo (9:16). */
+    format?: string;
     /** Extra languages for subtitle sidecars (Tier-1 #2). Each produces a
      *  `<name>.<lang>.srt` next to the native SRT, translated by the agent's
      *  own free model. Offline / no-model → sidecar still emitted (untranslated). */
@@ -301,11 +364,17 @@ export const PRESETS: Record<string, Partial<AgenticConfig>> = {
 export function resolveConfig(input: Partial<AgenticConfig>): AgenticConfig {
     const preset = input.preset ? (PRESETS[input.preset] ?? {}) : PRESETS.cinematic;
     const tpl = input.videoType ? (VIDEO_TYPE_PROFILES[input.videoType] ?? {}) : {};
+    // Video-format preset (shorts/reels/square/landscape/...) sets a baseline
+    // orientation+aspect, the same way `preset` does. Explicit user overrides
+    // (in stripUndefined below) still win, so naming `format: 'shorts'` while
+    // passing `orientation: 'landscape'` keeps landscape.
+    const fmt = input.format ? VIDEO_FORMAT_PRESETS[input.format] : {};
     const merged: AgenticConfig = {
         topic: input.topic ?? 'untitled',
         title: input.title ?? input.topic ?? 'untitled',
         ...preset, // baseline look
         ...tpl, // genre voice (on top of preset)
+        ...fmt, // format baseline (orientation/aspect)
         ...stripUndefined(input), // explicit user overrides win
     } as AgenticConfig;
     // Hard defaults for anything still missing.
