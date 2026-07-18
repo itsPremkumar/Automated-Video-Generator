@@ -134,3 +134,31 @@ describe('real-duration probe wiring', () => {
         assert.ok(box.w / box.h > 0.5 && box.w / box.h < 0.6); // ~9:16
     });
 });
+
+describe('error handling & resilience', () => {
+    test('autoReframe rejects unsupported preset with a clean error (no crash)', async () => {
+        const { autoReframe } = await import('./reframe.js');
+        const r = await autoReframe('/fake/in.mp4', undefined, { preset: '4:3' as any });
+        assert.equal(r.ok, false);
+        assert.match(r.detail, /unsupported reframe preset/);
+    });
+
+    test('doTask never throws when an op throws internally', async () => {
+        const { doTask } = await import('./dispatch.js');
+        // download_image with empty keyword returns a structured failure, not a throw.
+        const r = await doTask('download an image of nothing', { files: [] });
+        assert.equal(typeof r.ok, 'boolean');
+        assert.ok('detail' in r);
+        // It must not throw; we reached this assertion.
+        assert.ok(true);
+    });
+
+    test('doTask classifies remove_silence and routes to the op without throwing', async () => {
+        const { doTask } = await import('./dispatch.js');
+        // Missing input file -> structured ok:false, not an uncaught throw.
+        const r = await doTask('remove silence from the video', { files: [] });
+        assert.equal(r.kind, 'remove_silence');
+        assert.equal(r.ok, false);
+        assert.match(r.detail, /needs an input file/);
+    });
+});

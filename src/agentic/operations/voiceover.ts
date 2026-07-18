@@ -12,6 +12,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { generateVoiceovers } from '../../lib/voice-generator.js';
+import { withRetry } from './retry.js';
 
 export interface VoiceoverResult {
     ok: boolean;
@@ -89,8 +90,11 @@ export async function generateVoiceoverOnly(
     const scenes = lines.map((text, i) => ({ sceneNumber: i + 1, voiceoverText: text })) as any;
     try {
         const map = await withTimeout(
-            generateVoiceovers(scenes, dir, { voice } as any),
-            60_000,
+            withRetry(
+                () => generateVoiceovers(scenes, dir, { voice } as any),
+                { retries: 3, baseMs: 800, label: 'voiceover' },
+            ),
+            90_000,
             'voice generation timed out (Edge-TTS unreachable)',
         );
         const clips: VoiceoverResult['clips'] = [];

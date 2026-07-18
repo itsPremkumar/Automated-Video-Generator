@@ -85,8 +85,11 @@ export async function autoReframe(
     out?: string,
     opts: ReframeOpts = {},
 ): Promise<ReframeResult> {
-    if (!fs.existsSync(file)) return { ok: false, detail: `input not found: ${file}` };
     const preset = opts.preset ?? '9:16';
+    if (!['9:16', '16:9', '1:1'].includes(preset)) {
+        return { ok: false, detail: `unsupported reframe preset "${preset}"; use 9:16, 16:9, or 1:1` };
+    }
+    if (!fs.existsSync(file)) return { ok: false, detail: `input not found: ${file}` };
     const runner = opts.runner ?? runFfmpeg;
 
     // Probe REAL source dimensions with ffprobe (injected for tests).

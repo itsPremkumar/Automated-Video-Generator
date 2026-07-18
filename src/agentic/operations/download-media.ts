@@ -13,6 +13,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fetchVisualsForScene, searchImages } from '../../lib/visual-fetcher.js';
 import { downloadMedia } from '../../lib/visual-fetcher.js';
+import { withRetry } from './retry.js';
 
 export interface MediaResult {
     ok: boolean;
@@ -31,7 +32,7 @@ function resolveOut(ext: string, baseName: string): string {
 async function tryDownload(url: string | undefined, dir: string, filename: string): Promise<string | null> {
     if (!url) return null;
     try {
-        const r = await downloadMedia(url, dir, filename);
+        const r = await withRetry(() => downloadMedia(url, dir, filename), { retries: 3, label: `download:${filename}` });
         return r.path;
     } catch {
         return null;
@@ -49,7 +50,7 @@ export async function downloadImageByKeyword(keyword: string, out?: string): Pro
     const variants = [keyword, `${keyword} photo`, `person ${keyword}`];
     for (const q of variants) {
         try {
-            const r = await fetchVisualsForScene([q], false, 'portrait');
+            const r = await withRetry(() => fetchVisualsForScene([q], false, 'portrait'), { retries: 2, label: `fetchImg:${q}` });
             const url = r && !Array.isArray(r) ? (r as any).url : Array.isArray(r) ? r[0]?.url : undefined;
             const p = await tryDownload(url, dir, filename);
             if (p) return { ok: true, output: p, source: 'openverse/pexels', detail: `image for "${keyword}" -> ${p}` };
@@ -57,7 +58,7 @@ export async function downloadImageByKeyword(keyword: string, out?: string): Pro
             /* next variant */
         }
         try {
-            const imgs = await searchImages(q, 5, 1, 'portrait', 1);
+            const imgs = await withRetry(() => searchImages(q, 5, 1, 'portrait', 1), { retries: 2, label: `searchImg:${q}` });
             if (imgs?.length) {
                 const p = await tryDownload(imgs[0].url, dir, filename);
                 if (p) return { ok: true, output: p, source: 'openverse', detail: `image for "${keyword}" -> ${p}` };
@@ -79,7 +80,7 @@ export async function downloadVideoByKeyword(keyword: string, out?: string): Pro
     const variants = [keyword, `${keyword} video`, `${keyword} footage`];
     for (const q of variants) {
         try {
-            const r = await fetchVisualsForScene([q], true, 'portrait');
+            const r = await withRetry(() => fetchVisualsForScene([q], true, 'portrait'), { retries: 2, label: `fetchVid:${q}` });
             const url = r && !Array.isArray(r) ? (r as any).url : Array.isArray(r) ? r[0]?.url : undefined;
             const p = await tryDownload(url, dir, filename);
             if (p) return { ok: true, output: p, source: 'openverse/pexels', detail: `video for "${keyword}" -> ${p}` };

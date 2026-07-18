@@ -72,6 +72,7 @@ async function runOne(task: RoutedTask, input: RunInput): Promise<DispatchResult
         }
     };
 
+    try {
     switch (task.kind) {
         case 'merge': {
             if (!files || files.length < 2) return { kind: task.kind, summary: task.summary, ok: false, detail: 'merge needs ≥2 video files' };
@@ -204,6 +205,11 @@ async function runOne(task: RoutedTask, input: RunInput): Promise<DispatchResult
         }
         default:
             return { kind: 'unknown', summary: task.summary, ok: false, detail: 'Could not classify the request into a single task.' };
+    }
+    } catch (err) {
+        // Never let a single op crash doTask. Return a structured failure.
+        const msg = err instanceof Error ? err.message : String(err);
+        return { kind: task.kind, summary: task.summary, ok: false, detail: `operation failed: ${msg}` };
     }
 }
 
