@@ -10,15 +10,20 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 ## [Unreleased]
 
 ### Added
+- **CI/CD (GitHub Actions):** lint + format-check, TypeScript typecheck (Node 18/20/22 matrix), `node:test` unit suite, Gitleaks secret scan, and a Docker build/push to GHCR (`linux/amd64`, GitHub cache) on every push to `main`.
+- **Docker image published to GHCR** (`ghcr.io/itspremkumar/automated-video-generator`) — pinned `node:20-bookworm`, full `npm ci`, Python venv for `edge-tts` (PEP 668 compliant), platform `linux/amd64`, `/api/health` healthcheck.
+- **5 new single-task agentic ops:** silence removal, scene-cut detection, auto-reframe (9:16/16:9/1:1), noise reduction, brand-kit overlay — all wired through `route.ts` + `dispatch.ts` + MCP tools.
 
-- ESLint + Prettier configuration for consistent code style
-- EditorConfig for cross-editor consistency
-- Improved GitHub Actions CI with linting and testing
-- Comprehensive community health files (CONTRIBUTING.md, SECURITY.md, CODE_OF_CONDUCT.md)
-- COMPARISON.md — objective comparison with similar tools
-- AVS_ASSETS_GUIDE.md — visual asset specifications and creation instructions
-- Enhanced examples/README.md with skill-level ratings and detailed descriptions
-- Expanded package.json keywords for better npm discoverability
+### Changed
+- **Correctness:** media duration/width/height now probed with the bundled `ffprobe-static` (`probe.ts`) instead of a non-existent `DURATION:` ffmpeg hint — fixes silence-removal no-op and empty scene chapters in production.
+- **Error handling:** every op returns structured `{ ok, detail }` and never throws uncaught (dispatch `runOne` wrapped in try/catch); bounded retry+backoff (`retry.ts`) on transient asset-fetch and TTS calls.
+- **Security:** output paths sanitized against `../` traversal (`security.ts` `safeOutputPath`); secrets redacted in crash logs (`redactSecrets`).
+- **Tests:** filter-dependent integration tests (drawtext/xfade/zoompan/vignette) probe ffmpeg at runtime and skip gracefully on minimal builds, keeping CI green while still exercising real renders on full builds.
+
+### Fixed
+- CI workflow never executed (invalid `docker/build-push-action@v6`, `gitleaks/gitleaks-action@v2`, and an unsupported `toLower()` expression) — all jobs now run and pass.
+
+
 
 ### Changed
 

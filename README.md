@@ -170,6 +170,8 @@ Open **http://localhost:3001/** — paste a script, click generate, and watch it
 
 ### 🐳 Docker
 
+Pre-built image (built + scanned by CI, pushed to GHCR):
+
 ```bash
 docker run -p 3001:3001 \
   -v "$(pwd)/input:/app/input" \
@@ -177,7 +179,48 @@ docker run -p 3001:3001 \
   ghcr.io/itspremkumar/automated-video-generator
 ```
 
-### 📦 npm (MCP Server)
+Or build locally (pinned `node:20-bookworm`, full `npm ci`, edge-tts in a
+venv to satisfy PEP 668, platform `linux/amd64`, healthcheck on `/api/health`):
+
+```bash
+docker compose up --build
+```
+
+### 🚀 Production Deployment
+
+The container is self-contained: it bundles the ffmpeg/ffprobe static
+binaries and a Python venv with `edge-tts` for free, key-less narration.
+No external services are required for the default pipeline.
+
+**Environment variables (all optional — sensible free defaults):**
+
+| Var | Default | Purpose |
+|-----|---------|---------|
+| `PORT` | `3001` | Web portal / API port |
+| `PEXELS_API_KEY` | _(none)_ | Free stock video. Without it, falls back to Openverse / Wikimedia / Internet Archive. |
+| `YOUTUBE_API_KEY` | _(none)_ | YouTube metadata enrichment (optional). |
+| `OPENVERSE_ENABLED` | `true` | Use Openverse CC media when no API key is set. |
+| `TTS_PROVIDER` | `edge-tts` | `edge-tts` (free, CPU) or `voicebox` (optional local GPU engine). |
+| `VOICEBOX_ENGINE` | _(none)_ | `kokoro` or `chatterbox_turbo` — only when `TTS_PROVIDER=voicebox`. |
+| `VOICEBOX_PROFILE_ID` | _(none)_ | A Voicebox profile id (preset or cloned voice). |
+
+**Optional: Voicebox GPU voice-clone (opt-in, never blocking).**
+Voicebox is a separate, locally-run headless TTS engine (MIT). It is
+**disabled by default** — the pipeline uses Edge-TTS (free, CPU) and only
+switches to Voicebox if `TTS_PROVIDER=voicebox` is explicitly set and a
+backend is reachable. If the backend is unavailable, it degrades gracefully
+back to Edge-TTS. On this project's dev laptop (RTX 3050 4 GB, CUDA
+12.6) Kokoro uses ~819 MB VRAM and Chatterbox-Turbo ~3.8 GB; CPU-only
+is not recommended (OOM). See `docs/VOICE_CLONING_GUIDE.md`.
+
+**Health & hardening:**
+- Healthcheck hits `GET /api/health` (container `HEALTHCHECK`).
+- No secrets are logged; output paths are sanitized against `../` traversal
+  at the dispatch chokepoint (`src/agentic/operations/security.ts`).
+- CI runs `typecheck` + `test:unit` + a Gitleaks secret scan + a Docker
+  build/push to GHCR on every push to `main`.
+
+
 
 The MCP server lets AI agents (Claude Desktop, Claude Code, Cursor, etc.) create videos autonomously — it exposes 23 tools, 13 resources, and 4 prompts over stdio.
 
