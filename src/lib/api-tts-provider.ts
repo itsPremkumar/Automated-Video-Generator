@@ -33,45 +33,116 @@ async function saveStreamToFile(responseStream: any, outputPath: string): Promis
 }
 
 /**
- * Synthesizes voice using Jamie Pine's Voicebox FastAPI endpoint.
+ * Synthesizes voice using Jamie Pine's Voicebox FastAPI backend.
+ *
+ * Voicebox is profile-based: EVERY generation (including plain Kokoro narration)
+ * runs through a voice PROFILE. Set VOICEBOX_PROFILE_ID to either:
+ *   - a Kokoro PRESET profile (voice_type="preset", preset_engine="kokoro",
+ *     preset_voice_id e.g. "af_heart") for zero-clone narration, or
+ *   - a CLONED profile (voice_type="cloned") for voice cloning.
+ *
+ * The `engine` (default "kokoro") is passed per-request; the backend lazily
+ * loads that engine's model on first use. On a GPU box (CUDA/ROCm auto-detected)
+ * the model loads into VRAM — Kokoro-82M uses ~800 MB VRAM, safe on a 4 GB card,
+ * leaving system RAM free. On CPU-only boxes heavy engines can OOM; Kokoro-82M
+ * is the lightest and the recommended narration engine.
+ *
+ * Flow (verified against Voicebox v0.5.0):
+ *   1. POST /speak  { text, profile, engine, language }  -> { id, status:"generating" }
+ *   2. poll GET /generate/{id}/status  until status == "completed" | "error"
+ *   3. GET /audio/{id}  -> WAV bytes (24 kHz mono PCM)
+ *
+ * Fails safe: if the backend is unreachable, no profile is configured, or the
+ * engine can't load, this throws and the caller (voice-generator) falls back to
+ * Edge-TTS.
  */
 export async function generateVoiceoverWithVoicebox(
     text: string,
     outputPath: string,
     language: string = 'en',
+    opts: { engine?: string; profileId?: string; modelSize?: string } = {},
 ): Promise<void> {
-    const url = process.env.VOICEBOX_API_URL || 'http://127.0.0.1:17493';
-    const profileId = process.env.VOICEBOX_PROFILE_ID;
+    const base = (process.env.VOICEBOX_API_URL || 'http://127.0.0.1:17493').replace(/\/$/, '');
+    // `modelSize` kept for backwards-compat with older callers; treated as engine.
+    const engine = opts.engine || opts.modelSize || process.env.VOICEBOX_ENGINE || 'kokoro';
+    const profileId = opts.profileId || process.env.VOICEBOX_PROFILE_ID;
 
     if (!profileId) {
-        throw new Error('VOICEBOX_PROFILE_ID is not configured in environment variables.');
+        throw new Error(
+            'Voicebox requires a voice profile. Set VOICEBOX_PROFILE_ID (create one via ' +
+            'POST /profiles — a Kokoro preset profile needs no reference audio). ' +
+            'Pipeline will fall back to Edge-TTS.',
+        );
     }
 
-    const endpoint = `${url.replace(/\/$/, '')}/generate`;
-    console.log(`Sending synthesis request to Voicebox: ${endpoint} (profile: ${profileId})`);
-
+    // Wake the backend (spawns it if not already up). Non-fatal if the helper
+    // is unavailable — we still probe the URL below.
     try {
-        const response = await axios.post(
-            endpoint,
-            {
-                text,
-                profile_id: profileId,
-                language: language,
-            },
-            {
-                responseType: 'stream',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                timeout: 120000, // 2 minutes timeout for longer sentences
-            },
-        );
+        const { ensureBackend } = await import('./voicebox-lifecycle.js');
+        await ensureBackend();
+    } catch {
+        /* lifecycle helper optional; a manually-started backend still works */
+    }
 
-        await saveStreamToFile(response.data, outputPath);
+    console.log(`Voicebox synthesis: ${base}/speak (engine: ${engine}, profile: ${profileId})`);
+
+    // 1. Kick off generation.
+    let genId: string;
+    try {
+        const start = await axios.post(
+            `${base}/speak`,
+            { text, profile: profileId, engine, language },
+            { headers: { 'Content-Type': 'application/json' }, timeout: 30000 },
+        );
+        genId = start.data?.id;
+        if (!genId) throw new Error(`Voicebox /speak returned no generation id: ${JSON.stringify(start.data)}`);
+    } catch (error: any) {
+        const detail = error.response?.data?.detail || error.message;
+        console.error(`Voicebox /speak failed: ${detail}`);
+        throw new Error(`Voicebox /speak failed: ${detail}`);
+    }
+
+    // 2. Poll status until the async job finishes (model load + synthesis).
+    //    Kokoro cold-load on GPU is ~60-90s; warm generations are a few seconds.
+    const deadline = Date.now() + 300000; // 5 min ceiling
+    let status = 'generating';
+    let lastErr: string | null = null;
+    while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 3000));
+        try {
+            const res = await axios.get(`${base}/generate/${genId}/status`, {
+                timeout: 10000,
+                // status endpoint is an SSE stream; grab the first data frame as text
+                responseType: 'text',
+                headers: { Accept: 'text/event-stream' },
+            });
+            const raw = String(res.data).split('\n').find((l) => l.startsWith('data:')) || String(res.data);
+            const json = JSON.parse(raw.replace(/^data:\s*/, ''));
+            status = json.status;
+            lastErr = json.error ?? null;
+            if (status === 'completed' || status === 'complete' || status === 'done') break;
+            if (status === 'error' || status === 'failed') break;
+        } catch {
+            /* transient poll error — keep waiting until deadline */
+        }
+    }
+
+    if (status !== 'completed' && status !== 'complete' && status !== 'done') {
+        throw new Error(`Voicebox generation ${genId} did not complete (status=${status}${lastErr ? `, error=${lastErr}` : ''})`);
+    }
+
+    // 3. Download the finished audio.
+    try {
+        const audio = await axios.get(`${base}/audio/${genId}`, {
+            responseType: 'stream',
+            timeout: 60000,
+        });
+        await saveStreamToFile(audio.data, outputPath);
         console.log(`Successfully generated voiceover via Voicebox: ${outputPath}`);
     } catch (error: any) {
-        console.error(`Voicebox synthesis failed: ${error.message}`);
-        throw error;
+        const detail = error.response?.data?.detail || error.message;
+        console.error(`Voicebox audio download failed: ${detail}`);
+        throw new Error(`Voicebox audio download failed: ${detail}`);
     }
 }
 

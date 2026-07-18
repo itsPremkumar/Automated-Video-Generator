@@ -18,14 +18,34 @@ test.beforeEach(() => {
     mockResponseData = Buffer.from('mock-audio-data');
 });
 
-// We patch axios.post to intercept requests
+// We patch axios.post / axios.get to intercept requests and simulate the
+// Voicebox async flow: POST /speak -> { id }, GET /generate/{id}/status
+// (SSE "data: {...}" stream, completed), GET /audio/{id} -> audio bytes.
+const mockGenId = 'gen-test-123';
 const originalPost = axios.post;
 axios.post = async function (url: string, data?: any, config?: any): Promise<any> {
     axiosMockCalls.push({ url, data, config });
-    return {
-        status: 200,
-        data: mockResponseData,
-    };
+    if (url.endsWith('/speak')) {
+        return { status: 200, data: { id: mockGenId, status: 'generating' } };
+    }
+    return { status: 200, data: mockResponseData };
+} as any;
+
+const originalGet = axios.get;
+axios.get = async function (url: string, config?: any): Promise<any> {
+    axiosMockCalls.push({ url, data: undefined, config });
+    if (url.includes('/status')) {
+        // status endpoint returns an SSE stream; first frame is the json.
+        return {
+            status: 200,
+            data: `data: ${JSON.stringify({ id: mockGenId, status: 'completed', duration: 1.0, error: null })}`,
+        };
+    }
+    if (url.includes('/audio/')) {
+        // audio endpoint returns a stream of bytes (Buffer in the mock).
+        return { status: 200, data: mockResponseData };
+    }
+    return { status: 200, data: mockResponseData };
 } as any;
 
 const tempOutputDir = path.join(__dirname, 'temp-test-audio');
@@ -46,7 +66,7 @@ test.after(() => {
     }
 });
 
-test('generateVoiceoverWithVoicebox makes post request and writes file', async () => {
+test('generateVoiceoverWithVoicebox posts to /speak, polls status, downloads audio', async () => {
     process.env.VOICEBOX_API_URL = 'http://localhost:17493';
     process.env.VOICEBOX_PROFILE_ID = 'test-profile-123';
 
@@ -55,15 +75,33 @@ test('generateVoiceoverWithVoicebox makes post request and writes file', async (
 
     await generateVoiceoverWithVoicebox('Hello Voicebox', testFile, 'en');
 
-    assert.equal(axiosMockCalls.length, 1);
-    assert.equal(axiosMockCalls[0].url, 'http://localhost:17493/generate');
-    assert.deepEqual(axiosMockCalls[0].data, {
+    // 1) POST /speak with profile + engine
+    const speakCall = axiosMockCalls.find((c) => c.url && c.url.endsWith('/speak'));
+    assert.ok(speakCall, 'expected a POST to /speak');
+    assert.deepEqual(speakCall.data, {
         text: 'Hello Voicebox',
-        profile_id: 'test-profile-123',
+        profile: 'test-profile-123',
+        engine: 'kokoro',
         language: 'en',
     });
+
+    // 2) status polled, then audio downloaded
+    const statusCall = axiosMockCalls.find((c) => c.url && c.url.includes('/status'));
+    const audioCall = axiosMockCalls.find((c) => c.url && c.url.includes('/audio/'));
+    assert.ok(statusCall, 'expected a GET to /generate/{id}/status');
+    assert.ok(audioCall, 'expected a GET to /audio/{id}');
+
     assert.ok(fs.existsSync(testFile));
     assert.equal(fs.readFileSync(testFile, 'utf8'), 'mock-audio-data');
+});
+
+test('generateVoiceoverWithVoicebox throws when no profile is configured', async () => {
+    delete process.env.VOICEBOX_PROFILE_ID;
+    const testFile = path.join(tempOutputDir, 'voicebox-noprofile.wav');
+    await assert.rejects(
+        generateVoiceoverWithVoicebox('Hello', testFile, 'en'),
+        /requires a voice profile/i,
+    );
 });
 
 test('generateVoiceoverWithXtts tries multiple endpoints and writes file', async () => {

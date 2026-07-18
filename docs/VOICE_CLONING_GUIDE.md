@@ -276,3 +276,117 @@ npm run generate -- --segment
 - Only need a **generic narrator, no cloning**?
   → **Kokoro (Apache, 312 MB)** — the safe always-on choice.
 - **Never** use Fish Speech / OmniVoice / Coqui-XTTS / cloud TTS for the shipping path.
+
+---
+
+## 10. Voicebox headless integration (implemented)
+
+Voicebox runs as a **separate, lifecycle-managed headless backend** (its own
+Python process), NOT embedded in the Node pipeline. The pipeline owns its RAM
+lifecycle so no TTS engine stays resident during Remotion render / asset-fetch.
+
+### 10.1 Install (verified working on this box — RTX 3050 4 GB VRAM + CUDA 12.6)
+
+```bash
+git clone --depth 1 https://github.com/jamiepine/voicebox.git C:/one/voicebox
+cd C:/one/voicebox
+
+# 1. Create an ISOLATED venv. IMPORTANT: a global PYTHONPATH env var on this box
+#    leaks the Hermes venv's site-packages into every python, so always run the
+#    backend AND installs with `PYTHONPATH=` cleared (empty) to isolate.
+#    Also: `python -m venv` is broken here (base python is itself a venv), use `uv`.
+uv venv --python 3.11 .venv
+
+# 2. Install CPU-side deps + the model backends. misaki[en] only (NOT [ja]/[zh])
+#    — the [ja] extra pulls pyopenjtalk which needs cmake + a C compiler.
+env PYTHONPATH= uv pip install --python .venv/Scripts/python.exe \
+  --extra-index-url https://download.pytorch.org/whl/cpu \
+  -r requirements-minimal-cpu.txt
+# requirements-minimal-cpu.txt = fastapi/uvicorn + transformers + kokoro +
+#   misaki[en] + spacy(en_core_web_sm) + fastmcp + pedalboard + pydub + PIL +
+#   qwen-tts + soundfile + numpy + scipy. (If a download times out, re-run — uv resumes.)
+#   NOTE: qwen-tts pulls an old huggingface-hub (1.2.3); that's fine once PYTHONPATH
+#   is cleared so the venv resolves its own pinned version, not Hermes's.
+
+# 3. GPU: install CUDA torch so models load into VRAM, not system RAM.
+#    This is what makes it work on a 6 GB-RAM / 4 GB-VRAM laptop — on CPU-only
+#    the 3.5 GB Qwen model OOMs; on GPU, Kokoro-82M uses ~800 MB VRAM.
+env PYTHONPATH= TMPDIR=C:/tmp UV_CACHE_DIR=C:/tmp/uvcache \
+  uv pip install --python .venv/Scripts/python.exe \
+  --index-url https://download.pytorch.org/whl/cu126 "torch==2.13.0+cu126" "torchaudio==2.11.0+cu126"
+# Verify:  .venv/Scripts/python.exe -c "import torch; print(torch.cuda.is_available())" -> True
+```
+
+> **Why GPU matters here:** The `/models/load` endpoint is Qwen-only (it calls
+> `load_model_async` → `qwen-tts-{size}`). Kokoro and the clone engines load
+> **lazily on first `/speak`** via `get_tts_backend_for_engine`. Kokoro-82M
+> (`hexgrad/Kokoro-82M`, ~350 MB) is the lightest and the recommended narration
+> engine; it loads into VRAM on a CUDA box. Qwen 1.7B (3.6 GB) needs GPU VRAM —
+> it will NOT fit a 4 GB card alongside the OS, so use Kokoro for narration.
+
+### 10.2 Run headless (no GUI = saves RAM)
+
+```bash
+cd C:/one/voicebox
+env PYTHONPATH= .venv/Scripts/python.exe -m backend.main \
+  --host 127.0.0.1 --port 17493 --data-dir C:/one/voicebox/.voicebox-data
+# backend log prints:  GPU: CUDA (NVIDIA GeForce RTX 3050 Laptop GPU); Ready
+```
+
+`src/lib/voicebox-lifecycle.ts` `ensureBackend()` spawns exactly this command
+(with `PYTHONPATH=` cleared) if the port isn't answering — so the pipeline can
+own the full lifecycle.
+
+### 10.3 Synthesis flow (verified end-to-end)
+
+Voicebox is **profile-based**: every generation needs a voice profile. Create a
+**Kokoro PRESET profile** (no reference audio needed) once:
+
+```bash
+curl -X POST http://127.0.0.1:17493/profiles -H "Content-Type: application/json" \
+  -d '{"name":"Narrator (Kokoro Heart)","voice_type":"preset",
+       "preset_engine":"kokoro","preset_voice_id":"af_heart","default_engine":"kokoro"}'
+# -> {"id":"<PROFILE_ID>", ...}   (set VOICEBOX_PROFILE_ID=<PROFILE_ID>)
+```
+
+Then the pipeline drives it (see `src/lib/api-tts-provider.ts`):
+
+1. `POST /speak` `{ text, profile, engine:"kokoro", language }` → `{ id, status:"generating" }`
+2. poll `GET /generate/{id}/status` (SSE stream) until `status:"completed"`
+3. `GET /audio/{id}` → WAV (24 kHz mono PCM) written to the job's audio dir
+
+No manual `/models/load` is needed — the engine loads lazily into VRAM on the
+first `/speak`. This was proven on this box: a 5.3 s WAV synthesized via
+Kokoro-82M on the RTX 3050 (819 MB VRAM used, system RAM untouched).
+
+### 10.4 Env vars
+| Var | Default | Purpose |
+| :--- | :--- | :--- |
+| `TTS_PROVIDER` | `edge-tts` | set `voicebox` to use this path |
+| `VOICEBOX_API_URL` | `http://127.0.0.1:17493` | backend base URL |
+| `VOICEBOX_BACKEND_DIR` | `C:/one/voicebox` | repo dir (for spawn) |
+| `VOICEBOX_PYTHON` | `<dir>/.venv/Scripts/python.exe` | interpreter |
+| `VOICEBOX_ENGINE` | `kokoro` | engine for narration (`chatterbox-turbo` for clone) |
+| `VOICEBOX_PROFILE_ID` | — | **required** — the Kokoro preset or cloned profile |
+| `VOICEBOX_API_URL` is also auto-set to `ws://`/HTTP by lifecycle if spawned |
+
+### 10.5 RAM/VRAM budget on this box (RTX 3050 4 GB VRAM)
+- **Kokoro-82M (recommended):** ~800 MB VRAM, ~0 system RAM — fits comfortably,
+  even with the Remotion render running on the iGPU.
+- **Clone engine (Chatterbox-Turbo ~1.5 GB / Qwen 1.7B ~3.6 GB):** load **only
+  for the clone job** on GPU; for Qwen you need >4 GB VRAM (use a bigger card or
+  the smaller Chatterbox-Turbo). Never keep two engines resident.
+- Always launch with `PYTHONPATH=` cleared so the backend uses only `.venv`.
+
+### 10.6 Lifecycle (managed automatically by the pipeline)
+`src/lib/voicebox-lifecycle.ts`:
+- `ensureBackend()` — spawns `env PYTHONPATH= .venv/Scripts/python.exe -m backend.main`
+  (the §10.2 command) if not already answering `/models/status`; bounded 40 s poll.
+- `isRunning()` / `killBackend()` — health + terminate the process (zero RAM until next run).
+
+`src/lib/api-tts-provider.ts` `generateVoiceoverWithVoicebox()`:
+- wakes the backend, `POST /speak` (profile + engine), **polls** the async status
+  to completion, then `GET /audio/{id}` → WAV. No manual engine unload needed
+  (the model stays warm in VRAM for the next segment; kill the backend to free it).
+- fails safe: if backend unreachable / no `VOICEBOX_PROFILE_ID` / engine can't
+  load, it throws and the caller (`voice-generator.ts`) falls back to Edge-TTS.
