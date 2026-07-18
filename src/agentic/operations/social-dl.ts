@@ -32,7 +32,7 @@ export async function downloadSocial(
         let stdout = '';
         proc.stdout.on('data', (d: Buffer) => (stdout += d.toString()));
         proc.stderr.on('data', (d: Buffer) => (stderr += d.toString()));
-        proc.on('error', (e) => resolve({ ok: false, detail: `Failed to launch yt-dlp: ${e.message}` }));
+        proc.on('error', (e) => resolve({ ok: false, detail: `Failed to launch yt-dlp: ${e.message}. Install it with: pip install -r requirements.txt (or: pip install yt-dlp)` }));
         proc.on('close', (code) => {
             if (code !== 0) { resolve({ ok: false, detail: `yt-dlp exited ${code}\n${stderr.slice(-800)}` }); return; }
             const files = fs.readdirSync(target).filter((f) => !f.endsWith('.part'));
