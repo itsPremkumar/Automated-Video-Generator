@@ -12,6 +12,7 @@
 import { test, describe } from 'node:test';
 import * as assert from 'node:assert/strict';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { execFileSync } from 'child_process';
 import { mergeVideos, trimVideo, cropVideo, resizeVideo, rotateVideo, extractAudio } from './edit.js';
@@ -38,8 +39,9 @@ const ffprobe: string = (() => {
     }
 })();
 
-// Windows-valid temp dir (ffmpeg.exe cannot open /tmp/*).
-const tmp = fs.mkdtempSync('C:/one/_ops-test-');
+// Use the OS temp dir (works for ffmpeg.exe on Windows AND system ffmpeg on
+// Linux/macOS — avoids a hardcoded Windows path that breaks CI on Linux).
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), '_ops-test-'));
 
 /** Build a clip WITH an audio track (sine) so copy-trim/extract-audio are real. */
 function makeClip(name: string, durSec = 2, color = 'blue'): string {

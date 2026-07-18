@@ -58,8 +58,8 @@ export function computeCropBox(
     w = Math.max(2, w);
     h = Math.max(2, h);
     // centre the box on the salient point, clamped to frame
-    let cx = Math.round(salientX * srcW);
-    let cy = Math.round(salientY * srcH);
+    const cx = Math.round(salientX * srcW);
+    const cy = Math.round(salientY * srcH);
     let x = Math.round(cx - w / 2);
     let y = Math.round(cy - h / 2);
     x = Math.max(0, Math.min(x, srcW - w));

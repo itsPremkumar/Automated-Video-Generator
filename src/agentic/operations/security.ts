@@ -29,8 +29,9 @@ export function safeOutputPath(out?: string): string | undefined {
     if (!out || !out.trim()) return undefined;
     const root = outputRoot();
     const resolved = path.isAbsolute(out) ? path.resolve(out) : path.resolve(root, out);
-    const rel = path.relative(root, resolved);
-    if (rel.startsWith('..') || path.isAbsolute(rel)) {
+    // Canonical traversal check (platform-independent): the resolved path must
+    // be exactly the root or live underneath it.
+    if (resolved !== root && !resolved.startsWith(root + path.sep)) {
         throw new Error(
             `path traversal blocked: output path "${out}" resolves outside the output directory`,
         );

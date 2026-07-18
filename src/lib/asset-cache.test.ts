@@ -42,8 +42,13 @@ test('TTL expiry turns a hit into a miss', () => {
     const src = writeTmp('ttl.jpg', 'data-' + 'y'.repeat(2000));
     storeCached(url, src);
     assert.ok(getCached(url, 0), 'fresh entry hit with TTL 0');
-    // TTL of 1ms => immediately expired
-    assert.strictEqual(getCached(url, 1), null, 'expired entry should miss');
+    // TTL of 1ms => wait past it so the expiry check is deterministic
+    // (the cache compares file mtime against wall-clock; a tiny sleep avoids a
+    // sub-millisecond race on fast runners).
+    return new Promise<void>((resolve) => setTimeout(() => {
+        assert.strictEqual(getCached(url, 1), null, 'expired entry should miss');
+        resolve();
+    }, 5));
 });
 
 test('clearCache removes entries', () => {

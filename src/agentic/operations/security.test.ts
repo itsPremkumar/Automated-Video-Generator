@@ -36,6 +36,9 @@ describe('safeOutputPath', () => {
             () => safeOutputPath('/etc/passwd'),
             /path traversal blocked/,
         );
+    });
+
+    test('windows-style absolute path outside output/ is blocked (windows only)', { skip: process.platform !== 'win32' }, () => {
         assert.throws(
             () => safeOutputPath('C:\\Windows\\system32\\evil.dll'),
             /path traversal blocked/,
