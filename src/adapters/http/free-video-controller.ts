@@ -26,10 +26,10 @@ export const search = async (req: Request, res: Response) => {
             sortBy: sortBy || undefined,
         });
 
-        res.json({ success: true, data });
+        return res.json({ success: true, data });
     } catch (error: any) {
         console.error('[FREE-VIDEO-CONTROLLER] Search error:', error);
-        res.status(500).json({ success: false, error: error.message || 'Search failed' });
+        return res.status(500).json({ success: false, error: error.message || 'Search failed' });
     }
 };
 
@@ -55,10 +55,10 @@ export const download = async (req: Request, res: Response) => {
             format || 'mp4',
         );
 
-        res.json({ success: true, data });
+        return res.json({ success: true, data });
     } catch (error: any) {
         console.error('[FREE-VIDEO-CONTROLLER] Download error:', error);
-        res.status(500).json({ success: false, error: error.message || 'Download failed' });
+        return res.status(500).json({ success: false, error: error.message || 'Download failed' });
     }
 };
 

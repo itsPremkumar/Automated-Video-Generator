@@ -78,9 +78,18 @@ approve/reject, and the final render gate).
 **Verification & safety (the agent refuses to ship bad output):**
 - Every asset is signal-verified (dimensions, duration, license, silence,
   caption sync, etc.).
-- The final **gate (X7–X15)** blocks render if ANY check fails. X7 size, X8
-  duration, X9 audio present, X10 non-black, X11 freeze, X12 loudness,
-  X13 clipping, X14 dimensions, X15 H.264. (The older X1–X6 IDs were retired.)
+- The pipeline runs **two** gates:
+  - **Pre-render holistic gate (X1–X6)** blocks render unless planning is
+    sound: X1 Duration alignment, X2 Every scene has an approved visual,
+    X3 No unresolved decisions, X4 Caption sync, X5 Runtime within limit,
+    X6 Attribution completeness.
+  - **Post-render gate (X7–X15)** blocks ship if ANY check fails: X7 Output
+    file valid, X8 Duration matches plan, X9 Audio track present, X10 No long
+    black frames, X11 No frozen frames, X12 Audio loudness in range, X13 No
+    audio clipping, X14 Output dimensions valid, X15 Web-compatible codec.
+  - **X16 (opt-in, `aiVerify.verifyOnRender`)** — AI content verification of
+    the final MP4; with `finalMode: 'vision'` it samples multiple frames and
+    fails closed when the AI backend is unavailable.
 - `agentic-pipeline/workspaces/` (runtime artifacts) is git-ignored.
 
 **The legacy `npm run generate` workflow (`src/video-generator.ts`,

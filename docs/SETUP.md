@@ -94,7 +94,8 @@ ffmpeg -version
 
 ### 5. Configure environment variables
 
-Copy `.env.example` to `.env`.
+Copy `.env.example` to `.env`. For a full list of every variable and its
+default, see [docs/ENVIRONMENT.md](./ENVIRONMENT.md).
 
 Windows PowerShell:
 

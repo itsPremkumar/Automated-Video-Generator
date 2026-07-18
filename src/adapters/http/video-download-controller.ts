@@ -18,9 +18,9 @@ export const processDownloadRequest = async (req: Request, res: Response) => {
 
         const data = await videoDownloadAppService.processDownload(script, orientation, source);
 
-        res.json({ success: true, data });
+        return res.json({ success: true, data });
     } catch (error: any) {
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: error.message || 'Internal server error',
         });

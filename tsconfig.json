@@ -6,6 +6,8 @@
         "lib": ["ES2022", "DOM", "DOM.Iterable"],
         "outDir": "./dist",
         "strict": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
