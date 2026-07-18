@@ -28,6 +28,7 @@ import { aiVerifyAsset } from './ai-verify.js';
 import { inputAssetPath } from '../lib/path-safety.js';
 import { ffmpegDrawtextEscape } from '../lib/ffmpeg-text.js';
 import { runFfmpeg as runFfmpegShared, FfmpegError } from '../lib/ffmpeg.js';
+import { resolveCaptionTheme, captionThemeToDrawtext } from './config.js';
 import { exportMultiAspect, generateFreeMetadata, renderThumbnail, wordTimingsFromScript } from './export.js';
 
 import { buildPlan, applyProEdits } from './plan.js';
@@ -988,6 +989,10 @@ export async function renderAgenticSlideshow(
         kenBurns?: boolean;
         dimensions?: { w: number; h: number };
         captions?: 'burned' | 'karaoke' | 'none';
+        /** Named caption theme preset id (see CAPTION_THEME_PRESETS). Controls
+         *  the burned-caption look (color/size/box/vertical position). When
+         *  unset, the historical default look is used unchanged. */
+        captionTheme?: string;
         intro?: { title: string; subtitle?: string; durationSec?: number };
         outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number };
         jCutSec?: number;
@@ -1265,6 +1270,11 @@ export async function renderAgenticSlideshow(
     // works. Each caption segment becomes a lower-third drawtext shown only
     // during its time window.
     if (captionFile) {
+        // Resolve the caption theme once (defaults to the historical look when
+        // no theme is named), then derive concrete drawtext style fragments via
+        // the pure, unit-tested mapper in config.ts.
+        const theme = resolveCaptionTheme(opts.captionTheme);
+        const { fontcolor: capColor, fontsize: baseSize, boxArgs, yExpr } = captionThemeToDrawtext(theme);
         let ctag = videoChain;
         let ci = 0;
         let tBase = 0;
@@ -1297,7 +1307,7 @@ export async function renderAgenticSlideshow(
                     const safe = ffmpegDrawtextEscape(s.text).replace(/\n/g, ' ');
                     const out = `c${ci}`;
                     vfArgs.push(
-                        `${ctag}drawtext=${FONT_ARG}text='${safe}':fontcolor=white:fontsize=30:box=1:boxcolor=black@0.5:boxborderw=10:line_spacing=4:x=(w-text_w)/2:y=h-text_h-120:enable='between(t\\,${start}\\,${end})'[${out}]`,
+                        `${ctag}drawtext=${FONT_ARG}text='${safe}':fontcolor=${capColor}:fontsize=${baseSize}${boxArgs}:line_spacing=4:x=(w-text_w)/2:y=${yExpr}:enable='between(t\\,${start}\\,${end})'[${out}]`,
                     );
                     ctag = `[${out}]`;
                     ci++;

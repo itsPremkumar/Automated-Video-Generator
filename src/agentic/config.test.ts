@@ -8,6 +8,7 @@ import {
     CAPTION_THEME_PRESETS,
     VIDEO_FORMAT_PRESETS,
     resolveCaptionTheme,
+    captionThemeToDrawtext,
     listCaptionThemes,
     listFormats,
 } from './config.js';
@@ -89,4 +90,33 @@ test('caption theme presets are all valid and resolvable', () => {
     // listers return every preset
     assert.strictEqual(listCaptionThemes().length, ids.length);
     assert.strictEqual(listFormats().length, Object.keys(VIDEO_FORMAT_PRESETS).length);
+});
+
+test('captionThemeToDrawtext maps theme fields to ffmpeg drawtext args', () => {
+    // minimal: white, no box, bottom, default size
+    const min = captionThemeToDrawtext(resolveCaptionTheme('minimal'));
+    assert.strictEqual(min.fontcolor, '0xFFFFFF');
+    assert.strictEqual(min.fontsize, 30); // 30 * 1.0
+    assert.strictEqual(min.boxArgs, ''); // bg null -> no box
+    assert.strictEqual(min.yExpr, 'h-text_h-120');
+
+    // highContrast: yellow, boxed (alpha 0.55), bottom, size 33 (30*1.1)
+    const hc = captionThemeToDrawtext(resolveCaptionTheme('highContrast'));
+    assert.strictEqual(hc.fontcolor, '0xFFFF00');
+    assert.strictEqual(hc.fontsize, 33);
+    assert.ok(hc.boxArgs.includes('box=1'));
+    assert.ok(hc.boxArgs.includes('black@0.55'));
+
+    // centerPop: centered, larger (30*1.2 = 36), no box
+    const cp = captionThemeToDrawtext(resolveCaptionTheme('centerPop'));
+    assert.strictEqual(cp.yExpr, '(h-text_h)/2');
+    assert.strictEqual(cp.fontsize, 36);
+
+    // topTag: top-anchored
+    const tt = captionThemeToDrawtext(resolveCaptionTheme('topTag'));
+    assert.strictEqual(tt.yExpr, '120');
+
+    // custom base size scales
+    const scaled = captionThemeToDrawtext(resolveCaptionTheme('bold'), 40);
+    assert.strictEqual(scaled.fontsize, 46); // round(40 * 1.15)
 });

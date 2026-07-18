@@ -160,6 +160,31 @@ export function resolveCaptionTheme(name?: string): CaptionTheme {
     return (name && CAPTION_THEME_PRESETS[name]) || CAPTION_THEME_PRESETS.minimal;
 }
 
+/**
+ * Pure mapping from a caption theme to the concrete ffmpeg `drawtext` style
+ * fragments used by the burned-caption renderer. Extracted so it can be unit
+ * tested without invoking ffmpeg. `baseSizePx` is the historical default (30).
+ *  - `fontcolor`: `#RRGGBB` -> `0xRRGGBB` (ffmpeg hex form)
+ *  - `fontsize`: round(baseSizePx * fontScale)
+ *  - `box`: derived from the rgba() alpha in `bg` (no box when bg is null)
+ *  - `y`: bottom -> `h-text_h-120`, center -> `(h-text_h)/2`, top -> `120`
+ */
+export function captionThemeToDrawtext(
+    theme: CaptionTheme,
+    baseSizePx = 30,
+): { fontcolor: string; fontsize: number; boxArgs: string; yExpr: string } {
+    const fontcolor = theme.color.startsWith('#') ? '0x' + theme.color.slice(1) : theme.color;
+    const fontsize = Math.round(baseSizePx * theme.fontScale);
+    let boxArgs = '';
+    if (theme.bg) {
+        const m = /rgba?\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)/.exec(theme.bg);
+        const alpha = m ? m[1] : '0.5';
+        boxArgs = `:box=1:boxcolor=black@${alpha}:boxborderw=10`;
+    }
+    const yExpr = theme.position === 'center' ? '(h-text_h)/2' : theme.position === 'top' ? '120' : 'h-text_h-120';
+    return { fontcolor, fontsize, boxArgs, yExpr };
+}
+
 /** List caption themes for discovery / UI dropdowns. */
 export function listCaptionThemes(): { id: string; label: string }[] {
     return Object.keys(CAPTION_THEME_PRESETS).map((id) => ({ id, label: id }));
@@ -459,6 +484,8 @@ export function configToRequest(cfg: AgenticConfig) {
             sfx: cfg.sfx,
             kinetic: cfg.kineticText,
             crossfadeSec: 0.5,
+            captions: cfg.captions,
+            captionTheme: cfg.captionTheme,
         },
         autopilot: {
             renderer: cfg.renderer,
