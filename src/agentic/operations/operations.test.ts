@@ -15,7 +15,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execFileSync } from 'child_process';
 import { mergeVideos, trimVideo, cropVideo, resizeVideo, rotateVideo, extractAudio } from './edit.js';
-import { routeTask } from './route.js';
+import { routeTask, isChain } from './route.js';
+import { splitVideoEqual, splitVideoAt } from './split.js';
+import { addCaptionsFromText } from './captions.js';
+import { gradeVideo } from './grade.js';
+import { slowMotion } from './motion.js';
+import { addWatermark } from './overlay.js';
+import { deriveFromVideo } from './derivative.js';
 
 const ffmpeg: string = (() => {
     try {
@@ -104,44 +110,77 @@ describe('edit primitives (real ffmpeg)', () => {
     });
 });
 
+describe('new single-task ops (real ffmpeg)', () => {
+    test('split into 2 equal parts -> 2 files ~half duration', async () => {
+        const a = makeClip('sp.mp4', 4, 'blue');
+        const out = path.join(tmp, 'split');
+        const r = await splitVideoEqual(a, 2, out);
+        assert.equal(r.ok, true, r.detail);
+        assert.equal(r.outputs.length, 2);
+        for (const o of r.outputs) {
+            assert.ok(fs.existsSync(o), `missing ${o}`);
+            assert.ok(Math.abs(dur(o) - 2) < 1.0, `part dur ~2s, got ${dur(o)}`);
+        }
+    });
+
+    test('grade -> valid recoded clip', async () => {
+        const a = makeClip('g.mp4', 2, 'blue');
+        const out = path.join(tmp, 'graded.mp4');
+        const r = await gradeVideo(a, 'cinematic', out);
+        assert.equal(r.ok, true, r.detail);
+        assert.ok(fs.existsSync(out));
+        assert.ok(dur(out) > 1, `graded dur >1s, got ${dur(out)}`);
+    });
+
+    test('slow motion -> longer duration', async () => {
+        const a = makeClip('sl.mp4', 2, 'green');
+        const out = path.join(tmp, 'slow.mp4');
+        const r = await slowMotion(a, 2, out);
+        assert.equal(r.ok, true, r.detail);
+        assert.ok(fs.existsSync(out));
+        assert.ok(dur(out) > 3, `slow dur >3s, got ${dur(out)}`);
+    });
+
+    test('watermark -> valid clip', async () => {
+        const a = makeClip('wm.mp4', 2, 'red');
+        const out = path.join(tmp, 'wm-out.mp4');
+        const r = await addWatermark(a, 'BRAND', out);
+        assert.equal(r.ok, true, r.detail);
+        assert.ok(fs.existsSync(out));
+    });
+
+    test('derive -> produces multi-aspect + thumbnail', async () => {
+        const a = makeClip('dv.mp4', 2, 'blue');
+        const outDir = path.join(tmp, 'deriv');
+        const r = await deriveFromVideo(a, ['9:16', '1:1'], true, outDir);
+        assert.equal(r.ok, true, r.detail);
+        assert.ok(r.outputs.length >= 2, `expected >=2, got ${r.outputs.length}`);
+        for (const o of r.outputs) assert.ok(fs.existsSync(o), `missing ${o}`);
+    });
+
+    test('add captions from text -> valid clip', async () => {
+        const a = makeClip('cap.mp4', 2, 'blue');
+        const out = path.join(tmp, 'cap-out.mp4');
+        const r = await addCaptionsFromText(a, 'Hello world', out);
+        assert.equal(r.ok, true, r.detail);
+        assert.ok(fs.existsSync(out));
+    });
+});
+
 describe('route.ts intent classification (heuristic, no model)', () => {
-    test('classifies merge', () => {
-        assert.equal(routeTask('merge a.mp4 and b.mp4 into one video').kind, 'merge');
-    });
-    test('classifies trim with times', () => {
-        const t = routeTask('trim this clip from 10 to 20 seconds');
-        assert.equal(t.kind, 'trim');
-        assert.equal(t.args.start, 10);
-        assert.equal(t.args.end, 20);
-    });
-    test('classifies crop to 9:16', () => {
-        const t = routeTask('crop this video to 9:16 for tiktok');
-        assert.equal(t.kind, 'crop');
-        assert.equal(t.args.preset, '9:16');
-    });
-    test('classifies resize', () => {
-        assert.equal(routeTask('resize this to 360x640').kind, 'resize');
-    });
-    test('classifies rotate', () => {
-        const t = routeTask('rotate the clip 90 degrees');
-        assert.equal(t.kind, 'rotate');
-        assert.equal(t.args.deg, 90);
-    });
-    test('classifies extract audio', () => {
-        assert.equal(routeTask('extract audio from my video').kind, 'extract_audio');
-    });
-    test('classifies voiceover', () => {
-        const t = routeTask('generate a voiceover of "welcome to my channel"');
-        assert.equal(t.kind, 'voiceover');
-        assert.ok((t.args.text || '').includes('welcome'));
-    });
-    test('classifies download image', () => {
-        assert.equal(routeTask('download an image of a coffee cup').kind, 'download_image');
-    });
-    test('classifies download video', () => {
-        assert.equal(routeTask('download a video of a city').kind, 'download_video');
-    });
-    test('classifies full video', () => {
-        assert.equal(routeTask('make a video about the benefits of morning walks').kind, 'full_video');
-    });
+    const single = (p: string) => {
+        const r = routeTask(p);
+        return isChain(r) ? r.chain[0] : r;
+    };
+    test('classifies merge', () => { assert.equal(single('merge a.mp4 and b.mp4 into one video').kind, 'merge'); });
+    test('classifies trim with times', () => { const t = single('trim this clip from 10 to 20 seconds'); assert.equal(t.kind, 'trim'); assert.equal(t.args.start, 10); assert.equal(t.args.end, 20); });
+    test('classifies crop to 9:16', () => { const t = single('crop this video to 9:16 for tiktok'); assert.equal(t.kind, 'crop'); assert.equal(t.args.preset, '9:16'); });
+    test('classifies resize', () => { assert.equal(single('resize this to 360x640').kind, 'resize'); });
+    test('classifies rotate', () => { const t = single('rotate the clip 90 degrees'); assert.equal(t.kind, 'rotate'); assert.equal(t.args.deg, 90); });
+    test('classifies extract audio', () => { assert.equal(single('extract audio from my video').kind, 'extract_audio'); });
+    test('classifies voiceover', () => { const t = single('generate a voiceover of "welcome to my channel"'); assert.equal(t.kind, 'voiceover'); assert.ok((t.args.text || '').includes('welcome')); });
+    test('classifies download image', () => { assert.equal(single('download an image of a coffee cup').kind, 'download_image'); });
+    test('classifies download video', () => { assert.equal(single('download a video of a city').kind, 'download_video'); });
+    test('classifies full video', () => { assert.equal(single('make a video about the benefits of morning walks').kind, 'full_video'); });
+    test('detects 2-step chain', () => { const t = routeTask('crop to 9:16 then add music'); assert.ok(isChain(t)); assert.equal(t.chain.length, 2); });
 });
