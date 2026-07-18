@@ -89,3 +89,6 @@ agentic-pipeline/**/*.candidate.*
 *.candidate.jpg
 *.candidate.mp4
 *.candidate.mp3
+
+# Voicebox generated test clips (artifacts, not source)
+voicebox-test-output/
