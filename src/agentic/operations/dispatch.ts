@@ -34,6 +34,7 @@ import { runAgenticPipeline } from '../orchestrate.js';
 import { verifyRenderedVideo } from '../gate.js';
 import { AgentBrain } from '../brain.js';
 import * as fs from 'fs';
+import { safeOutputPath } from './security.js';
 
 export interface DispatchResult {
     kind: string;
@@ -71,6 +72,17 @@ async function runOne(task: RoutedTask, input: RunInput): Promise<DispatchResult
             return undefined;
         }
     };
+
+    // SECURITY: sanitize any caller-supplied output path (blocks `../` traversal
+    // from MCP / API / programmatic callers). Throws -> caught below as a clean
+    // structured failure rather than writing outside output/.
+    let safeOut: string | undefined;
+    try {
+        safeOut = safeOutputPath(input.out);
+    } catch (e) {
+        return { kind: task.kind, summary: task.summary, ok: false, detail: (e as Error).message };
+    }
+    const out = safeOut;
 
     try {
     switch (task.kind) {

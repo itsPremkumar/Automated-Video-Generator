@@ -161,4 +161,14 @@ describe('error handling & resilience', () => {
         assert.equal(r.ok, false);
         assert.match(r.detail, /needs an input file/);
     });
+
+    test('doTask blocks path-traversal in supplied out (security)', async () => {
+        const { doTask } = await import('./dispatch.js');
+        const r = await doTask('merge these two clips', {
+            files: ['a.mp4', 'b.mp4'],
+            out: '../../../../etc/cron',
+        });
+        assert.equal(r.ok, false);
+        assert.match(r.detail, /path traversal blocked/);
+    });
 });

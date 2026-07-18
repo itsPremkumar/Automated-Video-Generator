@@ -1,6 +1,7 @@
 import { exec } from 'child_process';
 import { HOST, PORT } from '../../constants/config';
 import app from '../../app';
+import { redactSecrets } from '../../agentic/operations/security.js';
 
 export { app as expressApp };
 
@@ -24,25 +25,22 @@ function installCrashGuards(): void {
 
     process.on('unhandledRejection', (reason: unknown) => {
         unhandledRejectionCount++;
-        const message = reason instanceof Error ? reason.message : String(reason);
-        const stack = reason instanceof Error ? reason.stack : undefined;
-
+        const raw = reason instanceof Error ? `${reason.message}\n${reason.stack ?? ''}` : String(reason);
+        const message = redactSecrets(raw);
         console.error('[SERVER] ======== UNHANDLED REJECTION ========');
         console.error(`[SERVER] Rejection #${unhandledRejectionCount}: ${message}`);
-        if (stack) {
-            console.error('[SERVER] Stack:', stack);
-        }
         console.error('[SERVER] The server will continue running.');
         console.error('[SERVER] ======================================');
     });
 
     process.on('uncaughtException', (error: Error, origin: string) => {
         uncaughtExceptionCount++;
+        const raw = `${error.message}\n${error.stack ?? ''}`;
+        const message = redactSecrets(raw);
 
         console.error('[SERVER] ======== UNCAUGHT EXCEPTION ========');
         console.error(`[SERVER] Exception #${uncaughtExceptionCount} (origin: ${origin})`);
-        console.error(`[SERVER] Error: ${error.message}`);
-        console.error('[SERVER] Stack:', error.stack);
+        console.error(`[SERVER] Error: ${message}`);
         console.error('[SERVER] =====================================');
 
         const looksSevere =
