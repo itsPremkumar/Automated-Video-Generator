@@ -27,10 +27,23 @@ function runFfmpeg(args: string[]): Promise<Buffer | null> {
             const timeoutMs = Number(process.env.AGENTIC_FFMPEG_TIMEOUT_MS || 15000);
             const child = spawn('ffmpeg', args, { stdio: 'pipe' } as any);
             const chunks: Buffer[] = [];
-            const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } resolve(null); }, timeoutMs);
+            const t = setTimeout(() => {
+                try {
+                    child.kill('SIGKILL');
+                } catch {
+                    /* ignore */
+                }
+                resolve(null);
+            }, timeoutMs);
             child.stdout?.on('data', (d: Buffer) => chunks.push(d));
-            child.on('error', () => { clearTimeout(t); resolve(null); });
-            child.on('close', (code: number) => { clearTimeout(t); resolve(code === 0 ? Buffer.concat(chunks) : null); });
+            child.on('error', () => {
+                clearTimeout(t);
+                resolve(null);
+            });
+            child.on('close', (code: number) => {
+                clearTimeout(t);
+                resolve(code === 0 ? Buffer.concat(chunks) : null);
+            });
         } catch {
             resolve(null);
         }

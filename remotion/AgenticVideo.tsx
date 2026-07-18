@@ -93,46 +93,93 @@ export interface AgenticVideoProps {
 function dimsFromProps(p: AgenticVideoProps): { w: number; h: number } {
     if (p.width && p.height) return { w: p.width, h: p.height };
     switch (p.orientation) {
-        case 'landscape': return { w: 1920, h: 1080 };
-        case 'square': return { w: 1080, h: 1080 };
+        case 'landscape':
+            return { w: 1920, h: 1080 };
+        case 'square':
+            return { w: 1080, h: 1080 };
         case 'portrait':
-        default: return { w: 1080, h: 1920 };
+        default:
+            return { w: 1080, h: 1920 };
     }
 }
 
 /** A2 — map a grade to a CSS filter string. */
 function gradeToFilter(grade?: GradeKind): string {
     switch (grade) {
-        case 'warm': return 'saturate(1.15) contrast(1.05) brightness(1.04) sepia(0.12) hue-rotate(-8deg)';
-        case 'cool': return 'saturate(1.05) contrast(1.05) brightness(0.99) hue-rotate(6deg)';
-        case 'cinematic': return 'saturate(0.92) contrast(1.18) brightness(0.96)';
-        case 'vivid': return 'saturate(1.35) contrast(1.1) brightness(1.05)';
+        case 'warm':
+            return 'saturate(1.15) contrast(1.05) brightness(1.04) sepia(0.12) hue-rotate(-8deg)';
+        case 'cool':
+            return 'saturate(1.05) contrast(1.05) brightness(0.99) hue-rotate(6deg)';
+        case 'cinematic':
+            return 'saturate(0.92) contrast(1.18) brightness(0.96)';
+        case 'vivid':
+            return 'saturate(1.35) contrast(1.1) brightness(1.05)';
         case 'neutral':
-        default: return 'saturate(1.05) contrast(1.02) brightness(1.0)';
+        default:
+            return 'saturate(1.05) contrast(1.02) brightness(1.0)';
     }
 }
 
-function KenBurnsImage({ src, durationInFrames, kenBurns, grade }: { src: string; durationInFrames: number; kenBurns: boolean; grade?: GradeKind }) {
+function KenBurnsImage({
+    src,
+    durationInFrames,
+    kenBurns,
+    grade,
+}: {
+    src: string;
+    durationInFrames: number;
+    kenBurns: boolean;
+    grade?: GradeKind;
+}) {
     const frame = useCurrentFrame();
     const zoom = kenBurns
-        ? interpolate(frame, [0, durationInFrames], [1.05, 1.18], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.inOut(Easing.cubic) })
+        ? interpolate(frame, [0, durationInFrames], [1.05, 1.18], {
+              extrapolateLeft: 'clamp',
+              extrapolateRight: 'clamp',
+              easing: Easing.inOut(Easing.cubic),
+          })
         : 1;
     const pan = kenBurns
-        ? interpolate(frame, [0, durationInFrames], [0, -30], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.inOut(Easing.cubic) })
+        ? interpolate(frame, [0, durationInFrames], [0, -30], {
+              extrapolateLeft: 'clamp',
+              extrapolateRight: 'clamp',
+              easing: Easing.inOut(Easing.cubic),
+          })
         : 0;
     return (
         <AbsoluteFill style={{ backgroundColor: '#000' }}>
             <Img
                 src={staticFile(src)}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', transform: `scale(${zoom}) translateY(${pan}px)`, filter: gradeToFilter(grade) }}
+                style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    transform: `scale(${zoom}) translateY(${pan}px)`,
+                    filter: gradeToFilter(grade),
+                }}
             />
-            <AbsoluteFill style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.0) 40%), radial-gradient(circle, rgba(0,0,0,0) 55%, rgba(0,0,0,0.45) 100%)' }} />
+            <AbsoluteFill
+                style={{
+                    background:
+                        'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.0) 40%), radial-gradient(circle, rgba(0,0,0,0) 55%, rgba(0,0,0,0.45) 100%)',
+                }}
+            />
         </AbsoluteFill>
     );
 }
 
 /** A3 — kinetic lower-third / word-pop layer. */
-function KineticLayer({ cues, durationInFrames, fps, accent }: { cues: KineticCue[]; durationInFrames: number; fps: number; accent: string }) {
+function KineticLayer({
+    cues,
+    durationInFrames,
+    fps,
+    accent,
+}: {
+    cues: KineticCue[];
+    durationInFrames: number;
+    fps: number;
+    accent: string;
+}) {
     const frame = useCurrentFrame();
     const now = frame / fps;
     return (
@@ -141,10 +188,18 @@ function KineticLayer({ cues, durationInFrames, fps, accent }: { cues: KineticCu
                 const start = c.atSec * fps;
                 const len = c.kind === 'wordpop' ? 0.9 * fps : 2.6 * fps;
                 const end = start + len;
-                const opacity = interpolate(frame, [start, start + 8, end - 8, end], [0, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-                const pop = c.kind === 'wordpop'
-                    ? interpolate(frame, [start, start + 10], [0.6, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.elastic(1) })
-                    : 1;
+                const opacity = interpolate(frame, [start, start + 8, end - 8, end], [0, 1, 1, 0], {
+                    extrapolateLeft: 'clamp',
+                    extrapolateRight: 'clamp',
+                });
+                const pop =
+                    c.kind === 'wordpop'
+                        ? interpolate(frame, [start, start + 10], [0.6, 1], {
+                              extrapolateLeft: 'clamp',
+                              extrapolateRight: 'clamp',
+                              easing: Easing.elastic(1),
+                          })
+                        : 1;
                 if (frame < start || frame > end) return null;
                 return (
                     <AbsoluteFill
@@ -181,18 +236,38 @@ function KineticLayer({ cues, durationInFrames, fps, accent }: { cues: KineticCu
     );
 }
 
-function SceneVisual({ asset, durationInFrames, kenBurns, grade }: { asset: AgenticVideoAsset; durationInFrames: number; kenBurns: boolean; grade?: GradeKind }) {
+function SceneVisual({
+    asset,
+    durationInFrames,
+    kenBurns,
+    grade,
+}: {
+    asset: AgenticVideoAsset;
+    durationInFrames: number;
+    kenBurns: boolean;
+    grade?: GradeKind;
+}) {
     const isVideoFile = /\.(mp4|webm|mov|m4v)$/i.test(asset.localPath);
     if (isVideoFile) {
         return (
             <AbsoluteFill>
                 <AbsoluteFill style={{ backgroundColor: '#0F3460' }} />
-                <Video src={staticFile(asset.localPath)} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: gradeToFilter(grade) }} />
-                <AbsoluteFill style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.0) 40%), radial-gradient(circle, rgba(0,0,0,0) 55%, rgba(0,0,0,0.45) 100%)' }} />
+                <Video
+                    src={staticFile(asset.localPath)}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', filter: gradeToFilter(grade) }}
+                />
+                <AbsoluteFill
+                    style={{
+                        background:
+                            'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.0) 40%), radial-gradient(circle, rgba(0,0,0,0) 55%, rgba(0,0,0,0.45) 100%)',
+                    }}
+                />
             </AbsoluteFill>
         );
     }
-    return <KenBurnsImage src={asset.localPath} durationInFrames={durationInFrames} kenBurns={kenBurns} grade={grade} />;
+    return (
+        <KenBurnsImage src={asset.localPath} durationInFrames={durationInFrames} kenBurns={kenBurns} grade={grade} />
+    );
 }
 
 /**
@@ -202,23 +277,52 @@ function SceneVisual({ asset, durationInFrames, kenBurns, grade }: { asset: Agen
  * fades in; a 'cut' transition renders with no overlap (hard cut).
  */
 function TransitionedScene({
-    asset, fps, durationInFrames, from, overlap, transition, kenBurns, accent,
+    asset,
+    fps,
+    durationInFrames,
+    from,
+    overlap,
+    transition,
+    kenBurns,
+    accent,
 }: {
-    asset: AgenticVideoAsset; fps: number; durationInFrames: number; from: number; overlap: number; transition: TransitionKind; kenBurns: boolean; accent: string;
+    asset: AgenticVideoAsset;
+    fps: number;
+    durationInFrames: number;
+    from: number;
+    overlap: number;
+    transition: TransitionKind;
+    kenBurns: boolean;
+    accent: string;
 }) {
     const frame = useCurrentFrame();
     const local = frame - from;
     const isFirst = from === 0;
-    const fadeIn = isFirst || transition === 'cut'
-        ? 1
-        : interpolate(local, [0, overlap], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.out(Easing.cubic) });
-    const fadeOut = transition === 'cut'
-        ? 1
-        : interpolate(local, [durationInFrames - overlap, durationInFrames], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.in(Easing.cubic) });
+    const fadeIn =
+        isFirst || transition === 'cut'
+            ? 1
+            : interpolate(local, [0, overlap], [0, 1], {
+                  extrapolateLeft: 'clamp',
+                  extrapolateRight: 'clamp',
+                  easing: Easing.out(Easing.cubic),
+              });
+    const fadeOut =
+        transition === 'cut'
+            ? 1
+            : interpolate(local, [durationInFrames - overlap, durationInFrames], [1, 0], {
+                  extrapolateLeft: 'clamp',
+                  extrapolateRight: 'clamp',
+                  easing: Easing.in(Easing.cubic),
+              });
     const opacity = Math.min(fadeIn, fadeOut);
-    const slideX = transition === 'slide' && !isFirst
-        ? interpolate(local, [0, overlap], [Math.round(dimsFromPropsWidth(asset) * 0.12), 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.out(Easing.cubic) })
-        : 0;
+    const slideX =
+        transition === 'slide' && !isFirst
+            ? interpolate(local, [0, overlap], [Math.round(dimsFromPropsWidth(asset) * 0.12), 0], {
+                  extrapolateLeft: 'clamp',
+                  extrapolateRight: 'clamp',
+                  easing: Easing.out(Easing.cubic),
+              })
+            : 0;
     return (
         <AbsoluteFill style={{ opacity, transform: slideX ? `translateX(${slideX}px)` : undefined }}>
             <SceneVisual asset={asset} durationInFrames={durationInFrames} kenBurns={kenBurns} grade={asset.grade} />
@@ -226,7 +330,12 @@ function TransitionedScene({
                 text={asset.captionSegments?.[0]?.text ?? ''}
                 durationInFrames={durationInFrames}
                 captionSegments={asset.captionSegments}
-                config={{ position: asset.textConfig?.position ?? 'bottom', fontSize: asset.textConfig?.fontSize ?? 48, animation: 'fade', glow: true }}
+                config={{
+                    position: asset.textConfig?.position ?? 'bottom',
+                    fontSize: asset.textConfig?.fontSize ?? 48,
+                    animation: 'fade',
+                    glow: true,
+                }}
             />
             {asset.kinetic && asset.kinetic.length > 0 && (
                 <KineticLayer cues={asset.kinetic} durationInFrames={durationInFrames} fps={fps} accent={accent} />
@@ -238,17 +347,43 @@ function TransitionedScene({
 
 // helper so slide distance can use the composition width without a hook
 let _widthForSlide = 1080;
-function dimsFromPropsWidth(_a: AgenticVideoAsset): number { return _widthForSlide; }
+function dimsFromPropsWidth(_a: AgenticVideoAsset): number {
+    return _widthForSlide;
+}
 
 /** A5 — music ducking: dip under each voiceover scene, rise in gaps. */
-function MusicDuck({ src, scenes, fps, full = 0.18, duck = 0.06 }: { src: string; scenes: { from: number; dur: number; hasVoice?: boolean }[]; fps: number; full?: number; duck?: number }) {
+function MusicDuck({
+    src,
+    scenes,
+    fps,
+    full = 0.18,
+    duck = 0.06,
+}: {
+    src: string;
+    scenes: { from: number; dur: number; hasVoice?: boolean }[];
+    fps: number;
+    full?: number;
+    duck?: number;
+}) {
     const frame = useCurrentFrame();
     const inVoice = scenes.some((s) => s.hasVoice && frame >= s.from && frame < s.from + s.dur);
-    const vol = interpolate(Number(inVoice), [0, 1], [full, duck], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+    const vol = interpolate(Number(inVoice), [0, 1], [full, duck], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+    });
     return <Audio src={staticFile(src)} volume={vol} />;
 }
 
-export const AgenticVideo: React.FC<AgenticVideoProps> = ({ title, fps, assets, brand, introCard, outroCard, kenBurns = true, crossfadeSec = 0.5 }) => {
+export const AgenticVideo: React.FC<AgenticVideoProps> = ({
+    title,
+    fps,
+    assets,
+    brand,
+    introCard,
+    outroCard,
+    kenBurns = true,
+    crossfadeSec = 0.5,
+}) => {
     const { width: vw } = useVideoConfig();
     _widthForSlide = vw || 1080;
     const accent = brand?.accentColor ?? '#FF6B35';
@@ -277,7 +412,16 @@ export const AgenticVideo: React.FC<AgenticVideoProps> = ({ title, fps, assets, 
             {scenePlan.map(({ asset, from, dur, transition }) => (
                 // overlap frames at tail so the next scene can crossfade in
                 <Sequence key={asset.sceneIndex} from={from} durationInFrames={dur + overlap}>
-                    <TransitionedScene asset={asset} fps={fps} durationInFrames={dur} from={from} overlap={overlap} transition={transition} kenBurns={kenBurns} accent={accent} />
+                    <TransitionedScene
+                        asset={asset}
+                        fps={fps}
+                        durationInFrames={dur}
+                        from={from}
+                        overlap={overlap}
+                        transition={transition}
+                        kenBurns={kenBurns}
+                        accent={accent}
+                    />
                 </Sequence>
             ))}
             {outroCard && (
@@ -298,13 +442,47 @@ export const AgenticVideo: React.FC<AgenticVideoProps> = ({ title, fps, assets, 
 
 function IntroScene({ card, accent }: { card: IntroCard; accent: string }) {
     const frame = useCurrentFrame();
-    const titleOpacity = interpolate(frame, [5, 20], [0, 1], { extrapolateRight: 'clamp', easing: Easing.out(Easing.cubic) });
-    const subOpacity = interpolate(frame, [20, 35], [0, 1], { extrapolateRight: 'clamp', easing: Easing.out(Easing.cubic) });
+    const titleOpacity = interpolate(frame, [5, 20], [0, 1], {
+        extrapolateRight: 'clamp',
+        easing: Easing.out(Easing.cubic),
+    });
+    const subOpacity = interpolate(frame, [20, 35], [0, 1], {
+        extrapolateRight: 'clamp',
+        easing: Easing.out(Easing.cubic),
+    });
     return (
-        <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center', background: `linear-gradient(135deg, #004E89 0%, ${accent} 100%)` }}>
-            <div style={{ opacity: titleOpacity, color: '#fff', fontSize: 72, fontWeight: 800, textAlign: 'center', padding: 40 }}>{card.title}</div>
+        <AbsoluteFill
+            style={{
+                justifyContent: 'center',
+                alignItems: 'center',
+                background: `linear-gradient(135deg, #004E89 0%, ${accent} 100%)`,
+            }}
+        >
+            <div
+                style={{
+                    opacity: titleOpacity,
+                    color: '#fff',
+                    fontSize: 72,
+                    fontWeight: 800,
+                    textAlign: 'center',
+                    padding: 40,
+                }}
+            >
+                {card.title}
+            </div>
             {card.subtitle && (
-                <div style={{ opacity: subOpacity, color: '#fff', fontSize: 40, marginTop: 20, textAlign: 'center', padding: 20 }}>{card.subtitle}</div>
+                <div
+                    style={{
+                        opacity: subOpacity,
+                        color: '#fff',
+                        fontSize: 40,
+                        marginTop: 20,
+                        textAlign: 'center',
+                        padding: 20,
+                    }}
+                >
+                    {card.subtitle}
+                </div>
             )}
         </AbsoluteFill>
     );
@@ -312,15 +490,51 @@ function IntroScene({ card, accent }: { card: IntroCard; accent: string }) {
 
 function OutroScene({ card, accent }: { card: OutroCard; accent: string }) {
     const frame = useCurrentFrame();
-    const ctaOpacity = interpolate(frame, [5, 25], [0, 1], { extrapolateRight: 'clamp', easing: Easing.out(Easing.cubic) });
+    const ctaOpacity = interpolate(frame, [5, 25], [0, 1], {
+        extrapolateRight: 'clamp',
+        easing: Easing.out(Easing.cubic),
+    });
     return (
-        <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center', background: `linear-gradient(135deg, #1A1A2E 0%, #004E89 100%)` }}>
-            <div style={{ opacity: ctaOpacity, color: '#fff', fontSize: 56, fontWeight: 800, textAlign: 'center', padding: 40 }}>{card.ctaText}</div>
+        <AbsoluteFill
+            style={{
+                justifyContent: 'center',
+                alignItems: 'center',
+                background: `linear-gradient(135deg, #1A1A2E 0%, #004E89 100%)`,
+            }}
+        >
+            <div
+                style={{
+                    opacity: ctaOpacity,
+                    color: '#fff',
+                    fontSize: 56,
+                    fontWeight: 800,
+                    textAlign: 'center',
+                    padding: 40,
+                }}
+            >
+                {card.ctaText}
+            </div>
             {card.showSubscribe && (
-                <div style={{ opacity: ctaOpacity, color: '#fff', fontSize: 32, marginTop: 24, padding: '12px 28px', border: `2px solid ${accent}`, borderRadius: 40 }}>Subscribe</div>
+                <div
+                    style={{
+                        opacity: ctaOpacity,
+                        color: '#fff',
+                        fontSize: 32,
+                        marginTop: 24,
+                        padding: '12px 28px',
+                        border: `2px solid ${accent}`,
+                        borderRadius: 40,
+                    }}
+                >
+                    Subscribe
+                </div>
             )}
             {card.hashtags && (
-                <div style={{ opacity: ctaOpacity, color: '#FFB38A', fontSize: 28, marginTop: 24, textAlign: 'center' }}>{card.hashtags.join(' ')}</div>
+                <div
+                    style={{ opacity: ctaOpacity, color: '#FFB38A', fontSize: 28, marginTop: 24, textAlign: 'center' }}
+                >
+                    {card.hashtags.join(' ')}
+                </div>
             )}
         </AbsoluteFill>
     );

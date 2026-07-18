@@ -21,46 +21,68 @@ import { detectBlackFrames, detectFreezeFrames, analyzeAudio, analyzeDimensions 
 import { verifyRenderedVideo } from './gate.js';
 
 function ffmpeg(): string {
-     
     return require('ffmpeg-static');
 }
 function makeTestsrc(): string {
     const p = path.join(os.tmpdir(), `va-ts-${Date.now()}.mp4`);
-    execFileSync(ffmpeg(), [
-        '-y', '-f', 'lavfi', '-i', 'testsrc=size=720x1280:rate=25:duration=4',
-        '-f', 'lavfi', '-i', 'sine=frequency=440:duration=4',
-        '-c:v', 'libx264', '-c:a', 'aac', '-shortest', p,
-    ], { stdio: 'ignore' });
+    execFileSync(
+        ffmpeg(),
+        [
+            '-y',
+            '-f',
+            'lavfi',
+            '-i',
+            'testsrc=size=720x1280:rate=25:duration=4',
+            '-f',
+            'lavfi',
+            '-i',
+            'sine=frequency=440:duration=4',
+            '-c:v',
+            'libx264',
+            '-c:a',
+            'aac',
+            '-shortest',
+            p,
+        ],
+        { stdio: 'ignore' },
+    );
     return p;
 }
 function makeBlack(): string {
     const p = path.join(os.tmpdir(), `va-blk-${Date.now()}.mp4`);
-    execFileSync(ffmpeg(), ['-y', '-f', 'lavfi', '-i', 'color=c=black:size=720x1280:rate=25:duration=2', '-t', '2', '-c:v', 'libx264', p], { stdio: 'ignore' });
+    execFileSync(
+        ffmpeg(),
+        ['-y', '-f', 'lavfi', '-i', 'color=c=black:size=720x1280:rate=25:duration=2', '-t', '2', '-c:v', 'libx264', p],
+        { stdio: 'ignore' },
+    );
     return p;
 }
 
 describe('video-analyzer on a moving test pattern (testsrc)', () => {
     let clip: string;
-    test('setup: generate clip', () => { clip = makeTestsrc(); assert.ok(fs.existsSync(clip)); });
+    test('setup: generate clip', () => {
+        clip = makeTestsrc();
+        assert.ok(fs.existsSync(clip));
+    });
     test('black detector does NOT false-positive on testsrc borders (X10 accurate)', async () => {
         const b = await detectBlackFrames(clip);
         assert.equal(b.length, 0, 'testsrc center is bright -> no fully-black frame');
     });
     test('no freeze frames on animated pattern (X11)', async () => {
-            const f = await detectFreezeFrames(clip);
-            assert.equal(f.length, 0);
-        });
-        test('audio measured, not clipping (X12/X13)', async () => {
-            const a = await analyzeAudio(clip);
-            assert.ok(a.peakDb > -60 && a.peakDb <= 0, `peak ${a.peakDb}`);
-            assert.equal(a.clipping, false);
-        });
-        test('dimensions + codec (X14/X15)', async () => {
-            const d = await analyzeDimensions(clip);
-            assert.equal(d.width, 720);
-            assert.equal(d.height, 1280);
-            assert.equal(d.codec, 'h264');
-        });
+        const f = await detectFreezeFrames(clip);
+        assert.equal(f.length, 0);
+    });
+    test('audio measured, not clipping (X12/X13)', async () => {
+        const a = await analyzeAudio(clip);
+        assert.ok(a.peakDb > -60 && a.peakDb <= 0, `peak ${a.peakDb}`);
+        assert.equal(a.clipping, false);
+    });
+    test('dimensions + codec (X14/X15)', async () => {
+        const d = await analyzeDimensions(clip);
+        assert.equal(d.width, 720);
+        assert.equal(d.height, 1280);
+        assert.equal(d.codec, 'h264');
+    });
     test('verifyRenderedVideo: all quality checks pass; X7 uses a conservative size floor', async () => {
         const r = await verifyRenderedVideo(clip, 4);
         const failed = r.checks.filter((c) => !c.pass).map((c) => c.id);
@@ -71,7 +93,13 @@ describe('video-analyzer on a moving test pattern (testsrc)', () => {
         // false-positive we fixed).
         assert.deepEqual(failed, [], 'unexpected failures: ' + JSON.stringify(failed));
     });
-    test('cleanup', () => { try { fs.rmSync(clip); } catch { /* */ } });
+    test('cleanup', () => {
+        try {
+            fs.rmSync(clip);
+        } catch {
+            /* */
+        }
+    });
 });
 
 describe('video-analyzer detects a fully-black clip', () => {

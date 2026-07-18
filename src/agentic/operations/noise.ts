@@ -11,7 +11,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { runFfmpeg } from './edit.js';
 
-export interface NoiseResult { ok: boolean; output?: string; detail: string; }
+export interface NoiseResult {
+    ok: boolean;
+    output?: string;
+    detail: string;
+}
 
 export interface NoiseOpts {
     /** audio denoise strength: 'light' | 'medium' | 'heavy'. */
@@ -24,9 +28,12 @@ export interface NoiseOpts {
 /** Map a strength preset to an afftdn filter expression. */
 export function audioDenoiser(strength: 'light' | 'medium' | 'heavy'): string {
     switch (strength) {
-        case 'light': return 'afftdn=nr=8:om=1';
-        case 'medium': return 'afftdn=nr=16:om=1';
-        case 'heavy': return 'afftdn=nr=32:om=1';
+        case 'light':
+            return 'afftdn=nr=8:om=1';
+        case 'medium':
+            return 'afftdn=nr=16:om=1';
+        case 'heavy':
+            return 'afftdn=nr=32:om=1';
     }
 }
 
@@ -40,11 +47,7 @@ export function videoSmoother(amount: number): string | null {
 /**
  * Reduce audio hiss / video grain on a clip.
  */
-export async function reduceNoise(
-    file: string,
-    out?: string,
-    opts: NoiseOpts = {},
-): Promise<NoiseResult> {
+export async function reduceNoise(file: string, out?: string, opts: NoiseOpts = {}): Promise<NoiseResult> {
     if (!fs.existsSync(file)) return { ok: false, detail: `input not found: ${file}` };
     const audio = opts.audio ?? 'medium';
     const videoAmt = opts.video ?? 0;

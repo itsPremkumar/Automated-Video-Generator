@@ -15,36 +15,54 @@ import * as path from 'path';
 import { runFfmpeg } from './edit.js';
 import { syllableWordTimings, CaptionSegment } from '../../lib/captions.js';
 
-export interface CaptionResult { ok: boolean; output?: string; detail: string; }
+export interface CaptionResult {
+    ok: boolean;
+    output?: string;
+    detail: string;
+}
 
-function tmpFontSafe(): string {
+function tmpFontSafe(): string | null {
     const candidates = [
         'C:/Windows/Fonts/arial.ttf',
         'C:/Windows/Fonts/seguiemj.ttf',
         '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+        '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+        '/usr/share/fonts/dejavu/DejaVuSans.ttf',
     ];
-    return candidates.find((f) => fs.existsSync(f)) ?? 'Arial';
+    return candidates.find((f) => fs.existsSync(f)) ?? null;
 }
 
-function buildDrawtextFilter(segments: CaptionSegment[], font: string): string {
+function buildDrawtextFilter(segments: CaptionSegment[], font: string | null): string {
+    const fontClause = font ? `fontfile='${font.replace(/\\/g, '/')}':` : '';
     // One drawtext per cue, enabled only during its time window.
     return segments
         .map((s, i) => {
             const start = (s.startMs / 1000).toFixed(2);
             const end = (s.endMs / 1000).toFixed(2);
-            const text = (s.text || '').replace(/:/g, '\\:').replace(/'/g, "'\\''").replace(/"/g, '\\"').replace(/,/g, '\\,').replace(/\\/g, '/');
-            return `drawtext=fontfile='${font.replace(/\\/g, '/')}':text='${text}':fontcolor=white:fontsize=42:box=1:boxcolor=black@0.5:boxborderw=12:x=(w-text_w)/2:y=h-text_h-40:enable='between(t,${start},${end})'`;
+            const text = (s.text || '')
+                .replace(/:/g, '\\:')
+                .replace(/'/g, "'\\''")
+                .replace(/"/g, '\\"')
+                .replace(/,/g, '\\,')
+                .replace(/\\/g, '/');
+            return `drawtext=${fontClause}text='${text}':fontcolor=white:fontsize=42:box=1:boxcolor=black@0.5:boxborderw=12:x=(w-text_w)/2:y=h-text_h-40:enable='between(t,${start},${end})'`;
         })
         .join(',');
 }
 
 /** Burn captions onto an existing video from raw text. */
-export async function addCaptionsFromText(file: string, text: string, out?: string, mode: 'sentence' | 'word' = 'word'): Promise<CaptionResult> {
+export async function addCaptionsFromText(
+    file: string,
+    text: string,
+    out?: string,
+    mode: 'sentence' | 'word' = 'word',
+): Promise<CaptionResult> {
     if (!fs.existsSync(file)) return { ok: false, detail: `input not found: ${file}` };
     const output = out ?? path.join(process.cwd(), 'output', `captioned_${Date.now()}.mp4`);
     fs.mkdirSync(path.dirname(output), { recursive: true });
     const durSec = 5; // generic; word timing fills the span
-    const segments = mode === 'word' ? syllableWordTimings(text, durSec * 1000) : [{ text, startMs: 0, endMs: durSec * 1000 }];
+    const segments =
+        mode === 'word' ? syllableWordTimings(text, durSec * 1000) : [{ text, startMs: 0, endMs: durSec * 1000 }];
     const font = tmpFontSafe();
     const vf = buildDrawtextFilter(segments, font);
     const { code, out: log } = await runFfmpeg(['-i', file, '-vf', vf, '-c:a', 'copy', '-y', output]);
@@ -59,13 +77,18 @@ export async function addCaptionsFromSrt(file: string, srtPath: string, out?: st
     if (!fs.existsSync(srtPath)) return { ok: false, detail: `srt not found: ${srtPath}` };
     const output = out ?? path.join(process.cwd(), 'output', `captioned_${Date.now()}.mp4`);
     fs.mkdirSync(path.dirname(output), { recursive: true });
-    const font = tmpFontSafe().replace(/\\/g, '/');
+    const font = tmpFontSafe() ?? '';
     // ffmpeg subtitles filter needs forward-slash paths on win too.
     const srt = srtPath.replace(/\\/g, '/');
     const { code, out: log } = await runFfmpeg([
-        '-i', file,
-        '-vf', `subtitles='${srt}':force_style='FontName=Arial,FontSize=24,PrimaryColour=&HFFFFFF&'`,
-        '-c:a', 'copy', '-y', output,
+        '-i',
+        file,
+        '-vf',
+        `subtitles='${srt}':force_style='FontName=Arial,FontSize=24,PrimaryColour=&HFFFFFF&'`,
+        '-c:a',
+        'copy',
+        '-y',
+        output,
     ]);
     if (code !== 0) return { ok: false, detail: `srt burn failed:\n${log.slice(-600)}` };
     if (!fs.existsSync(output)) return { ok: false, detail: 'captioned file not produced' };

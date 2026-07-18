@@ -24,9 +24,17 @@ class MockBrain extends AgentBrain {
     textResult: any = null;
     visionCalled = 0;
     textCalled = 0;
-    get modelEnabled() { return true; }
-    async visionVerify() { this.visionCalled++; return this.visionResult; }
-    async completeJSON(_s: string, _p: string, _h: string) { this.textCalled++; return this.textResult; }
+    get modelEnabled() {
+        return true;
+    }
+    async visionVerify() {
+        this.visionCalled++;
+        return this.visionResult;
+    }
+    async completeJSON(_s: string, _p: string, _h: string) {
+        this.textCalled++;
+        return this.textResult;
+    }
 }
 
 test('disabled aiVerify returns null (signal gates decide)', async () => {
@@ -71,7 +79,14 @@ test('enabled -> vision is always called (stage flags enforced by callers)', asy
 test('audio with transcript -> judged by text model', async () => {
     const brain = new MockBrain();
     brain.textResult = { confidence: 8, pass: true, reason: 'clear narration' };
-    const r = await aiVerifyAsset('/a.mp3', 'audio', ['lion facts'], cfg({ checkSpeechClarity: true }), brain, 'A lion is a big cat.');
+    const r = await aiVerifyAsset(
+        '/a.mp3',
+        'audio',
+        ['lion facts'],
+        cfg({ checkSpeechClarity: true }),
+        brain,
+        'A lion is a big cat.',
+    );
     assert.equal(r?.pass, true);
     assert.equal(brain.textCalled, 1);
 });

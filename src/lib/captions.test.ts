@@ -221,7 +221,10 @@ test('syllableWordTimings produces word-by-word cues filling the duration', () =
         assert.ok(segs[i].startMs >= segs[i - 1].endMs);
     }
     // every word is preserved as its own cue text
-    assert.deepEqual(segs.map((s) => s.text), ['The', 'quick', 'brown', 'fox', 'jumps']);
+    assert.deepEqual(
+        segs.map((s) => s.text),
+        ['The', 'quick', 'brown', 'fox', 'jumps'],
+    );
 });
 
 test('syllableWordTimings returns empty for blank text', () => {

@@ -25,7 +25,7 @@ export interface KineticCue {
 
 export interface SceneStyle {
     sceneIndex: number;
-    transitionIn: TransitionKind;   // transition used to ENTER this scene (scene 0 = none)
+    transitionIn: TransitionKind; // transition used to ENTER this scene (scene 0 = none)
     grade: GradeKind;
     kinetic: KineticCue[];
 }
@@ -42,8 +42,8 @@ export interface AgenticStyle {
     /** override specific knobs */
     transitionBias?: TransitionKind[];
     gradeBias?: GradeKind[];
-    kinetic?: boolean;     // animated captions (default true)
-    beatSplit?: boolean;   // cut on VO cadence (default false — kept subtle)
+    kinetic?: boolean; // animated captions (default true)
+    beatSplit?: boolean; // cut on VO cadence (default false — kept subtle)
 }
 
 const TRANSITIONS: TransitionKind[] = ['fade', 'slide', 'zoomblur', 'cut'];
@@ -77,23 +77,27 @@ export function computeStylePlan(
 
     // Preset tweaks: reels = punchy (more cuts/slides), documentary = calm (fades).
     const transitionPool: TransitionKind[] =
-        preset === 'reels' ? ['slide', 'zoomblur', 'cut', 'fade'] :
-        preset === 'documentary' || preset === 'documentary-cool' ? ['fade', 'slide', 'zoomblur'] :
-        preset === 'neutral' ? ['fade'] :
-        ['fade', 'slide', 'zoomblur']; // cinematic
+        preset === 'reels'
+            ? ['slide', 'zoomblur', 'cut', 'fade']
+            : preset === 'documentary' || preset === 'documentary-cool'
+              ? ['fade', 'slide', 'zoomblur']
+              : preset === 'neutral'
+                ? ['fade']
+                : ['fade', 'slide', 'zoomblur']; // cinematic
     const gradePool: GradeKind[] =
-        preset === 'documentary-cool' ? ['cool', 'cinematic', 'neutral'] :
-        preset === 'reels' ? ['vivid', 'cinematic', 'warm'] :
-        preset === 'neutral' ? ['neutral'] :
-        ['cinematic', 'warm', 'cool', 'vivid'];
+        preset === 'documentary-cool'
+            ? ['cool', 'cinematic', 'neutral']
+            : preset === 'reels'
+              ? ['vivid', 'cinematic', 'warm']
+              : preset === 'neutral'
+                ? ['neutral']
+                : ['cinematic', 'warm', 'cool', 'vivid'];
 
     const scenes: SceneStyle[] = plan.scenes.map((s, i) => {
         const seed = hash(plan.title + '|scene' + i + '|' + preset);
         const transitionIn: TransitionKind =
-            i === 0 ? 'fade' :
-            style.transitionBias?.[i] ?? pick(transitionPool, seed >> 3);
-        const grade: GradeKind =
-            style.gradeBias?.[i] ?? pick(gradePool, seed >> 7);
+            i === 0 ? 'fade' : (style.transitionBias?.[i] ?? pick(transitionPool, seed >> 3));
+        const grade: GradeKind = style.gradeBias?.[i] ?? pick(gradePool, seed >> 7);
 
         const kinetic: KineticCue[] = [];
         if (style.kinetic !== false) {
@@ -101,8 +105,9 @@ export function computeStylePlan(
             // Lower-third reveal at scene start (the scene's spoken hook).
             kinetic.push({ atSec: 0.15, text: s.voiceoverText.split(/[.!?]/)[0].slice(0, 60), kind: 'lowerthird' });
             // Word-pop on an emphasis word if present.
-            const emph = ['secret', 'amazing', 'important', 'never', 'always', 'real', 'truth', 'best', 'worst']
-                .find((w) => s.voiceoverText.toLowerCase().includes(w));
+            const emph = ['secret', 'amazing', 'important', 'never', 'always', 'real', 'truth', 'best', 'worst'].find(
+                (w) => s.voiceoverText.toLowerCase().includes(w),
+            );
             if (emph) kinetic.push({ atSec: Math.max(0.4, dur * 0.45), text: emph.toUpperCase(), kind: 'wordpop' });
         }
         return { sceneIndex: i, transitionIn, grade, kinetic };
@@ -121,11 +126,15 @@ export function computeStylePlan(
  */
 export function xfadeName(kind: TransitionKind): string {
     switch (kind) {
-        case 'slide': return 'slideleft';
-        case 'zoomblur': return 'fade'; // zoomblur unsupported in this build
-        case 'cut': return 'fade';      // renderer upgrades cuts to hard concat
+        case 'slide':
+            return 'slideleft';
+        case 'zoomblur':
+            return 'fade'; // zoomblur unsupported in this build
+        case 'cut':
+            return 'fade'; // renderer upgrades cuts to hard concat
         case 'fade':
-        default: return 'fade';
+        default:
+            return 'fade';
     }
 }
 
@@ -137,11 +146,16 @@ export function xfadeName(kind: TransitionKind): string {
  */
 export function gradeFilter(kind: GradeKind): string {
     switch (kind) {
-        case 'warm': return 'eq=contrast=1.05:brightness=1.04:saturation=1.22:gamma=0.96';
-        case 'cool': return 'eq=contrast=1.0:brightness=0.97:saturation=1.08:gamma=1.05';
-        case 'cinematic': return 'eq=contrast=1.12:brightness=0.97:saturation=1.1:gamma=0.95';
-        case 'vivid': return 'eq=contrast=1.08:saturation=1.35:brightness=1.0';
+        case 'warm':
+            return 'eq=contrast=1.05:brightness=1.04:saturation=1.22:gamma=0.96';
+        case 'cool':
+            return 'eq=contrast=1.0:brightness=0.97:saturation=1.08:gamma=1.05';
+        case 'cinematic':
+            return 'eq=contrast=1.12:brightness=0.97:saturation=1.1:gamma=0.95';
+        case 'vivid':
+            return 'eq=contrast=1.08:saturation=1.35:brightness=1.0';
         case 'neutral':
-        default: return 'eq=contrast=1.02:saturation=1.05';
+        default:
+            return 'eq=contrast=1.02:saturation=1.05';
     }
 }

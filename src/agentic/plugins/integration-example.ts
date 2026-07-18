@@ -1,6 +1,6 @@
 /**
  * Plugin Integration Example — How to use the plugin system with the agentic pipeline
- * 
+ *
  * This file shows how to integrate plugins without modifying core agentic code.
  * Place this in your custom entry point or import in autopilot.ts
  */
@@ -19,13 +19,13 @@ export async function runWithPluginsAutopilot(
     options: {
         configPath?: string;
         pluginConfig?: Record<string, { enabled?: boolean; config?: Record<string, unknown> }>;
-    } = {}
+    } = {},
 ): Promise<string> {
     // 1. Setup plugins
     const registry = await setupPluginsForAutopilot(
         `job_${Date.now()}`,
         `./agentic-pipeline/workspaces/job_${Date.now()}`,
-        { topic, title, ...options }
+        { topic, title, ...options },
     );
 
     // 2. Apply custom plugin config if provided
@@ -75,11 +75,7 @@ export async function runWithPluginsAutopilot(
 /**
  * Example 2: Manual plugin integration (for custom pipelines)
  */
-export async function runWithPluginsManual(
-    topic: string,
-    title: string,
-    customPlugins?: string[]
-): Promise<string> {
+export async function runWithPluginsManual(topic: string, title: string, customPlugins?: string[]): Promise<string> {
     // Create context
     const jobId = `job_${Date.now()}`;
     const context = new PluginContext({
@@ -111,8 +107,22 @@ export async function runWithPluginsManual(
         orientation: 'portrait',
         aspect: '9:16',
         scenes: [
-            { sceneNumber: 1, voiceoverText: 'Hook', searchKeywords: ['hook'], visualPreference: 'image', durationSec: 3, metadata: {} },
-            { sceneNumber: 2, voiceoverText: 'Content', searchKeywords: ['content'], visualPreference: 'image', durationSec: 4, metadata: {} },
+            {
+                sceneNumber: 1,
+                voiceoverText: 'Hook',
+                searchKeywords: ['hook'],
+                visualPreference: 'image',
+                durationSec: 3,
+                metadata: {},
+            },
+            {
+                sceneNumber: 2,
+                voiceoverText: 'Content',
+                searchKeywords: ['content'],
+                visualPreference: 'image',
+                durationSec: 4,
+                metadata: {},
+            },
         ],
         totalDurationSec: 7,
         metadata: {},
@@ -143,14 +153,14 @@ export async function runWithPluginsManual(
 
 /**
  * Example 3: CLI Integration
- * 
+ *
  * Usage in bin/agentic-auto.ts or similar:
- * 
+ *
  * import { createPluginRegistry, registerAllPlugins } from '../src/agentic/plugins/index.js';
- * 
+ *
  * const registry = await createPluginRegistry(context);
  * registerAllPlugins(registry, customConfigFromCLI);
- * 
+ *
  * // Then in pipeline stages, call:
  * plan = await registry.invokeOnPlan(plan);
  * style = await registry.invokeOnStyle(style);
@@ -160,11 +170,11 @@ export async function runWithPluginsManual(
 
 /**
  * Example 4: Creating a Custom Plugin
- * 
+ *
  * Create file: ./my-plugins/custom-effect.ts
- * 
+ *
  * import { AgenticPlugin, PluginCategory, Capability } from '../src/agentic/plugins/core/types.js';
- * 
+ *
  * export const customEffectPlugin: AgenticPlugin = {
  *     metadata: {
  *         name: 'custom-effect',
@@ -182,7 +192,7 @@ export async function runWithPluginsManual(
  *         }
  *     }
  * };
- * 
+ *
  * // Register:
  * import { customEffectPlugin } from './my-plugins/custom-effect.js';
  * registry.register(customEffectPlugin, { intensity: 0.8 }, true);

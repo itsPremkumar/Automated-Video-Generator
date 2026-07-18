@@ -17,8 +17,8 @@ test('resolveConfig applies a videoType template on top of the preset', () => {
 
 test('explicit user overrides win over template', () => {
     const cfg = resolveConfig({ topic: 't', videoType: 'news', aspect: '1:1', kineticText: true });
-    assert.strictEqual(cfg.aspect, '1:1');      // user override beats news 16:9
-    assert.strictEqual(cfg.kineticText, true);  // user override beats news false
+    assert.strictEqual(cfg.aspect, '1:1'); // user override beats news 16:9
+    assert.strictEqual(cfg.kineticText, true); // user override beats news false
     // non-overridden template fields still apply
     assert.strictEqual(cfg.transition, 'cut');
 });

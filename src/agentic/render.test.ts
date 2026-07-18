@@ -14,10 +14,14 @@ const ffmpeg: string = require('ffmpeg-static');
 const { execFileSync } = require('child_process');
 
 function makeImg(p: string, color: string) {
-    execFileSync(ffmpeg, ['-f', 'lavfi', '-i', `color=c=${color}:s=720x1280:d=0.1`, '-frames:v', '1', '-y', p], { stdio: 'ignore' });
+    execFileSync(ffmpeg, ['-f', 'lavfi', '-i', `color=c=${color}:s=720x1280:d=0.1`, '-frames:v', '1', '-y', p], {
+        stdio: 'ignore',
+    });
 }
 function makeTone(p: string, dur: number) {
-    execFileSync(ffmpeg, ['-f', 'lavfi', '-i', `sine=frequency=330:duration=${dur}`, '-c:a', 'pcm_s16le', '-y', p], { stdio: 'ignore' });
+    execFileSync(ffmpeg, ['-f', 'lavfi', '-i', `sine=frequency=330:duration=${dur}`, '-c:a', 'pcm_s16le', '-y', p], {
+        stdio: 'ignore',
+    });
 }
 
 describe('agentic/render (Phase 7 watchable)', () => {
@@ -25,22 +29,47 @@ describe('agentic/render (Phase 7 watchable)', () => {
     let outDir: string;
     before(() => {
         outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentic-render-'));
-        const imgA = path.join(outDir, 'a.png'); makeImg(imgA, 'navy');
-        const imgB = path.join(outDir, 'b.png'); makeImg(imgB, 'teal');
-        const toneA = path.join(outDir, 'a.wav'); makeTone(toneA, 2);
-        const toneB = path.join(outDir, 'b.wav'); makeTone(toneB, 2);
-        const music = path.join(outDir, 'm.wav'); makeTone(music, 4);
+        const imgA = path.join(outDir, 'a.png');
+        makeImg(imgA, 'navy');
+        const imgB = path.join(outDir, 'b.png');
+        makeImg(imgB, 'teal');
+        const toneA = path.join(outDir, 'a.wav');
+        makeTone(toneA, 2);
+        const toneB = path.join(outDir, 'b.wav');
+        makeTone(toneB, 2);
+        const music = path.join(outDir, 'm.wav');
+        makeTone(music, 4);
         const srtSidecar = path.join(outDir, 'subtitles.srt');
-        fs.writeFileSync(srtSidecar, '1\n00:00:00,000 --> 00:00:02,000\nFirst line.\n\n2\n00:00:02,000 --> 00:00:04,000\nSecond line.\n', 'utf8');
+        fs.writeFileSync(
+            srtSidecar,
+            '1\n00:00:00,000 --> 00:00:02,000\nFirst line.\n\n2\n00:00:02,000 --> 00:00:04,000\nSecond line.\n',
+            'utf8',
+        );
 
         res = {
             backend: 'agent',
             plan: {
-                jobId: 'rt', title: 'RT', orientation: 'portrait', voice: 'en-US-JennyNeural',
-                musicQuery: 'lofi', totalDurationSec: 4,
+                jobId: 'rt',
+                title: 'RT',
+                orientation: 'portrait',
+                voice: 'en-US-JennyNeural',
+                musicQuery: 'lofi',
+                totalDurationSec: 4,
                 scenes: [
-                    { sceneNumber: 1, voiceoverText: 'First line.', searchKeywords: ['x'], visualPreference: 'image', durationSec: 2 },
-                    { sceneNumber: 2, voiceoverText: 'Second line.', searchKeywords: ['y'], visualPreference: 'image', durationSec: 2 },
+                    {
+                        sceneNumber: 1,
+                        voiceoverText: 'First line.',
+                        searchKeywords: ['x'],
+                        visualPreference: 'image',
+                        durationSec: 2,
+                    },
+                    {
+                        sceneNumber: 2,
+                        voiceoverText: 'Second line.',
+                        searchKeywords: ['y'],
+                        visualPreference: 'image',
+                        durationSec: 2,
+                    },
                 ],
             },
             workspace: { root: outDir, jobId: 'rt' } as any,
@@ -48,11 +77,30 @@ describe('agentic/render (Phase 7 watchable)', () => {
             decisions: [],
             gate: { pass: true, checks: [] },
             manifest: {
-                jobId: 'rt', title: 'RT', orientation: 'portrait', voice: 'en-US-JennyNeural', musicQuery: 'lofi',
-                voiceoverDriven: false, generatedAt: new Date().toISOString(),
+                jobId: 'rt',
+                title: 'RT',
+                orientation: 'portrait',
+                voice: 'en-US-JennyNeural',
+                musicQuery: 'lofi',
+                voiceoverDriven: false,
+                generatedAt: new Date().toISOString(),
                 assets: [
-                    { kind: 'image', sceneIndex: 0, localPath: imgA, audioPath: toneA, durationSec: 2, captionSegments: [{ text: 'First line.', startMs: 0, endMs: 2000 }] },
-                    { kind: 'image', sceneIndex: 1, localPath: imgB, audioPath: toneB, durationSec: 2, captionSegments: [{ text: 'Second line.', startMs: 0, endMs: 2000 }] },
+                    {
+                        kind: 'image',
+                        sceneIndex: 0,
+                        localPath: imgA,
+                        audioPath: toneA,
+                        durationSec: 2,
+                        captionSegments: [{ text: 'First line.', startMs: 0, endMs: 2000 }],
+                    },
+                    {
+                        kind: 'image',
+                        sceneIndex: 1,
+                        localPath: imgB,
+                        audioPath: toneB,
+                        durationSec: 2,
+                        captionSegments: [{ text: 'Second line.', startMs: 0, endMs: 2000 }],
+                    },
                     { kind: 'music', sceneIndex: -1, localPath: music },
                 ],
             },
@@ -65,7 +113,11 @@ describe('agentic/render (Phase 7 watchable)', () => {
         const mp4 = await renderAgenticSlideshow(res, { outPath: path.join(outDir, 'out.mp4') });
         assert.ok(fs.existsSync(mp4), 'mp4 exists');
         let raw = '';
-        try { raw = execFileSync(ffmpeg, ['-i', mp4], { stderr: 'pipe' }).toString(); } catch (e: any) { raw = (e.stderr || '').toString(); }
+        try {
+            raw = execFileSync(ffmpeg, ['-i', mp4], { stderr: 'pipe' }).toString();
+        } catch (e: any) {
+            raw = (e.stderr || '').toString();
+        }
         assert.ok(/Video:/.test(raw), 'has video stream');
         assert.ok(/Audio:/.test(raw), 'has audio stream (voiceover + music mixed)');
         const dur = (raw.match(/Duration:\s*([\d:.]+)/) || [])[1] || '';

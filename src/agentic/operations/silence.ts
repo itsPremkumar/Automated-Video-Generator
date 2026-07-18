@@ -17,7 +17,10 @@ import { runFfmpeg } from './edit.js';
 import { probeMedia, type ProbeRunner } from './probe.js';
 
 /** A span in seconds: [start, end]. */
-export interface Span { start: number; end: number; }
+export interface Span {
+    start: number;
+    end: number;
+}
 
 export interface SilenceResult {
     ok: boolean;
@@ -42,7 +45,9 @@ export function parseSilenceLog(log: string, duration: number, minDur: number): 
     let m: RegExpExecArray | null;
     while ((m = startRe.exec(log))) starts.push(parseFloat(m[1]));
     while ((m = endRe.exec(log))) ends.push(parseFloat(m[1]));
-    while ((m = durRe.exec(log))) { /* duration marker, ignored for span build */ }
+    while ((m = durRe.exec(log))) {
+        /* duration marker, ignored for span build */
+    }
 
     const spans: Span[] = [];
     for (let i = 0; i < starts.length; i++) {
@@ -98,16 +103,14 @@ export interface SilenceOpts {
  * @param out    optional output path
  * @param opts   noise (dB), minDur (s), runner (injectable for tests)
  */
-export async function removeSilence(
-    file: string,
-    out?: string,
-    opts: SilenceOpts = {},
-): Promise<SilenceResult> {
+export async function removeSilence(file: string, out?: string, opts: SilenceOpts = {}): Promise<SilenceResult> {
     if (!fs.existsSync(file)) return { ok: false, detail: `input not found: ${file}` };
     const noise = opts.noise ?? -35;
     const minDur = opts.minDur ?? 0.5;
     const runner = opts.runner ?? runFfmpeg;
-    const output = out ?? path.join(process.cwd(), 'output', `nosilence_${Date.now()}.${path.extname(file) || 'mp4'}`.replace(/^\./, ''));
+    const output =
+        out ??
+        path.join(process.cwd(), 'output', `nosilence_${Date.now()}.${path.extname(file) || 'mp4'}`.replace(/^\./, ''));
     fs.mkdirSync(path.dirname(output), { recursive: true });
 
     // Step 1: detect silence.
@@ -126,17 +129,35 @@ export async function removeSilence(
     if (spoken.length === 0) {
         // No speech found: pass through.
         const pass = await runner(['-i', file, '-c', 'copy', '-y', output]);
-        return { ok: pass.code === 0, output: pass.code === 0 ? output : undefined, detail: 'no speech detected; passed through', spoken: [], removed: silence };
+        return {
+            ok: pass.code === 0,
+            output: pass.code === 0 ? output : undefined,
+            detail: 'no speech detected; passed through',
+            spoken: [],
+            removed: silence,
+        };
     }
 
     const vf = buildKeepFilter(spoken);
     if (!vf) return { ok: false, detail: 'could not build keep filter' };
 
     const { code, out: log } = await runner([
-        '-i', file,
-        '-filter_complex', `[0:v]${vf}[v];[0:a]${vf}[a]`,
-        '-map', '[v]', '-map', '[a]',
-        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-y', output,
+        '-i',
+        file,
+        '-filter_complex',
+        `[0:v]${vf}[v];[0:a]${vf}[a]`,
+        '-map',
+        '[v]',
+        '-map',
+        '[a]',
+        '-c:v',
+        'libx264',
+        '-pix_fmt',
+        'yuv420p',
+        '-c:a',
+        'aac',
+        '-y',
+        output,
     ]);
     if (code !== 0) return { ok: false, detail: `silence-remove failed:\n${log.slice(-600)}` };
     // When a mock runner is injected it may not materialise the file; only

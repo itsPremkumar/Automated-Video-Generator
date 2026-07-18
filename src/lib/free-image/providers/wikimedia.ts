@@ -92,7 +92,8 @@ export class WikimediaImageProvider implements ImageProvider {
                         width,
                         height,
                         fileSizeBytes: info.size ?? null,
-                        sourcePageUrl: info.descriptionurl ?? `https://commons.wikimedia.org/wiki/${encodeURI(page.title)}`,
+                        sourcePageUrl:
+                            info.descriptionurl ?? `https://commons.wikimedia.org/wiki/${encodeURI(page.title)}`,
                     });
                 }
 

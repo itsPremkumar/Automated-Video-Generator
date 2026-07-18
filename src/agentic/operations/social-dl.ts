@@ -8,7 +8,11 @@ import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
-export interface DownloadResult { ok: boolean; output?: string; detail: string; }
+export interface DownloadResult {
+    ok: boolean;
+    output?: string;
+    detail: string;
+}
 
 export async function downloadSocial(
     url: string,
@@ -32,12 +36,27 @@ export async function downloadSocial(
         let stdout = '';
         proc.stdout.on('data', (d: Buffer) => (stdout += d.toString()));
         proc.stderr.on('data', (d: Buffer) => (stderr += d.toString()));
-        proc.on('error', (e) => resolve({ ok: false, detail: `Failed to launch yt-dlp: ${e.message}. Install it with: pip install -r requirements.txt (or: pip install yt-dlp)` }));
+        proc.on('error', (e) =>
+            resolve({
+                ok: false,
+                detail: `Failed to launch yt-dlp: ${e.message}. Install it with: pip install -r requirements.txt (or: pip install yt-dlp)`,
+            }),
+        );
         proc.on('close', (code) => {
-            if (code !== 0) { resolve({ ok: false, detail: `yt-dlp exited ${code}\n${stderr.slice(-800)}` }); return; }
+            if (code !== 0) {
+                resolve({ ok: false, detail: `yt-dlp exited ${code}\n${stderr.slice(-800)}` });
+                return;
+            }
             const files = fs.readdirSync(target).filter((f) => !f.endsWith('.part'));
-            if (files.length === 0) { resolve({ ok: false, detail: `yt-dlp ran but produced no file.\n${stdout.slice(-400)}` }); return; }
-            resolve({ ok: true, output: path.join(target, files[0]), detail: `Downloaded ${files.length} file(s) to ${target}` });
+            if (files.length === 0) {
+                resolve({ ok: false, detail: `yt-dlp ran but produced no file.\n${stdout.slice(-400)}` });
+                return;
+            }
+            resolve({
+                ok: true,
+                output: path.join(target, files[0]),
+                detail: `Downloaded ${files.length} file(s) to ${target}`,
+            });
         });
     });
 }

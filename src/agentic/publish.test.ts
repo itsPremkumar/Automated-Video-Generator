@@ -22,8 +22,13 @@ const cfg: AgenticConfig = { topic: 't', title: 'My Video' } as AgenticConfig;
 test('buildPublishManifest lists all 5 platform targets with correct aspect files', () => {
     setupDeliverables();
     const m = buildPublishManifest({
-        jobId, deliverablesDir: tmp, cfg,
-        title: 'My Video', description: 'desc', hashtags: '#ai #video', languages: ['es'],
+        jobId,
+        deliverablesDir: tmp,
+        cfg,
+        title: 'My Video',
+        description: 'desc',
+        hashtags: '#ai #video',
+        languages: ['es'],
     });
     assert.strictEqual(m.targets.length, 5);
     const yt = m.targets.find((t) => t.platform === 'youtube')!;
@@ -37,8 +42,13 @@ test('buildPublishManifest lists all 5 platform targets with correct aspect file
 test('writePublishManifest writes a JSON file', () => {
     setupDeliverables();
     writePublishManifest({
-        jobId, deliverablesDir: tmp, cfg,
-        title: 'My Video', description: 'desc', hashtags: '#ai', languages: [],
+        jobId,
+        deliverablesDir: tmp,
+        cfg,
+        title: 'My Video',
+        description: 'desc',
+        hashtags: '#ai',
+        languages: [],
     });
     const p = path.join(tmp, `${jobId}_publish-manifest.json`);
     assert.ok(fs.existsSync(p));

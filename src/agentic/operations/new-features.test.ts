@@ -49,7 +49,7 @@ describe('scene helpers', () => {
     test('longestScene returns widest segment', () => {
         const ch = buildChapters(parseSceneCuts(log), 10);
         const longest = longestScene(ch);
-        assert.ok(longest !== null && (longest.end - longest.start) > 0);
+        assert.ok(longest !== null && longest.end - longest.start > 0);
     });
 });
 
@@ -97,8 +97,16 @@ const fakeProbe = async (_file: string): Promise<{ duration: number; width: numb
 
 describe('real-duration probe wiring', () => {
     const tmp = path.join(os.tmpdir(), `avt_probe_test_${Date.now()}.mp4`);
-    test.before(() => { fs.writeFileSync(tmp, Buffer.from([0])); });
-    test.after(() => { try { fs.unlinkSync(tmp); } catch { /* noop */ } });
+    test.before(() => {
+        fs.writeFileSync(tmp, Buffer.from([0]));
+    });
+    test.after(() => {
+        try {
+            fs.unlinkSync(tmp);
+        } catch {
+            /* noop */
+        }
+    });
 
     test('removeSilence uses probed duration (not the old 1e9 no-op)', async () => {
         const { removeSilence } = await import('./silence.js');

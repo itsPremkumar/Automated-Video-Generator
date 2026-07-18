@@ -53,18 +53,22 @@ function toneFor(text: string, idx: number, dir: string): { path: string; durati
     const p = path.join(dir, `vo_${idx}.wav`);
     const dur = Math.max(1.5, text.split(/\s+/).length * 0.4);
     try {
-        require('child_process').execFileSync(ffmpeg, [
-            '-f',
-            'lavfi',
-            '-i',
-            `sine=frequency=220:duration=${dur}`,
-            '-af',
-            'volume=0.15',
-            '-c:a',
-            'pcm_s16le',
-            '-y',
-            p,
-        ], { stdio: 'ignore' });
+        require('child_process').execFileSync(
+            ffmpeg,
+            [
+                '-f',
+                'lavfi',
+                '-i',
+                `sine=frequency=220:duration=${dur}`,
+                '-af',
+                'volume=0.15',
+                '-c:a',
+                'pcm_s16le',
+                '-y',
+                p,
+            ],
+            { stdio: 'ignore' },
+        );
     } catch {
         /* best-effort */
     }
@@ -90,10 +94,11 @@ export async function generateVoiceoverOnly(
     const scenes = lines.map((text, i) => ({ sceneNumber: i + 1, voiceoverText: text })) as any;
     try {
         const map = await withTimeout(
-            withRetry(
-                () => generateVoiceovers(scenes, dir, { voice } as any),
-                { retries: 3, baseMs: 800, label: 'voiceover' },
-            ),
+            withRetry(() => generateVoiceovers(scenes, dir, { voice } as any), {
+                retries: 3,
+                baseMs: 800,
+                label: 'voiceover',
+            }),
             90_000,
             'voice generation timed out (Edge-TTS unreachable)',
         );
@@ -117,11 +122,18 @@ export async function generateVoiceoverOnly(
                 }
             })();
             const list = path.join(dir, 'vo_list.txt');
-            fs.writeFileSync(list, clips.map((c) => `file '${path.resolve(c.path).replace(/'/g, "'\\''")}'`).join('\n'));
+            fs.writeFileSync(
+                list,
+                clips.map((c) => `file '${path.resolve(c.path).replace(/'/g, "'\\''")}'`).join('\n'),
+            );
             try {
-                require('child_process').execFileSync(ffmpeg, ['-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', '-y', target], {
-                    stdio: 'ignore',
-                });
+                require('child_process').execFileSync(
+                    ffmpeg,
+                    ['-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', '-y', target],
+                    {
+                        stdio: 'ignore',
+                    },
+                );
             } catch {
                 // If concat fails, just copy the first clip as the output.
                 if (clips[0]?.path) fs.copyFileSync(clips[0].path, target);

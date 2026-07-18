@@ -66,7 +66,9 @@ describe('autopilot retry loop (offline, injected runner)', () => {
                 maxAttempts: 3,
                 // Throw an unrelated error (does NOT match any diagnose rule) so
                 // the loop must stop after one attempt, not retry.
-                runner: async () => { throw new Error('unrelated purple elephant error'); },
+                runner: async () => {
+                    throw new Error('unrelated purple elephant error');
+                },
                 onEvent: () => {},
             },
         );

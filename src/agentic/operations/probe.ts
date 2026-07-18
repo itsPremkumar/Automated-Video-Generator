@@ -29,13 +29,21 @@ const defaultRunner: ProbeRunner = (file: string) =>
     new Promise((resolve) => {
         const { spawn } = require('child_process') as typeof import('child_process');
         const bin = (ffprobeStatic as unknown as { path: string }).path;
-        const child = spawn(bin, [
-            '-v', 'error',
-            '-show_entries', 'format=duration',
-            '-show_entries', 'stream=width,height',
-            '-of', 'json',
-            file,
-        ], { stdio: ['ignore', 'pipe', 'pipe'] });
+        const child = spawn(
+            bin,
+            [
+                '-v',
+                'error',
+                '-show_entries',
+                'format=duration',
+                '-show_entries',
+                'stream=width,height',
+                '-of',
+                'json',
+                file,
+            ],
+            { stdio: ['ignore', 'pipe', 'pipe'] },
+        );
         let out = '';
         child.stdout.on('data', (d) => (out += d.toString()));
         child.stderr.on('data', (d) => (out += d.toString()));
@@ -48,11 +56,16 @@ const defaultRunner: ProbeRunner = (file: string) =>
  */
 export function parseProbe(out: string): MediaInfo {
     let data: any = null;
-    try { data = JSON.parse(out); } catch { return { duration: 0, width: 0, height: 0 }; }
+    try {
+        data = JSON.parse(out);
+    } catch {
+        return { duration: 0, width: 0, height: 0 };
+    }
     const dur = parseFloat(data?.format?.duration ?? '0') || 0;
-    let width = 0, height = 0;
+    let width = 0,
+        height = 0;
     for (const s of data?.streams ?? []) {
-        if ((s.width && s.height) && (s.codec_type === 'video' || !width)) {
+        if (s.width && s.height && (s.codec_type === 'video' || !width)) {
             width = parseInt(s.width, 10) || width;
             height = parseInt(s.height, 10) || height;
         }
@@ -64,9 +77,6 @@ export function parseProbe(out: string): MediaInfo {
  * Probe a media file. Uses the injected runner when provided (tests), else the
  * real bundled ffprobe.
  */
-export async function probeMedia(
-    file: string,
-    runner: ProbeRunner = defaultRunner,
-): Promise<MediaInfo> {
+export async function probeMedia(file: string, runner: ProbeRunner = defaultRunner): Promise<MediaInfo> {
     return runner(file);
 }

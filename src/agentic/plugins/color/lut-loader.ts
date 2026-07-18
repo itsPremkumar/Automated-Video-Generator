@@ -68,10 +68,7 @@ export const lutLoaderPlugin: AgenticPlugin = {
         tags: ['lut', 'color', 'grading', 'film', 'log', 'cube'],
     },
 
-    capabilities: [
-        Capability.COLOR_GRADING,
-        Capability.LUT_SUPPORT,
-    ],
+    capabilities: [Capability.COLOR_GRADING, Capability.LUT_SUPPORT],
 
     category: PluginCategory.COLOR,
 
@@ -87,7 +84,7 @@ export const lutLoaderPlugin: AgenticPlugin = {
             if (!fs.existsSync(lutDir)) {
                 console.warn(`[lut-loader] LUT directory not found: ${lutDir}`);
             } else {
-                const files = fs.readdirSync(lutDir).filter(f => f.endsWith('.cube') || f.endsWith('.3dl'));
+                const files = fs.readdirSync(lutDir).filter((f) => f.endsWith('.cube') || f.endsWith('.3dl'));
                 console.log(`[lut-loader] Found ${files.length} LUT files:`, files);
             }
         },
@@ -98,7 +95,7 @@ export const lutLoaderPlugin: AgenticPlugin = {
 
             // Assign LUTs per scene
             for (const scene of enhanced.scenes) {
-                const sceneCfg = cfg.scenes?.find(s => s.sceneIndex === scene.sceneNumber - 1);
+                const sceneCfg = cfg.scenes?.find((s) => s.sceneIndex === scene.sceneNumber - 1);
                 if (sceneCfg) {
                     scene.lut = sceneCfg.lut;
                     scene.lutIntensity = sceneCfg.intensity ?? cfg.intensity;
@@ -158,7 +155,7 @@ async function resolveLUTPath(lutName: string, cfg: LUTConfig, ctx: any): Promis
     // Check in preset map
     const preset = LUT_PRESETS[lutName as keyof typeof LUT_PRESETS];
     if (preset) {
-        for (const c of candidates.map(c => path.join(lutDir, preset))) {
+        for (const c of candidates.map((c) => path.join(lutDir, preset))) {
             if (fs.existsSync(c)) return c;
         }
     }

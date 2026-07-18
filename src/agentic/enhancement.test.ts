@@ -11,12 +11,35 @@ import { buildDuckExpression, chunkCues } from './orchestrate.js';
 import { verifyRenderedVideo } from './gate.js';
 
 function mkCandidate(kind: 'image' | 'music', sceneIndex: number, localPath = '/tmp/x_720x1280.jpg'): AssetCandidate {
-    return { kind, sceneIndex, candidateIndex: 0, localPath, url: 'https://e/x.jpg', source: 'openverse', license: 'CC-BY', keywords: ['cat', 'sun'] };
+    return {
+        kind,
+        sceneIndex,
+        candidateIndex: 0,
+        localPath,
+        url: 'https://e/x.jpg',
+        source: 'openverse',
+        license: 'CC-BY',
+        keywords: ['cat', 'sun'],
+    };
 }
 
 test('scoreCandidate: higher confidence+resolution beats a tiny thumbnail', () => {
-    const good: AssetVerification = { assetId: 'image_s0_c0', kind: 'image', sceneIndex: 0, passes: true, confidence: 9, reason: 'ok' };
-    const weak: AssetVerification = { assetId: 'image_s1_c0', kind: 'image', sceneIndex: 1, passes: true, confidence: 5, reason: 'meh' };
+    const good: AssetVerification = {
+        assetId: 'image_s0_c0',
+        kind: 'image',
+        sceneIndex: 0,
+        passes: true,
+        confidence: 9,
+        reason: 'ok',
+    };
+    const weak: AssetVerification = {
+        assetId: 'image_s1_c0',
+        kind: 'image',
+        sceneIndex: 1,
+        passes: true,
+        confidence: 5,
+        reason: 'meh',
+    };
     const sGood = scoreCandidate(mkCandidate('image', 0), good);
     const sWeak = scoreCandidate(mkCandidate('image', 1), weak);
     assert.ok(sGood.totalScore > sWeak.totalScore, 'good should outscore weak');
@@ -25,7 +48,14 @@ test('scoreCandidate: higher confidence+resolution beats a tiny thumbnail', () =
 });
 
 test('scoreCandidate: fileSizeScore penalises <50KB thumbnails (no file => mid)', () => {
-    const v: AssetVerification = { assetId: 'image_s0_c0', kind: 'image', sceneIndex: 0, passes: true, confidence: 7, reason: 'ok' };
+    const v: AssetVerification = {
+        assetId: 'image_s0_c0',
+        kind: 'image',
+        sceneIndex: 0,
+        passes: true,
+        confidence: 7,
+        reason: 'ok',
+    };
     const s = scoreCandidate(mkCandidate('image', 0, '/nonexistent-xyz.png'), v);
     assert.ok(s.totalScore > 0);
     assert.equal(s.confidenceScore, 7);
@@ -53,9 +83,7 @@ test('chunkCues: merges sub-100ms micro segments and splits >8-word lines', () =
     assert.equal(merged.length, 1);
     assert.equal(merged[0].text, 'a b');
 
-    const long = chunkCues([
-        { text: 'one two three four five six seven eight nine ten', startMs: 0, endMs: 2000 },
-    ]);
+    const long = chunkCues([{ text: 'one two three four five six seven eight nine ten', startMs: 0, endMs: 2000 }]);
     assert.equal(long.length, 2, '>8 words split into two chunks');
     assert.ok(long[0].text.split(' ').length <= 8);
 });
@@ -66,18 +94,37 @@ test('chunkCues: enforces a minimum 500ms display', () => {
 });
 
 test('verifyRenderedVideo: detects a valid tiny MP4 and confirms audio/video', async () => {
-     
     const ffmpeg: string = require('ffmpeg-static');
     const { execFileSync } = require('child_process');
     const fs = require('fs');
     const os = require('os');
     const p = `${os.tmpdir()}/enh_${Date.now()}.mp4`;
     // 4s of real color + sine audio so the file exceeds the 100KB sanity floor.
-    execFileSync(ffmpeg, [
-        '-f', 'lavfi', '-i', 'testsrc=size=720x1280:rate=25:duration=4',
-        '-f', 'lavfi', '-i', 'sine=frequency=440:duration=4',
-        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '0', '-c:a', 'aac', '-shortest', '-y', p,
-    ], { stdio: 'ignore' });
+    execFileSync(
+        ffmpeg,
+        [
+            '-f',
+            'lavfi',
+            '-i',
+            'testsrc=size=720x1280:rate=25:duration=4',
+            '-f',
+            'lavfi',
+            '-i',
+            'sine=frequency=440:duration=4',
+            '-c:v',
+            'libx264',
+            '-pix_fmt',
+            'yuv420p',
+            '-crf',
+            '0',
+            '-c:a',
+            'aac',
+            '-shortest',
+            '-y',
+            p,
+        ],
+        { stdio: 'ignore' },
+    );
     assert.ok(fs.statSync(p).size > 100_000, 'sanity: generated mp4 should exceed 100KB');
     const r = await verifyRenderedVideo(p, 4);
     // testsrc is a valid clip: its black BORDERS are not fully-black frames, so

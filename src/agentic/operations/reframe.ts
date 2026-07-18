@@ -80,11 +80,7 @@ export interface ReframeOpts {
 /**
  * Auto-reframe a video to a target aspect, keeping the active region centred.
  */
-export async function autoReframe(
-    file: string,
-    out?: string,
-    opts: ReframeOpts = {},
-): Promise<ReframeResult> {
+export async function autoReframe(file: string, out?: string, opts: ReframeOpts = {}): Promise<ReframeResult> {
     const preset = opts.preset ?? '9:16';
     if (!['9:16', '16:9', '1:1'].includes(preset)) {
         return { ok: false, detail: `unsupported reframe preset "${preset}"; use 9:16, 16:9, or 1:1` };
@@ -95,7 +91,10 @@ export async function autoReframe(
     // Probe REAL source dimensions with ffprobe (injected for tests).
     const probe = opts.probe ?? probeMedia;
     const info = await probe(file);
-    const dims = info.width > 0 && info.height > 0 ? { w: info.width, h: info.height } : parseDimsHint((await runner(['-i', file, '-f', 'null', '-'])).out);
+    const dims =
+        info.width > 0 && info.height > 0
+            ? { w: info.width, h: info.height }
+            : parseDimsHint((await runner(['-i', file, '-f', 'null', '-'])).out);
     if (!dims) return { ok: false, detail: 'could not determine source dimensions' };
 
     const box = computeCropBox(dims.w, dims.h, preset, opts.salientX ?? 0.5, opts.salientY ?? 0.5);
@@ -105,7 +104,18 @@ export async function autoReframe(
 
     const vf = `crop=${box.w}:${box.h}:${box.x}:${box.y},scale=${target.w}:${target.h}`;
     const { code, out: log } = await runner([
-        '-i', file, '-vf', vf, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'copy', '-y', output,
+        '-i',
+        file,
+        '-vf',
+        vf,
+        '-c:v',
+        'libx264',
+        '-pix_fmt',
+        'yuv420p',
+        '-c:a',
+        'copy',
+        '-y',
+        output,
     ]);
     if (code !== 0) return { ok: false, detail: `reframe failed:\n${log.slice(-600)}` };
     // Mock runners don't materialise the file; only enforce for the real runner.

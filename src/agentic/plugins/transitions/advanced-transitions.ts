@@ -17,12 +17,36 @@ interface TransitionConfig {
 }
 
 type TransitionType =
-    | 'fade' | 'slideleft' | 'slideright' | 'slideup' | 'slidedown'
-    | 'wipeleft' | 'wiperight' | 'wipeup' | 'wipedown'
-    | 'circleopen' | 'circleclose' | 'distance' | 'zoomin' | 'zoomout'
-    | 'hlslice' | 'hrslice' | 'vuslice' | 'vdslice' | 'dissolve'
-    | 'pixelize' | 'diagbl' | 'diagbr' | 'diagtl' | 'diagtr'
-    | 'whipPan' | 'glitch' | 'lightLeak' | 'morphCut' | 'matchCut' | 'custom';
+    | 'fade'
+    | 'slideleft'
+    | 'slideright'
+    | 'slideup'
+    | 'slidedown'
+    | 'wipeleft'
+    | 'wiperight'
+    | 'wipeup'
+    | 'wipedown'
+    | 'circleopen'
+    | 'circleclose'
+    | 'distance'
+    | 'zoomin'
+    | 'zoomout'
+    | 'hlslice'
+    | 'hrslice'
+    | 'vuslice'
+    | 'vdslice'
+    | 'dissolve'
+    | 'pixelize'
+    | 'diagbl'
+    | 'diagbr'
+    | 'diagtl'
+    | 'diagtr'
+    | 'whipPan'
+    | 'glitch'
+    | 'lightLeak'
+    | 'morphCut'
+    | 'matchCut'
+    | 'custom';
 
 const DEFAULT_CONFIG: Required<TransitionConfig> = {
     defaultType: 'fade',
@@ -68,10 +92,7 @@ export const transitionsPlugin: AgenticPlugin = {
         tags: ['transition', 'xfade', 'whip', 'glitch', 'morph', 'match', 'lightleak'],
     },
 
-    capabilities: [
-        Capability.TRANSITION_ADVANCED,
-        Capability.TRANSITION_CUSTOM,
-    ],
+    capabilities: [Capability.TRANSITION_ADVANCED, Capability.TRANSITION_CUSTOM],
 
     category: PluginCategory.TRANSITION,
 
@@ -84,7 +105,7 @@ export const transitionsPlugin: AgenticPlugin = {
 
             // Assign transitions per scene
             for (const scene of enhanced.scenes) {
-                const sceneCfg = cfg.scenes?.find(s => s.sceneIndex === scene.sceneNumber);
+                const sceneCfg = cfg.scenes?.find((s) => s.sceneIndex === scene.sceneNumber);
                 scene.transition = sceneCfg?.type ?? cfg.defaultType;
                 scene.transitionParams = sceneCfg?.params ?? {};
                 scene.transitionDuration = cfg.duration;
@@ -100,7 +121,7 @@ export const transitionsPlugin: AgenticPlugin = {
 
             // Build transition filtergraph
             const enhanced = { ...filtergraph };
-            const videoFilters = enhanced.filters.filter(f => f.type === 'video');
+            const videoFilters = enhanced.filters.filter((f) => f.type === 'video');
 
             // Process transitions between consecutive scenes
             let prevLabel = 'v0';
@@ -279,15 +300,12 @@ async function findLightLeakAsset(ctx: any): Promise<string | null> {
     // Search in assets/overlays/light-leaks/
     const fs = await import('fs');
     const path = await import('path');
-    const dirs = [
-        './assets/overlays/light-leaks',
-        './input/input-assets/light-leaks',
-    ];
+    const dirs = ['./assets/overlays/light-leaks', './input/input-assets/light-leaks'];
 
     for (const d of dirs) {
         const full = path.resolve(d);
         if (fs.existsSync(full)) {
-            const files = fs.readdirSync(full).filter(f => /\.(mp4|mov|webm)$/i.test(f));
+            const files = fs.readdirSync(full).filter((f) => /\.(mp4|mov|webm)$/i.test(f));
             if (files.length > 0) return path.join(full, files[0]);
         }
     }

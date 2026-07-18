@@ -49,7 +49,10 @@ export async function buildPlan(script: string, opts: PlanOptions, parser: Parse
 
 /** Simple keyword-derived mood for background music when none is given. */
 export function deriveMusicQuery(scenes: ScenePlan[]): string {
-    const all = scenes.flatMap((s) => s.searchKeywords).join(' ').toLowerCase();
+    const all = scenes
+        .flatMap((s) => s.searchKeywords)
+        .join(' ')
+        .toLowerCase();
     if (/(workout|gym|energ|sport|run)/.test(all)) return 'energetic upbeat workout';
     if (/(calm|relax|sleep|meditat|peace)/.test(all)) return 'calm ambient lofi';
     if (/(tech|future|robot|ai|code)/.test(all)) return 'electronic synthwave tech';
@@ -61,9 +64,14 @@ export function deriveMusicQuery(scenes: ScenePlan[]): string {
 export async function deriveMusicQueryAdvanced(scenes: ScenePlan[], title: string): Promise<string> {
     try {
         const brain = new AgentBrain();
-        const q = await brain.deriveMusic(scenes.map((s) => s.voiceoverText || s.searchKeywords.join(' ')), title);
+        const q = await brain.deriveMusic(
+            scenes.map((s) => s.voiceoverText || s.searchKeywords.join(' ')),
+            title,
+        );
         if (q && q.length > 1) return q;
-    } catch { /* fall through */ }
+    } catch {
+        /* fall through */
+    }
     return deriveMusicQuery(scenes);
 }
 
@@ -77,8 +85,12 @@ export async function deriveMusicQueryAdvanced(scenes: ScenePlan[], title: strin
  *     when available; rule-based fallback.
  * Both are $0. Mutates + returns the plan.
  */
-const HOOK_WORDS = /\b(did you know|secret|surprising|shock|never|revealed?|hidden|myth|trick|insane|unbelievable|fact)\b/i;
-export async function applyProEdits(plan: Plan, opts: { hookFirst?: boolean; variablePacing?: boolean; brain?: import('./brain.js').AgentBrain } = {}): Promise<Plan> {
+const HOOK_WORDS =
+    /\b(did you know|secret|surprising|shock|never|revealed?|hidden|myth|trick|insane|unbelievable|fact)\b/i;
+export async function applyProEdits(
+    plan: Plan,
+    opts: { hookFirst?: boolean; variablePacing?: boolean; brain?: import('./brain.js').AgentBrain } = {},
+): Promise<Plan> {
     const scenes = plan.scenes;
     if (scenes.length === 0) return plan;
 
@@ -96,7 +108,10 @@ export async function applyProEdits(plan: Plan, opts: { hookFirst?: boolean; var
                 let score = 0;
                 if (HOOK_WORDS.test(txt)) score += 100;
                 score += txt.split(/\s+/).filter(Boolean).length; // longer = more substance
-                if (score > bestScore) { bestScore = score; bestIdx = i; }
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestIdx = i;
+                }
             });
         }
         if (bestIdx !== 0) {
@@ -104,7 +119,9 @@ export async function applyProEdits(plan: Plan, opts: { hookFirst?: boolean; var
             scenes.unshift(hook);
         }
         // renumber
-        scenes.forEach((s, i) => { s.sceneNumber = i + 1; });
+        scenes.forEach((s, i) => {
+            s.sceneNumber = i + 1;
+        });
     }
 
     // 2. Variable pacing: brain B6 weights when available; else rule-based.
@@ -117,9 +134,11 @@ export async function applyProEdits(plan: Plan, opts: { hookFirst?: boolean; var
                 s.durationSec = Math.max(2, Math.round(base * (weights[i] ?? 1)));
             } else {
                 let d = base;
-                if (i === 0) d = 3;                                 // punchy hook
-                else if (i === scenes.length - 1) d = 5;           // lingering close
-                else d = base + (i % 2 === 1 ? 1 : -1);           // breathe: 5/3/5/3...
+                if (i === 0)
+                    d = 3; // punchy hook
+                else if (i === scenes.length - 1)
+                    d = 5; // lingering close
+                else d = base + (i % 2 === 1 ? 1 : -1); // breathe: 5/3/5/3...
                 s.durationSec = Math.max(2, d);
             }
         });

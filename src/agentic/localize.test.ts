@@ -42,12 +42,26 @@ test('offline (no model): sidecar emitted untranslated for each language', async
 
 test('returns empty when no languages or missing src', async () => {
     const brain = new AgentBrain();
-    assert.deepStrictEqual(await localizeSrtSidecars({
-        srcSrtPath: path.join(tmp, 'missing.srt'), outDir: tmp, baseName: 'job', languages: ['es'], brain,
-    }), []);
-    assert.deepStrictEqual(await localizeSrtSidecars({
-        srcSrtPath: path.join(tmp, 'job_native.srt'), outDir: tmp, baseName: 'job', languages: [], brain,
-    }), []);
+    assert.deepStrictEqual(
+        await localizeSrtSidecars({
+            srcSrtPath: path.join(tmp, 'missing.srt'),
+            outDir: tmp,
+            baseName: 'job',
+            languages: ['es'],
+            brain,
+        }),
+        [],
+    );
+    assert.deepStrictEqual(
+        await localizeSrtSidecars({
+            srcSrtPath: path.join(tmp, 'job_native.srt'),
+            outDir: tmp,
+            baseName: 'job',
+            languages: [],
+            brain,
+        }),
+        [],
+    );
 });
 
 fs.rmSync(tmp, { recursive: true, force: true });

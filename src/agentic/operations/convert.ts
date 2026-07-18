@@ -8,7 +8,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { runFfmpeg } from './edit.js';
 
-export interface ConvertResult { ok: boolean; output?: string; detail: string; }
+export interface ConvertResult {
+    ok: boolean;
+    output?: string;
+    detail: string;
+}
 
 function ensureFile(file: string): string | null {
     if (!fs.existsSync(file)) return `input not found: ${file}`;

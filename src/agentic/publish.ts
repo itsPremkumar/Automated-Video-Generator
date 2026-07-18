@@ -67,11 +67,12 @@ function pickFileForAspect(dir: string, jobId: string, aspect: PublishTarget['as
     if (!fs.existsSync(dir)) return '';
     // Prefer an explicit aspect export, else the main job mp4, else any mp4.
     const cand = (name: string) => path.join(dir, name);
-    const explicit = {
-        '9:16': [`${jobId}_9x16.mp4`, `${jobId}.mp4`],
-        '16:9': [`${jobId}_16x9.mp4`],
-        '1:1': [`${jobId}_1x1.mp4`],
-    }[aspect] ?? [];
+    const explicit =
+        {
+            '9:16': [`${jobId}_9x16.mp4`, `${jobId}.mp4`],
+            '16:9': [`${jobId}_16x9.mp4`],
+            '1:1': [`${jobId}_1x1.mp4`],
+        }[aspect] ?? [];
     for (const n of explicit) if (fs.existsSync(cand(n))) return cand(n);
     const main = cand(`${jobId}.mp4`);
     if (fs.existsSync(main)) return main;
@@ -116,7 +117,11 @@ export function buildPublishManifest(input: PublishInput): PublishManifest {
     } else {
         const ytFile = targets.find((t) => t.platform === 'youtube')?.file ?? '';
         const scriptPath = path.join(deliverablesDir, `${jobId}_youtube_upload.sh`);
-        const ytTags = hashtags.split(/\s+/).filter(Boolean).map((t) => JSON.stringify(t.replace(/^#/, ''))).join(',');
+        const ytTags = hashtags
+            .split(/\s+/)
+            .filter(Boolean)
+            .map((t) => JSON.stringify(t.replace(/^#/, '')))
+            .join(',');
         const script = `#!/usr/bin/env bash
 # Zero-cost YouTube upload helper (YouTube Data API v3, free quota).
 # 1) Create an OAuth client at https://console.cloud.google.com/ (free).
@@ -132,8 +137,16 @@ curl -s -X POST "https://www.googleapis.com/upload/youtube/v3/videos?part=snippe
   -D - -o /dev/null | grep -i "location" || echo "Upload session URL not returned; check token/expiry."
 echo "Resumable upload session created. Stream the binary with: curl -X PUT <location> --data-binary @$VIDEO"
 `;
-        try { fs.writeFileSync(scriptPath, script, 'utf8'); } catch { /* ignore */ }
-        manifest.youtube = { draft: true, uploadScript: scriptPath, note: 'No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run.' };
+        try {
+            fs.writeFileSync(scriptPath, script, 'utf8');
+        } catch {
+            /* ignore */
+        }
+        manifest.youtube = {
+            draft: true,
+            uploadScript: scriptPath,
+            note: 'No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run.',
+        };
     }
     return manifest;
 }

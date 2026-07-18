@@ -27,13 +27,80 @@ export type MusicIntensity = 'calm' | 'mid' | 'energetic';
  * template tunes it for the genre), then explicit user overrides win last.
  */
 export const VIDEO_TYPE_PROFILES: Record<VideoType, Partial<AgenticConfig>> = {
-    facts:        { kineticText: true, transition: 'fade', grade: 'cinematic', musicIntensity: 'mid', captions: 'burned', hookFirst: true, variablePacing: true, jCutSec: 0.4 },
-    tutorial:     { kineticText: true, transition: 'slide', grade: 'neutral', musicIntensity: 'calm', captions: 'burned', sfx: true, hookFirst: false, variablePacing: false, jCutSec: 0.2 },
-    news:         { kineticText: false, transition: 'cut', grade: 'cool', musicIntensity: 'mid', captions: 'burned', orientation: 'landscape', aspect: '16:9', hookFirst: false, variablePacing: false, jCutSec: 0.1 },
-    story:        { kineticText: true, transition: 'fade', grade: 'warm', musicIntensity: 'calm', captions: 'burned', hookFirst: true, variablePacing: true, jCutSec: 0.6 },
-    product:      { kineticText: true, transition: 'slide', grade: 'vivid', musicIntensity: 'energetic', captions: 'burned', sfx: true, hookFirst: true, variablePacing: true, jCutSec: 0.3 },
-    motivational: { kineticText: true, transition: 'zoomblur', grade: 'cinematic', musicIntensity: 'energetic', captions: 'karaoke', hookFirst: true, variablePacing: true, jCutSec: 0.5 },
-    nature:       { kineticText: false, transition: 'fade', grade: 'cinematic', musicIntensity: 'calm', captions: 'burned', hookFirst: false, variablePacing: true, jCutSec: 0.8 },
+    facts: {
+        kineticText: true,
+        transition: 'fade',
+        grade: 'cinematic',
+        musicIntensity: 'mid',
+        captions: 'burned',
+        hookFirst: true,
+        variablePacing: true,
+        jCutSec: 0.4,
+    },
+    tutorial: {
+        kineticText: true,
+        transition: 'slide',
+        grade: 'neutral',
+        musicIntensity: 'calm',
+        captions: 'burned',
+        sfx: true,
+        hookFirst: false,
+        variablePacing: false,
+        jCutSec: 0.2,
+    },
+    news: {
+        kineticText: false,
+        transition: 'cut',
+        grade: 'cool',
+        musicIntensity: 'mid',
+        captions: 'burned',
+        orientation: 'landscape',
+        aspect: '16:9',
+        hookFirst: false,
+        variablePacing: false,
+        jCutSec: 0.1,
+    },
+    story: {
+        kineticText: true,
+        transition: 'fade',
+        grade: 'warm',
+        musicIntensity: 'calm',
+        captions: 'burned',
+        hookFirst: true,
+        variablePacing: true,
+        jCutSec: 0.6,
+    },
+    product: {
+        kineticText: true,
+        transition: 'slide',
+        grade: 'vivid',
+        musicIntensity: 'energetic',
+        captions: 'burned',
+        sfx: true,
+        hookFirst: true,
+        variablePacing: true,
+        jCutSec: 0.3,
+    },
+    motivational: {
+        kineticText: true,
+        transition: 'zoomblur',
+        grade: 'cinematic',
+        musicIntensity: 'energetic',
+        captions: 'karaoke',
+        hookFirst: true,
+        variablePacing: true,
+        jCutSec: 0.5,
+    },
+    nature: {
+        kineticText: false,
+        transition: 'fade',
+        grade: 'cinematic',
+        musicIntensity: 'calm',
+        captions: 'burned',
+        hookFirst: false,
+        variablePacing: true,
+        jCutSec: 0.8,
+    },
 };
 
 /** Human-readable names for discovery / docs / UI dropdowns. */
@@ -58,27 +125,27 @@ export interface AgenticConfig {
     title?: string;
 
     /** ── Visual style ── */
-    preset?: string;                 // named preset id (cinematic|reels|documentary|...)
-    orientation?: Orientation;       // portrait (default) | landscape
-    aspect?: AspectKind;             // 9:16 | 1:1 | 16:9
-    transition?: TransitionPref;     // override per-scene transitions
-    grade?: GradePref;               // override per-scene color grade
-    kineticText?: boolean;           // animated lower-third / word-pop (default true)
-    kenBurns?: boolean;              // gentle zoom on images (default true)
-    vignette?: boolean;              // cinematic edge darkening (default true)
+    preset?: string; // named preset id (cinematic|reels|documentary|...)
+    orientation?: Orientation; // portrait (default) | landscape
+    aspect?: AspectKind; // 9:16 | 1:1 | 16:9
+    transition?: TransitionPref; // override per-scene transitions
+    grade?: GradePref; // override per-scene color grade
+    kineticText?: boolean; // animated lower-third / word-pop (default true)
+    kenBurns?: boolean; // gentle zoom on images (default true)
+    vignette?: boolean; // cinematic edge darkening (default true)
 
     /** ── Audio ── */
-    sfx?: boolean;                   // emphasis sound effects on transitions (default false)
-    musicQuery?: string;             // free-music search term
+    sfx?: boolean; // emphasis sound effects on transitions (default false)
+    musicQuery?: string; // free-music search term
     musicIntensity?: 'calm' | 'mid' | 'energetic'; // ducking depth
-    voice?: string;                  // TTS voice hint
+    voice?: string; // TTS voice hint
 
     /** ── Captions ── */
-    captions?: CaptionStyle;         // burned (default) | none | karaoke
+    captions?: CaptionStyle; // burned (default) | none | karaoke
     /** Extra languages for subtitle sidecars (Tier-1 #2). Each produces a
      *  `<name>.<lang>.srt` next to the native SRT, translated by the agent's
      *  own free model. Offline / no-model → sidecar still emitted (untranslated). */
-    languages?: string[];            // e.g. ['es','fr','hi','ta']
+    languages?: string[]; // e.g. ['es','fr','hi','ta']
 
     /** ── Platform tailoring (B12) ── */
     /** When set, the agent brain tailors aspect + caption style + hook length
@@ -89,8 +156,8 @@ export interface AgenticConfig {
 
     /** ── Sourcing ── */
     preferVisual?: 'image' | 'video';
-    candidatesPerAsset?: number;     // assets fetched per scene (default 4)
-    videoType?: VideoType;           // template selector (Phase: templates)
+    candidatesPerAsset?: number; // assets fetched per scene (default 4)
+    videoType?: VideoType; // template selector (Phase: templates)
     /** Use the user's OWN media from input/input-assets/ instead of (or in
      *  addition to) fetched stock. Files are distributed round-robin across
      *  scenes; any scene without a matching local file falls back to fetching. */
@@ -119,9 +186,9 @@ export interface AgenticConfig {
 
     /** ── Self-heal / automation ── */
     backend?: 'agent' | 'vision';
-    maxAttempts?: number;            // autopilot retry budget (default 3)
+    maxAttempts?: number; // autopilot retry budget (default 3)
     renderer?: 'ffmpeg' | 'remotion';
-    pruneWorkspaces?: number;        // keep N workspaces (default 2)
+    pruneWorkspaces?: number; // keep N workspaces (default 2)
 
     /** ── Branding (optional) ── */
     brand?: { watermark?: string; accent?: string };
@@ -140,47 +207,82 @@ export interface AgenticConfig {
      * AI scores AUGMENT the signal gates (AND-ed), never replace them.
      */
     aiVerify?: {
-        enabled: boolean;                 // master toggle — DEFAULT false
+        enabled: boolean; // master toggle — DEFAULT false
         /** Minimum confidence (0-10) for an asset to pass AI review. */
-        minConfidence?: number;            // default 6
+        minConfidence?: number; // default 6
         /** Per-stage opt-in (each independent). */
-        verifyOnAcquire?: boolean;        // asset collection
-        verifyOnApprove?: boolean;        // before approving each asset
-        verifyOnEdit?: boolean;           // after scene edits
-        verifyOnRender?: boolean;         // final rendered MP4
+        verifyOnAcquire?: boolean; // asset collection
+        verifyOnApprove?: boolean; // before approving each asset
+        verifyOnEdit?: boolean; // after scene edits
+        verifyOnRender?: boolean; // final rendered MP4
         /** What to check. */
-        checkSubjectMatch?: boolean;       // does media show the scene's subject? (the "lino vs forest" gap)
-        checkWatermark?: boolean;          // default true
-        checkSafety?: boolean;            // default true
+        checkSubjectMatch?: boolean; // does media show the scene's subject? (the "lino vs forest" gap)
+        checkWatermark?: boolean; // default true
+        checkSafety?: boolean; // default true
         /** Audio (music + voiceover) AI checks — uses the agent's own text
          *  model on available transcripts; never blocks when none exist. */
-        checkMusicMood?: boolean;         // does music match the video mood?
-        checkSpeechClarity?: boolean;      // is the voiceover clear / on-topic?
-        checkBackgroundNoise?: boolean;     // is background noise acceptable?
+        checkMusicMood?: boolean; // does music match the video mood?
+        checkSpeechClarity?: boolean; // is the voiceover clear / on-topic?
+        checkBackgroundNoise?: boolean; // is background noise acceptable?
     };
 }
 
 /** Built-in presets — each is a partial AgenticConfig the user can extend. */
 export const PRESETS: Record<string, Partial<AgenticConfig>> = {
     cinematic: {
-        orientation: 'portrait', aspect: '9:16', transition: 'fade', grade: 'cinematic',
-        kineticText: true, kenBurns: true, vignette: true, captions: 'burned', musicIntensity: 'mid',
+        orientation: 'portrait',
+        aspect: '9:16',
+        transition: 'fade',
+        grade: 'cinematic',
+        kineticText: true,
+        kenBurns: true,
+        vignette: true,
+        captions: 'burned',
+        musicIntensity: 'mid',
     },
     reels: {
-        orientation: 'portrait', aspect: '9:16', transition: 'slide', grade: 'vivid',
-        kineticText: true, kenBurns: true, vignette: false, captions: 'burned', musicIntensity: 'energetic',
+        orientation: 'portrait',
+        aspect: '9:16',
+        transition: 'slide',
+        grade: 'vivid',
+        kineticText: true,
+        kenBurns: true,
+        vignette: false,
+        captions: 'burned',
+        musicIntensity: 'energetic',
     },
     documentary: {
-        orientation: 'landscape', aspect: '16:9', transition: 'fade', grade: 'neutral',
-        kineticText: false, kenBurns: true, vignette: true, captions: 'burned', musicIntensity: 'calm',
+        orientation: 'landscape',
+        aspect: '16:9',
+        transition: 'fade',
+        grade: 'neutral',
+        kineticText: false,
+        kenBurns: true,
+        vignette: true,
+        captions: 'burned',
+        musicIntensity: 'calm',
     },
     'documentary-cool': {
-        orientation: 'landscape', aspect: '16:9', transition: 'fade', grade: 'cool',
-        kineticText: false, kenBurns: true, vignette: true, captions: 'burned', musicIntensity: 'calm',
+        orientation: 'landscape',
+        aspect: '16:9',
+        transition: 'fade',
+        grade: 'cool',
+        kineticText: false,
+        kenBurns: true,
+        vignette: true,
+        captions: 'burned',
+        musicIntensity: 'calm',
     },
     neutral: {
-        orientation: 'portrait', aspect: '9:16', transition: 'fade', grade: 'neutral',
-        kineticText: true, kenBurns: false, vignette: false, captions: 'burned', musicIntensity: 'mid',
+        orientation: 'portrait',
+        aspect: '9:16',
+        transition: 'fade',
+        grade: 'neutral',
+        kineticText: true,
+        kenBurns: false,
+        vignette: false,
+        captions: 'burned',
+        musicIntensity: 'mid',
     },
 };
 
@@ -190,13 +292,13 @@ export const PRESETS: Record<string, Partial<AgenticConfig>> = {
  * production knob has a concrete value.
  */
 export function resolveConfig(input: Partial<AgenticConfig>): AgenticConfig {
-    const preset = input.preset ? PRESETS[input.preset] ?? {} : PRESETS.cinematic;
-    const tpl = input.videoType ? VIDEO_TYPE_PROFILES[input.videoType] ?? {} : {};
+    const preset = input.preset ? (PRESETS[input.preset] ?? {}) : PRESETS.cinematic;
+    const tpl = input.videoType ? (VIDEO_TYPE_PROFILES[input.videoType] ?? {}) : {};
     const merged: AgenticConfig = {
         topic: input.topic ?? 'untitled',
         title: input.title ?? input.topic ?? 'untitled',
-        ...preset,    // baseline look
-        ...tpl,       // genre voice (on top of preset)
+        ...preset, // baseline look
+        ...tpl, // genre voice (on top of preset)
         ...stripUndefined(input), // explicit user overrides win
     } as AgenticConfig;
     // Hard defaults for anything still missing.
@@ -254,7 +356,6 @@ function stripUndefined<T extends object>(o: T): Partial<T> {
  */
 export function loadConfig(path?: string): Partial<AgenticConfig> {
     if (path) {
-         
         const fs = require('fs');
         const raw = fs.readFileSync(path, 'utf8');
         return JSON.parse(raw) as Partial<AgenticConfig>;
@@ -288,6 +389,11 @@ function configToRequest_buildReq(cfg: AgenticConfig) {
             kinetic: cfg.kineticText,
             crossfadeSec: 0.5,
         },
-        autopilot: { renderer: cfg.renderer, preset: cfg.preset ?? 'cinematic', sfx: cfg.sfx, maxAttempts: cfg.maxAttempts },
+        autopilot: {
+            renderer: cfg.renderer,
+            preset: cfg.preset ?? 'cinematic',
+            sfx: cfg.sfx,
+            maxAttempts: cfg.maxAttempts,
+        },
     };
 }

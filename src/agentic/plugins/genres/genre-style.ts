@@ -8,7 +8,21 @@ import { AgenticPlugin, PluginCategory, Capability } from '../core/types.js';
 
 interface GenreConfig {
     /** Genre to apply (overrides videoType from main config) */
-    genre?: 'reels' | 'tiktok' | 'documentary' | 'cinematic' | 'news' | 'tutorial' | 'vlog' | 'product' | 'motivational' | 'nature' | 'corporate' | 'wedding' | 'gaming' | 'realestate';
+    genre?:
+        | 'reels'
+        | 'tiktok'
+        | 'documentary'
+        | 'cinematic'
+        | 'news'
+        | 'tutorial'
+        | 'vlog'
+        | 'product'
+        | 'motivational'
+        | 'nature'
+        | 'corporate'
+        | 'wedding'
+        | 'gaming'
+        | 'realestate';
     /** Allow genre to override main config */
     overrideConfig?: boolean;
     /** Custom genre definitions */
@@ -500,7 +514,7 @@ const GENRE_STYLES: Record<string, GenreStyle> = {
     },
 
     gaming: {
-        name: 'Gaming / Let\'s Play',
+        name: "Gaming / Let's Play",
         preset: 'reels',
         orientation: 'landscape',
         aspect: '16:9',
@@ -581,10 +595,7 @@ export const genreStylePlugin: AgenticPlugin = {
         tags: ['genre', 'style', 'template', 'reels', 'documentary', 'cinematic', 'tiktok'],
     },
 
-    capabilities: [
-        Capability.GENRE_TEMPLATE,
-        Capability.CONFIG_OVERRIDE,
-    ],
+    capabilities: [Capability.GENRE_TEMPLATE, Capability.CONFIG_OVERRIDE],
 
     category: PluginCategory.GENRE,
 
@@ -628,7 +639,7 @@ export const genreStylePlugin: AgenticPlugin = {
                     const variation = 0.7 + Math.random() * 0.6; // 0.7-1.3
                     scene.durationSec = Math.min(
                         style.maxSceneDur,
-                        Math.max(style.minSceneDur, (scene.durationSec ?? 4) * variation)
+                        Math.max(style.minSceneDur, (scene.durationSec ?? 4) * variation),
                     );
                 }
             }

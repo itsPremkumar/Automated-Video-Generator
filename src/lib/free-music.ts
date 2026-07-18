@@ -61,9 +61,15 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
         p,
         new Promise<T>((_, rej) => {
             const t = setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms);
-            ctrl.signal.addEventListener('abort', () => { clearTimeout(t); rej(new Error(`${label} aborted`)); });
+            ctrl.signal.addEventListener('abort', () => {
+                clearTimeout(t);
+                rej(new Error(`${label} aborted`));
+            });
         }),
-    ]).finally(() => { clearTimeout(timer); onAbort(); });
+    ]).finally(() => {
+        clearTimeout(timer);
+        onAbort();
+    });
 }
 
 // ─── Open Lofi (CC0) ───────────────────────────────────────────────────────
@@ -208,9 +214,15 @@ async function downloadTrack(track: FreeMusicTrack, destPath: string): Promise<v
             fs.mkdirSync(path.dirname(destPath), { recursive: true });
             fs.copyFileSync(cached, destPath);
             return;
-        } catch { /* fall through to live download */ }
+        } catch {
+            /* fall through to live download */
+        }
     }
-    const res = await withTimeout(axios.get(track.downloadUrl, { responseType: 'arraybuffer', timeout: 15000 }), 15000, `download ${track.title}`);
+    const res = await withTimeout(
+        axios.get(track.downloadUrl, { responseType: 'arraybuffer', timeout: 15000 }),
+        15000,
+        `download ${track.title}`,
+    );
     const buf = Buffer.from(res.data as ArrayBuffer);
     if (!buf || buf.length < 1024) throw new Error(`Downloaded file too small for ${track.title}`);
     fs.mkdirSync(path.dirname(destPath), { recursive: true });
@@ -230,7 +242,9 @@ export interface ResolvedFreeMusic {
     track: FreeMusicTrack;
 }
 
-export async function resolveFreeBackgroundMusic(opts: ResolveFreeMusicOptions = {}): Promise<ResolvedFreeMusic | null> {
+export async function resolveFreeBackgroundMusic(
+    opts: ResolveFreeMusicOptions = {},
+): Promise<ResolvedFreeMusic | null> {
     const enabled = opts.enabled ?? (process.env.AUTO_FREE_MUSIC ?? 'true').toLowerCase() !== 'false';
     if (!enabled) {
         console.log('Auto free-music disabled (AUTO_FREE_MUSIC=false).');

@@ -87,12 +87,21 @@ test('archiveJob returns null when archive dir cannot be created', () => {
     const badFile = path.join(fileRoot, 'isa_file_not_dir');
     fs.writeFileSync(badFile, 'x');
     const bad: AgenticWorkspace = {
-        jobId: 'x', root: badFile, assetsDir: badFile, imagesDir: badFile,
-        videosDir: badFile, musicDir: badFile, verificationDir: badFile,
+        jobId: 'x',
+        root: badFile,
+        assetsDir: badFile,
+        imagesDir: badFile,
+        videosDir: badFile,
+        musicDir: badFile,
+        verificationDir: badFile,
     };
     let threw = false;
     let m = null as ArchiveManifest | null;
-    try { m = archiveJob(bad, badFile); } catch { threw = true; }
+    try {
+        m = archiveJob(bad, badFile);
+    } catch {
+        threw = true;
+    }
     assert.equal(threw, false, 'does not throw');
     assert.equal(m, null, 'returns null on failure (safe)');
     fs.rmSync(fileRoot, { recursive: true, force: true });

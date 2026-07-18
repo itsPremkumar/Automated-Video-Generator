@@ -18,12 +18,26 @@ function tmpFile(ext: string): string {
 }
 
 function makeCandidate(kind: 'image' | 'video' | 'music', sceneIndex: number, c: number, p: string): AssetCandidate {
-    return { kind, sceneIndex, candidateIndex: c, localPath: p, url: `http://x/${kind}${c}.bin`, source: 'test', keywords: ['cat'] };
+    return {
+        kind,
+        sceneIndex,
+        candidateIndex: c,
+        localPath: p,
+        url: `http://x/${kind}${c}.bin`,
+        source: 'test',
+        keywords: ['cat'],
+    };
 }
 
 function fakeParser(script: string): any {
     const lines = script.split('\n').filter((l) => l.trim().length > 0);
-    const scenes: { sceneNumber: number; voiceoverText: string; searchKeywords: string[]; visualPreference: 'image' | 'video'; duration: number }[] = lines.map((line, i) => ({
+    const scenes: {
+        sceneNumber: number;
+        voiceoverText: string;
+        searchKeywords: string[];
+        visualPreference: 'image' | 'video';
+        duration: number;
+    }[] = lines.map((line, i) => ({
         sceneNumber: i + 1,
         voiceoverText: line,
         searchKeywords: ['scene', `kw${i}`],
@@ -65,13 +79,50 @@ process.on('exit', () => {
 
 describe('plan.ts', () => {
     test('derives music query from keywords', () => {
-        assert.equal(deriveMusicQuery([{ sceneNumber: 1, voiceoverText: '', searchKeywords: ['workout', 'gym'], visualPreference: 'video', durationSec: 5 }]), 'energetic upbeat workout');
-        assert.equal(deriveMusicQuery([{ sceneNumber: 1, voiceoverText: '', searchKeywords: ['calm', 'sleep'], visualPreference: 'video', durationSec: 5 }]), 'calm ambient lofi');
-        assert.equal(deriveMusicQuery([{ sceneNumber: 1, voiceoverText: '', searchKeywords: ['random'], visualPreference: 'video', durationSec: 5 }]), 'ambient lofi chill');
+        assert.equal(
+            deriveMusicQuery([
+                {
+                    sceneNumber: 1,
+                    voiceoverText: '',
+                    searchKeywords: ['workout', 'gym'],
+                    visualPreference: 'video',
+                    durationSec: 5,
+                },
+            ]),
+            'energetic upbeat workout',
+        );
+        assert.equal(
+            deriveMusicQuery([
+                {
+                    sceneNumber: 1,
+                    voiceoverText: '',
+                    searchKeywords: ['calm', 'sleep'],
+                    visualPreference: 'video',
+                    durationSec: 5,
+                },
+            ]),
+            'calm ambient lofi',
+        );
+        assert.equal(
+            deriveMusicQuery([
+                {
+                    sceneNumber: 1,
+                    voiceoverText: '',
+                    searchKeywords: ['random'],
+                    visualPreference: 'video',
+                    durationSec: 5,
+                },
+            ]),
+            'ambient lofi chill',
+        );
     });
 
     test('buildPlan uses injected parser and enriches scenes', async () => {
-        const plan = await buildPlan('line one\nline two', { jobId: 'j1', title: 'T', orientation: 'landscape' }, fakeParser);
+        const plan = await buildPlan(
+            'line one\nline two',
+            { jobId: 'j1', title: 'T', orientation: 'landscape' },
+            fakeParser,
+        );
         assert.equal(plan.scenes.length, 2);
         assert.equal(plan.title, 'T');
         assert.equal(plan.orientation, 'landscape');
@@ -85,8 +136,20 @@ describe('acquire.ts', () => {
         fetchVisual: async (keywords: string[], kind: 'image' | 'video'): Promise<FetchedVisual[]> => {
             const ext = kind === 'image' ? '.jpg' : '.mp4';
             return [
-                { url: `http://x/${keywords[0]}_1${ext}`, localPath: '', source: 'fake', license: 'CC0', licenseUrl: 'http://lic' },
-                { url: `http://x/${keywords[0]}_2${ext}`, localPath: '', source: 'fake', license: 'CC0', licenseUrl: 'http://lic' },
+                {
+                    url: `http://x/${keywords[0]}_1${ext}`,
+                    localPath: '',
+                    source: 'fake',
+                    license: 'CC0',
+                    licenseUrl: 'http://lic',
+                },
+                {
+                    url: `http://x/${keywords[0]}_2${ext}`,
+                    localPath: '',
+                    source: 'fake',
+                    license: 'CC0',
+                    licenseUrl: 'http://lic',
+                },
             ];
         },
         download: async (url: string, dir: string, filename: string) => {
@@ -120,15 +183,13 @@ describe('verify.ts', () => {
         const good = tmpFile('.jpg');
         const bad = tmpFile('.jpg');
         fs.writeFileSync(good, 'imgdata');
-        const cands: AssetCandidate[] = [
-            makeCandidate('image', 0, 1, good),
-            makeCandidate('image', 0, 2, bad),
-        ];
+        const cands: AssetCandidate[] = [makeCandidate('image', 0, 1, good), makeCandidate('image', 0, 2, bad)];
         const wsStub: any = { root: os.tmpdir(), verificationDir: os.tmpdir() };
         const results = await verifyAll(cands, wsStub, {
-            verifyImage: async (p: string) => fs.existsSync(p)
-                ? { passes: true, confidence: 9, reason: 'matches' }
-                : { passes: false, confidence: 1, reason: 'missing' },
+            verifyImage: async (p: string) =>
+                fs.existsSync(p)
+                    ? { passes: true, confidence: 9, reason: 'matches' }
+                    : { passes: false, confidence: 1, reason: 'missing' },
             verifyVideo: async () => ({ passes: true, confidence: 8, reason: '' }),
         });
         assert.equal(results.length, 2);
@@ -159,7 +220,15 @@ describe('gateway + gate.ts', () => {
     const deps: GatewayDeps = {
         fetchVisual: async (keywords: string[], kind: 'image' | 'video'): Promise<FetchedVisual[]> => {
             const ext = kind === 'image' ? '.jpg' : '.mp4';
-            return [{ url: `http://x/${keywords[0]}_r${ext}`, localPath: '', source: 'fake', license: 'CC0', licenseUrl: 'http://lic' }];
+            return [
+                {
+                    url: `http://x/${keywords[0]}_r${ext}`,
+                    localPath: '',
+                    source: 'fake',
+                    license: 'CC0',
+                    licenseUrl: 'http://lic',
+                },
+            ];
         },
         download: async (url: string, dir: string, filename: string) => {
             const p = path.join(dir, filename);
@@ -167,7 +236,9 @@ describe('gateway + gate.ts', () => {
             fs.writeFileSync(p, 'dummy');
             return p;
         },
-        fetchMusic: async (): Promise<FetchedVisual[]> => [{ url: 'http://x/m.mp3', localPath: '', source: 'fake', license: 'CC0', licenseUrl: 'http://lic' }],
+        fetchMusic: async (): Promise<FetchedVisual[]> => [
+            { url: 'http://x/m.mp3', localPath: '', source: 'fake', license: 'CC0', licenseUrl: 'http://lic' },
+        ],
         verifyImage: async () => ({ passes: true, confidence: 9, reason: 'ok' }),
         verifyVideo: async () => ({ passes: true, confidence: 9, reason: 'ok' }),
         decide: async (c: AssetCandidate) => ({ decision: 'approved', rationale: 'good enough' }),
@@ -189,9 +260,10 @@ describe('gateway + gate.ts', () => {
         const res = await acquireAssets(samplePlan, deps, 1);
         const rejectDeps: GatewayDeps = {
             ...deps,
-            decide: async (c: AssetCandidate) => c.kind !== 'music' && c.sceneIndex === 0
-                ? { decision: 'rejected', rationale: 'wrong subject' }
-                : { decision: 'approved', rationale: 'ok' },
+            decide: async (c: AssetCandidate) =>
+                c.kind !== 'music' && c.sceneIndex === 0
+                    ? { decision: 'rejected', rationale: 'wrong subject' }
+                    : { decision: 'approved', rationale: 'ok' },
         };
         const { decisions, manifest } = await runGateway(samplePlan, res.candidates, rejectDeps);
         const gate = runFinalGate(samplePlan, res.candidates, decisions, manifest);
@@ -210,7 +282,13 @@ describe('agent backend (no external AI)', () => {
     });
 
     test('expands keywords deterministically', () => {
-        const scene = { sceneNumber: 1, voiceoverText: 'x', searchKeywords: ['gym'], visualPreference: 'video' as const, durationSec: 5 };
+        const scene = {
+            sceneNumber: 1,
+            voiceoverText: 'x',
+            searchKeywords: ['gym'],
+            visualPreference: 'video' as const,
+            durationSec: 5,
+        };
         const kw = expandKeywordsHeuristic(scene, 'Workout Tips');
         // Primary term preserved + context phrases added (no redundant "<kind> of <term>").
         assert.ok(kw.includes('gym'));
@@ -223,18 +301,75 @@ describe('agent backend (no external AI)', () => {
     });
 
     test('agent approves a passing visual, replaces a failing one', () => {
-        const good: AssetCandidate = { kind: 'image', sceneIndex: 0, candidateIndex: 1, localPath: 'a.jpg', url: 'u', source: 's', keywords: ['cat'] };
-        const bad: AssetCandidate = { kind: 'image', sceneIndex: 1, candidateIndex: 1, localPath: 'b.jpg', url: 'u', source: 's', keywords: ['dog'] };
-        const dGood = agentDecide({ candidate: good, verification: { assetId: '', kind: 'image', sceneIndex: 0, passes: true, confidence: 9, reason: 'relevant' }, approvedInScene: 0 });
-        const dBad = agentDecide({ candidate: bad, verification: { assetId: '', kind: 'image', sceneIndex: 1, passes: false, confidence: 2, reason: 'watermark' }, approvedInScene: 0 });
+        const good: AssetCandidate = {
+            kind: 'image',
+            sceneIndex: 0,
+            candidateIndex: 1,
+            localPath: 'a.jpg',
+            url: 'u',
+            source: 's',
+            keywords: ['cat'],
+        };
+        const bad: AssetCandidate = {
+            kind: 'image',
+            sceneIndex: 1,
+            candidateIndex: 1,
+            localPath: 'b.jpg',
+            url: 'u',
+            source: 's',
+            keywords: ['dog'],
+        };
+        const dGood = agentDecide({
+            candidate: good,
+            verification: {
+                assetId: '',
+                kind: 'image',
+                sceneIndex: 0,
+                passes: true,
+                confidence: 9,
+                reason: 'relevant',
+            },
+            approvedInScene: 0,
+        });
+        const dBad = agentDecide({
+            candidate: bad,
+            verification: {
+                assetId: '',
+                kind: 'image',
+                sceneIndex: 1,
+                passes: false,
+                confidence: 2,
+                reason: 'watermark',
+            },
+            approvedInScene: 0,
+        });
         assert.equal(dGood.decision, 'approved');
         assert.equal(dBad.decision, 'replace');
         assert.ok(dBad.rationale.includes('watermark'));
     });
 
     test('agent approves passing music', () => {
-        const m: AssetCandidate = { kind: 'music', sceneIndex: -1, candidateIndex: 1, localPath: 'a.mp3', url: '', source: 's', keywords: ['calm'] };
-        const d = agentDecide({ candidate: m, verification: { assetId: '', kind: 'music', sceneIndex: -1, passes: true, confidence: 8, reason: 'clean 30s' }, approvedInScene: 0 });
+        const m: AssetCandidate = {
+            kind: 'music',
+            sceneIndex: -1,
+            candidateIndex: 1,
+            localPath: 'a.mp3',
+            url: '',
+            source: 's',
+            keywords: ['calm'],
+        };
+        const d = agentDecide({
+            candidate: m,
+            verification: {
+                assetId: '',
+                kind: 'music',
+                sceneIndex: -1,
+                passes: true,
+                confidence: 8,
+                reason: 'clean 30s',
+            },
+            approvedInScene: 0,
+        });
         assert.equal(d.decision, 'approved');
     });
 });
@@ -250,11 +385,13 @@ describe('writeScriptHeuristic — per-scene visual diversity', () => {
     });
 
     test('multi-sentence topic also varies visuals per scene', () => {
-        const script = writeScriptHeuristic('Lions are apex predators. They hunt in prides. Cubs learn by playing.', 'Lions');
+        const script = writeScriptHeuristic(
+            'Lions are apex predators. They hunt in prides. Cubs learn by playing.',
+            'Lions',
+        );
         const visuals = script.match(/\[Visual:\s*([^\]]+)\]/g) ?? [];
         assert.equal(visuals.length, 3);
         const uniq = new Set(visuals.map((v) => v.toLowerCase()));
         assert.ok(uniq.size >= 2, 'multi-sentence topic reused one visual: ' + visuals.join(' | '));
     });
 });
-

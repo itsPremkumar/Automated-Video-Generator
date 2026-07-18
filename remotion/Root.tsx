@@ -52,8 +52,20 @@ export const RemotionRoot = () => {
                         .reduce((s: number, a: any) => s + Math.max(1, Math.round((a.durationSec ?? 4) * fps)), 0);
                     const total = Math.max(30, Math.round(intro + scenes + outro));
                     // A6 — aspect-aware dimensions from props.
-                    const w = (props as any).width ?? (((props as any).orientation === 'landscape') ? 1920 : ((props as any).orientation === 'square') ? 1080 : 1080);
-                    const h = (props as any).height ?? (((props as any).orientation === 'landscape') ? 1080 : ((props as any).orientation === 'square') ? 1080 : 1920);
+                    const w =
+                        (props as any).width ??
+                        ((props as any).orientation === 'landscape'
+                            ? 1920
+                            : (props as any).orientation === 'square'
+                              ? 1080
+                              : 1080);
+                    const h =
+                        (props as any).height ??
+                        ((props as any).orientation === 'landscape'
+                            ? 1080
+                            : (props as any).orientation === 'square'
+                              ? 1080
+                              : 1920);
                     return { durationInFrames: total, width: w, height: h };
                 }}
                 defaultProps={{
@@ -69,4 +81,3 @@ export const RemotionRoot = () => {
         </>
     );
 };
-

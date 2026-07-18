@@ -13,14 +13,7 @@ import * as path from 'path';
 import { runFfmpeg } from './edit.js';
 
 export type GradePreset =
-    | 'cinematic'
-    | 'vivid'
-    | 'neon'
-    | 'teal-orange'
-    | 'bleach-bypass'
-    | 'neutral'
-    | 'warm'
-    | 'cool';
+    'cinematic' | 'vivid' | 'neon' | 'teal-orange' | 'bleach-bypass' | 'neutral' | 'warm' | 'cool';
 
 const PRESETS: Record<GradePreset, string> = {
     // Filmic contrast + lifted blacks + slight teal/orange bias.
@@ -34,7 +27,11 @@ const PRESETS: Record<GradePreset, string> = {
     cool: 'colorbalance=rs=-.04:gs=0:bs=.04,eq=saturation=1.1:contrast=1.05',
 };
 
-export interface GradeResult { ok: boolean; output?: string; detail: string; }
+export interface GradeResult {
+    ok: boolean;
+    output?: string;
+    detail: string;
+}
 
 export async function gradeVideo(file: string, preset: GradePreset = 'cinematic', out?: string): Promise<GradeResult> {
     if (!fs.existsSync(file)) return { ok: false, detail: `input not found: ${file}` };
@@ -42,7 +39,18 @@ export async function gradeVideo(file: string, preset: GradePreset = 'cinematic'
     const output = out ?? path.join(process.cwd(), 'output', `graded_${Date.now()}.mp4`);
     fs.mkdirSync(path.dirname(output), { recursive: true });
     const { code, out: log } = await runFfmpeg([
-        '-i', file, '-vf', vf, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'copy', '-y', output,
+        '-i',
+        file,
+        '-vf',
+        vf,
+        '-c:v',
+        'libx264',
+        '-pix_fmt',
+        'yuv420p',
+        '-c:a',
+        'copy',
+        '-y',
+        output,
     ]);
     if (code !== 0) return { ok: false, detail: `grade failed:\n${log.slice(-600)}` };
     if (!fs.existsSync(output)) return { ok: false, detail: 'graded file not produced' };

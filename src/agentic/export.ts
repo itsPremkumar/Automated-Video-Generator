@@ -39,9 +39,22 @@ function runFfmpeg(args: string[], timeoutMs = 180000): Promise<number> {
     return new Promise((resolve) => {
         const { spawn } = require('child_process');
         const child = spawn(FFMPEG(), args, { stdio: 'ignore' });
-        const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* noop */ } resolve(-1); }, timeoutMs);
-        child.on('error', () => { clearTimeout(t); resolve(-1); });
-        child.on('close', (code: number | null) => { clearTimeout(t); resolve(code ?? -1); });
+        const t = setTimeout(() => {
+            try {
+                child.kill('SIGKILL');
+            } catch {
+                /* noop */
+            }
+            resolve(-1);
+        }, timeoutMs);
+        child.on('error', () => {
+            clearTimeout(t);
+            resolve(-1);
+        });
+        child.on('close', (code: number | null) => {
+            clearTimeout(t);
+            resolve(code ?? -1);
+        });
     });
 }
 
@@ -50,7 +63,10 @@ function runFfmpeg(args: string[], timeoutMs = 180000): Promise<number> {
  * the portrait cut to YouTube as 16:9). Pure ffmpeg scale+pad, offline, free.
  * Returns the list of produced file paths.
  */
-export async function exportMultiAspect(srcMp4: string, aspects: Aspect[] = ['9:16', '16:9', '1:1']): Promise<string[]> {
+export async function exportMultiAspect(
+    srcMp4: string,
+    aspects: Aspect[] = ['9:16', '16:9', '1:1'],
+): Promise<string[]> {
     const out: string[] = [];
     const dir = path.dirname(srcMp4);
     const base = path.basename(srcMp4, path.extname(srcMp4));
@@ -62,7 +78,18 @@ export async function exportMultiAspect(srcMp4: string, aspects: Aspect[] = ['9:
         // failure that broke 1:1 / 16:9 from a 9:16 source.
         const filter = `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2,setsar=1`;
         try {
-            const code = await runFfmpeg(['-y', '-i', srcMp4, '-vf', filter, '-c:a', 'copy', '-movflags', '+faststart', dest]);
+            const code = await runFfmpeg([
+                '-y',
+                '-i',
+                srcMp4,
+                '-vf',
+                filter,
+                '-c:a',
+                'copy',
+                '-movflags',
+                '+faststart',
+                dest,
+            ]);
             if (code === 0 && fs.existsSync(dest)) out.push(dest);
         } catch (e) {
             console.warn(`⚠ multi-aspect ${a} failed: ${(e as Error).message}`);
@@ -75,18 +102,20 @@ export async function exportMultiAspect(srcMp4: string, aspects: Aspect[] = ['9:
  * FREE, offline metadata — no LLM. Builds a YouTube/TikTok-ready title,
  * description, and hashtag string from the plan alone.
  */
-export function generateFreeMetadata(plan: Plan): { title: string; description: string; hashtags: string; tags: string[] } {
+export function generateFreeMetadata(plan: Plan): {
+    title: string;
+    description: string;
+    hashtags: string;
+    tags: string[];
+} {
     const title = plan.title?.trim() || 'AI-Generated Video';
     // Description: opening hook (scene 0) + bulleted facts + soft CTA.
     const hook = plan.scenes[0]?.voiceoverText || '';
-    const bullets = plan.scenes.slice(1).map((s) => `• ${s.voiceoverText || ''}`).join('\n');
-    const description = [
-        hook,
-        '',
-        bullets,
-        '',
-        '#Shorts #AI #facts',
-    ].join('\n').trim();
+    const bullets = plan.scenes
+        .slice(1)
+        .map((s) => `• ${s.voiceoverText || ''}`)
+        .join('\n');
+    const description = [hook, '', bullets, '', '#Shorts #AI #facts'].join('\n').trim();
     // Hashtags: de-duplicated keywords + fixed reach tags. Scene fields are
     // optional, so guard every access (a Plan from any source must not crash).
     const kw = new Set<string>();
@@ -94,7 +123,11 @@ export function generateFreeMetadata(plan: Plan): { title: string; description: 
         const terms = (s.searchKeywords || []).flatMap((k) => k.replace(/\s+/g, '').toLowerCase().split(','));
         for (const t of terms) if (t) kw.add(t);
     }
-    const hashtags = Array.from(kw).slice(0, 8).map((k) => '#' + k).join(' ') + ' #ai #shorts #viral';
+    const hashtags =
+        Array.from(kw)
+            .slice(0, 8)
+            .map((k) => '#' + k)
+            .join(' ') + ' #ai #shorts #viral';
     return { title, description, hashtags, tags: Array.from(kw).slice(0, 8) };
 }
 
@@ -112,7 +145,11 @@ export async function renderThumbnail(srcMp4: string, plan: Plan): Promise<strin
     // Pin a system font so drawtext avoids the broken fontconfig on this box.
     const fontCandidates = ['C:/Windows/Fonts/arial.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'];
     let fontArg = '';
-    for (const c of fontCandidates) if (fs.existsSync(c)) { fontArg = `fontfile='${c}':`; break; }
+    for (const c of fontCandidates)
+        if (fs.existsSync(c)) {
+            fontArg = `fontfile='${c}':`;
+            break;
+        }
     const filter = `drawtext=${fontArg}text='${title}':fontcolor=white:fontsize=48:box=1:boxcolor=black@0.55:boxborderw=20:line_spacing=8:x=(w-text_w)/2:y=(h-text_h)/2`;
     try {
         const code = await runFfmpeg(['-y', '-ss', '00:00:01', '-i', srcMp4, '-frames:v', '1', '-vf', filter, out]);
@@ -147,7 +184,10 @@ export async function renderVariant(res: PipelineResult, preset: string, tag: st
  * across the scene duration. This powers B1-style word-highlight captions
  * offline; when real TTS word-timings exist they can replace this.
  */
-export function wordTimingsFromScript(text: string, durationSec: number): { word: string; startMs: number; endMs: number }[] {
+export function wordTimingsFromScript(
+    text: string,
+    durationSec: number,
+): { word: string; startMs: number; endMs: number }[] {
     const words = text.trim().split(/\s+/).filter(Boolean);
     if (words.length === 0) return [];
     const per = (durationSec * 1000) / words.length;
@@ -157,4 +197,3 @@ export function wordTimingsFromScript(text: string, durationSec: number): { word
         endMs: Math.round((i + 1) * per),
     }));
 }
-

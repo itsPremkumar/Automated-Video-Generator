@@ -1,13 +1,5 @@
 export type SfxKind =
-    | 'whoosh'
-    | 'ding'
-    | 'impact'
-    | 'notification'
-    | 'click'
-    | 'pop'
-    | 'transition'
-    | 'swish'
-    | 'bounce';
+    'whoosh' | 'ding' | 'impact' | 'notification' | 'click' | 'pop' | 'transition' | 'swish' | 'bounce';
 
 export interface SfxClip {
     kind: SfxKind;

@@ -70,7 +70,11 @@ export function cacheSizeBytes(): number {
         if (!fs.existsSync(CACHE_DIR)) return 0;
         let total = 0;
         for (const f of fs.readdirSync(CACHE_DIR)) {
-            try { total += fs.statSync(path.join(CACHE_DIR, f)).size; } catch { /* skip */ }
+            try {
+                total += fs.statSync(path.join(CACHE_DIR, f)).size;
+            } catch {
+                /* skip */
+            }
         }
         return total;
     } catch {
@@ -82,5 +86,7 @@ export function cacheSizeBytes(): number {
 export function clearCache(): void {
     try {
         if (fs.existsSync(CACHE_DIR)) fs.rmSync(CACHE_DIR, { recursive: true, force: true });
-    } catch { /* ignore */ }
+    } catch {
+        /* ignore */
+    }
 }

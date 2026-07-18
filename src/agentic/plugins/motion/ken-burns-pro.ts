@@ -1,7 +1,12 @@
 /** Advanced Ken Burns zoom with auto-direction */
 import { AgenticPlugin, PluginCategory } from '../core/types.js';
 export const kenBurnsProPlugin: AgenticPlugin = {
-    metadata: { name: 'ken-burns-pro', version: '1.0.0', description: 'Advanced Ken Burns zoom with auto direction', tags: ['motion', 'zoom'] },
+    metadata: {
+        name: 'ken-burns-pro',
+        version: '1.0.0',
+        description: 'Advanced Ken Burns zoom with auto direction',
+        tags: ['motion', 'zoom'],
+    },
     category: PluginCategory.MOTION,
     hooks: {
         onRenderFilter: async (scene, ctx) => {
@@ -13,4 +18,6 @@ export const kenBurnsProPlugin: AgenticPlugin = {
         },
     },
 };
-export function registerKenBurnsPro(r: any, c?: any, e = true) { r.register(kenBurnsProPlugin, c, e); }
+export function registerKenBurnsPro(r: any, c?: any, e = true) {
+    r.register(kenBurnsProPlugin, c, e);
+}

@@ -70,14 +70,16 @@ export class MetMuseumImageProvider implements ImageProvider {
                             title: obj.title ?? `Met Museum Object ${obj.objectID}`,
                             creator: obj.artistDisplayName ?? obj.artistAlphaSort ?? 'Unknown',
                             license,
-                            licenseUrl: obj.objectURL ?? `https://www.metmuseum.org/art/collection/search/${obj.objectID}`,
+                            licenseUrl:
+                                obj.objectURL ?? `https://www.metmuseum.org/art/collection/search/${obj.objectID}`,
                             provider: 'metmuseum',
                             downloadUrl: obj.primaryImage,
                             thumbnailUrl: obj.primaryImageSmall ?? obj.primaryImage,
                             width: null,
                             height: null,
                             fileSizeBytes: null,
-                            sourcePageUrl: obj.objectURL ?? `https://www.metmuseum.org/art/collection/search/${obj.objectID}`,
+                            sourcePageUrl:
+                                obj.objectURL ?? `https://www.metmuseum.org/art/collection/search/${obj.objectID}`,
                         });
                     }
                 }

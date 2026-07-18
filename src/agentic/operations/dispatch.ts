@@ -85,139 +85,412 @@ async function runOne(task: RoutedTask, input: RunInput): Promise<DispatchResult
     const out = safeOut;
 
     try {
-    switch (task.kind) {
-        case 'merge': {
-            if (!files || files.length < 2) return { kind: task.kind, summary: task.summary, ok: false, detail: 'merge needs ≥2 video files' };
-            const r: EditResult = await mergeVideos(files, input.out, input.orientation ?? 'portrait');
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
+        switch (task.kind) {
+            case 'merge': {
+                if (!files || files.length < 2)
+                    return { kind: task.kind, summary: task.summary, ok: false, detail: 'merge needs ≥2 video files' };
+                const r: EditResult = await mergeVideos(files, input.out, input.orientation ?? 'portrait');
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail,
+                    gate: await gate(r.output),
+                };
+            }
+            case 'trim': {
+                if (!f)
+                    return { kind: task.kind, summary: task.summary, ok: false, detail: 'trim needs an input file' };
+                const r = await trimVideo(f, input.out, a.start ?? 0, a.end);
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail,
+                    gate: await gate(r.output),
+                };
+            }
+            case 'crop': {
+                if (!f)
+                    return { kind: task.kind, summary: task.summary, ok: false, detail: 'crop needs an input file' };
+                const r = await cropVideo(f, input.out, { preset: a.preset });
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail,
+                    gate: await gate(r.output),
+                };
+            }
+            case 'resize': {
+                if (!f)
+                    return { kind: task.kind, summary: task.summary, ok: false, detail: 'resize needs an input file' };
+                const r = await resizeVideo(f, input.out, a.w ?? 720, a.h ?? -2);
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail,
+                    gate: await gate(r.output),
+                };
+            }
+            case 'rotate': {
+                if (!f)
+                    return { kind: task.kind, summary: task.summary, ok: false, detail: 'rotate needs an input file' };
+                const r = await rotateVideo(f, input.out, a.deg ?? 90);
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail,
+                    gate: await gate(r.output),
+                };
+            }
+            case 'extract_audio': {
+                if (!f)
+                    return {
+                        kind: task.kind,
+                        summary: task.summary,
+                        ok: false,
+                        detail: 'extract_audio needs an input video',
+                    };
+                const r = await extractAudio(f, input.out);
+                return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
+            }
+            case 'split': {
+                if (!f)
+                    return { kind: task.kind, summary: task.summary, ok: false, detail: 'split needs an input file' };
+                const r: SplitResult = a.parts
+                    ? await splitVideoEqual(f, a.parts, input.out)
+                    : await splitVideoAt(f, a.marks ?? [], input.out);
+                return { kind: task.kind, summary: task.summary, ok: r.ok, outputs: r.outputs, detail: r.detail };
+            }
+            case 'add_captions': {
+                if (!f)
+                    return {
+                        kind: task.kind,
+                        summary: task.summary,
+                        ok: false,
+                        detail: 'add_captions needs an input video',
+                    };
+                const r: CaptionResult = a.srt
+                    ? await addCaptionsFromSrt(f, a.srt, input.out)
+                    : await addCaptionsFromText(f, extra.text || a.text || '', input.out);
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail,
+                    gate: await gate(r.output),
+                };
+            }
+            case 'add_music': {
+                if (!f)
+                    return {
+                        kind: task.kind,
+                        summary: task.summary,
+                        ok: false,
+                        detail: 'add_music needs an input video',
+                    };
+                const r: AudioTrackResult = await addMusic(f, extra.query || a.query || 'ambient lofi', input.out);
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail,
+                    gate: await gate(r.output),
+                };
+            }
+            case 'localize': {
+                if (!f && !(extra.text || a.text))
+                    return {
+                        kind: task.kind,
+                        summary: task.summary,
+                        ok: false,
+                        detail: 'localize needs a video/srt or source text',
+                    };
+                const r: LocalizeResult = await localizeVideo(
+                    f ? f : null,
+                    extra.text || a.text || null,
+                    a.languages || ['es'],
+                    undefined,
+                    new AgentBrain(),
+                );
+                return { kind: task.kind, summary: task.summary, ok: r.ok, outputs: r.outputs, detail: r.detail };
+            }
+            case 'grade': {
+                if (!f)
+                    return { kind: task.kind, summary: task.summary, ok: false, detail: 'grade needs an input file' };
+                const r: GradeResult = await gradeVideo(f, a.preset || 'cinematic', input.out);
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail,
+                    gate: await gate(r.output),
+                };
+            }
+            case 'slow_motion': {
+                if (!f)
+                    return {
+                        kind: task.kind,
+                        summary: task.summary,
+                        ok: false,
+                        detail: 'slow_motion needs an input file',
+                    };
+                const r: MotionResult = await slowMotion(f, a.factor ?? 2, input.out);
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail,
+                    gate: await gate(r.output),
+                };
+            }
+            case 'speed_ramp': {
+                if (!f)
+                    return {
+                        kind: task.kind,
+                        summary: task.summary,
+                        ok: false,
+                        detail: 'speed_ramp needs an input file',
+                    };
+                const r: MotionResult = await speedRamp(
+                    f,
+                    a.rampStart ?? 1,
+                    a.rampEnd ?? 3,
+                    a.slowFactor ?? 3,
+                    input.out,
+                );
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail,
+                    gate: await gate(r.output),
+                };
+            }
+            case 'watermark': {
+                if (!f)
+                    return {
+                        kind: task.kind,
+                        summary: task.summary,
+                        ok: false,
+                        detail: 'watermark needs an input file',
+                    };
+                const r: OverlayResult = await addWatermark(f, extra.label || a.label || 'MyBrand', input.out);
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail,
+                    gate: await gate(r.output),
+                };
+            }
+            case 'lower_third': {
+                if (!f)
+                    return {
+                        kind: task.kind,
+                        summary: task.summary,
+                        ok: false,
+                        detail: 'lower_third needs an input file',
+                    };
+                const r: OverlayResult = await addLowerThird(f, extra.text || a.text || 'Title', input.out);
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail,
+                    gate: await gate(r.output),
+                };
+            }
+            case 'progress_bar': {
+                if (!f)
+                    return {
+                        kind: task.kind,
+                        summary: task.summary,
+                        ok: false,
+                        detail: 'progress_bar needs an input file',
+                    };
+                const r: OverlayResult = await addProgressBar(f, input.out);
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail,
+                    gate: await gate(r.output),
+                };
+            }
+            case 'derive': {
+                if (!f)
+                    return { kind: task.kind, summary: task.summary, ok: false, detail: 'derive needs an input file' };
+                const r: DerivativeResult = await deriveFromVideo(
+                    f,
+                    a.aspects || ['9:16', '16:9', '1:1'],
+                    a.thumbnail !== false,
+                    input.out ? path.dirname(input.out) : undefined,
+                );
+                return { kind: task.kind, summary: task.summary, ok: r.ok, outputs: r.outputs, detail: r.detail };
+            }
+            case 'voiceover': {
+                const text = extra.text || a.text || '';
+                if (!text) return { kind: task.kind, summary: task.summary, ok: false, detail: 'voiceover needs text' };
+                const r: VoiceoverResult = await generateVoiceoverOnly(
+                    text.split(/(?:\n|;\s*)/).filter(Boolean),
+                    input.voice ?? 'en-US-AriaNeural',
+                    input.out,
+                );
+                return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
+            }
+            case 'download_image': {
+                const r: MediaResult = await downloadImageByKeyword(a.keyword, input.out);
+                return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
+            }
+            case 'download_video': {
+                const r: MediaResult = await downloadVideoByKeyword(a.keyword, input.out);
+                return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
+            }
+            case 'remove_silence': {
+                if (!f)
+                    return {
+                        kind: task.kind,
+                        summary: task.summary,
+                        ok: false,
+                        detail: 'remove_silence needs an input file',
+                    };
+                const r = await removeSilence(f, input.out, { noise: a.noise, minDur: a.minDur });
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail,
+                    gate: await gate(r.output),
+                };
+            }
+            case 'detect_scenes': {
+                if (!f)
+                    return {
+                        kind: task.kind,
+                        summary: task.summary,
+                        ok: false,
+                        detail: 'detect_scenes needs an input file',
+                    };
+                const r = await detectScenes(f, input.out, { mode: a.mode ?? 'detect', duration: a.duration });
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail + (r.cuts ? ` (${r.cuts.length} cuts)` : ''),
+                };
+            }
+            case 'auto_reframe': {
+                if (!f)
+                    return {
+                        kind: task.kind,
+                        summary: task.summary,
+                        ok: false,
+                        detail: 'auto_reframe needs an input file',
+                    };
+                const r = await autoReframe(f, input.out, { preset: a.preset ?? a.aspect ?? '9:16' });
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail,
+                    gate: await gate(r.output),
+                };
+            }
+            case 'reduce_noise': {
+                if (!f)
+                    return {
+                        kind: task.kind,
+                        summary: task.summary,
+                        ok: false,
+                        detail: 'reduce_noise needs an input file',
+                    };
+                const r = await reduceNoise(f, input.out, {
+                    audio: a.strength ?? a.audio ?? 'medium',
+                    video: a.video ?? 0,
+                });
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail,
+                    gate: await gate(r.output),
+                };
+            }
+            case 'apply_brand_kit': {
+                if (!f)
+                    return {
+                        kind: task.kind,
+                        summary: task.summary,
+                        ok: false,
+                        detail: 'apply_brand_kit needs an input file',
+                    };
+                const r = await applyBrandKit(
+                    f,
+                    {
+                        name: a.name ?? a.handle,
+                        color: a.color,
+                        logo: a.logo,
+                        tagline: a.tagline,
+                        intro: a.intro,
+                        outro: a.outro,
+                        bars: a.bars,
+                    },
+                    input.out,
+                );
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: r.ok,
+                    output: r.output,
+                    detail: r.detail,
+                    gate: await gate(r.output),
+                };
+            }
+            case 'full_video': {
+                const res = await runAgenticPipeline({
+                    topic: a.topic || 'video',
+                    title: a.topic || 'Video',
+                    backend: 'agent',
+                    orientation: input.orientation ?? 'portrait',
+                });
+                const out = (res as any).outputPath ?? (res as any).manifest?.outputPath ?? res.workspace?.root;
+                return {
+                    kind: task.kind,
+                    summary: task.summary,
+                    ok: !!out,
+                    output: out,
+                    detail: `full video pipeline done (backend=${res.backend}, fullyAgentDriven=${res.fullyAgentDriven})`,
+                };
+            }
+            default:
+                return {
+                    kind: 'unknown',
+                    summary: task.summary,
+                    ok: false,
+                    detail: 'Could not classify the request into a single task.',
+                };
         }
-        case 'trim': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'trim needs an input file' };
-            const r = await trimVideo(f, input.out, a.start ?? 0, a.end);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
-        }
-        case 'crop': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'crop needs an input file' };
-            const r = await cropVideo(f, input.out, { preset: a.preset });
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
-        }
-        case 'resize': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'resize needs an input file' };
-            const r = await resizeVideo(f, input.out, a.w ?? 720, a.h ?? -2);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
-        }
-        case 'rotate': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'rotate needs an input file' };
-            const r = await rotateVideo(f, input.out, a.deg ?? 90);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
-        }
-        case 'extract_audio': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'extract_audio needs an input video' };
-            const r = await extractAudio(f, input.out);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
-        }
-        case 'split': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'split needs an input file' };
-            const r: SplitResult = a.parts ? await splitVideoEqual(f, a.parts, input.out) : await splitVideoAt(f, a.marks ?? [], input.out);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, outputs: r.outputs, detail: r.detail };
-        }
-        case 'add_captions': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'add_captions needs an input video' };
-            const r: CaptionResult = a.srt ? await addCaptionsFromSrt(f, a.srt, input.out) : await addCaptionsFromText(f, extra.text || a.text || '', input.out);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
-        }
-        case 'add_music': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'add_music needs an input video' };
-            const r: AudioTrackResult = await addMusic(f, extra.query || a.query || 'ambient lofi', input.out);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
-        }
-        case 'localize': {
-            if (!f && !(extra.text || a.text)) return { kind: task.kind, summary: task.summary, ok: false, detail: 'localize needs a video/srt or source text' };
-            const r: LocalizeResult = await localizeVideo(f ? f : null, extra.text || a.text || null, a.languages || ['es'], undefined, new AgentBrain());
-            return { kind: task.kind, summary: task.summary, ok: r.ok, outputs: r.outputs, detail: r.detail };
-        }
-        case 'grade': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'grade needs an input file' };
-            const r: GradeResult = await gradeVideo(f, a.preset || 'cinematic', input.out);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
-        }
-        case 'slow_motion': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'slow_motion needs an input file' };
-            const r: MotionResult = await slowMotion(f, a.factor ?? 2, input.out);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
-        }
-        case 'speed_ramp': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'speed_ramp needs an input file' };
-            const r: MotionResult = await speedRamp(f, a.rampStart ?? 1, a.rampEnd ?? 3, a.slowFactor ?? 3, input.out);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
-        }
-        case 'watermark': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'watermark needs an input file' };
-            const r: OverlayResult = await addWatermark(f, extra.label || a.label || 'MyBrand', input.out);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
-        }
-        case 'lower_third': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'lower_third needs an input file' };
-            const r: OverlayResult = await addLowerThird(f, extra.text || a.text || 'Title', input.out);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
-        }
-        case 'progress_bar': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'progress_bar needs an input file' };
-            const r: OverlayResult = await addProgressBar(f, input.out);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
-        }
-        case 'derive': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'derive needs an input file' };
-            const r: DerivativeResult = await deriveFromVideo(f, a.aspects || ['9:16', '16:9', '1:1'], a.thumbnail !== false, input.out ? path.dirname(input.out) : undefined);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, outputs: r.outputs, detail: r.detail };
-        }
-        case 'voiceover': {
-            const text = extra.text || a.text || '';
-            if (!text) return { kind: task.kind, summary: task.summary, ok: false, detail: 'voiceover needs text' };
-            const r: VoiceoverResult = await generateVoiceoverOnly(text.split(/(?:\n|;\s*)/).filter(Boolean), input.voice ?? 'en-US-AriaNeural', input.out);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
-        }
-        case 'download_image': {
-            const r: MediaResult = await downloadImageByKeyword(a.keyword, input.out);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
-        }
-        case 'download_video': {
-            const r: MediaResult = await downloadVideoByKeyword(a.keyword, input.out);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
-        }
-        case 'remove_silence': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'remove_silence needs an input file' };
-            const r = await removeSilence(f, input.out, { noise: a.noise, minDur: a.minDur });
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
-        }
-        case 'detect_scenes': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'detect_scenes needs an input file' };
-            const r = await detectScenes(f, input.out, { mode: a.mode ?? 'detect', duration: a.duration });
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail + (r.cuts ? ` (${r.cuts.length} cuts)` : '') };
-        }
-        case 'auto_reframe': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'auto_reframe needs an input file' };
-            const r = await autoReframe(f, input.out, { preset: a.preset ?? a.aspect ?? '9:16' });
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
-        }
-        case 'reduce_noise': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'reduce_noise needs an input file' };
-            const r = await reduceNoise(f, input.out, { audio: a.strength ?? a.audio ?? 'medium', video: a.video ?? 0 });
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
-        }
-        case 'apply_brand_kit': {
-            if (!f) return { kind: task.kind, summary: task.summary, ok: false, detail: 'apply_brand_kit needs an input file' };
-            const r = await applyBrandKit(f, { name: a.name ?? a.handle, color: a.color, logo: a.logo, tagline: a.tagline, intro: a.intro, outro: a.outro, bars: a.bars }, input.out);
-            return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail, gate: await gate(r.output) };
-        }
-        case 'full_video': {
-            const res = await runAgenticPipeline({ topic: a.topic || 'video', title: a.topic || 'Video', backend: 'agent', orientation: input.orientation ?? 'portrait' });
-            const out = (res as any).outputPath ?? (res as any).manifest?.outputPath ?? res.workspace?.root;
-            return { kind: task.kind, summary: task.summary, ok: !!out, output: out, detail: `full video pipeline done (backend=${res.backend}, fullyAgentDriven=${res.fullyAgentDriven})` };
-        }
-        default:
-            return { kind: 'unknown', summary: task.summary, ok: false, detail: 'Could not classify the request into a single task.' };
-    }
     } catch (err) {
         // Never let a single op crash doTask. Return a structured failure.
         const msg = err instanceof Error ? err.message : String(err);
@@ -244,10 +517,7 @@ async function runChain(chain: RoutedChain, input: RunInput): Promise<DispatchRe
 }
 
 /** Classify + dispatch in one call. Accepts a pre-classified RouteResult too. */
-export async function doTask(
-    promptOrRoute: string | RouteResult,
-    inputs: RunInput = {},
-): Promise<DispatchResult> {
+export async function doTask(promptOrRoute: string | RouteResult, inputs: RunInput = {}): Promise<DispatchResult> {
     const routed: RouteResult = typeof promptOrRoute === 'string' ? routeTask(promptOrRoute) : promptOrRoute;
     if (isChain(routed)) return runChain(routed, inputs);
     return runOne(routed, inputs);

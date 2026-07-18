@@ -1,222 +1,222 @@
 {
-  "version": "1.0.0",
-  "description": "Agentic Video Plugin Configuration - Enable/disable and configure plugins",
-  "plugins": [
-    {
-      "name": "punch-in",
-      "enabled": true,
-      "config": {
-        "autoEmphasis": true,
-        "imagesOnly": true,
-        "defaults": {
-          "scale": 1.35,
-          "dur": 0.6,
-          "easing": "ease-out"
+    "version": "1.0.0",
+    "description": "Agentic Video Plugin Configuration - Enable/disable and configure plugins",
+    "plugins": [
+        {
+            "name": "punch-in",
+            "enabled": true,
+            "config": {
+                "autoEmphasis": true,
+                "imagesOnly": true,
+                "defaults": {
+                    "scale": 1.35,
+                    "dur": 0.6,
+                    "easing": "ease-out"
+                }
+            }
+        },
+        {
+            "name": "ken-burns-pro",
+            "enabled": true,
+            "config": {
+                "intensity": 1.0,
+                "autoDirection": true
+            }
+        },
+        {
+            "name": "speed-ramp",
+            "enabled": false,
+            "config": {
+                "defaults": [
+                    { "t": 0, "speed": 1.0 },
+                    { "t": 0.5, "speed": 0.3 },
+                    { "t": 1.5, "speed": 1.0 }
+                ],
+                "easing": "bezier"
+            }
+        },
+        {
+            "name": "shake",
+            "enabled": false,
+            "config": {
+                "intensity": 0.02,
+                "frequency": 15
+            }
+        },
+        {
+            "name": "parallax",
+            "enabled": false,
+            "config": {}
+        },
+        {
+            "name": "lut-loader",
+            "enabled": true,
+            "config": {
+                "lutDir": "./assets/luts",
+                "defaultLUT": "cinematic.cube",
+                "intensity": 0.85
+            }
+        },
+        {
+            "name": "film-grain",
+            "enabled": false,
+            "config": {
+                "strength": 0.15,
+                "size": 1.0
+            }
+        },
+        {
+            "name": "halation",
+            "enabled": false,
+            "config": {
+                "threshold": 0.9,
+                "intensity": 0.3
+            }
+        },
+        {
+            "name": "color-wheels",
+            "enabled": false,
+            "config": {}
+        },
+        {
+            "name": "whip-pan",
+            "enabled": false,
+            "config": {
+                "direction": "left",
+                "blur": 50
+            }
+        },
+        {
+            "name": "glitch",
+            "enabled": false,
+            "config": {
+                "intensity": 1.0,
+                "rgbShift": 10
+            }
+        },
+        {
+            "name": "light-leak",
+            "enabled": false,
+            "config": {
+                "opacity": 0.6,
+                "mode": "screen"
+            }
+        },
+        {
+            "name": "morph-cut",
+            "enabled": false,
+            "config": {}
+        },
+        {
+            "name": "watermark",
+            "enabled": true,
+            "config": {
+                "image": "./assets/brand/watermark.png",
+                "position": "br",
+                "opacity": 0.7,
+                "scale": 0.12,
+                "margin": 20,
+                "animation": "fade-in",
+                "animDur": 1.0
+            }
+        },
+        {
+            "name": "dynamic-captions",
+            "enabled": true,
+            "config": {
+                "style": "karaoke",
+                "highlightColor": "yellow",
+                "boxColor": "black@0.6",
+                "fontSize": 42
+            }
+        },
+        {
+            "name": "typewriter",
+            "enabled": false,
+            "config": {
+                "speed": 30,
+                "cursor": true
+            }
+        },
+        {
+            "name": "safe-zones",
+            "enabled": true,
+            "config": {
+                "platforms": ["tiktok", "reels", "shorts"]
+            }
+        },
+        {
+            "name": "lower-third",
+            "enabled": false,
+            "config": {
+                "backgroundColor": "black@0.7",
+                "animation": "slide-up"
+            }
+        },
+        {
+            "name": "progress-bar",
+            "enabled": true,
+            "config": {
+                "color": "#FF0050",
+                "height": 4,
+                "position": "bottom"
+            }
+        },
+        {
+            "name": "beat-sync",
+            "enabled": false,
+            "config": {
+                "enabled": true,
+                "minCutInterval": 1.0,
+                "maxCutInterval": 4.0,
+                "syncTransitions": ["cut", "slide"]
+            }
+        },
+        {
+            "name": "audio-ducking",
+            "enabled": true,
+            "config": {
+                "duckLevel": -18,
+                "attack": 0.1,
+                "release": 0.3,
+                "threshold": -20
+            }
+        },
+        {
+            "name": "normalize-loudness",
+            "enabled": true,
+            "config": {
+                "targetLUFS": -14,
+                "truePeak": -1.5
+            }
+        },
+        {
+            "name": "ambience-layer",
+            "enabled": false,
+            "config": {
+                "volume": -24,
+                "track": "./assets/audio/ambience.wav"
+            }
+        },
+        {
+            "name": "genre-style",
+            "enabled": true,
+            "config": {
+                "genre": "reels",
+                "overrideConfig": true
+            }
+        },
+        {
+            "name": "platform-export",
+            "enabled": true,
+            "config": {
+                "platforms": ["tiktok", "reels", "shorts"],
+                "thumbnails": true,
+                "metadata": true,
+                "safeZones": true,
+                "codec": "h264",
+                "quality": "high"
+            }
         }
-      }
-    },
-    {
-      "name": "ken-burns-pro",
-      "enabled": true,
-      "config": {
-        "intensity": 1.0,
-        "autoDirection": true
-      }
-    },
-    {
-      "name": "speed-ramp",
-      "enabled": false,
-      "config": {
-        "defaults": [
-          { "t": 0, "speed": 1.0 },
-          { "t": 0.5, "speed": 0.3 },
-          { "t": 1.5, "speed": 1.0 }
-        ],
-        "easing": "bezier"
-      }
-    },
-    {
-      "name": "shake",
-      "enabled": false,
-      "config": {
-        "intensity": 0.02,
-        "frequency": 15
-      }
-    },
-    {
-      "name": "parallax",
-      "enabled": false,
-      "config": {}
-    },
-    {
-      "name": "lut-loader",
-      "enabled": true,
-      "config": {
-        "lutDir": "./assets/luts",
-        "defaultLUT": "cinematic.cube",
-        "intensity": 0.85
-      }
-    },
-    {
-      "name": "film-grain",
-      "enabled": false,
-      "config": {
-        "strength": 0.15,
-        "size": 1.0
-      }
-    },
-    {
-      "name": "halation",
-      "enabled": false,
-      "config": {
-        "threshold": 0.9,
-        "intensity": 0.3
-      }
-    },
-    {
-      "name": "color-wheels",
-      "enabled": false,
-      "config": {}
-    },
-    {
-      "name": "whip-pan",
-      "enabled": false,
-      "config": {
-        "direction": "left",
-        "blur": 50
-      }
-    },
-    {
-      "name": "glitch",
-      "enabled": false,
-      "config": {
-        "intensity": 1.0,
-        "rgbShift": 10
-      }
-    },
-    {
-      "name": "light-leak",
-      "enabled": false,
-      "config": {
-        "opacity": 0.6,
-        "mode": "screen"
-      }
-    },
-    {
-      "name": "morph-cut",
-      "enabled": false,
-      "config": {}
-    },
-    {
-      "name": "watermark",
-      "enabled": true,
-      "config": {
-        "image": "./assets/brand/watermark.png",
-        "position": "br",
-        "opacity": 0.7,
-        "scale": 0.12,
-        "margin": 20,
-        "animation": "fade-in",
-        "animDur": 1.0
-      }
-    },
-    {
-      "name": "dynamic-captions",
-      "enabled": true,
-      "config": {
-        "style": "karaoke",
-        "highlightColor": "yellow",
-        "boxColor": "black@0.6",
-        "fontSize": 42
-      }
-    },
-    {
-      "name": "typewriter",
-      "enabled": false,
-      "config": {
-        "speed": 30,
-        "cursor": true
-      }
-    },
-    {
-      "name": "safe-zones",
-      "enabled": true,
-      "config": {
-        "platforms": ["tiktok", "reels", "shorts"]
-      }
-    },
-    {
-      "name": "lower-third",
-      "enabled": false,
-      "config": {
-        "backgroundColor": "black@0.7",
-        "animation": "slide-up"
-      }
-    },
-    {
-      "name": "progress-bar",
-      "enabled": true,
-      "config": {
-        "color": "#FF0050",
-        "height": 4,
-        "position": "bottom"
-      }
-    },
-    {
-      "name": "beat-sync",
-      "enabled": false,
-      "config": {
-        "enabled": true,
-        "minCutInterval": 1.0,
-        "maxCutInterval": 4.0,
-        "syncTransitions": ["cut", "slide"]
-      }
-    },
-    {
-      "name": "audio-ducking",
-      "enabled": true,
-      "config": {
-        "duckLevel": -18,
-        "attack": 0.1,
-        "release": 0.3,
-        "threshold": -20
-      }
-    },
-    {
-      "name": "normalize-loudness",
-      "enabled": true,
-      "config": {
-        "targetLUFS": -14,
-        "truePeak": -1.5
-      }
-    },
-    {
-      "name": "ambience-layer",
-      "enabled": false,
-      "config": {
-        "volume": -24,
-        "track": "./assets/audio/ambience.wav"
-      }
-    },
-    {
-      "name": "genre-style",
-      "enabled": true,
-      "config": {
-        "genre": "reels",
-        "overrideConfig": true
-      }
-    },
-    {
-      "name": "platform-export",
-      "enabled": true,
-      "config": {
-        "platforms": ["tiktok", "reels", "shorts"],
-        "thumbnails": true,
-        "metadata": true,
-        "safeZones": true,
-        "codec": "h264",
-        "quality": "high"
-      }
-    }
-  ]
+    ]
 }

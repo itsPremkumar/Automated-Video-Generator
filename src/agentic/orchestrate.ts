@@ -41,12 +41,7 @@ import { PluginContext } from './plugins/core/types.js';
 import { generateAgenticVoiceovers } from './tts.js';
 import { createJob, updateJob, persistJob } from './job.js';
 import { AssetCandidate, AssetDecision, Plan, RenderManifest, assetId } from './types.js';
-import {
-    AgentBackendConfig,
-    AgenticBackend,
-    expandKeywordsHeuristic,
-    writeScriptHeuristic,
-} from './agent.js';
+import { AgentBackendConfig, AgenticBackend, expandKeywordsHeuristic, writeScriptHeuristic } from './agent.js';
 import { AgentBrain } from './brain.js';
 
 /** Hard-timeout wrapper for network/IO promises. A stalled fetch (no response,
@@ -56,13 +51,25 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         const t = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
         p.then(
-            (v) => { clearTimeout(t); resolve(v); },
-            (e) => { clearTimeout(t); reject(e); },
+            (v) => {
+                clearTimeout(t);
+                resolve(v);
+            },
+            (e) => {
+                clearTimeout(t);
+                reject(e);
+            },
         );
     });
 }
 
-const ffprobe: string = (() => { try { return require('ffprobe-static').path; } catch { return 'ffprobe'; } })();
+const ffprobe: string = (() => {
+    try {
+        return require('ffprobe-static').path;
+    } catch {
+        return 'ffprobe';
+    }
+})();
 
 /** Probe an audio file's duration (seconds) via ffprobe; fall back to estimate.
  *  Async with a hard timeout so a stalled ffprobe spawn can't block the run. */
@@ -71,16 +78,38 @@ export async function estimateAudioDurationSafe(p: string): Promise<number> {
         const { spawn } = require('child_process');
         const timeoutMs = Number(process.env.AGENTIC_FFPROBE_TIMEOUT_MS || 15000);
         const out = await new Promise<string>((resolve, reject) => {
-            const child = spawn(ffprobe, ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', p], { encoding: 'utf8' as const, stdio: ['pipe', 'pipe', 'pipe'] } as any);
+            const child = spawn(
+                ffprobe,
+                ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', p],
+                { encoding: 'utf8' as const, stdio: ['pipe', 'pipe', 'pipe'] } as any,
+            );
             let buf = '';
-            const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } reject(new Error('ffprobe timed out')); }, timeoutMs);
-            child.stdout?.on('data', (d: Buffer) => { buf += d.toString(); });
-            child.on('error', (e: Error) => { clearTimeout(t); reject(e); });
-            child.on('close', (code: number) => { clearTimeout(t); if (code !== 0) reject(new Error('ffprobe failed')); else resolve(buf); });
+            const t = setTimeout(() => {
+                try {
+                    child.kill('SIGKILL');
+                } catch {
+                    /* ignore */
+                }
+                reject(new Error('ffprobe timed out'));
+            }, timeoutMs);
+            child.stdout?.on('data', (d: Buffer) => {
+                buf += d.toString();
+            });
+            child.on('error', (e: Error) => {
+                clearTimeout(t);
+                reject(e);
+            });
+            child.on('close', (code: number) => {
+                clearTimeout(t);
+                if (code !== 0) reject(new Error('ffprobe failed'));
+                else resolve(buf);
+            });
         });
         const d = parseFloat(out.trim());
         if (!isNaN(d) && d > 0) return Math.ceil(d);
-    } catch { /* fall through */ }
+    } catch {
+        /* fall through */
+    }
     return 4;
 }
 
@@ -91,7 +120,11 @@ export async function estimateAudioDurationSafe(p: string): Promise<number> {
  */
 export function sourceFromUrl(url: string): string {
     let host = '';
-    try { host = new URL(url).hostname; } catch { return 'unknown'; }
+    try {
+        host = new URL(url).hostname;
+    } catch {
+        return 'unknown';
+    }
     if (host.includes('pexels')) return 'pexels';
     if (host.includes('pixabay')) return 'pixabay';
     if (host.includes('wikimedia') || host.includes('commons')) return 'wikimedia';
@@ -148,7 +181,7 @@ export interface PipelineResult {
 
 export interface PipelineProgress {
     stage: 'plan' | 'acquire' | 'verify' | 'decide' | 'gate' | 'voiceover' | 'render';
-    percent: number;       // 0-100 within stage
+    percent: number; // 0-100 within stage
     message: string;
     sceneIndex?: number;
     candidateIndex?: number;
@@ -173,8 +206,16 @@ export async function runAgenticPipeline(
     try {
         const pluginCfgPath = path.join(process.cwd(), 'agentic-plugins.config.json');
         let pluginCfg: any = { plugins: [] };
-        try { if (fs.existsSync(pluginCfgPath)) pluginCfg = JSON.parse(fs.readFileSync(pluginCfgPath, 'utf-8')); } catch { /* defaults */ }
-        const pctx = new PluginContext({ jobId, workspaceRoot: `./agentic-pipeline/workspaces/${jobId}`, config: pluginCfg });
+        try {
+            if (fs.existsSync(pluginCfgPath)) pluginCfg = JSON.parse(fs.readFileSync(pluginCfgPath, 'utf-8'));
+        } catch {
+            /* defaults */
+        }
+        const pctx = new PluginContext({
+            jobId,
+            workspaceRoot: `./agentic-pipeline/workspaces/${jobId}`,
+            config: pluginCfg,
+        });
         const preg = await createPluginRegistry(pctx);
         registerAllPlugins(preg, pluginCfg);
     } catch (e) {
@@ -194,19 +235,26 @@ export async function runAgenticPipeline(
     // ── STAGE 1: SCRIPT + PLAN (agent writes the script) ──────────────
     // AgentBrain makes the advanced decision (free model when configured),
     // falling back to the heuristic when offline / no key / model error.
-    const brain = new AgentBrain(cfg.brain ? { maxCalls: cfg.brain.maxCalls, maxFails: cfg.brain.maxFails } : undefined);
-    const brainScript = (cfg.writeScript ? await cfg.writeScript(req.topic, req.title) : null)
-        ?? (await brain.writeScript(req.topic, req.title))
-        ?? writeScriptHeuristic(req.topic, req.title);
+    const brain = new AgentBrain(
+        cfg.brain ? { maxCalls: cfg.brain.maxCalls, maxFails: cfg.brain.maxFails } : undefined,
+    );
+    const brainScript =
+        (cfg.writeScript ? await cfg.writeScript(req.topic, req.title) : null) ??
+        (await brain.writeScript(req.topic, req.title)) ??
+        writeScriptHeuristic(req.topic, req.title);
     const script = brainScript;
 
-    const plan = await buildPlan(script, {
-        jobId,
-        title: req.title,
-        orientation: req.orientation ?? 'portrait',
-        voice: req.voice,
-        musicQuery: req.musicQuery,
-    }, parseScript);
+    const plan = await buildPlan(
+        script,
+        {
+            jobId,
+            title: req.title,
+            orientation: req.orientation ?? 'portrait',
+            voice: req.voice,
+            musicQuery: req.musicQuery,
+        },
+        parseScript,
+    );
 
     // Pro-edit transforms (free): hook-first reorder + variable pacing.
     // Uses the agent brain's B3/B6 when a model is configured, else rule-based.
@@ -224,8 +272,7 @@ export async function runAgenticPipeline(
         const base = s.voiceoverText || s.searchKeywords.join(' ');
         s.searchKeywords = cfg.expandKeywords
             ? await cfg.expandKeywords(s, req.title)
-            : (await brain.expandKeywords(base, req.title))
-                ?? expandKeywordsHeuristic(s, req.title);
+            : ((await brain.expandKeywords(base, req.title)) ?? expandKeywordsHeuristic(s, req.title));
     }
     if (req.preferVisual) {
         for (const s of plan.scenes) s.visualPreference = req.preferVisual;
@@ -238,15 +285,26 @@ export async function runAgenticPipeline(
         plan.scenes.forEach((s, i) => {
             s.localAsset = req.localAssets![i % req.localAssets!.length];
         });
-        emit({ stage: 'plan', percent: 100, message: `Bound ${req.localAssets.length} local asset(s) to ${plan.scenes.length} scenes` });
+        emit({
+            stage: 'plan',
+            percent: 100,
+            message: `Bound ${req.localAssets.length} local asset(s) to ${plan.scenes.length} scenes`,
+        });
     }
     // C6: user-supplied video clips are bound per-scene and force video preference.
     if (req.videoClips && req.videoClips.length > 0) {
         plan.scenes.forEach((s, i) => {
             const clip = req.videoClips![i % req.videoClips!.length];
-            if (clip) { s.localAsset = path.basename(clip); s.visualPreference = 'video'; }
+            if (clip) {
+                s.localAsset = path.basename(clip);
+                s.visualPreference = 'video';
+            }
         });
-        emit({ stage: 'plan', percent: 100, message: `Bound ${req.videoClips.length} video clip(s) to ${plan.scenes.length} scenes` });
+        emit({
+            stage: 'plan',
+            percent: 100,
+            message: `Bound ${req.videoClips.length} video clip(s) to ${plan.scenes.length} scenes`,
+        });
     }
     // C2: user-supplied voiceover audio is bound per-scene (consumed in STAGE 2.5).
     if (req.personalAudio && req.personalAudio.length > 0) {
@@ -263,7 +321,15 @@ export async function runAgenticPipeline(
         return {
             backend,
             plan,
-            workspace: { jobId: 'dry-run', root: '', assetsDir: '', imagesDir: '', videosDir: '', musicDir: '', verificationDir: '' } as AgenticWorkspace,
+            workspace: {
+                jobId: 'dry-run',
+                root: '',
+                assetsDir: '',
+                imagesDir: '',
+                videosDir: '',
+                musicDir: '',
+                verificationDir: '',
+            } as AgenticWorkspace,
             candidates: [],
             decisions: [],
             gate: { pass: false, checks: [] },
@@ -283,9 +349,48 @@ export async function runAgenticPipeline(
     // Extract a clean search noun from the topic (drop numbers + stopwords like
     // "5 fascinating facts about") so the pool query is "coffee", not "5 fascinating
     // facts", which returns irrelevant/duplicate results.
-    const STOP = new Set(['a','an','the','of','for','to','and','or','in','on','with','about','facts','fact','benefits','benefit','how','what','why','tips','ways','things','5','3','10','top','best','amazing','fascinating','interesting','daily','changed','change','vs']);
-    const topicNoun = ((req.topic || plan.title || 'video') as string)
-        .toLowerCase().split(/\s+/).filter((w) => w && !STOP.has(w.replace(/[^a-z]/g, ''))).join(' ') || 'video';
+    const STOP = new Set([
+        'a',
+        'an',
+        'the',
+        'of',
+        'for',
+        'to',
+        'and',
+        'or',
+        'in',
+        'on',
+        'with',
+        'about',
+        'facts',
+        'fact',
+        'benefits',
+        'benefit',
+        'how',
+        'what',
+        'why',
+        'tips',
+        'ways',
+        'things',
+        '5',
+        '3',
+        '10',
+        'top',
+        'best',
+        'amazing',
+        'fascinating',
+        'interesting',
+        'daily',
+        'changed',
+        'change',
+        'vs',
+    ]);
+    const topicNoun =
+        ((req.topic || plan.title || 'video') as string)
+            .toLowerCase()
+            .split(/\s+/)
+            .filter((w) => w && !STOP.has(w.replace(/[^a-z]/g, '')))
+            .join(' ') || 'video';
     // (sharedImagePool declared earlier, per-run, at the top of the fn)
     // Video-first consistency: if any scene prefers video, build the shared pool
     // video-first (Pexels/Pixabay/Wikimedia/Archive video), then image as
@@ -304,31 +409,64 @@ export async function runAgenticPipeline(
         const DEAD_HOSTS = /flickr\.com|staticflickr\.com|live\.staticflickr/i;
         const seen = new Set<string>();
         const add = (url?: string) => {
-            if (url && !DEAD_HOSTS.test(url) && !seen.has(url)) { seen.add(url); sharedImagePool.push({ url }); }
+            if (url && !DEAD_HOSTS.test(url) && !seen.has(url)) {
+                seen.add(url);
+                sharedImagePool.push({ url });
+            }
         };
         // Try several query variants so a weak/empty topic noun still yields a
         // real, on-topic pool (e.g. "walking" -> "person walking" -> title).
         const variants = [topicNoun, `${topicNoun} photo`, (req.title || '').trim(), `person ${topicNoun}`]
-            .map((s) => s.trim()).filter(Boolean);
+            .map((s) => s.trim())
+            .filter(Boolean);
         // Pull from EVERY working provider. When preferVideo, lead with video
         // (Pexels/Pixabay/Wikimedia/Archive via fetchVisualsForScene(preferVideo=true)),
         // then image (searchImages + fetchVisualsForScene(false)). Otherwise image-first.
         for (const q of variants) {
             if (preferVideo) {
-                try { const r = await fetchVisualsForScene([q], true, plan.orientation); if (r) add(Array.isArray(r) ? r[0]?.url : r.url); } catch { /* next */ }
-                try { (await searchImages(q, 12, 2, plan.orientation, 1)).forEach((p) => add(p.url)); } catch { /* next */ }
-                try { const r = await fetchVisualsForScene([q], false, plan.orientation); if (r) add(Array.isArray(r) ? r[0]?.url : r.url); } catch { /* next */ }
+                try {
+                    const r = await fetchVisualsForScene([q], true, plan.orientation);
+                    if (r) add(Array.isArray(r) ? r[0]?.url : r.url);
+                } catch {
+                    /* next */
+                }
+                try {
+                    (await searchImages(q, 12, 2, plan.orientation, 1)).forEach((p) => add(p.url));
+                } catch {
+                    /* next */
+                }
+                try {
+                    const r = await fetchVisualsForScene([q], false, plan.orientation);
+                    if (r) add(Array.isArray(r) ? r[0]?.url : r.url);
+                } catch {
+                    /* next */
+                }
             } else {
-                try { (await searchImages(q, 12, 2, plan.orientation, 1)).forEach((p) => add(p.url)); } catch { /* next */ }
-                try { const r = await fetchVisualsForScene([q], false, plan.orientation); if (r) add(Array.isArray(r) ? r[0]?.url : r.url); } catch { /* next */ }
+                try {
+                    (await searchImages(q, 12, 2, plan.orientation, 1)).forEach((p) => add(p.url));
+                } catch {
+                    /* next */
+                }
+                try {
+                    const r = await fetchVisualsForScene([q], false, plan.orientation);
+                    if (r) add(Array.isArray(r) ? r[0]?.url : r.url);
+                } catch {
+                    /* next */
+                }
             }
             if (sharedImagePool.length >= 12) break;
         }
         if (sharedImagePool.length === 0) {
             try {
-                const res = await withTimeout(fetchVisualsForScene([topicNoun], preferVideo, plan.orientation), 12000, `fetchVisual[topicNoun]`);
+                const res = await withTimeout(
+                    fetchVisualsForScene([topicNoun], preferVideo, plan.orientation),
+                    12000,
+                    `fetchVisual[topicNoun]`,
+                );
                 if (res) add(Array.isArray(res) ? res[0]?.url : res.url);
-            } catch { /* ignore */ }
+            } catch {
+                /* ignore */
+            }
         }
         return sharedImagePool;
     };
@@ -346,15 +484,17 @@ export async function runAgenticPipeline(
                     // Derive the real source from the URL host so attribution in
                     // the output reflects the actual provider (not a hardcoded label).
                     const source = sourceFromUrl(pick.url);
-                    return [{
-                        url: pick.url,
-                        localPath: '',
-                        source,
-                        license: undefined,
-                        licenseUrl: undefined,
-                        width: 0,
-                        height: 0,
-                    }];
+                    return [
+                        {
+                            url: pick.url,
+                            localPath: '',
+                            source,
+                            license: undefined,
+                            licenseUrl: undefined,
+                            width: 0,
+                            height: 0,
+                        },
+                    ];
                 }
             }
             // Retry ladder: lead with the MOST-SPECIFIC keyword (longest phrase,
@@ -364,8 +504,8 @@ export async function runAgenticPipeline(
             // safe fallbacks come later only if the specific query yields nothing.
             const bySpecificity = [...keywords].sort((a, b) => b.length - a.length);
             const ladder = [bySpecificity, keywords];
-            if (keywords.length > 1) ladder.push([keywords[0]]);           // bare topic noun
- ladder.push([topicNoun || 'coffee', 'nature', 'city', 'technology'].slice(0, 1)); // topic-aware last resort
+            if (keywords.length > 1) ladder.push([keywords[0]]); // bare topic noun
+            ladder.push([topicNoun || 'coffee', 'nature', 'city', 'technology'].slice(0, 1)); // topic-aware last resort
             const seen = new Set<string>();
             for (const raw of ladder) {
                 const q = raw.filter(Boolean);
@@ -378,21 +518,30 @@ export async function runAgenticPipeline(
                     // same top result). The ladder's queries also lead with the
                     // scene's most-specific keyword for extra diversity.
                     const resultIndex = sceneIndex;
-                    const res = await withTimeout(fetchVisualsForScene(q, kind === 'video', orientation, undefined, resultIndex), 12000, `fetchVisual[${q.join(' ')}]`);
-                    const arr = !res ? [] : (Array.isArray(res) ? res : [res]);
+                    const res = await withTimeout(
+                        fetchVisualsForScene(q, kind === 'video', orientation, undefined, resultIndex),
+                        12000,
+                        `fetchVisual[${q.join(' ')}]`,
+                    );
+                    const arr = !res ? [] : Array.isArray(res) ? res : [res];
                     // Reject dead/flaky hosts (Flickr 5xx in this environment) so
                     // the ladder retries with a broader query instead of baking a
                     // 502-prone URL into the scene (which would become a black gap).
                     const DEAD_HOSTS = /flickr\.com|staticflickr\.com|live\.staticflickr/i;
-                    const usable = arr.filter((a) => a && typeof a.url === 'string' && a.url.length > 0 && !DEAD_HOSTS.test(a.url));
+                    const usable = arr.filter(
+                        (a) => a && typeof a.url === 'string' && a.url.length > 0 && !DEAD_HOSTS.test(a.url),
+                    );
                     if (usable.length > 0) {
-                        return usable.map((a) => ({
-                            url: a.url,
-                            localPath: '',
-                            source: 'openverse/pexels',
-                            license: a.license,
-                            licenseUrl: a.licenseUrl,
-                        } as FetchedVisual));
+                        return usable.map(
+                            (a) =>
+                                ({
+                                    url: a.url,
+                                    localPath: '',
+                                    source: 'openverse/pexels',
+                                    license: a.license,
+                                    licenseUrl: a.licenseUrl,
+                                }) as FetchedVisual,
+                        );
                     }
                 } catch (e) {
                     console.warn(`⚠ fetchVisual failed for "${q.join(' ')}": ${(e as Error).message}`);
@@ -401,18 +550,35 @@ export async function runAgenticPipeline(
             // Only as a true last resort: a branded (non-black) card so the
             // pipeline still renders something rather than a black frame.
             const ph = makePlaceholder(keywords, kind);
-            return [{ url: '', localPath: ph, source: 'placeholder', license: 'CC0 (generated placeholder)', licenseUrl: '' } as FetchedVisual];
+            return [
+                {
+                    url: '',
+                    localPath: ph,
+                    source: 'placeholder',
+                    license: 'CC0 (generated placeholder)',
+                    licenseUrl: '',
+                } as FetchedVisual,
+            ];
         },
         download: async (url, dir, filename) => {
             // P1b — default-visual fallback: if the user configured a
             // default.mp4/image in input/input-assets/, use it as the
             // last-resort visual when both fetch + pool fail (legacy behaviour).
             const useDefaultVisual = (): string => {
-                const local = require('path').join(dir, filename.replace(/(\.[^.]+)?$/, path.extname(req.defaultVisual || '.png')));
+                const local = require('path').join(
+                    dir,
+                    filename.replace(/(\.[^.]+)?$/, path.extname(req.defaultVisual || '.png')),
+                );
                 try {
                     const src = inputAssetPath(req.defaultVisual!);
-                    if (fs.existsSync(src)) { fs.mkdirSync(dir, { recursive: true }); fs.copyFileSync(src, local); return local; }
-                } catch { /* ignore */ }
+                    if (fs.existsSync(src)) {
+                        fs.mkdirSync(dir, { recursive: true });
+                        fs.copyFileSync(src, local);
+                        return local;
+                    }
+                } catch {
+                    /* ignore */
+                }
                 return '';
             };
             // Retry transient CDN/5xx errors (e.g. 502 from a flaky image host)
@@ -424,14 +590,20 @@ export async function runAgenticPipeline(
                 } catch (e) {
                     const isLast = attempt === 2;
                     if (isLast) {
-                        console.warn(`⚠ download failed for "${url}": ${(e as Error).message}. Using placeholder card.`);
+                        console.warn(
+                            `⚠ download failed for "${url}": ${(e as Error).message}. Using placeholder card.`,
+                        );
                         // Place the branded (non-black) card INSIDE dir so the
                         // render finds a real frame instead of a black gap.
                         const local = require('path').join(dir, filename.replace(/(\.[^.]+)?$/, '.png'));
                         const def = req.defaultVisual ? useDefaultVisual() : '';
                         if (!def) {
                             const ph = makePlaceholder([filename.replace(/\.[^.]+$/, '')], 'image');
-                            try { require('fs').copyFileSync(ph, local); } catch (e) { console.warn(`⚠ placeholder copy failed for ${filename}: ${(e as Error)?.message}`); }
+                            try {
+                                require('fs').copyFileSync(ph, local);
+                            } catch (e) {
+                                console.warn(`⚠ placeholder copy failed for ${filename}: ${(e as Error)?.message}`);
+                            }
                         }
                         return def || local;
                     }
@@ -442,7 +614,11 @@ export async function runAgenticPipeline(
             const def = req.defaultVisual ? useDefaultVisual() : '';
             if (!def) {
                 const ph = makePlaceholder([filename.replace(/\\.[^.]+$/, '')], 'image');
-                try { require('fs').copyFileSync(ph, local); } catch (e) { console.warn(`⚠ placeholder copy failed for ${filename}: ${(e as Error)?.message}`); }
+                try {
+                    require('fs').copyFileSync(ph, local);
+                } catch (e) {
+                    console.warn(`⚠ placeholder copy failed for ${filename}: ${(e as Error)?.message}`);
+                }
             }
             return def || local;
         },
@@ -454,8 +630,9 @@ export async function runAgenticPipeline(
                 // Fall back to a known-good local royalty-free track when the
                 // provider/cache returned nothing usable (offline / 404s).
                 if (!localPath) {
-                    const fallback = ['./input/music/twenty_minutes.mp3', './input/music/two_minutes.mp3']
-                        .find((p) => fs.existsSync(p));
+                    const fallback = ['./input/music/twenty_minutes.mp3', './input/music/two_minutes.mp3'].find((p) =>
+                        fs.existsSync(p),
+                    );
                     localPath = fallback ?? makePlaceholder([query], 'music');
                 }
                 // Agent-quality step: re-encode to a standards-compliant 128kbps
@@ -463,7 +640,14 @@ export async function runAgenticPipeline(
                 // is muxed into the final video. (The bundled track is ~32kbps.)
                 const normalized = normalizeAudio(localPath);
                 const finalPath = normalized && fs.existsSync(normalized) ? normalized : localPath;
-                if (finalPath) tracks.push({ url: '', localPath: finalPath, source: m?.track.provider ?? 'local', license: m?.track.license ?? 'CC-BY (assumed royalty-free)', licenseUrl: m?.track.licenseUrl ?? '' } as FetchedVisual);
+                if (finalPath)
+                    tracks.push({
+                        url: '',
+                        localPath: finalPath,
+                        source: m?.track.provider ?? 'local',
+                        license: m?.track.license ?? 'CC-BY (assumed royalty-free)',
+                        licenseUrl: m?.track.licenseUrl ?? '',
+                    } as FetchedVisual);
             }
             return tracks;
         },
@@ -474,7 +658,9 @@ export async function runAgenticPipeline(
     // score drops the candidate. When off / no model, acquire.ts ignores this.
     if (cfg.aiVerify?.enabled) {
         acquireDeps.cfg = cfg as any;
-        acquireDeps.brain = new AgentBrain(cfg.brain ? { maxCalls: cfg.brain.maxCalls, maxFails: cfg.brain.maxFails } : undefined);
+        acquireDeps.brain = new AgentBrain(
+            cfg.brain ? { maxCalls: cfg.brain.maxCalls, maxFails: cfg.brain.maxFails } : undefined,
+        );
     }
     const { workspace, candidates } = await acquireAssets(plan, acquireDeps, req.candidatesPerAsset ?? 2);
     emit({ stage: 'acquire', percent: 100, message: `Acquired ${candidates.length} candidates` });
@@ -490,8 +676,12 @@ export async function runAgenticPipeline(
     const vision = cfg.visionVerify
         ? cfg.visionVerify
         : backend === 'vision'
-          ? ((p: string, kw: string[]) => verifyMedia(p, kw))
-          : async () => ({ passes: true, confidence: 6, reason: 'agent backend: signal-only; visual relevance not AI-scored' });
+          ? (p: string, kw: string[]) => verifyMedia(p, kw)
+          : async () => ({
+                passes: true,
+                confidence: 6,
+                reason: 'agent backend: signal-only; visual relevance not AI-scored',
+            });
     const verifyDeps: VerifyDeps = {
         verifyImage: (p, kw) => vision(p, kw),
         verifyVideo: (p, kw) => vision(p, kw),
@@ -503,19 +693,31 @@ export async function runAgenticPipeline(
         ...verifyDeps,
         decide: async (c, v) => {
             // count already-approved in this scene for "pick best one" logic
-            const decisions = (readJson<AssetDecision[]>(workspace, 'approval-manifest.json') ?? []);
-            const approvedInScene = decisions.filter((d) => d.sceneIndex === c.sceneIndex && d.decision === 'approved').length;
+            const decisions = readJson<AssetDecision[]>(workspace, 'approval-manifest.json') ?? [];
+            const approvedInScene = decisions.filter(
+                (d) => d.sceneIndex === c.sceneIndex && d.decision === 'approved',
+            ).length;
             // agent decision logic lives in agent.ts (no external model needed)
             const { agentDecide } = await import('./agent.js');
             const result = agentDecide({ candidate: c, verification: v as any, approvedInScene });
-            emit({ stage: 'decide', percent: 50, message: `[s${c.sceneIndex} c${c.candidateIndex}] ${result.decision}`, sceneIndex: c.sceneIndex, candidateIndex: c.candidateIndex });
+            emit({
+                stage: 'decide',
+                percent: 50,
+                message: `[s${c.sceneIndex} c${c.candidateIndex}] ${result.decision}`,
+                sceneIndex: c.sceneIndex,
+                candidateIndex: c.candidateIndex,
+            });
             return result;
         },
     };
 
     emit({ stage: 'verify', percent: 100, message: 'Verification complete' });
     const { decisions } = await runGateway(plan, candidates, gatewayDeps);
-    emit({ stage: 'decide', percent: 100, message: `${decisions.filter((d) => d.decision === 'approved').length} assets approved` });
+    emit({
+        stage: 'decide',
+        percent: 100,
+        message: `${decisions.filter((d) => d.decision === 'approved').length} assets approved`,
+    });
     const manifest = readJson<RenderManifest>(workspace, 'render-manifest.json');
     const gate = runFinalGate(plan, candidates, decisions, manifest);
     emit({ stage: 'gate', percent: 100, message: gate.pass ? 'GATE PASS' : 'GATE FAIL' });
@@ -527,7 +729,11 @@ export async function runAgenticPipeline(
     let voiceovers: import('./tts.js').VoiceoverResult | null = null;
     if (gate.pass && manifest) {
         voiceovers = await generateAgenticVoiceovers(plan, workspace, req.voice);
-        emit({ stage: 'voiceover', percent: 100, message: `Voiceover ${voiceovers.voiceoverDriven ? 'generated' : 'fallback tones'}` });
+        emit({
+            stage: 'voiceover',
+            percent: 100,
+            message: `Voiceover ${voiceovers.voiceoverDriven ? 'generated' : 'fallback tones'}`,
+        });
         const voByScene = new Map(voiceovers.scenes.map((s) => [s.sceneIndex, s]));
         for (const a of manifest.assets) {
             if (a.kind === 'music') continue;
@@ -536,7 +742,10 @@ export async function runAgenticPipeline(
             // (the plan duration may differ); this keeps xfade offsets correct.
             if (a.kind === 'video' && a.localPath && fs.existsSync(a.localPath)) {
                 const vd = await estimateAudioDurationSafe(a.localPath);
-                if (vd > 0) { a.durationSec = vd; scene.durationSec = vd; }
+                if (vd > 0) {
+                    a.durationSec = vd;
+                    scene.durationSec = vd;
+                }
             }
             // C2: prefer user-supplied voiceover over generated TTS/tone.
             const pa = scene?.personalAudio ? inputAssetPath(scene.personalAudio) : undefined;
@@ -559,7 +768,9 @@ export async function runAgenticPipeline(
         writeJson(workspace, 'render-manifest.json', manifest);
         // Phase 11: full audit trail persisted as scene-data.json.
         writeJson(workspace, 'scene-data.json', {
-            jobId, title: req.title, backend,
+            jobId,
+            title: req.title,
+            backend,
             voiceoverDriven: voiceovers.voiceoverDriven,
             scenes: plan.scenes.map((s) => ({
                 sceneNumber: s.sceneNumber,
@@ -575,7 +786,11 @@ export async function runAgenticPipeline(
             generatedAt: new Date().toISOString(),
         });
         // PHASE 8/11: record gate outcome + persist audit.
-        updateJob(jobId, { gatePass: gate.pass, voiceoverDriven: voiceovers.voiceoverDriven, state: gate.pass ? 'awaiting_review' : 'failed' });
+        updateJob(jobId, {
+            gatePass: gate.pass,
+            voiceoverDriven: voiceovers.voiceoverDriven,
+            state: gate.pass ? 'awaiting_review' : 'failed',
+        });
         persistJob(jobRec);
     }
 
@@ -616,9 +831,22 @@ function runFfmpeg(args: string[], timeoutMs = 60000): Promise<number> {
         const { spawn } = require('child_process');
         const ffmpeg: string = require('ffmpeg-static');
         const child = spawn(ffmpeg, args, { stdio: 'ignore' });
-        const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* noop */ } resolve(-1); }, timeoutMs);
-        child.on('error', () => { clearTimeout(t); resolve(-1); });
-        child.on('close', (code: number | null) => { clearTimeout(t); resolve(code ?? -1); });
+        const t = setTimeout(() => {
+            try {
+                child.kill('SIGKILL');
+            } catch {
+                /* noop */
+            }
+            resolve(-1);
+        }, timeoutMs);
+        child.on('error', () => {
+            clearTimeout(t);
+            resolve(-1);
+        });
+        child.on('close', (code: number | null) => {
+            clearTimeout(t);
+            resolve(code ?? -1);
+        });
     });
 }
 
@@ -628,7 +856,6 @@ function runFfmpeg(args: string[], timeoutMs = 60000): Promise<number> {
  * solid card with the keyword text. Keeps the pipeline end-to-end even offline.
  */
 function makePlaceholder(keywords: string[], kind: 'image' | 'video' | 'music'): string {
-    
     const ffmpeg: string = require('ffmpeg-static');
     const { execFileSync } = require('child_process');
     const os = require('os');
@@ -637,10 +864,9 @@ function makePlaceholder(keywords: string[], kind: 'image' | 'video' | 'music'):
     if (kind === 'music') {
         // A real, royalty-free 8s tone (sine) at 44.1k/128k mp3-equivalent (aac in mp4).
         const p = base + '.wav';
-        execFileSync(ffmpeg, [
-            '-f', 'lavfi', '-i', 'sine=frequency=440:duration=8',
-            '-c:a', 'pcm_s16le', '-y', p,
-        ], { stdio: 'ignore' });
+        execFileSync(ffmpeg, ['-f', 'lavfi', '-i', 'sine=frequency=440:duration=8', '-c:a', 'pcm_s16le', '-y', p], {
+            stdio: 'ignore',
+        });
         return p;
     }
     const p = base + '.png';
@@ -650,11 +876,22 @@ function makePlaceholder(keywords: string[], kind: 'image' | 'video' | 'music'):
     // Escape apostrophes/quotes so the drawtext filtergraph (single-quoted text)
     // doesn't break on words like "today's" or "lion's".
     const safeLabel = label.replace(/'/g, '’').replace(/:/g, ' ').slice(0, 40);
-    execFileSync(ffmpeg, [
-        '-f', 'lavfi', '-i', `color=c=${color}:s=720x1280:d=0.1`,
-        '-vf', `drawtext=text='${safeLabel}':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2`,
-        '-frames:v', '1', '-y', p,
-    ], { stdio: 'ignore' });
+    execFileSync(
+        ffmpeg,
+        [
+            '-f',
+            'lavfi',
+            '-i',
+            `color=c=${color}:s=720x1280:d=0.1`,
+            '-vf',
+            `drawtext=text='${safeLabel}':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2`,
+            '-frames:v',
+            '1',
+            '-y',
+            p,
+        ],
+        { stdio: 'ignore' },
+    );
     return p;
 }
 
@@ -672,7 +909,7 @@ function normalizeAudio(src: string): string {
     // bundled/cached tracks are already standards-compliant.
     if (process.env.AGENTIC_NORMALIZE_MUSIC !== '1') return src;
     if (!src || !fs.existsSync(src)) return src;
-    
+
     const ffmpeg: string = require('ffmpeg-static');
     const { execFileSync } = require('child_process');
     const os = require('os');
@@ -714,22 +951,32 @@ async function buildSfxLayer(
             if (sp?.transitionOut) events.push({ atMs: Math.round(t + dur - 250), kind: sp.transitionOut });
             t += dur;
         }
-        const clips = await Promise.all(events.map((e) => resolveSfx(e.kind).then((c) => (c ? { atMs: e.atMs, path: c.localPath } : null))));
+        const clips = await Promise.all(
+            events.map((e) => resolveSfx(e.kind).then((c) => (c ? { atMs: e.atMs, path: c.localPath } : null))),
+        );
         const valid = clips.filter(Boolean) as { atMs: number; path: string }[];
         if (valid.length === 0) return null;
         const totalMs = t;
         // Mix all SFX onto one quiet bed aligned to the timeline via adelay.
-        const filter = valid
-            .map((c, i) => `[${i}:a]adelay=${c.atMs}|${c.atMs},volume=0.5[a${i}]`)
-            .join(';');
+        const filter = valid.map((c, i) => `[${i}:a]adelay=${c.atMs}|${c.atMs},volume=0.5[a${i}]`).join(';');
         const mix = valid.map((_, i) => `[a${i}]`).join('') + `amix=inputs=${valid.length}:duration=first[aout]`;
         const tmp = `${tmpDir}/_sfx_${Date.now()}.mp3`;
         const args = [
             ...valid.flatMap((c) => ['-i', c.path]),
-            '-filter_complex', `${filter};${mix}`,
-            '-t', (totalMs / 1000).toFixed(2), '-c:a', 'libmp3lame', '-y', tmp,
+            '-filter_complex',
+            `${filter};${mix}`,
+            '-t',
+            (totalMs / 1000).toFixed(2),
+            '-c:a',
+            'libmp3lame',
+            '-y',
+            tmp,
         ];
-        await new Promise<void>((res, rej) => require('child_process').execFile(ffmpeg, args, { maxBuffer: 1024 * 1024 * 200 }, (e: any) => (e ? rej(e) : res())));
+        await new Promise<void>((res, rej) =>
+            require('child_process').execFile(ffmpeg, args, { maxBuffer: 1024 * 1024 * 200 }, (e: any) =>
+                e ? rej(e) : res(),
+            ),
+        );
         return fs.existsSync(tmp) ? tmp : null;
     } catch {
         return null;
@@ -738,9 +985,24 @@ async function buildSfxLayer(
 
 export async function renderAgenticSlideshow(
     res: PipelineResult,
-    opts: { outPath?: string; crossfadeSec?: number; burnCaptions?: boolean; sfx?: boolean; transition?: string; preset?: string; kinetic?: boolean; kenBurns?: boolean; dimensions?: { w: number; h: number }; captions?: 'burned' | 'karaoke' | 'none'; intro?: { title: string; subtitle?: string; durationSec?: number }; outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number }; jCutSec?: number; aiVerify?: import('./config.js').AgenticConfig['aiVerify']; languages?: string[] } = {},
+    opts: {
+        outPath?: string;
+        crossfadeSec?: number;
+        burnCaptions?: boolean;
+        sfx?: boolean;
+        transition?: string;
+        preset?: string;
+        kinetic?: boolean;
+        kenBurns?: boolean;
+        dimensions?: { w: number; h: number };
+        captions?: 'burned' | 'karaoke' | 'none';
+        intro?: { title: string; subtitle?: string; durationSec?: number };
+        outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number };
+        jCutSec?: number;
+        aiVerify?: import('./config.js').AgenticConfig['aiVerify'];
+        languages?: string[];
+    } = {},
 ): Promise<string> {
-    
     const ffmpeg: string = require('ffmpeg-static');
     const { execFile, spawn } = require('child_process');
     // Pin a real font file so drawtext never touches fontconfig (which is broken
@@ -758,8 +1020,11 @@ export async function renderAgenticSlideshow(
     const FONT_ARG = FONT_FILE ? `fontfile='${FONT_FILE}':` : '';
     const outDir = res.workspace.root + '/render';
     fs.mkdirSync(outDir, { recursive: true });
-    const out = opts.outPath ?? (outDir + '/' + res.workspace.jobId + '.mp4');
-    if (!res.manifest) throw new Error('Cannot render: final gate did not produce a render manifest (gate.pass=' + res.gate.pass + ').');
+    const out = opts.outPath ?? outDir + '/' + res.workspace.jobId + '.mp4';
+    if (!res.manifest)
+        throw new Error(
+            'Cannot render: final gate did not produce a render manifest (gate.pass=' + res.gate.pass + ').',
+        );
 
     const visuals = res.manifest.assets.filter((a) => a.kind !== 'music');
     // The plan scene duration (variable pacing) is the authoritative per-scene
@@ -775,31 +1040,55 @@ export async function renderAgenticSlideshow(
 
     // ── Pro-edit: branded intro/outro title cards (cold-open + CTA close). ──
     // Generated as small standalone clips, then woven into the video chain.
-    const CARD_W = opts.dimensions?.w ?? 720, CARD_H = opts.dimensions?.h ?? 1280;
+    const CARD_W = opts.dimensions?.w ?? 720,
+        CARD_H = opts.dimensions?.h ?? 1280;
     const introClip = opts.intro ? outDir + '/_intro_' + res.workspace.jobId + '.mp4' : null;
     const outroClip = opts.outro ? outDir + '/_outro_' + res.workspace.jobId + '.mp4' : null;
-    const makeCard = async (outPath: string, title: string, subtitle: string | undefined, dur: number, bg: string, fg: string): Promise<void> => {
+    const makeCard = async (
+        outPath: string,
+        title: string,
+        subtitle: string | undefined,
+        dur: number,
+        bg: string,
+        fg: string,
+    ): Promise<void> => {
         const t = title.replace(/'/g, '’').replace(/:/g, '\\:');
         const s = (subtitle ?? '').replace(/'/g, '’').replace(/:/g, '\\:');
         const vf = [
             `color=c=${bg}:s=${CARD_W}x${CARD_H}:d=${dur}`,
             `drawtext=${FONT_ARG}text='${t}':fontcolor=${fg}:fontsize=58:box=1:boxcolor=${bg}@0.0:borderw=0:x=(w-text_w)/2:y=h/2-(text_h/2)${s ? `:fontsize=58` : ''}`,
             s ? `drawtext=${FONT_ARG}text='${s}':fontcolor=${fg}@0.8:fontsize=30:x=(w-text_w)/2:y=h/2+50` : '',
-        ].filter(Boolean).join(',');
+        ]
+            .filter(Boolean)
+            .join(',');
         await new Promise<void>((resolve, reject) => {
             const { execFile } = require('child_process');
-            execFile(ffmpeg, ['-f', 'lavfi', '-i', vf, '-t', String(dur), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-y', outPath],
-                (err: any, _stdout: string, stderr: string) => err ? reject(new Error('card render failed: ' + (stderr || '').trim())) : resolve());
+            execFile(
+                ffmpeg,
+                ['-f', 'lavfi', '-i', vf, '-t', String(dur), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-y', outPath],
+                (err: any, _stdout: string, stderr: string) =>
+                    err ? reject(new Error('card render failed: ' + (stderr || '').trim())) : resolve(),
+            );
         });
     };
-    if (introClip) await makeCard(introClip, opts.intro!.title, opts.intro!.subtitle, opts.intro!.durationSec ?? 2.5, '#2563EB', '#ffffff');
+    if (introClip)
+        await makeCard(
+            introClip,
+            opts.intro!.title,
+            opts.intro!.subtitle,
+            opts.intro!.durationSec ?? 2.5,
+            '#2563EB',
+            '#ffffff',
+        );
     if (outroClip) {
         const cta = (opts.outro!.ctaText || 'Subscribe').replace(/'/g, '’').replace(/:/g, '\\:');
         const tags = (opts.outro!.hashtags || []).join(' ');
-        const sub = (opts.outro!.showSubscribe ? 'Subscribe for more' : '') + (tags ? (opts.outro!.showSubscribe ? '  ' : '') + tags : '');
+        const sub =
+            (opts.outro!.showSubscribe ? 'Subscribe for more' : '') +
+            (tags ? (opts.outro!.showSubscribe ? '  ' : '') + tags : '');
         await makeCard(outroClip, cta, sub || undefined, opts.outro!.durationSec ?? 3, '#FF6B35', '#0a0a12');
     }
-    const introInputIdx = introClip ? visuals.length : -1;       // appended after scene inputs
+    const introInputIdx = introClip ? visuals.length : -1; // appended after scene inputs
     const outroInputIdx = outroClip ? visuals.length + (introClip ? 1 : 0) : -1;
 
     // ── Editing engine v1: compute the per-scene style plan (transitions,
@@ -823,7 +1112,7 @@ export async function renderAgenticSlideshow(
                 buf += d.toString();
                 const m = /time=(\d+):(\d+):(\d+\.\d+)/.exec(buf);
                 if (m && totalSec > 0) {
-                    const secs = (+m[1]) * 3600 + (+m[2]) * 60 + parseFloat(m[3]);
+                    const secs = +m[1] * 3600 + +m[2] * 60 + parseFloat(m[3]);
                     const pct = Math.min(99, Math.round((secs / totalSec) * 100));
                     if (pct !== lastPct) {
                         lastPct = pct;
@@ -856,7 +1145,13 @@ export async function renderAgenticSlideshow(
             const dur = a.durationSec ?? 4;
             const raw = a.captionSegments?.length
                 ? a.captionSegments
-                : [{ text: res.plan.scenes[a.sceneIndex]?.voiceoverText ?? '', startMs: 0, endMs: Math.round(dur * 1000) }];
+                : [
+                      {
+                          text: res.plan.scenes[a.sceneIndex]?.voiceoverText ?? '',
+                          startMs: 0,
+                          endMs: Math.round(dur * 1000),
+                      },
+                  ];
             const segs = chunkCues(raw);
             for (const s of segs) {
                 const start = t + s.startMs / 1000;
@@ -875,7 +1170,8 @@ export async function renderAgenticSlideshow(
     }
 
     // ── Each scene: scale+pad, optional Ken Burns zoom, color grade, hold for VO. ──
-    const W = opts.dimensions?.w ?? 720, H = opts.dimensions?.h ?? 1280;
+    const W = opts.dimensions?.w ?? 720,
+        H = opts.dimensions?.h ?? 1280;
     const sceneFilters = visuals.map((a, i) => {
         const dur = a.durationSec ?? 4;
         // Gentle Ken Burns zoom (spec 7.1). Comma inside the min() expression is
@@ -890,8 +1186,14 @@ export async function renderAgenticSlideshow(
     });
 
     // ── Intro/outro clip filters (already WxH; just normalise + trim). ──
-    if (introClip) sceneFilters.push(`[${introInputIdx}:v]fps=25,trim=duration=${opts.intro!.durationSec ?? 2.5},setpts=PTS-STARTPTS,settb=1/25,format=yuv420p[vintro]`);
-    if (outroClip) sceneFilters.push(`[${outroInputIdx}:v]fps=25,trim=duration=${opts.outro!.durationSec ?? 3},setpts=PTS-STARTPTS,settb=1/25,format=yuv420p[voutro]`);
+    if (introClip)
+        sceneFilters.push(
+            `[${introInputIdx}:v]fps=25,trim=duration=${opts.intro!.durationSec ?? 2.5},setpts=PTS-STARTPTS,settb=1/25,format=yuv420p[vintro]`,
+        );
+    if (outroClip)
+        sceneFilters.push(
+            `[${outroInputIdx}:v]fps=25,trim=duration=${opts.outro!.durationSec ?? 3},setpts=PTS-STARTPTS,settb=1/25,format=yuv420p[voutro]`,
+        );
 
     // ── Concat the scene videos with per-scene transitions from the style plan. ──
     // Weave intro (cold-open) and outro (CTA) into the ordered clip list.
@@ -902,9 +1204,18 @@ export async function renderAgenticSlideshow(
     // duration so the xfade timeline AND the expected-duration gate agree.
     const durOf = (a: { sceneIndex: number; durationSec?: number }): number =>
         (res.plan.scenes[a.sceneIndex] && res.plan.scenes[a.sceneIndex].durationSec) || a.durationSec || 4;
-    if (introClip) { orderedTags.push('vintro'); orderedDur.push(opts.intro!.durationSec ?? 2.5); }
-    for (let i = 0; i < visuals.length; i++) { orderedTags.push('v' + i); orderedDur.push(durOf(visuals[i])); }
-    if (outroClip) { orderedTags.push('voutro'); orderedDur.push(opts.outro!.durationSec ?? 3); }
+    if (introClip) {
+        orderedTags.push('vintro');
+        orderedDur.push(opts.intro!.durationSec ?? 2.5);
+    }
+    for (let i = 0; i < visuals.length; i++) {
+        orderedTags.push('v' + i);
+        orderedDur.push(durOf(visuals[i]));
+    }
+    if (outroClip) {
+        orderedTags.push('voutro');
+        orderedDur.push(opts.outro!.durationSec ?? 3);
+    }
 
     let videoChain: string;
     if (orderedTags.length === 1) {
@@ -941,7 +1252,9 @@ export async function renderAgenticSlideshow(
     }
 
     // C6: only loop IMAGE inputs (-loop 1); video clips stream natively.
-    const videoInputs = visuals.flatMap((v) => v.kind === 'image' ? ['-loop', '1', '-i', v.localPath] : ['-i', v.localPath]);
+    const videoInputs = visuals.flatMap((v) =>
+        v.kind === 'image' ? ['-loop', '1', '-i', v.localPath] : ['-i', v.localPath],
+    );
     if (introClip) videoInputs.push('-i', introClip);
     if (outroClip) videoInputs.push('-i', outroClip);
     const vfArgs = [...sceneFilters];
@@ -970,20 +1283,24 @@ export async function renderAgenticSlideshow(
                     const safe = wseg.word.replace(/'/g, '’').replace(/:/g, '\\:');
                     const out = `c${ci}`;
                     // current word highlighted yellow, rest of sentence dim white below
-                    vfArgs.push(`${ctag}drawtext=${FONT_ARG}text='${safe}':fontcolor=yellow:fontsize=38:box=1:boxcolor=black@0.55:boxborderw=12:x=(w-text_w)/2:y=h-text_h-140:enable='between(t\\,${start}\\,${end})'[${out}]`);
+                    vfArgs.push(
+                        `${ctag}drawtext=${FONT_ARG}text='${safe}':fontcolor=yellow:fontsize=38:box=1:boxcolor=black@0.55:boxborderw=12:x=(w-text_w)/2:y=h-text_h-140:enable='between(t\\,${start}\\,${end})'[${out}]`,
+                    );
                     ctag = `[${out}]`;
                     ci++;
                 }
             } else {
-                const segs = (a.captionSegments?.length
+                const segs = a.captionSegments?.length
                     ? a.captionSegments
-                    : [{ text: scText, startMs: 0, endMs: Math.round(dur * 1000) }]);
+                    : [{ text: scText, startMs: 0, endMs: Math.round(dur * 1000) }];
                 for (const s of segs) {
                     const start = (tBase + s.startMs / 1000).toFixed(2);
                     const end = (tBase + s.endMs / 1000).toFixed(2);
                     const safe = s.text.replace(/'/g, '’').replace(/:/g, '\\:').replace(/\\n/g, ' ');
                     const out = `c${ci}`;
-                    vfArgs.push(`${ctag}drawtext=${FONT_ARG}text='${safe}':fontcolor=white:fontsize=30:box=1:boxcolor=black@0.5:boxborderw=10:line_spacing=4:x=(w-text_w)/2:y=h-text_h-120:enable='between(t\\,${start}\\,${end})'[${out}]`);
+                    vfArgs.push(
+                        `${ctag}drawtext=${FONT_ARG}text='${safe}':fontcolor=white:fontsize=30:box=1:boxcolor=black@0.5:boxborderw=10:line_spacing=4:x=(w-text_w)/2:y=h-text_h-120:enable='between(t\\,${start}\\,${end})'[${out}]`,
+                    );
                     ctag = `[${out}]`;
                     ci++;
                 }
@@ -1000,7 +1317,11 @@ export async function renderAgenticSlideshow(
     // Apostrophes are swapped for ’ because drawtext breaks on bare single quotes.
     if (stylePlan && opts.kinetic !== false) {
         let t = introClip ? (opts.intro!.durationSec ?? 2.5) : 0; // start after the cold-open card
-        const sceneStarts = visuals.map((a) => { const s = t; t += (a.durationSec ?? 4); return s; });
+        const sceneStarts = visuals.map((a) => {
+            const s = t;
+            t += a.durationSec ?? 4;
+            return s;
+        });
         let ktag = videoMap;
         for (let i = 0; i < visuals.length; i++) {
             const base = sceneStarts[i];
@@ -1009,14 +1330,20 @@ export async function renderAgenticSlideshow(
                 const end = (base + cue.atSec + (cue.kind === 'wordpop' ? 0.9 : 2.6)).toFixed(2);
                 const safe = cue.text.replace(/'/g, '’').replace(/:/g, '\\:');
                 if (cue.kind === 'lowerthird') {
-                    vfArgs.push(`${ktag}drawtext=${FONT_ARG}text='${safe}':fontcolor=white:fontsize=34:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=h-text_h-90:enable='between(t\\,${start}\\,${end})'[k${i}]`);
+                    vfArgs.push(
+                        `${ktag}drawtext=${FONT_ARG}text='${safe}':fontcolor=white:fontsize=34:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=h-text_h-90:enable='between(t\\,${start}\\,${end})'[k${i}]`,
+                    );
                 } else {
-                    vfArgs.push(`${ktag}drawtext=${FONT_ARG}text='${safe}':fontcolor=yellow:fontsize=64:box=1:boxcolor=black@0.0:borderw=3:bordercolor=yellow:x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t\\,${start}\\,${end})'[k${i}]`);
+                    vfArgs.push(
+                        `${ktag}drawtext=${FONT_ARG}text='${safe}':fontcolor=yellow:fontsize=64:box=1:boxcolor=black@0.0:borderw=3:bordercolor=yellow:x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t\\,${start}\\,${end})'[k${i}]`,
+                    );
                 }
                 ktag = `[k${i}]`;
             }
         }
-        if (ktag !== videoMap) { videoMap = ktag; }
+        if (ktag !== videoMap) {
+            videoMap = ktag;
+        }
     }
     // Phase 2.3 — cinematic vignette over the final video chain.
     vfArgs.push(`${videoMap}vignette=PI/5[vig]`);
@@ -1046,7 +1373,9 @@ export async function renderAgenticSlideshow(
             const audioStart = Math.max(0, picStart - (i === 0 ? 0 : jCut));
             delayed.push(`[${base + i}:a]adelay=delays=${(audioStart * 1000).toFixed(0)}:all=1[a${i}]`);
         });
-        const mix = delayed.map((_, i) => `[a${i}]`).join('') + `amix=inputs=${voScenes.length}:duration=longest:normalize=0[aout];[aout]apad[aout2];[aout2]alimiter=limit=0.85:asc=1:level=disabled[aout]`;
+        const mix =
+            delayed.map((_, i) => `[a${i}]`).join('') +
+            `amix=inputs=${voScenes.length}:duration=longest:normalize=0[aout];[aout]apad[aout2];[aout2]alimiter=limit=0.85:asc=1:level=disabled[aout]`;
         audioFilter = [...delayed, mix].join(';');
         audioMap = ['-map', '[aout]'];
     }
@@ -1066,7 +1395,14 @@ export async function renderAgenticSlideshow(
         const segFiles: string[] = [];
         const ordered: { file: string; dur: number; kind: 'card' | 'scene'; idx: number }[] = [];
         if (introClip) ordered.push({ file: introClip, dur: introDur, kind: 'card', idx: -1 });
-        visuals.forEach((a, i) => ordered.push({ file: a.localPath, dur: res.plan.scenes[i]?.durationSec ?? a.durationSec ?? 4, kind: 'scene', idx: i }));
+        visuals.forEach((a, i) =>
+            ordered.push({
+                file: a.localPath,
+                dur: res.plan.scenes[i]?.durationSec ?? a.durationSec ?? 4,
+                kind: 'scene',
+                idx: i,
+            }),
+        );
         if (outroClip) ordered.push({ file: outroClip, dur: outroDur, kind: 'card', idx: -1 });
         // Segmented path has no crossfade, so expected = sum of all clip durations.
         expectedDur = Math.max(0.1, introDur + visuals.reduce((s, a) => s + (a.durationSec ?? 4), 0) + outroDur);
@@ -1085,8 +1421,19 @@ export async function renderAgenticSlideshow(
                 const a = visuals[clip.idx];
                 const raw = a.captionSegments?.length
                     ? a.captionSegments
-                    : [{ text: res.plan.scenes[a.sceneIndex]?.voiceoverText ?? '', startMs: 0, endMs: Math.round(dur * 1000) }];
-                const cues = chunkCues(raw).map((s, n) => `${n + 1}\n${fmtSrt(s.startMs / 1000)} --> ${fmtSrt(s.endMs / 1000)}\n${s.text.replace(/\n/g, ' ')}\n`).join('\n');
+                    : [
+                          {
+                              text: res.plan.scenes[a.sceneIndex]?.voiceoverText ?? '',
+                              startMs: 0,
+                              endMs: Math.round(dur * 1000),
+                          },
+                      ];
+                const cues = chunkCues(raw)
+                    .map(
+                        (s, n) =>
+                            `${n + 1}\n${fmtSrt(s.startMs / 1000)} --> ${fmtSrt(s.endMs / 1000)}\n${s.text.replace(/\n/g, ' ')}\n`,
+                    )
+                    .join('\n');
                 if (cues.trim()) {
                     const srRel = `agentic-pipeline/workspaces/${res.workspace.jobId}/render/_segsrt_${res.workspace.jobId}_${ci}.srt`;
                     const sr = path.resolve(process.cwd(), srRel).replace(/\\/g, '/');
@@ -1104,7 +1451,9 @@ export async function renderAgenticSlideshow(
                     const start = cue.atSec.toFixed(2);
                     const end = (cue.atSec + (cue.kind === 'wordpop' ? 0.9 : 2.6)).toFixed(2);
                     const safe = cue.text.replace(/'/g, '’').replace(/:/g, '\\:');
-                    kin.push(`drawtext=${FONT_ARG}text='${safe}':fontcolor=${cue.kind === 'wordpop' ? 'yellow' : 'white'}:fontsize=${cue.kind === 'wordpop' ? 64 : 34}:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=${cue.kind === 'wordpop' ? '(h-text_h)/2' : 'h-text_h-90'}:enable='between(t\\,${start}\\,${end})'`);
+                    kin.push(
+                        `drawtext=${FONT_ARG}text='${safe}':fontcolor=${cue.kind === 'wordpop' ? 'yellow' : 'white'}:fontsize=${cue.kind === 'wordpop' ? 64 : 34}:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=${cue.kind === 'wordpop' ? '(h-text_h)/2' : 'h-text_h-90'}:enable='between(t\\,${start}\\,${end})'`,
+                    );
                 }
             }
             const vfChain = `[0:v]${!isVideo ? 'loop=loop=-1:size=1,' : ''}fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${grade ? ',' + grade : ''},format=yuv420p,vignette=PI/5${segCaptionArg.length ? ',' + segCaptionArg.join(',') : ''}${kin.length ? ',' + kin.join(',') : ''}[v]`;
@@ -1121,14 +1470,35 @@ export async function renderAgenticSlideshow(
             const fc = vfChain + ';' + af;
             const args: string[] = [
                 ...inputs,
-                '-filter_complex', fc,
-                '-map', '[v]', '-map', '[a]',
-                '-t', String(dur), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', '25',
-                '-c:a', 'aac', '-shortest', '-y', seg,
+                '-filter_complex',
+                fc,
+                '-map',
+                '[v]',
+                '-map',
+                '[a]',
+                '-t',
+                String(dur),
+                '-c:v',
+                'libx264',
+                '-pix_fmt',
+                'yuv420p',
+                '-r',
+                '25',
+                '-c:a',
+                'aac',
+                '-shortest',
+                '-y',
+                seg,
             ];
             let lastErr: any;
             for (let attempt = 0; attempt < 3; attempt++) {
-                try { await runFfmpeg(args, dur); break; } catch (e) { lastErr = e; console.warn(`⚠ segment ${ci} attempt ${attempt + 1} failed, retrying`); }
+                try {
+                    await runFfmpeg(args, dur);
+                    break;
+                } catch (e) {
+                    lastErr = e;
+                    console.warn(`⚠ segment ${ci} attempt ${attempt + 1} failed, retrying`);
+                }
             }
             if (!fs.existsSync(seg)) throw lastErr ?? new Error(`segment ${ci} failed`);
             segFiles.push(seg);
@@ -1138,36 +1508,46 @@ export async function renderAgenticSlideshow(
         fs.writeFileSync(list, segFiles.map((f) => `file '${f.replace(/\\/g, '/')}'`).join('\n'), 'utf8');
         silent = outDir + '/_av_' + res.workspace.jobId + '.mp4';
         await new Promise<void>((resolve, reject) => {
-            execFile(ffmpeg, ['-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', silent],
-                (err: any) => err ? reject(new Error('concat failed: ' + err)) : resolve());
+            execFile(ffmpeg, ['-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', silent], (err: any) =>
+                err ? reject(new Error('concat failed: ' + err)) : resolve(),
+            );
         });
-    }
-
-    else {
-
-    // ── PASS 1: video (+ captions) and audio (voiceover) combined. ──
-    const introDur = introClip ? (opts.intro!.durationSec ?? 2.5) : 0;
-    const outroDur = outroClip ? (opts.outro!.durationSec ?? 3) : 0;
-    const scenesDur = visuals.reduce((s, a) => s + (a.durationSec ?? 4), 0);
-    // intro->first scene and last scene->outro are hard cuts (no xfade overlap).
-    const xfadeTransitions = (visuals.length + (introClip ? 1 : 0) + (outroClip ? 1 : 0) - 1) - (introClip ? 1 : 0) - (outroClip ? 1 : 0);
-    const xfadeOverlap = xfadeTransitions * xf;
-    const totalSec = Math.max(1, introDur + scenesDur + outroDur - xfadeOverlap);
-    expectedDur = totalSec;
-    silent = outDir + '/_av_' + res.workspace.jobId + '.mp4';
-    const pass1: string[] = [
-        ...videoInputs,
-        ...audioInputArgs,
-        '-filter_complex', [...vfArgs, ...(audioFilter ? [audioFilter] : [])].join(';'),
-        '-map', videoMap,
-        ...(audioMap.length ? audioMap : []),
-        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', '25',
-        ...(audioMap.length ? ['-c:a', 'aac', '-b:a', '128k'] : ['-an']),
-        '-t', totalSec.toFixed(2),
-        '-y', silent,
-    ];
-    if (process.env.DEBUG_FF) { console.error('FILTER_COMPLEX:\n' + [...vfArgs, ...(audioFilter ? [audioFilter] : [])].join(';\n')); }
-    await runFfmpeg(pass1, totalSec);
+    } else {
+        // ── PASS 1: video (+ captions) and audio (voiceover) combined. ──
+        const introDur = introClip ? (opts.intro!.durationSec ?? 2.5) : 0;
+        const outroDur = outroClip ? (opts.outro!.durationSec ?? 3) : 0;
+        const scenesDur = visuals.reduce((s, a) => s + (a.durationSec ?? 4), 0);
+        // intro->first scene and last scene->outro are hard cuts (no xfade overlap).
+        const xfadeTransitions =
+            visuals.length + (introClip ? 1 : 0) + (outroClip ? 1 : 0) - 1 - (introClip ? 1 : 0) - (outroClip ? 1 : 0);
+        const xfadeOverlap = xfadeTransitions * xf;
+        const totalSec = Math.max(1, introDur + scenesDur + outroDur - xfadeOverlap);
+        expectedDur = totalSec;
+        silent = outDir + '/_av_' + res.workspace.jobId + '.mp4';
+        const pass1: string[] = [
+            ...videoInputs,
+            ...audioInputArgs,
+            '-filter_complex',
+            [...vfArgs, ...(audioFilter ? [audioFilter] : [])].join(';'),
+            '-map',
+            videoMap,
+            ...(audioMap.length ? audioMap : []),
+            '-c:v',
+            'libx264',
+            '-pix_fmt',
+            'yuv420p',
+            '-r',
+            '25',
+            ...(audioMap.length ? ['-c:a', 'aac', '-b:a', '128k'] : ['-an']),
+            '-t',
+            totalSec.toFixed(2),
+            '-y',
+            silent,
+        ];
+        if (process.env.DEBUG_FF) {
+            console.error('FILTER_COMPLEX:\n' + [...vfArgs, ...(audioFilter ? [audioFilter] : [])].join(';\n'));
+        }
+        await runFfmpeg(pass1, totalSec);
     }
 
     // ── PASS 2: duck + mux background music + optional SFX under the voiceover. ──
@@ -1177,7 +1557,9 @@ export async function renderAgenticSlideshow(
             const { planSceneSfx } = await import('./sfx-selector.js');
             const sfxPlans = planSceneSfx(res.plan);
             sfxLayer = await buildSfxLayer(ffmpeg, res.plan, visuals, sfxPlans, outDir);
-        } catch { sfxLayer = null; }
+        } catch {
+            sfxLayer = null;
+        }
     }
     if (music && fs.existsSync(music.localPath)) {
         // Phase 4.1 — side-chain ducking: music dips to AUDIO_DUCK_LEVEL during
@@ -1196,9 +1578,21 @@ export async function renderAgenticSlideshow(
         }
         const pass2 = [
             ...inputs,
-            '-filter_complex', fc,
-            '-map', '0:v:0', '-map', '[aout]',
-            '-c:v', 'copy', '-c:a', 'aac', '-b:a', '128k', '-shortest', '-y', out,
+            '-filter_complex',
+            fc,
+            '-map',
+            '0:v:0',
+            '-map',
+            '[aout]',
+            '-c:v',
+            'copy',
+            '-c:a',
+            'aac',
+            '-b:a',
+            '128k',
+            '-shortest',
+            '-y',
+            out,
         ];
         await runFfmpeg(pass2);
         fs.rmSync(silent, { force: true });
@@ -1238,7 +1632,11 @@ function offsetFor(visuals: { durationSec?: number }[], i: number, xf: number): 
  * gating with gt() yields 1 when ANY segment is active. Music = full level
  * normally, ducked by (full-duck) during speech.
  */
-export function buildDuckExpression(visuals: { durationSec?: number; captionSegments?: { startMs: number; endMs: number }[] }[], full: number, duck: number): string | null {
+export function buildDuckExpression(
+    visuals: { durationSec?: number; captionSegments?: { startMs: number; endMs: number }[] }[],
+    full: number,
+    duck: number,
+): string | null {
     const segs: { s: number; e: number }[] = [];
     let t = 0;
     for (const a of visuals) {
@@ -1257,7 +1655,9 @@ export function buildDuckExpression(visuals: { durationSec?: number; captionSegm
  * into the next, and split segments longer than 8 words into readable chunks.
  * Guarantees a minimum 500ms display so cues don't flicker.
  */
-export function chunkCues(segs: { text: string; startMs: number; endMs: number }[]): { text: string; startMs: number; endMs: number }[] {
+export function chunkCues(
+    segs: { text: string; startMs: number; endMs: number }[],
+): { text: string; startMs: number; endMs: number }[] {
     if (!segs.length) return segs;
     // 1) merge tiny fragments into the following segment
     const merged: { text: string; startMs: number; endMs: number }[] = [];
@@ -1305,17 +1705,29 @@ function escapeFilterPath(p: string): string {
 }
 
 /** Phase 7.3 — emit thumbnail.jpg, subtitles sidecars, details.txt, scene-data copy. */
-async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: string, aiVerify?: import('./config.js').AgenticConfig['aiVerify'], languages?: string[]): Promise<void> {
+async function writeOutputArtifacts(
+    res: PipelineResult,
+    mp4: string,
+    outDir: string,
+    aiVerify?: import('./config.js').AgenticConfig['aiVerify'],
+    languages?: string[],
+): Promise<void> {
     const brain = new AgentBrain();
-    
+
     const base = outDir + '/' + res.workspace.jobId;
     try {
         await runFfmpeg(['-i', mp4, '-ss', '00:00:01', '-vframes', '1', '-y', base + '_thumbnail.jpg']);
-    } catch { /* thumbnail optional */ }
+    } catch {
+        /* thumbnail optional */
+    }
     // Copy caption sidecars next to the video.
     if (res.voiceovers?.sidecars) {
         for (const sc of res.voiceovers.sidecars) {
-            try { fs.copyFileSync(sc, base + '_' + sc.split(/[\\/]/).pop()); } catch { /* ignore */ }
+            try {
+                fs.copyFileSync(sc, base + '_' + sc.split(/[\\/]/).pop());
+            } catch {
+                /* ignore */
+            }
         }
     }
     // Tier-1 #2: multi-language subtitle sidecars. Translate the native SRT
@@ -1335,25 +1747,46 @@ async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: st
                     brain,
                 });
                 for (const p of out) {
-                    try { fs.copyFileSync(p, base + '_' + p.split(/[\\/]/).pop()); } catch { /* ignore */ }
+                    try {
+                        fs.copyFileSync(p, base + '_' + p.split(/[\\/]/).pop());
+                    } catch {
+                        /* ignore */
+                    }
                 }
-                if (out.length) console.log(`🌐 localized subtitles: ${out.length} language(s) -> ${out.map((p) => p.split(/[\\/]/).pop()).join(', ')}`);
+                if (out.length)
+                    console.log(
+                        `🌐 localized subtitles: ${out.length} language(s) -> ${out.map((p) => p.split(/[\\/]/).pop()).join(', ')}`,
+                    );
             } catch (e: any) {
                 console.warn(`⚠ subtitle localization skipped: ${e?.message ?? e}`);
             }
         }
     }
-    const hashtags = res.plan.scenes.flatMap((s) => s.searchKeywords).slice(0, 8).map((k) => '#' + k.replace(/\s+/g, '')).join(' ');
-    fs.writeFileSync(base + '_details.txt',
+    const hashtags = res.plan.scenes
+        .flatMap((s) => s.searchKeywords)
+        .slice(0, 8)
+        .map((k) => '#' + k.replace(/\s+/g, ''))
+        .join(' ');
+    fs.writeFileSync(
+        base + '_details.txt',
         `${res.plan.title}\n\n${res.plan.scenes.map((s) => `• ${s.voiceoverText}`).join('\n')}\n\n${hashtags}\n\nGenerated by agentic pipeline (backend=${res.backend}, voiceoverDriven=${res.voiceovers?.voiceoverDriven ?? false}).`,
-        'utf8');
+        'utf8',
+    );
 
     // ── FREE advanced exports (offline, $0) ──
     // Branded thumbnail from the first frame.
-    try { await renderThumbnail(mp4, res.plan); } catch { /* optional */ }
+    try {
+        await renderThumbnail(mp4, res.plan);
+    } catch {
+        /* optional */
+    }
     // Multi-aspect copies (9:16 + 16:9 + 1:1) for cross-platform publishing.
     let aspectPaths: string[] = [];
-    try { aspectPaths = await exportMultiAspect(mp4, ['9:16', '16:9', '1:1']); } catch { /* optional */ }
+    try {
+        aspectPaths = await exportMultiAspect(mp4, ['9:16', '16:9', '1:1']);
+    } catch {
+        /* optional */
+    }
     // Per-aspect AI check (X16 family): when verifyOnRender is on, score each
     // cropped export too, so a subject lost in a 9:16 crop is caught. A null
     // result (no model / offline) is ignored -> signal gates decide.
@@ -1363,13 +1796,18 @@ async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: st
             try {
                 const ai = await aiVerifyAsset(ap, 'video', keywords, { aiVerify } as any, brain);
                 if (ai && !ai.pass) console.warn(`⚠ ai(per-aspect ${ap}) failed: ${ai.reason} (conf ${ai.confidence})`);
-            } catch { /* optional */ }
+            } catch {
+                /* optional */
+            }
         }
     }
     // Social-ready metadata (B10 — agent brain produces richer title/
     // description when a free model is configured; heuristic fallback).
     try {
-        const brainMeta = await brain.generateMetadata(res.plan.title, res.plan.scenes.map((s) => s.voiceoverText));
+        const brainMeta = await brain.generateMetadata(
+            res.plan.title,
+            res.plan.scenes.map((s) => s.voiceoverText),
+        );
         let mTitle: string, mDesc: string, mHash: string, mTags: string;
         if (brainMeta) {
             mTitle = brainMeta.title;
@@ -1387,15 +1825,25 @@ async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: st
         // configured, else omitted). Appended so they're available to publish.
         let variantBlock = '';
         try {
-            const variants = await brain.titleVariants(res.plan.title, res.plan.scenes.map((s) => s.voiceoverText));
+            const variants = await brain.titleVariants(
+                res.plan.title,
+                res.plan.scenes.map((s) => s.voiceoverText),
+            );
             if (variants && variants.length) {
-                variantBlock = `\n\nA/B TITLE VARIANTS (CTR test):\n` + variants.map((v, i) => `  ${i + 1}. ${v}`).join('\n');
+                variantBlock =
+                    `\n\nA/B TITLE VARIANTS (CTR test):\n` + variants.map((v, i) => `  ${i + 1}. ${v}`).join('\n');
             }
-        } catch { /* optional */ }
-        fs.writeFileSync(base + '_metadata.txt',
+        } catch {
+            /* optional */
+        }
+        fs.writeFileSync(
+            base + '_metadata.txt',
             `TITLE:\n${mTitle}\n\nDESCRIPTION:\n${mDesc}\n\nHASHTAGS:\n${mHash}\n\nTAGS:\n${mTags}${variantBlock}`,
-            'utf8');
-    } catch { /* optional */ }
+            'utf8',
+        );
+    } catch {
+        /* optional */
+    }
 
     // ── Tier-3 #8: publish adapter — emit a publish manifest (+ optional
     //    YouTube upload helper). Zero-cost; never blocks the pipeline. ──
@@ -1411,7 +1859,9 @@ async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: st
             hashtags: fm.hashtags,
             languages: languages ?? [],
         });
-        console.log(`📤 publish manifest: ${manifest.targets.length} platform target(s) → ${res.workspace.jobId}_publish-manifest.json`);
+        console.log(
+            `📤 publish manifest: ${manifest.targets.length} platform target(s) → ${res.workspace.jobId}_publish-manifest.json`,
+        );
     } catch (e: any) {
         console.warn(`⚠ publish manifest skipped: ${e?.message ?? e}`);
     }
@@ -1420,13 +1870,17 @@ async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: st
     try {
         const arch = archiveJob(res.workspace, mp4);
         if (arch) console.log(`📦 archived ${arch.totalFiles} files (${arch.totalBytes} bytes) → ${arch.archiveDir}`);
-    } catch { /* archive is best-effort */ }
+    } catch {
+        /* archive is best-effort */
+    }
 
     // ── STAGE 16: open a client review thread for this draft ──
     try {
         openReview(res.workspace, res.workspace.jobId, res.plan.title);
         console.log(`🔍 review thread opened for "${res.plan.title}" — awaiting client approval`);
-    } catch { /* review thread is best-effort */ }
+    } catch {
+        /* review thread is best-effort */
+    }
 
     // ── Plugin post-render hooks (watermark, captions, transcodes, etc.) ──
     try {
@@ -1435,7 +1889,9 @@ async function writeOutputArtifacts(res: PipelineResult, mp4: string, outDir: st
             await reg.invokeOnPostRender(mp4);
             console.log(`🧩 plugin post-render hooks applied`);
         }
-    } catch { /* plugin hooks are best-effort */ }
+    } catch {
+        /* plugin hooks are best-effort */
+    }
 }
 
 /**
@@ -1456,13 +1912,15 @@ export async function makeContactSheet(res: PipelineResult): Promise<string | nu
         if (!c?.localPath || !fs.existsSync(c.localPath)) continue;
         if (c.kind === 'image') imgs.push(c.localPath);
         else if (c.kind === 'video') {
-     // Pull one early frame as a still. Use a tiny offset so it works even
-     // for very short clips (ss=0 can miss the first decodable frame).
-     const frame = `${os.tmpdir()}/cs_frame_${res.workspace.jobId}_${d.sceneIndex}.png`;
-     try {
-         await runFfmpeg(['-y', '-ss', '00:00:00.1', '-i', c.localPath, '-frames:v', '1', frame]);
-         if (fs.existsSync(frame)) imgs.push(frame);
-     } catch { /* skip unreadable video */ }
+            // Pull one early frame as a still. Use a tiny offset so it works even
+            // for very short clips (ss=0 can miss the first decodable frame).
+            const frame = `${os.tmpdir()}/cs_frame_${res.workspace.jobId}_${d.sceneIndex}.png`;
+            try {
+                await runFfmpeg(['-y', '-ss', '00:00:00.1', '-i', c.localPath, '-frames:v', '1', frame]);
+                if (fs.existsSync(frame)) imgs.push(frame);
+            } catch {
+                /* skip unreadable video */
+            }
         }
     }
     if (imgs.length === 0) return null;
@@ -1470,11 +1928,16 @@ export async function makeContactSheet(res: PipelineResult): Promise<string | nu
     const out = `${wsRoot}/contact-sheet.png`;
     try {
         await runFfmpeg([
-            '-y', ...imgs.flatMap((p) => ['-i', p]),
+            '-y',
+            ...imgs.flatMap((p) => ['-i', p]),
             '-filter_complex',
-            imgs.map((_, i) => `[${i}:v]scale=360:640[s${i}]`).join(';') + ';' +
-            imgs.map((_, i) => `[s${i}]`).join('') + `vstack=inputs=${imgs.length}`,
-            `-frames:v`, '1', out,
+            imgs.map((_, i) => `[${i}:v]scale=360:640[s${i}]`).join(';') +
+                ';' +
+                imgs.map((_, i) => `[s${i}]`).join('') +
+                `vstack=inputs=${imgs.length}`,
+            `-frames:v`,
+            '1',
+            out,
         ]);
         return fs.existsSync(out) ? out : null;
     } catch {
@@ -1501,7 +1964,8 @@ export function writeDecisionsReport(res: PipelineResult): string {
     for (const d of res.decisions) {
         const c = res.candidates.find((x) => assetId(x.kind, x.sceneIndex, x.candidateIndex) === d.assetId);
         const path = c?.localPath ?? '(none)';
-        const verdict = d.decision === 'approved' ? '✅ APPROVED' : d.decision === 'rejected' ? '❌ REJECTED' : '🔁 REPLACED';
+        const verdict =
+            d.decision === 'approved' ? '✅ APPROVED' : d.decision === 'rejected' ? '❌ REJECTED' : '🔁 REPLACED';
         lines.push(`[${verdict}] ${d.kind} scene#${d.sceneIndex} -> ${path}`);
         lines.push(`    decision by: ${d.decidedBy} | rationale: ${d.rationale}`);
     }
@@ -1523,11 +1987,21 @@ export function writeDecisionsReport(res: PipelineResult): string {
  */
 export async function renderAgenticWithRemotion(
     res: PipelineResult,
-    opts: { brand?: { primaryColor?: string; accentColor?: string; fontFamily?: string; logoPath?: string }; intro?: { title: string; subtitle?: string; durationSec?: number }; outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number }; kenBurns?: boolean; quality?: 'draft' | 'medium' | 'high'; preset?: string; kinetic?: boolean; dimensions?: { w: number; h: number }; crossfadeSec?: number; aiVerify?: import('./config.js').AgenticConfig['aiVerify'] } = {},
+    opts: {
+        brand?: { primaryColor?: string; accentColor?: string; fontFamily?: string; logoPath?: string };
+        intro?: { title: string; subtitle?: string; durationSec?: number };
+        outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number };
+        kenBurns?: boolean;
+        quality?: 'draft' | 'medium' | 'high';
+        preset?: string;
+        kinetic?: boolean;
+        dimensions?: { w: number; h: number };
+        crossfadeSec?: number;
+        aiVerify?: import('./config.js').AgenticConfig['aiVerify'];
+    } = {},
 ): Promise<string> {
-     
     const { bundle } = require('@remotion/bundler');
-     
+
     const { renderMedia, selectComposition } = require('@remotion/renderer');
     const fs = require('fs');
     const os = require('os');
@@ -1560,16 +2034,33 @@ export async function renderAgenticWithRemotion(
             if (a.kind === 'video' && /\.(mp4|webm|mov|m4v)$/i.test(src) && fs.existsSync(src)) {
                 // Downscale + normalize so Chrome renders light.
                 const code = await runFfmpeg([
-                    '-i', src, '-vf', `scale=-2:${targetH}`, '-c:v', 'libx264',
-                    '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-crf', '23',
-                    '-c:a', 'aac', '-y', dest,
+                    '-i',
+                    src,
+                    '-vf',
+                    `scale=-2:${targetH}`,
+                    '-c:v',
+                    'libx264',
+                    '-pix_fmt',
+                    'yuv420p',
+                    '-preset',
+                    'veryfast',
+                    '-crf',
+                    '23',
+                    '-c:a',
+                    'aac',
+                    '-y',
+                    dest,
                 ]);
                 if (code !== 0) fs.copyFileSync(src, dest);
             } else {
                 fs.copyFileSync(src, dest);
             }
         } catch {
-            try { fs.copyFileSync(src, dest); } catch { continue; }
+            try {
+                fs.copyFileSync(src, dest);
+            } catch {
+                continue;
+            }
         }
         let audioRel: string | undefined;
         if (a.audioPath && fs.existsSync(a.audioPath)) {
@@ -1614,7 +2105,8 @@ export async function renderAgenticWithRemotion(
         30,
         (assetsForComposition.filter((a) => a.kind !== 'music').reduce((s, a) => s + (a.durationSec ?? 4), 0) +
             (opts.intro?.durationSec ?? 0) +
-            (opts.outro?.durationSec ?? 0)) * fps,
+            (opts.outro?.durationSec ?? 0)) *
+            fps,
     );
 
     const bundleLoc = await bundle(path.resolve(process.cwd(), 'remotion/index.ts'), () => undefined, {
@@ -1625,7 +2117,11 @@ export async function renderAgenticWithRemotion(
     const crf = opts.quality === 'high' ? 18 : opts.quality === 'draft' ? 28 : 23;
     const renderOne = async (w: number | undefined, h: number | undefined, suffix: string): Promise<string> => {
         const aspectProps = { ...inputProps, width: w, height: h };
-        const composition = await selectComposition({ serveUrl: bundleLoc, id: 'AgenticVideo', inputProps: aspectProps });
+        const composition = await selectComposition({
+            serveUrl: bundleLoc,
+            id: 'AgenticVideo',
+            inputProps: aspectProps,
+        });
         const out = outDir + '/' + res.workspace.jobId + '_remotion' + suffix + '.mp4';
         await renderMedia({
             composition,

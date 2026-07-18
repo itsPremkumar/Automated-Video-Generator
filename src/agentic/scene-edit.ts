@@ -40,7 +40,9 @@ export function readPlan(ws: AgenticWorkspace): Plan {
 
 function writePlan(ws: AgenticWorkspace, plan: Plan): Plan {
     // Keep sceneNumber sequential after any structural edit.
-    plan.scenes.forEach((s, i) => { s.sceneNumber = i + 1; });
+    plan.scenes.forEach((s, i) => {
+        s.sceneNumber = i + 1;
+    });
     plan.totalDurationSec = plan.scenes.reduce((acc, s) => acc + (s.durationSec || 0), 0);
     writeJson(ws, 'plan.json', plan);
     return plan;
@@ -64,8 +66,13 @@ export function deleteScene(ws: AgenticWorkspace, index: number): Plan {
     plan.scenes.splice(index, 1);
     // Also drop that scene's candidates so the render manifest stays consistent.
     const cands = readJson<AssetCandidate[]>(ws, 'candidates.json') ?? [];
-    writeJson(ws, 'candidates.json', cands.filter((c) => c.sceneIndex !== index)
-        .map((c) => (c.sceneIndex > index ? { ...c, sceneIndex: c.sceneIndex - 1 } : c)));
+    writeJson(
+        ws,
+        'candidates.json',
+        cands
+            .filter((c) => c.sceneIndex !== index)
+            .map((c) => (c.sceneIndex > index ? { ...c, sceneIndex: c.sceneIndex - 1 } : c)),
+    );
     return writePlan(ws, plan);
 }
 
@@ -73,7 +80,9 @@ export function deleteScene(ws: AgenticWorkspace, index: number): Plan {
 export function updateScene(
     ws: AgenticWorkspace,
     index: number,
-    patch: Partial<Pick<ScenePlan, 'voiceoverText' | 'searchKeywords' | 'durationSec' | 'localAsset' | 'visualPreference'>>,
+    patch: Partial<
+        Pick<ScenePlan, 'voiceoverText' | 'searchKeywords' | 'durationSec' | 'localAsset' | 'visualPreference'>
+    >,
     ai?: { aiVerify?: import('./config.js').AgenticConfig['aiVerify']; brain?: import('./brain.js').AgentBrain },
 ): Plan {
     const plan = readPlan(ws);
@@ -91,10 +100,26 @@ export function updateScene(
     if (ai?.aiVerify?.verifyOnEdit && ai.brain && scene.localAsset) {
         const fp = resolveLocalAssetPath(scene.localAsset);
         if (fp) {
-            const kind = /\.(mp4|mov|webm|m4v)$/i.test(fp) ? 'video' : /\.(mp3|wav|ogg|m4a)$/i.test(fp) ? 'audio' : 'image';
-            import('./ai-verify.js').then((m) => m.aiVerifyAsset(fp, kind, scene.searchKeywords ?? [], { aiVerify: ai.aiVerify } as any, ai.brain!))
-                .then((score) => { if (score) (scene as any).aiVerified = { pass: score.pass, confidence: score.confidence, reason: score.reason }; })
-                .catch(() => { /* ignore */ });
+            const kind = /\.(mp4|mov|webm|m4v)$/i.test(fp)
+                ? 'video'
+                : /\.(mp3|wav|ogg|m4a)$/i.test(fp)
+                  ? 'audio'
+                  : 'image';
+            import('./ai-verify.js')
+                .then((m) =>
+                    m.aiVerifyAsset(fp, kind, scene.searchKeywords ?? [], { aiVerify: ai.aiVerify } as any, ai.brain!),
+                )
+                .then((score) => {
+                    if (score)
+                        (scene as any).aiVerified = {
+                            pass: score.pass,
+                            confidence: score.confidence,
+                            reason: score.reason,
+                        };
+                })
+                .catch(() => {
+                    /* ignore */
+                });
         }
     }
     return writePlan(ws, plan);
@@ -105,7 +130,11 @@ export function updateScene(
  * The new scene is appended at `index` (default: end) with a localAsset or
  * empty keywords so the next acquire can fill it.
  */
-export function insertScene(ws: AgenticWorkspace, scene: Partial<ScenePlan> & { voiceoverText: string }, index?: number): Plan {
+export function insertScene(
+    ws: AgenticWorkspace,
+    scene: Partial<ScenePlan> & { voiceoverText: string },
+    index?: number,
+): Plan {
     const plan = readPlan(ws);
     const built: ScenePlan = {
         sceneNumber: 0,

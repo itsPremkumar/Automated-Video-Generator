@@ -20,8 +20,8 @@ interface SpeedRampConfig {
 }
 
 interface SpeedRampPoint {
-    t: number;      // Time in seconds from scene start
-    speed: number;  // 1.0 = normal, 0.5 = half speed, 2.0 = double
+    t: number; // Time in seconds from scene start
+    speed: number; // 1.0 = normal, 0.5 = half speed, 2.0 = double
 }
 
 const DEFAULT_CONFIG: Required<SpeedRampConfig> = {
@@ -34,10 +34,26 @@ const DEFAULT_CONFIG: Required<SpeedRampConfig> = {
 
 /** Preset speed ramp patterns */
 export const SPEED_RAMP_PRESETS = {
-    cinematic: [{ t: 0, speed: 1.0 }, { t: 0.5, speed: 0.3 }, { t: 1.5, speed: 1.0 }] as SpeedRampPoint[],
-    action: [{ t: 0, speed: 1.0 }, { t: 0.8, speed: 2.5 }, { t: 1.2, speed: 1.0 }] as SpeedRampPoint[],
-    reveal: [{ t: 0, speed: 0.25 }, { t: 2.0, speed: 1.0 }] as SpeedRampPoint[],
-    punch: [{ t: 0, speed: 1.0 }, { t: 0.3, speed: 0.2 }, { t: 0.8, speed: 1.5 }, { t: 1.2, speed: 1.0 }] as SpeedRampPoint[],
+    cinematic: [
+        { t: 0, speed: 1.0 },
+        { t: 0.5, speed: 0.3 },
+        { t: 1.5, speed: 1.0 },
+    ] as SpeedRampPoint[],
+    action: [
+        { t: 0, speed: 1.0 },
+        { t: 0.8, speed: 2.5 },
+        { t: 1.2, speed: 1.0 },
+    ] as SpeedRampPoint[],
+    reveal: [
+        { t: 0, speed: 0.25 },
+        { t: 2.0, speed: 1.0 },
+    ] as SpeedRampPoint[],
+    punch: [
+        { t: 0, speed: 1.0 },
+        { t: 0.3, speed: 0.2 },
+        { t: 0.8, speed: 1.5 },
+        { t: 1.2, speed: 1.0 },
+    ] as SpeedRampPoint[],
     timelapse: [{ t: 0, speed: 8.0 }] as SpeedRampPoint[],
     slowmo: [{ t: 0, speed: 0.125 }] as SpeedRampPoint[],
 };
@@ -51,10 +67,7 @@ export const speedRampPlugin: AgenticPlugin = {
         tags: ['speed', 'slowmo', 'timelapse', 'remap', 'bezier'],
     },
 
-    capabilities: [
-        Capability.MOTION_KEYFRAMES,
-        Capability.TIME_REMAP,
-    ],
+    capabilities: [Capability.MOTION_KEYFRAMES, Capability.TIME_REMAP],
 
     category: PluginCategory.MOTION,
 
@@ -92,10 +105,12 @@ export const speedRampPlugin: AgenticPlugin = {
 };
 
 function normalizeRamp(points: SpeedRampPoint[], duration: number, cfg: Required<SpeedRampConfig>): SpeedRampPoint[] {
-    return points.map(p => ({
-        t: Math.max(0, Math.min(p.t, duration)),
-        speed: Math.max(cfg.minSpeed, Math.min(cfg.maxSpeed, p.speed)),
-    })).sort((a, b) => a.t - b.t);
+    return points
+        .map((p) => ({
+            t: Math.max(0, Math.min(p.t, duration)),
+            speed: Math.max(cfg.minSpeed, Math.min(cfg.maxSpeed, p.speed)),
+        }))
+        .sort((a, b) => a.t - b.t);
 }
 
 function buildSetptsExpression(ramp: SpeedRampPoint[], duration: number): string | null {

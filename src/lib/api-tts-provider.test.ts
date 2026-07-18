@@ -98,10 +98,7 @@ test('generateVoiceoverWithVoicebox posts to /speak, polls status, downloads aud
 test('generateVoiceoverWithVoicebox throws when no profile is configured', async () => {
     delete process.env.VOICEBOX_PROFILE_ID;
     const testFile = path.join(tempOutputDir, 'voicebox-noprofile.wav');
-    await assert.rejects(
-        generateVoiceoverWithVoicebox('Hello', testFile, 'en'),
-        /requires a voice profile/i,
-    );
+    await assert.rejects(generateVoiceoverWithVoicebox('Hello', testFile, 'en'), /requires a voice profile/i);
 });
 
 test('generateVoiceoverWithXtts tries multiple endpoints and writes file', async () => {

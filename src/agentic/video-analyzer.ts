@@ -17,12 +17,20 @@
 
 import fs from 'fs';
 
-export interface BlackFrame { start: number; end: number; duration: number }
-export interface FreezeFrame { start: number; end: number; duration: number }
+export interface BlackFrame {
+    start: number;
+    end: number;
+    duration: number;
+}
+export interface FreezeFrame {
+    start: number;
+    end: number;
+    duration: number;
+}
 export interface AudioAnalysis {
-    peakDb: number;     // max sample peak in dB (from volumedetect)
+    peakDb: number; // max sample peak in dB (from volumedetect)
     meanVolumeDb: number;
-    clipping: boolean;  // true peak >= -1.0 dBFS (digital clipping risk)
+    clipping: boolean; // true peak >= -1.0 dBFS (digital clipping risk)
 }
 
 /** Run an ffmpeg/ffprobe command asynchronously; returns combined stdout+stderr.
@@ -35,15 +43,42 @@ function runCli(bin: string, args: string[], timeoutMs?: number): Promise<string
             const child = spawn(bin, args, { stdio: ['pipe', 'pipe', 'pipe'] } as any);
             let out = '';
             let err = '';
-            let outEnd = false, errEnd = false;
-            const finish = () => { clearTimeout(t); resolve(out + '\n' + err); };
-            const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } resolve(out + '\n' + err); }, ms);
-            child.stdout?.on('data', (d: Buffer) => { out += d.toString(); });
-            child.stderr?.on('data', (d: Buffer) => { err += d.toString(); });
-            child.stdout?.on('end', () => { outEnd = true; if (outEnd && errEnd) finish(); });
-            child.stderr?.on('end', () => { errEnd = true; if (outEnd && errEnd) finish(); });
-            child.on('error', () => { clearTimeout(t); resolve(out + '\n' + err); });
-            child.on('close', () => { if (outEnd && errEnd) finish(); else setTimeout(finish, 50); });
+            let outEnd = false,
+                errEnd = false;
+            const finish = () => {
+                clearTimeout(t);
+                resolve(out + '\n' + err);
+            };
+            const t = setTimeout(() => {
+                try {
+                    child.kill('SIGKILL');
+                } catch {
+                    /* ignore */
+                }
+                resolve(out + '\n' + err);
+            }, ms);
+            child.stdout?.on('data', (d: Buffer) => {
+                out += d.toString();
+            });
+            child.stderr?.on('data', (d: Buffer) => {
+                err += d.toString();
+            });
+            child.stdout?.on('end', () => {
+                outEnd = true;
+                if (outEnd && errEnd) finish();
+            });
+            child.stderr?.on('end', () => {
+                errEnd = true;
+                if (outEnd && errEnd) finish();
+            });
+            child.on('error', () => {
+                clearTimeout(t);
+                resolve(out + '\n' + err);
+            });
+            child.on('close', () => {
+                if (outEnd && errEnd) finish();
+                else setTimeout(finish, 50);
+            });
         } catch {
             resolve('');
         }
@@ -51,7 +86,11 @@ function runCli(bin: string, args: string[], timeoutMs?: number): Promise<string
 }
 
 function ffmpegBin(): string {
-    try { return require('ffmpeg-static'); } catch { return 'ffmpeg'; }
+    try {
+        return require('ffmpeg-static');
+    } catch {
+        return 'ffmpeg';
+    }
 }
 function probeBin(): string {
     try {
@@ -112,14 +151,28 @@ export async function analyzeAudio(mp4: string): Promise<AudioAnalysis> {
     return { peakDb, meanVolumeDb, clipping: peakDb >= -1.0 };
 }
 
-export interface DimCheck { width: number; height: number; codec: string; pixFmt: string; colorRange: string }
+export interface DimCheck {
+    width: number;
+    height: number;
+    codec: string;
+    pixFmt: string;
+    colorRange: string;
+}
 
 /** Probe the rendered video's actual dimensions, codec, pixel format, range. */
 export async function analyzeDimensions(mp4: string): Promise<DimCheck> {
     // Use ffprobe if available, else fall back to parsing ffmpeg -i output.
     try {
         const bin = probeBin();
-        const raw = await runCli(bin, ['-v', 'error', '-show_entries', 'stream=width,height,codec_name,pix_fmt,color_range', '-of', 'default=noprint_wrappers=1', mp4]);
+        const raw = await runCli(bin, [
+            '-v',
+            'error',
+            '-show_entries',
+            'stream=width,height,codec_name,pix_fmt,color_range',
+            '-of',
+            'default=noprint_wrappers=1',
+            mp4,
+        ]);
         const g = (k: string) => (raw.match(new RegExp(`${k}=(\\S+)`)) || [])[1] ?? '';
         return {
             width: parseInt(g('width') || '0', 10),
@@ -132,9 +185,15 @@ export async function analyzeDimensions(mp4: string): Promise<DimCheck> {
         // Fallback: parse ffmpeg -i stderr.
         const ffmpeg = ffmpegBin();
         const raw = await runCli(ffmpeg, ['-i', mp4]);
-        const dim = (raw.match(/(\d{2,4})x(\d{2,4})/) || []);
+        const dim = raw.match(/(\d{2,4})x(\d{2,4})/) || [];
         const codec = (raw.match(/Video:\s*(\w+)/) || [])[1] ?? '';
-        return { width: parseInt(dim[1] || '0', 10), height: parseInt(dim[2] || '0', 10), codec, pixFmt: 'unknown', colorRange: 'unknown' };
+        return {
+            width: parseInt(dim[1] || '0', 10),
+            height: parseInt(dim[2] || '0', 10),
+            codec,
+            pixFmt: 'unknown',
+            colorRange: 'unknown',
+        };
     }
 }
 

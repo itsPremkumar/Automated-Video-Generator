@@ -9,13 +9,7 @@ import * as assert from 'node:assert/strict';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import {
-    reorderScenes,
-    deleteScene,
-    updateScene,
-    insertScene,
-    readPlan,
-} from './scene-edit.js';
+import { reorderScenes, deleteScene, updateScene, insertScene, readPlan } from './scene-edit.js';
 import { AgenticWorkspace } from './workspace.js';
 import { Plan } from './types.js';
 
@@ -49,8 +43,12 @@ function mkPlan(): Plan {
 }
 
 let tmp: string;
-const beforeEach = () => { tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'scene-edit-')); };
-const afterEach = () => { fs.rmSync(tmp, { recursive: true, force: true }); };
+const beforeEach = () => {
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'scene-edit-'));
+};
+const afterEach = () => {
+    fs.rmSync(tmp, { recursive: true, force: true });
+};
 
 describe('scene-edit API (P1c)', () => {
     test('reorders scenes and renumbers sceneNumber', () => {
@@ -58,8 +56,14 @@ describe('scene-edit API (P1c)', () => {
         const ws = mkWs(tmp);
         fs.writeFileSync(path.join(tmp, 'plan.json'), JSON.stringify(mkPlan()));
         const p = reorderScenes(ws, 0, 2);
-        assert.deepEqual(p.scenes.map((s) => s.voiceoverText), ['B', 'C', 'A']);
-        assert.deepEqual(p.scenes.map((s) => s.sceneNumber), [1, 2, 3]);
+        assert.deepEqual(
+            p.scenes.map((s) => s.voiceoverText),
+            ['B', 'C', 'A'],
+        );
+        assert.deepEqual(
+            p.scenes.map((s) => s.sceneNumber),
+            [1, 2, 3],
+        );
         afterEach();
     });
 
@@ -68,8 +72,14 @@ describe('scene-edit API (P1c)', () => {
         const ws = mkWs(tmp);
         fs.writeFileSync(path.join(tmp, 'plan.json'), JSON.stringify(mkPlan()));
         const p = deleteScene(ws, 1);
-        assert.deepEqual(p.scenes.map((s) => s.voiceoverText), ['A', 'C']);
-        assert.deepEqual(p.scenes.map((s) => s.sceneNumber), [1, 2]);
+        assert.deepEqual(
+            p.scenes.map((s) => s.voiceoverText),
+            ['A', 'C'],
+        );
+        assert.deepEqual(
+            p.scenes.map((s) => s.sceneNumber),
+            [1, 2],
+        );
         afterEach();
     });
 
@@ -89,7 +99,10 @@ describe('scene-edit API (P1c)', () => {
         const ws = mkWs(tmp);
         fs.writeFileSync(path.join(tmp, 'plan.json'), JSON.stringify(mkPlan()));
         const p = insertScene(ws, { voiceoverText: 'D' });
-        assert.deepEqual(p.scenes.map((s) => s.voiceoverText), ['A', 'B', 'C', 'D']);
+        assert.deepEqual(
+            p.scenes.map((s) => s.voiceoverText),
+            ['A', 'B', 'C', 'D'],
+        );
         assert.equal(p.scenes[3].sceneNumber, 4);
         afterEach();
     });

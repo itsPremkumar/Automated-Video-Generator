@@ -243,10 +243,7 @@ export async function generateVoiceovers(
     return audioFiles;
 }
 
-async function generateSceneVoiceoverWithKokoroWrapper(
-    scene: Scene,
-    outputDir: string,
-): Promise<AudioResult> {
+async function generateSceneVoiceoverWithKokoroWrapper(scene: Scene, outputDir: string): Promise<AudioResult> {
     const outputPath = path.join(outputDir, `scene_${scene.sceneNumber}_voice.mp3`);
     const existingAudio = resolveExistingAudio(outputPath, scene.voiceoverText);
     if (existingAudio) return existingAudio;

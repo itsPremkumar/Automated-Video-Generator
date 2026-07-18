@@ -70,8 +70,8 @@ export async function generateVoiceoverWithVoicebox(
     if (!profileId) {
         throw new Error(
             'Voicebox requires a voice profile. Set VOICEBOX_PROFILE_ID (create one via ' +
-            'POST /profiles — a Kokoro preset profile needs no reference audio). ' +
-            'Pipeline will fall back to Edge-TTS.',
+                'POST /profiles — a Kokoro preset profile needs no reference audio). ' +
+                'Pipeline will fall back to Edge-TTS.',
         );
     }
 
@@ -116,7 +116,10 @@ export async function generateVoiceoverWithVoicebox(
                 responseType: 'text',
                 headers: { Accept: 'text/event-stream' },
             });
-            const raw = String(res.data).split('\n').find((l) => l.startsWith('data:')) || String(res.data);
+            const raw =
+                String(res.data)
+                    .split('\n')
+                    .find((l) => l.startsWith('data:')) || String(res.data);
             const json = JSON.parse(raw.replace(/^data:\s*/, ''));
             status = json.status;
             lastErr = json.error ?? null;
@@ -128,7 +131,9 @@ export async function generateVoiceoverWithVoicebox(
     }
 
     if (status !== 'completed' && status !== 'complete' && status !== 'done') {
-        throw new Error(`Voicebox generation ${genId} did not complete (status=${status}${lastErr ? `, error=${lastErr}` : ''})`);
+        throw new Error(
+            `Voicebox generation ${genId} did not complete (status=${status}${lastErr ? `, error=${lastErr}` : ''})`,
+        );
     }
 
     // 3. Download the finished audio.
@@ -241,10 +246,7 @@ export async function generateVoiceoverWithLocalOpenAI(text: string, outputPath:
  * endpoint. Kokoro is an MIT-licensed, fully local neural TTS — no cloud, no
  * API key. Point OPENAI_LOCAL_TTS_URL at any Kokoro server.
  */
-export async function generateVoiceoverWithKokoro(
-    text: string,
-    outputPath: string,
-): Promise<void> {
+export async function generateVoiceoverWithKokoro(text: string, outputPath: string): Promise<void> {
     const baseUrl = (process.env.OPENAI_LOCAL_TTS_URL || 'http://127.0.0.1:8880/v1').replace(/\/+$/, '');
     const apiKey = process.env.OPENAI_LOCAL_TTS_API_KEY || 'mock-key';
     const voice = process.env.OPENAI_LOCAL_TTS_VOICE || 'af_sky';

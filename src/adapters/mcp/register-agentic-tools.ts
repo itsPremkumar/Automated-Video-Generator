@@ -33,12 +33,15 @@ import { textResponse, errorResponse } from './responses.js';
 
 // In-memory working state per job (a production build would persist this; for the
 // agentic control loop the agent polls these tools so in-memory is sufficient).
-const state = new Map<string, {
-    plan: any;
-    workspace: AgenticWorkspace;
-    candidates: AssetCandidate[];
-    decisions: AssetDecision[];
-}>();
+const state = new Map<
+    string,
+    {
+        plan: any;
+        workspace: AgenticWorkspace;
+        candidates: AssetCandidate[];
+        decisions: AssetDecision[];
+    }
+>();
 
 function depsFor(): GatewayDeps {
     return {
@@ -62,7 +65,15 @@ function depsFor(): GatewayDeps {
         fetchMusic: async (query: string) => {
             const m = await resolveFreeBackgroundMusic({ query, enabled: true });
             if (!m) return [];
-            return [{ url: '', localPath: m.localPath, source: m.track.provider, license: m.track.license, licenseUrl: m.track.licenseUrl }];
+            return [
+                {
+                    url: '',
+                    localPath: m.localPath,
+                    source: m.track.provider,
+                    license: m.track.license,
+                    licenseUrl: m.track.licenseUrl,
+                },
+            ];
         },
         verifyImage: (p: string, kw: string[]) => verifyMedia(p, kw),
         verifyVideo: (p: string, kw: string[]) => verifyMedia(p, kw),
@@ -86,14 +97,20 @@ export function registerAgenticTools(server: McpServer) {
             }) as any,
         },
         async (args: any) => {
-            const plan = await buildPlan(args.script, {
-                jobId: args.jobId,
-                title: args.title,
-                orientation: args.orientation,
-                voice: args.voice,
-                musicQuery: args.musicQuery,
-            }, parseScript);
-            return textResponse(`Planned ${plan.scenes.length} scenes. Music query: "${plan.musicQuery}". orientation=${plan.orientation}.`);
+            const plan = await buildPlan(
+                args.script,
+                {
+                    jobId: args.jobId,
+                    title: args.title,
+                    orientation: args.orientation,
+                    voice: args.voice,
+                    musicQuery: args.musicQuery,
+                },
+                parseScript,
+            );
+            return textResponse(
+                `Planned ${plan.scenes.length} scenes. Music query: "${plan.musicQuery}". orientation=${plan.orientation}.`,
+            );
         },
     );
 
@@ -102,7 +119,10 @@ export function registerAgenticTools(server: McpServer) {
         {
             title: 'Agentic Acquire',
             description: 'STAGE 2: download candidate images/videos/music into per-type folders.',
-            inputSchema: z.object({ jobId: z.string(), candidatesPerAsset: z.number().min(1).max(5).default(2) }) as any,
+            inputSchema: z.object({
+                jobId: z.string(),
+                candidatesPerAsset: z.number().min(1).max(5).default(2),
+            }) as any,
         },
         async (args: any) => {
             const plan = readPlan(args.jobId);
@@ -125,7 +145,9 @@ export function registerAgenticTools(server: McpServer) {
             if (!s) return errorResponse('No acquisition for this job.');
             const verifications = await verifyAll(s.candidates, s.workspace, depsFor());
             const pass = verifications.filter((v: any) => v.passes).length;
-            return textResponse(`Verified ${verifications.length} assets: ${pass} pass, ${verifications.length - pass} fail. Details in verification/*.json.`);
+            return textResponse(
+                `Verified ${verifications.length} assets: ${pass} pass, ${verifications.length - pass} fail. Details in verification/*.json.`,
+            );
         },
     );
 
@@ -140,7 +162,9 @@ export function registerAgenticTools(server: McpServer) {
             const s = state.get(args.jobId);
             if (!s) return errorResponse('No job state.');
             const rows = s.candidates.map((c) => {
-                const v = readJson<any>(s.workspace, 'verification/all_checks.json')?.find((x: any) => x.assetId === `${c.kind}_s${c.sceneIndex}_c${c.candidateIndex}`);
+                const v = readJson<any>(s.workspace, 'verification/all_checks.json')?.find(
+                    (x: any) => x.assetId === `${c.kind}_s${c.sceneIndex}_c${c.candidateIndex}`,
+                );
                 return `| ${c.kind} s${c.sceneIndex} c${c.candidateIndex} | ${v?.passes ? 'PASS' : 'FAIL'} ${v?.confidence ?? '-'}/10 | ${v?.reason ?? ''} | ${c.localPath} |`;
             });
             return textResponse(`| asset | verdict | path |\n| :--- | :--- | :--- |\n${rows.join('\n')}`);
@@ -157,7 +181,9 @@ export function registerAgenticTools(server: McpServer) {
         async (args: any) => {
             const s = state.get(args.jobId);
             if (!s) return errorResponse('No job state.');
-            const c = s.candidates.find((x: AssetCandidate) => `${x.kind}_s${x.sceneIndex}_c${x.candidateIndex}` === args.assetId);
+            const c = s.candidates.find(
+                (x: AssetCandidate) => `${x.kind}_s${x.sceneIndex}_c${x.candidateIndex}` === args.assetId,
+            );
             if (!c || !fs.existsSync(c.localPath)) return errorResponse('Asset not found.');
             const b64 = fs.readFileSync(c.localPath).toString('base64');
             return { content: [{ type: 'image', data: b64, mimeType: 'image/jpeg' }] } as any;
@@ -207,7 +233,8 @@ export function registerAgenticTools(server: McpServer) {
         'agentic_run',
         {
             title: 'Agentic Run (Hermes drives everything)',
-            description: 'One-shot: Hermes writes the script, expands keywords, acquires, verifies and DECIDES every asset — no external AI needed when backend=agent.',
+            description:
+                'One-shot: Hermes writes the script, expands keywords, acquires, verifies and DECIDES every asset — no external AI needed when backend=agent.',
             inputSchema: z.object({
                 topic: z.string().min(5),
                 title: z.string(),
@@ -228,8 +255,15 @@ export function registerAgenticTools(server: McpServer) {
             });
             const approved = res.decisions.filter((d: any) => d.decision === 'approved').length;
             return res.gate.pass
-                ? textResponse(`DONE (backend=${res.backend}, fullyAgentDriven=${res.fullyAgentDriven}). ${approved} assets approved. GATE PASS — ready to render ${res.manifest.assets.length} assets.`)
-                : errorResponse(`DONE but GATE BLOCKED (backend=${res.backend}).\n${res.gate.checks.filter((c: any) => !c.pass).map((c: any) => `- ${c.id} ${c.label}: ${c.detail}`).join('\n')}`);
+                ? textResponse(
+                      `DONE (backend=${res.backend}, fullyAgentDriven=${res.fullyAgentDriven}). ${approved} assets approved. GATE PASS — ready to render ${res.manifest.assets.length} assets.`,
+                  )
+                : errorResponse(
+                      `DONE but GATE BLOCKED (backend=${res.backend}).\n${res.gate.checks
+                          .filter((c: any) => !c.pass)
+                          .map((c: any) => `- ${c.id} ${c.label}: ${c.detail}`)
+                          .join('\n')}`,
+                  );
         },
     );
 
@@ -253,5 +287,9 @@ export function registerAgenticTools(server: McpServer) {
 function readPlan(jobId: string): any {
     const p = path.join(workspaceRootFor(jobId), 'plan.json');
     if (!fs.existsSync(p)) return null;
-    try { return JSON.parse(fs.readFileSync(p, 'utf-8')); } catch { return null; }
+    try {
+        return JSON.parse(fs.readFileSync(p, 'utf-8'));
+    } catch {
+        return null;
+    }
 }

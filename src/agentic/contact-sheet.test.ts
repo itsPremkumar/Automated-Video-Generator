@@ -17,7 +17,9 @@ const ffmpeg: string = require('ffmpeg-static');
 const { execFileSync } = require('child_process');
 
 function mkImg(p: string, color: string) {
-    execFileSync(ffmpeg, ['-f', 'lavfi', '-i', `color=c=${color}:s=360x640:d=0.1`, '-frames:v', '1', '-y', p], { stdio: 'ignore' });
+    execFileSync(ffmpeg, ['-f', 'lavfi', '-i', `color=c=${color}:s=360x640:d=0.1`, '-frames:v', '1', '-y', p], {
+        stdio: 'ignore',
+    });
 }
 
 describe('agentic/visibility (contact sheet + decisions report)', () => {
@@ -25,40 +27,82 @@ describe('agentic/visibility (contact sheet + decisions report)', () => {
     let dir: string;
     before(() => {
         dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentic-vis-'));
-        const i0 = path.join(dir, 's0.png'); mkImg(i0, 'navy');
-        const i1 = path.join(dir, 's1.png'); mkImg(i1, 'teal');
-        const i2 = path.join(dir, 's2.png'); mkImg(i2, 'maroon');
+        const i0 = path.join(dir, 's0.png');
+        mkImg(i0, 'navy');
+        const i1 = path.join(dir, 's1.png');
+        mkImg(i1, 'teal');
+        const i2 = path.join(dir, 's2.png');
+        mkImg(i2, 'maroon');
         const mkCand = (kind: 'image' | 'music', sceneIndex: number, localPath: string): AssetCandidate => ({
-            kind, sceneIndex, candidateIndex: 0, localPath, url: '', source: 'placeholder', keywords: ['x'],
+            kind,
+            sceneIndex,
+            candidateIndex: 0,
+            localPath,
+            url: '',
+            source: 'placeholder',
+            keywords: ['x'],
         });
-        const cands: AssetCandidate[] = [
-            mkCand('image', 0, i0), mkCand('image', 1, i1), mkCand('image', 2, i2),
-        ];
+        const cands: AssetCandidate[] = [mkCand('image', 0, i0), mkCand('image', 1, i1), mkCand('image', 2, i2)];
         const mkDec = (kind: 'image' | 'music', sceneIndex: number): AssetDecision => ({
-            assetId: `${kind}_s${sceneIndex}_c0`, kind, sceneIndex,
-            decision: 'approved', rationale: 'Visual passes at conf 6/10', decidedBy: 'agent', fallbackUsed: false,
+            assetId: `${kind}_s${sceneIndex}_c0`,
+            kind,
+            sceneIndex,
+            decision: 'approved',
+            rationale: 'Visual passes at conf 6/10',
+            decidedBy: 'agent',
+            fallbackUsed: false,
         });
-        const decisions: AssetDecision[] = [
-            mkDec('image', 0), mkDec('image', 1), mkDec('image', 2),
-        ];
+        const decisions: AssetDecision[] = [mkDec('image', 0), mkDec('image', 1), mkDec('image', 2)];
         const plan: Plan = {
-            jobId: 'vis', title: 'Vis', orientation: 'portrait', voice: 'en-US-JennyNeural', musicQuery: 'lofi',
+            jobId: 'vis',
+            title: 'Vis',
+            orientation: 'portrait',
+            voice: 'en-US-JennyNeural',
+            musicQuery: 'lofi',
             totalDurationSec: 6,
             scenes: [
-                { sceneNumber: 1, voiceoverText: 'A', searchKeywords: ['x'], visualPreference: 'image', durationSec: 2 },
-                { sceneNumber: 2, voiceoverText: 'B', searchKeywords: ['y'], visualPreference: 'image', durationSec: 2 },
-                { sceneNumber: 3, voiceoverText: 'C', searchKeywords: ['z'], visualPreference: 'image', durationSec: 2 },
+                {
+                    sceneNumber: 1,
+                    voiceoverText: 'A',
+                    searchKeywords: ['x'],
+                    visualPreference: 'image',
+                    durationSec: 2,
+                },
+                {
+                    sceneNumber: 2,
+                    voiceoverText: 'B',
+                    searchKeywords: ['y'],
+                    visualPreference: 'image',
+                    durationSec: 2,
+                },
+                {
+                    sceneNumber: 3,
+                    voiceoverText: 'C',
+                    searchKeywords: ['z'],
+                    visualPreference: 'image',
+                    durationSec: 2,
+                },
             ],
         };
         const manifest: RenderManifest = {
-            jobId: 'vis', title: 'Vis', orientation: 'portrait', voice: 'en-US-JennyNeural', musicQuery: 'lofi',
+            jobId: 'vis',
+            title: 'Vis',
+            orientation: 'portrait',
+            voice: 'en-US-JennyNeural',
+            musicQuery: 'lofi',
             assets: cands.map((c) => ({ kind: c.kind, sceneIndex: c.sceneIndex, localPath: c.localPath })),
             generatedAt: new Date().toISOString(),
         };
         res = {
-            backend: 'agent', plan, workspace: { root: dir, jobId: 'vis' } as any,
-            candidates: cands, decisions, gate: { pass: true, checks: [] }, manifest,
-            voiceovers: null, fullyAgentDriven: true,
+            backend: 'agent',
+            plan,
+            workspace: { root: dir, jobId: 'vis' } as any,
+            candidates: cands,
+            decisions,
+            gate: { pass: true, checks: [] },
+            manifest,
+            voiceovers: null,
+            fullyAgentDriven: true,
         };
     });
 

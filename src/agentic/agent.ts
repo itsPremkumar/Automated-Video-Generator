@@ -42,7 +42,10 @@ export interface AgentBackendConfig {
     writeScript?: (topic: string, title: string) => Promise<string>;
     expandKeywords?: (scene: ScenePlan, title: string) => Promise<string[]>;
     /** Optional vision scorer (e.g. verifyMedia with Gemini) — bolt-on, not required. */
-    visionVerify?: (filePath: string, keywords: string[]) => Promise<{ passes: boolean; confidence: number; reason: string }>;
+    visionVerify?: (
+        filePath: string,
+        keywords: string[],
+    ) => Promise<{ passes: boolean; confidence: number; reason: string }>;
     /** OPT-IN AI verification config (reuses the running agent's own model). Off by default. */
     aiVerify?: import('./config.js').AgenticConfig['aiVerify'];
     /** Agent brain budget / circuit-breaker (optional). */
@@ -56,11 +59,20 @@ export function expandKeywordsHeuristic(scene: ScenePlan, title: string): string
     // Build a small, CLEAN set of distinct search phrases. Each entry is used
     // individually by the fetcher's keyword join, so avoid concatenating the
     // whole title into one giant string (that mangles the API query).
-    const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+    const clean = (s: string) =>
+        s
+            .toLowerCase()
+            .replace(/[^a-z0-9 ]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
     const base = [...new Set(scene.searchKeywords.map(clean).filter(Boolean))];
     const out = new Set<string>(base);
     // Always include the primary topic noun(s) from the title as a fallback phrase.
-    const titleWords = clean(title).split(' ').filter((w) => w.length > 3).slice(0, 3).join(' ');
+    const titleWords = clean(title)
+        .split(' ')
+        .filter((w) => w.length > 3)
+        .slice(0, 3)
+        .join(' ');
     if (titleWords) out.add(titleWords);
     // A context phrase (e.g. "wild lions", "lion cub") helps stock hit-rate
     // WITHOUT the redundant "<kind> of <topic>" framing (the fetcher already
@@ -80,13 +92,31 @@ export function expandKeywordsHeuristic(scene: ScenePlan, title: string): string
 export function writeScriptHeuristic(topic: string, title: string): string {
     const t = title || topic;
     // Primary visual noun drives the stock search. Keep it clean + on-topic.
-    const topicWords = topic.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter((w) => w.length > 3);
-    const kw = topicWords[topicWords.length - 1] ?? t.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter((w) => w.length > 3)[0] ?? 'nature';
+    const topicWords = topic
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]/g, ' ')
+        .split(/\s+/)
+        .filter((w) => w.length > 3);
+    const kw =
+        topicWords[topicWords.length - 1] ??
+        t
+            .toLowerCase()
+            .replace(/[^a-z0-9 ]/g, ' ')
+            .split(/\s+/)
+            .filter((w) => w.length > 3)[0] ??
+        'nature';
     // Per-scene visual variation: rotate DISTINCT primary nouns so every scene
     // fetches a DIFFERENT on-topic image. Critical: the leading word must differ
     // across scenes (not all "coffee X"), because the fetcher joins ALL keywords
     // into one query and a shared leading noun collapses to the same top result.
-    const angles = [`${kw} cup`, `espresso machine`, `barista cafe`, `${kw} beans roast`, `latte art`, `${kw} pour over`];
+    const angles = [
+        `${kw} cup`,
+        `espresso machine`,
+        `barista cafe`,
+        `${kw} beans roast`,
+        `latte art`,
+        `${kw} pour over`,
+    ];
     const visualFor = (i: number) => angles[i % angles.length];
 
     const sentences = topic
@@ -124,11 +154,11 @@ export interface DecideInput {
 
 export interface ScoredCandidate {
     assetId: string;
-    confidenceScore: number;     // verification confidence (0-10)
-    resolutionScore: number;     // based on width × height
-    fileSizeScore: number;       // prefer reasonable file sizes (not 50K thumbnails)
-    relevanceBoost: number;      // +1 if keywords appear in source/license metadata
-    diversityPenalty: number;    // -2 if visually near an already-approved asset
+    confidenceScore: number; // verification confidence (0-10)
+    resolutionScore: number; // based on width × height
+    fileSizeScore: number; // prefer reasonable file sizes (not 50K thumbnails)
+    relevanceBoost: number; // +1 if keywords appear in source/license metadata
+    diversityPenalty: number; // -2 if visually near an already-approved asset
     totalScore: number;
 }
 
@@ -156,7 +186,9 @@ export function scoreCandidate(
         if (sz < 50_000) fileSizeScore = 1;
         else if (sz > 3_000_000) fileSizeScore = 4;
         else fileSizeScore = 6;
-    } catch { /* no file yet */ }
+    } catch {
+        /* no file yet */
+    }
 
     const hay = `${c.source} ${c.license ?? ''}`.toLowerCase();
     const relevanceBoost = c.keywords.some((k) => hay.includes(k.toLowerCase())) ? 1 : 0;
@@ -167,7 +199,11 @@ export function scoreCandidate(
     return { assetId, confidenceScore, resolutionScore, fileSizeScore, relevanceBoost, diversityPenalty, totalScore };
 }
 
-export function agentDecide(input: DecideInput): { decision: 'approved' | 'rejected' | 'replace'; rationale: string; newKeywords?: string[] } {
+export function agentDecide(input: DecideInput): {
+    decision: 'approved' | 'rejected' | 'replace';
+    rationale: string;
+    newKeywords?: string[];
+} {
     const { candidate, verification, approvedInScene } = input;
 
     // Hard fail -> reject (and let the gateway re-fetch fresh candidates).
@@ -187,7 +223,10 @@ export function agentDecide(input: DecideInput): { decision: 'approved' | 'rejec
     // Visual: approve the best (first) passing candidate per scene; the rest become
     // alternates (kept as 'approved' so the manifest can pick, but we surface only one).
     if (approvedInScene >= 1) {
-        return { decision: 'approved', rationale: `Scene already has an approved visual; this is an extra candidate (alternate).` };
+        return {
+            decision: 'approved',
+            rationale: `Scene already has an approved visual; this is an extra candidate (alternate).`,
+        };
     }
 
     const score = scoreCandidate(candidate, verification);

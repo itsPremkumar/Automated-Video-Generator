@@ -87,25 +87,25 @@ import { registerPlatformExport } from './platforms/platform-export.js';
  */
 export function registerAllPlugins(
     registry: PluginRegistry,
-    customConfig?: Record<string, { enabled?: boolean; config?: Record<string, unknown> }>
+    customConfig?: Record<string, { enabled?: boolean; config?: Record<string, unknown> }>,
 ): void {
     const defaults = {
         'punch-in': { enabled: true, config: { autoEmphasis: true, imagesOnly: true } },
         'speed-ramp': { enabled: false, config: { defaults: [{ t: 0, speed: 1 }] } },
-        'shake': { enabled: false, config: { intensity: 5, frequency: 10 } },
-        'parallax': { enabled: false, config: {} },
+        shake: { enabled: false, config: { intensity: 5, frequency: 10 } },
+        parallax: { enabled: false, config: {} },
         'ken-burns-pro': { enabled: true, config: { intensity: 1.0, imagesOnly: true } },
         'lut-loader': { enabled: true, config: { lutDir: './assets/luts', defaultLUT: '' } },
         'film-grain': { enabled: false, config: { strength: 0.12, size: 1.0 } },
-        'halation': { enabled: false, config: { threshold: 0.9, intensity: 0.3 } },
+        halation: { enabled: false, config: { threshold: 0.9, intensity: 0.3 } },
         'color-wheels': { enabled: false, config: {} },
         'whip-pan': { enabled: false, config: { direction: 'left', duration: 0.3 } },
-        'glitch': { enabled: false, config: { intensity: 0.5, duration: 0.2 } },
+        glitch: { enabled: false, config: { intensity: 0.5, duration: 0.2 } },
         'light-leak': { enabled: false, config: { asset: './assets/overlays/light-leak.mp4', blend: 'screen' } },
         'morph-cut': { enabled: false, config: { duration: 0.5 } },
-        'watermark': { enabled: true, config: { position: 'br', opacity: 0.6, scale: 0.15, margin: 20 } },
+        watermark: { enabled: true, config: { position: 'br', opacity: 0.6, scale: 0.15, margin: 20 } },
         'dynamic-captions': { enabled: true, config: { style: 'karaoke', animation: 'word-pop' } },
-        'typewriter': { enabled: false, config: { speed: 30, cursor: true } },
+        typewriter: { enabled: false, config: { speed: 30, cursor: true } },
         'safe-zones': { enabled: true, config: {} },
         'lower-third': { enabled: false, config: {} },
         'progress-bar': { enabled: false, config: { color: 'white', height: 4 } },
@@ -114,7 +114,10 @@ export function registerAllPlugins(
         'normalize-loudness': { enabled: true, config: { targetLUFS: -14, truePeak: -1.0 } },
         'ambience-layer': { enabled: false, config: { volume: -24 } },
         'genre-style': { enabled: true, config: { genre: 'cinematic', overrideConfig: true } },
-        'platform-export': { enabled: true, config: { platform: 'youtube', platforms: [], thumbnails: true, metadata: true, safeZones: true } },
+        'platform-export': {
+            enabled: true,
+            config: { platform: 'youtube', platforms: [], thumbnails: true, metadata: true, safeZones: true },
+        },
     };
 
     const merged = { ...defaults, ...customConfig };
@@ -140,7 +143,11 @@ export function registerAllPlugins(
     registerProgressBar(registry, merged['progress-bar'].config as any, merged['progress-bar'].enabled);
     registerBeatSync(registry, merged['beat-sync'].config as any, merged['beat-sync'].enabled);
     registerAudioDucking(registry, merged['audio-ducking'].config as any, merged['audio-ducking'].enabled);
-    registerNormalizeLoudness(registry, merged['normalize-loudness'].config as any, merged['normalize-loudness'].enabled);
+    registerNormalizeLoudness(
+        registry,
+        merged['normalize-loudness'].config as any,
+        merged['normalize-loudness'].enabled,
+    );
     registerAmbienceLayer(registry, merged['ambience-layer'].config as any, merged['ambience-layer'].enabled);
     registerGenreStyle(registry, merged['genre-style'].config as any, merged['genre-style'].enabled);
     registerPlatformExport(registry, merged['platform-export'].config as any, merged['platform-export'].enabled);
@@ -151,7 +158,7 @@ export function registerAllPlugins(
  */
 export async function createPluginRegistry(
     context: PluginContext,
-    options?: PluginLoaderOptions
+    options?: PluginLoaderOptions,
 ): Promise<PluginRegistry> {
     const registry = createRegistry(context);
     registerAllPlugins(registry);
@@ -172,7 +179,7 @@ export async function createPluginRegistry(
 export async function setupPluginsForAutopilot(
     jobId: string,
     workspaceRoot: string,
-    config: Record<string, unknown>
+    config: Record<string, unknown>,
 ): Promise<PluginRegistry> {
     const context = new PluginContext({ jobId, workspaceRoot, config });
     const registry = await createPluginRegistry(context);

@@ -130,7 +130,8 @@ const SubtitleInternal: React.FC<SubtitleOverlayProps> = ({
     // Guard against width being 0 or NaN
     const safeWidth = isNaN(width) || width <= 0 ? 1920 : width;
     const maxFontSize = (safeWidth - padding) / (Math.max(1, displayText.length) / 1.5);
-    const finalFontSize = displayText.length > charsPerLine ? Math.max(28, Math.min(safeFontSize, maxFontSize)) : safeFontSize;
+    const finalFontSize =
+        displayText.length > charsPerLine ? Math.max(28, Math.min(safeFontSize, maxFontSize)) : safeFontSize;
 
     // --- Animation Constants ---
     const ANIM_DURATION = 15;

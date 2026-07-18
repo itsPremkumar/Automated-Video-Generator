@@ -14,13 +14,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import {
-    AgenticWorkspace,
-    createAgenticWorkspace,
-    sceneImageDir,
-    sceneVideoDir,
-    writeJson,
-} from './workspace.js';
+import { AgenticWorkspace, createAgenticWorkspace, sceneImageDir, sceneVideoDir, writeJson } from './workspace.js';
 import { AssetCandidate, Plan } from './types.js';
 import { inputAssetPath } from '../lib/path-safety.js';
 import { aiVerifyAsset } from './ai-verify.js';
@@ -46,7 +40,12 @@ export interface FetchedVisual {
 
 export interface AcquireDeps {
     /** Returns candidate URLs (and metadata) for a scene's visual query. */
-    fetchVisual: (keywords: string[], kind: 'image' | 'video', orientation: 'portrait' | 'landscape', sceneIndex?: number) => Promise<FetchedVisual[]>;
+    fetchVisual: (
+        keywords: string[],
+        kind: 'image' | 'video',
+        orientation: 'portrait' | 'landscape',
+        sceneIndex?: number,
+    ) => Promise<FetchedVisual[]>;
     /** Persists a URL to a local path; returns the final path. */
     download: (url: string, dir: string, filename: string) => Promise<string>;
     /** Returns candidate music tracks. */
@@ -81,7 +80,12 @@ export function generateFallbackVisual(
         let localPath: string;
         if (kind === 'video') {
             // KenBurns needs a source image; generate one first, then animate it.
-            const imgPath = creator.createBackgroundImage({ out: out.replace(/\.mp4$/, '_src.jpg'), text: label, w: 720, h: 1280 });
+            const imgPath = creator.createBackgroundImage({
+                out: out.replace(/\.mp4$/, '_src.jpg'),
+                text: label,
+                w: 720,
+                h: 1280,
+            });
             localPath = creator.createKenBurnsClip({ src: imgPath, out, duration: 4, zoom: 1.15 });
         } else {
             localPath = creator.createBackgroundImage({ out, text: label, w: 720, h: 1280 });
@@ -108,7 +112,13 @@ export interface AcquireResult {
 export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPerAsset = 2): Promise<AcquireResult> {
     const ws = createAgenticWorkspace(plan.jobId);
     const candidates: AssetCandidate[] = [];
-    const sceneFetches: Promise<{ i: number; kind: 'image' | 'video'; dir: string; scene: any; fetched: FetchedVisual[] }>[] = [];
+    const sceneFetches: Promise<{
+        i: number;
+        kind: 'image' | 'video';
+        dir: string;
+        scene: any;
+        fetched: FetchedVisual[];
+    }>[] = [];
 
     for (let i = 0; i < plan.scenes.length; i++) {
         const scene = plan.scenes[i];
@@ -145,7 +155,8 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
         // Fetch all scenes in parallel (bounded by the fetcher's own limits).
         // Rejections are isolated per scene so one bad fetch can't kill the run.
         sceneFetches.push(
-            deps.fetchVisual(scene.searchKeywords, kind, plan.orientation, i)
+            deps
+                .fetchVisual(scene.searchKeywords, kind, plan.orientation, i)
                 .then((fetched) => ({ i, kind, dir, scene, fetched }))
                 .catch((e) => {
                     console.warn(`⚠ fetch failed for scene ${i}: ${(e as Error)?.message ?? e}`);
@@ -204,7 +215,9 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
             if (deps.brain && deps.cfg?.aiVerify?.verifyOnAcquire) {
                 const ai = await aiVerifyAsset(localPath, kind, scene.searchKeywords, deps.cfg, deps.brain);
                 if (ai && !ai.pass) {
-                    console.warn(`⚠ ai(acquire) rejected scene ${i} cand ${c + 1}: ${ai.reason} (conf ${ai.confidence})`);
+                    console.warn(
+                        `⚠ ai(acquire) rejected scene ${i} cand ${c + 1}: ${ai.reason} (conf ${ai.confidence})`,
+                    );
                     continue;
                 }
             }
@@ -228,9 +241,8 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
         const f = musicFetched[c];
         const ext = path.extname(f.url).split('?')[0] || '.mp3';
         const filename = `candidate_${c + 1}${ext}`;
-        const localPath = f.localPath && fs.existsSync(f.localPath)
-            ? f.localPath
-            : await deps.download(f.url, ws.musicDir, filename);
+        const localPath =
+            f.localPath && fs.existsSync(f.localPath) ? f.localPath : await deps.download(f.url, ws.musicDir, filename);
         const lic = normalizeLicense(f);
         // OPT-IN AI music-mood check (acquire stage): music has no speech
         // transcript, so we judge mood-fit from the plan's intended mood

@@ -1,9 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-    resolveFreeBackgroundMusic,
-    listFreeMusicProviders,
-} from './free-music';
+import { resolveFreeBackgroundMusic, listFreeMusicProviders } from './free-music';
 
 // Offline-capable: force the local provider only and mock network for the others.
 const tempDir = require('path').join(__dirname, 'temp-free-music');

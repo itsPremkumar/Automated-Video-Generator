@@ -64,14 +64,36 @@ export const defaultFfprobeRunner: FfprobeRunner = async (filePath: string) => {
         const bin = resolveFfprobeBin();
         const timeoutMs = Number(process.env.AGENTIC_FFPROBE_TIMEOUT_MS || 15000);
         const stdout = await new Promise<string>((resolve, reject) => {
-            const child = spawn(bin, ['-v', 'quiet', '-print_format', 'json', '-show_format', '-show_streams', filePath], { encoding: 'utf-8' as const, stdio: ['pipe', 'pipe', 'pipe'] } as any);
+            const child = spawn(
+                bin,
+                ['-v', 'quiet', '-print_format', 'json', '-show_format', '-show_streams', filePath],
+                { encoding: 'utf-8' as const, stdio: ['pipe', 'pipe', 'pipe'] } as any,
+            );
             let out = '';
             let err = '';
-            const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } reject(new Error('ffprobe timed out')); }, timeoutMs);
-            child.stdout?.on('data', (d: Buffer) => { out += d.toString(); });
-            child.stderr?.on('data', (d: Buffer) => { err += d.toString(); });
-            child.on('error', (e: Error) => { clearTimeout(t); reject(e); });
-            child.on('close', (code: number) => { clearTimeout(t); if (code !== 0) reject(new Error(err?.trim() || 'ffprobe failed')); else resolve(out); });
+            const t = setTimeout(() => {
+                try {
+                    child.kill('SIGKILL');
+                } catch {
+                    /* ignore */
+                }
+                reject(new Error('ffprobe timed out'));
+            }, timeoutMs);
+            child.stdout?.on('data', (d: Buffer) => {
+                out += d.toString();
+            });
+            child.stderr?.on('data', (d: Buffer) => {
+                err += d.toString();
+            });
+            child.on('error', (e: Error) => {
+                clearTimeout(t);
+                reject(e);
+            });
+            child.on('close', (code: number) => {
+                clearTimeout(t);
+                if (code !== 0) reject(new Error(err?.trim() || 'ffprobe failed'));
+                else resolve(out);
+            });
         });
         return { status: 0, stdout };
     } catch {
@@ -89,13 +111,11 @@ function parseFfprobe(stdout: string): {
         const format = parsed.format ?? {};
         const streams: any[] = parsed.streams ?? [];
         const audio = streams.find((s) => s.codec_type === 'audio') ?? null;
-        const durationRaw =
-            audio?.duration ?? format.duration ?? format.durations?.[0] ?? null;
+        const durationRaw = audio?.duration ?? format.duration ?? format.durations?.[0] ?? null;
         const durationSec = durationRaw != null ? Number.parseFloat(String(durationRaw)) : null;
         // ffprobe reports bit_rate as an integer string; format also has it.
         const bitRateRaw = audio?.bit_rate ?? format.bit_rate ?? null;
-        const bitrateKbps =
-            bitRateRaw != null ? Math.round(Number.parseFloat(String(bitRateRaw)) / 1000) : null;
+        const bitrateKbps = bitRateRaw != null ? Math.round(Number.parseFloat(String(bitRateRaw)) / 1000) : null;
         return { durationSec: Number.isFinite(durationSec) ? durationSec : null, bitrateKbps, hasAudioStream: !!audio };
     } catch {
         return { durationSec: null, bitrateKbps: null, hasAudioStream: false };
@@ -116,7 +136,14 @@ export async function verifyMusic(
         return {
             passes: false,
             reason: `Music file not found: ${filePath}`,
-            metrics: { exists: false, durationSec: null, bitrateKbps: null, hasAudioStream: false, estimatedSilenceSec: null, license },
+            metrics: {
+                exists: false,
+                durationSec: null,
+                bitrateKbps: null,
+                hasAudioStream: false,
+                estimatedSilenceSec: null,
+                license,
+            },
         };
     }
 
@@ -127,7 +154,14 @@ export async function verifyMusic(
         return {
             passes: sizeKb > 10,
             reason: probe === null ? 'ffprobe unavailable; passed on size check only' : 'probe failed',
-            metrics: { exists: true, durationSec: null, bitrateKbps: null, hasAudioStream: false, estimatedSilenceSec: null, license },
+            metrics: {
+                exists: true,
+                durationSec: null,
+                bitrateKbps: null,
+                hasAudioStream: false,
+                estimatedSilenceSec: null,
+                license,
+            },
         };
     }
 
@@ -135,8 +169,10 @@ export async function verifyMusic(
 
     const problems: string[] = [];
     if (!hasAudioStream) problems.push('no audio stream');
-    if (durationSec != null && durationSec < minDurationSec) problems.push(`too short (${durationSec.toFixed(1)}s < ${minDurationSec}s)`);
-    if (bitrateKbps != null && bitrateKbps < minBitrateKbps) problems.push(`low bitrate (${bitrateKbps}kbps < ${minBitrateKbps}kbps)`);
+    if (durationSec != null && durationSec < minDurationSec)
+        problems.push(`too short (${durationSec.toFixed(1)}s < ${minDurationSec}s)`);
+    if (bitrateKbps != null && bitrateKbps < minBitrateKbps)
+        problems.push(`low bitrate (${bitrateKbps}kbps < ${minBitrateKbps}kbps)`);
 
     const passes = problems.length === 0;
     return {

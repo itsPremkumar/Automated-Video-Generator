@@ -53,7 +53,9 @@ export class PluginRegistry {
             return categoryPriority(eB.plugin.category) - categoryPriority(eA.plugin.category);
         });
 
-        console.log(`[PluginRegistry] Registered: ${plugin.metadata.name} v${plugin.metadata.version} [${plugin.category}]`);
+        console.log(
+            `[PluginRegistry] Registered: ${plugin.metadata.name} v${plugin.metadata.version} [${plugin.category}]`,
+        );
     }
 
     /** Load all plugins from a directory (auto-discovery) */
@@ -63,7 +65,7 @@ export class PluginRegistry {
             return 0;
         }
 
-        const files = fs.readdirSync(dir).filter(f => f.endsWith('.js') || f.endsWith('.ts'));
+        const files = fs.readdirSync(dir).filter((f) => f.endsWith('.js') || f.endsWith('.ts'));
         let loaded = 0;
 
         for (const file of files) {
@@ -107,12 +109,12 @@ export class PluginRegistry {
 
     /** Get all registered plugins (in execution order) */
     getAll(): PluginRegistryEntry[] {
-        return this.loadOrder.map(name => this.entries.get(name)!).filter(Boolean);
+        return this.loadOrder.map((name) => this.entries.get(name)!).filter(Boolean);
     }
 
     /** Get enabled plugins in execution order */
     getEnabled(): PluginRegistryEntry[] {
-        return this.getAll().filter(e => e.enabled);
+        return this.getAll().filter((e) => e.enabled);
     }
 
     /** ── Hook invocations ── */
@@ -181,20 +183,28 @@ export class PluginRegistry {
 
     async invokeOnError(error: Error): Promise<void> {
         for (const e of this.getEnabled()) {
-            try { await e.plugin.hooks.onError?.(error, this.context); } catch { /* ignore hook errors */ }
+            try {
+                await e.plugin.hooks.onError?.(error, this.context);
+            } catch {
+                /* ignore hook errors */
+            }
         }
     }
 
     async invokeOnUnload(): Promise<void> {
         for (const e of this.getEnabled()) {
-            try { await e.plugin.hooks.onUnload?.(this.context); } catch { /* ignore */ }
+            try {
+                await e.plugin.hooks.onUnload?.(this.context);
+            } catch {
+                /* ignore */
+            }
         }
     }
 
     /** Export registry state */
     toJSON(): Record<string, unknown> {
         return {
-            plugins: this.getAll().map(e => ({
+            plugins: this.getAll().map((e) => ({
                 name: e.plugin.metadata.name,
                 version: e.plugin.metadata.version,
                 category: e.plugin.category,

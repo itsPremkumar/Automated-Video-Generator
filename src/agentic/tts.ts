@@ -18,7 +18,6 @@ import { Plan, ScenePlan } from './types.js';
 import { AgenticWorkspace } from './workspace.js';
 import { CaptionSegment, writeCaptionSidecars, syllableWordTimings } from '../lib/captions.js';
 
- 
 const ffmpeg: string = require('ffmpeg-static');
 const { execFileSync } = require('child_process');
 const os = require('os');
@@ -43,10 +42,11 @@ function toneForScene(text: string, durationSec: number, idx: number): { audioPa
     const p = `${os.tmpdir()}/agentic_vo_${Date.now()}_${idx}_${Math.random().toString(36).slice(2)}.wav`;
     const dur = Math.max(1.5, durationSec);
     // A soft 220Hz tone, quiet, so the video has an audio track offline.
-    execFileSync(ffmpeg, [
-        '-f', 'lavfi', '-i', `sine=frequency=220:duration=${dur}`,
-        '-af', 'volume=0.15', '-c:a', 'pcm_s16le', '-y', p,
-    ], { stdio: 'ignore' });
+    execFileSync(
+        ffmpeg,
+        ['-f', 'lavfi', '-i', `sine=frequency=220:duration=${dur}`, '-af', 'volume=0.15', '-c:a', 'pcm_s16le', '-y', p],
+        { stdio: 'ignore' },
+    );
     return { audioPath: p, durationSec: dur };
 }
 
@@ -89,7 +89,7 @@ export async function generateAgenticVoiceovers(
                     sceneIndex: s.sceneNumber - 1,
                     audioPath: r.path,
                     durationSec: r.duration || s.durationSec,
-                    captionSegments: (r.captionSegments?.length)
+                    captionSegments: r.captionSegments?.length
                         ? r.captionSegments
                         : syllableWordTimings(s.voiceoverText, Math.round((r.duration || s.durationSec) * 1000)),
                 });
@@ -114,8 +114,14 @@ function withTimeout<T>(promise: Promise<T>, ms: number, msg: string): Promise<T
     return new Promise<T>((resolve, reject) => {
         const t = setTimeout(() => reject(new Error(msg)), ms);
         promise.then(
-            (v) => { clearTimeout(t); resolve(v); },
-            (e) => { clearTimeout(t); reject(e); },
+            (v) => {
+                clearTimeout(t);
+                resolve(v);
+            },
+            (e) => {
+                clearTimeout(t);
+                reject(e);
+            },
         );
     });
 }
@@ -126,7 +132,10 @@ function fillMissing(plan: Plan, have: SceneVoiceover[], audioDir: string, drive
     for (const s of plan.scenes) {
         const idx = s.sceneNumber - 1;
         const existing = byIdx.get(idx);
-        if (existing) { scenes.push(existing); continue; }
+        if (existing) {
+            scenes.push(existing);
+            continue;
+        }
         const t = toneForScene(s.voiceoverText, s.durationSec, idx);
         // Word-paced caption fallback from the scene text (offline heuristic,
         // no network / native binary). Produces word-by-word cues instead of a
@@ -139,7 +148,10 @@ function fillMissing(plan: Plan, have: SceneVoiceover[], audioDir: string, drive
 }
 
 /** Map plan + generated voiceovers into CaptionSourceScene[] for sidecars. */
-function toCaptionScenes(plan: Plan, scenes: SceneVoiceover[]): { text: string; durationSeconds: number; captionSegments?: CaptionSegment[] }[] {
+function toCaptionScenes(
+    plan: Plan,
+    scenes: SceneVoiceover[],
+): { text: string; durationSeconds: number; captionSegments?: CaptionSegment[] }[] {
     const byIdx = new Map(scenes.map((s) => [s.sceneIndex, s]));
     return plan.scenes.map((s) => {
         const v = byIdx.get(s.sceneNumber - 1);

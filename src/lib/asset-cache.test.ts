@@ -45,10 +45,12 @@ test('TTL expiry turns a hit into a miss', () => {
     // TTL of 1ms => wait past it so the expiry check is deterministic
     // (the cache compares file mtime against wall-clock; a tiny sleep avoids a
     // sub-millisecond race on fast runners).
-    return new Promise<void>((resolve) => setTimeout(() => {
-        assert.strictEqual(getCached(url, 1), null, 'expired entry should miss');
-        resolve();
-    }, 5));
+    return new Promise<void>((resolve) =>
+        setTimeout(() => {
+            assert.strictEqual(getCached(url, 1), null, 'expired entry should miss');
+            resolve();
+        }, 5),
+    );
 });
 
 test('clearCache removes entries', () => {

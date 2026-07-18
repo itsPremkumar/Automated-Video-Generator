@@ -6,15 +6,15 @@ import { resolveProjectPath } from '../../shared/runtime/paths.js';
 const SFX_INPUT_DIR = resolveProjectPath('input', 'sfx');
 
 const KIND_MAP: Record<string, SfxKind> = {
-    'whoosh': 'whoosh',
-    'ding': 'ding',
-    'impact': 'impact',
-    'notification': 'notification',
-    'click': 'click',
-    'pop': 'pop',
-    'transition': 'transition',
-    'swish': 'swish',
-    'bounce': 'bounce',
+    whoosh: 'whoosh',
+    ding: 'ding',
+    impact: 'impact',
+    notification: 'notification',
+    click: 'click',
+    pop: 'pop',
+    transition: 'transition',
+    swish: 'swish',
+    bounce: 'bounce',
 };
 
 const AUDIO_EXTENSIONS = ['.mp3', '.wav', '.ogg', '.m4a', '.flac'];
@@ -90,12 +90,12 @@ export class LocalSfxProvider implements SfxProvider {
 function estimateDuration(fileSizeBytes: number, ext: string): number {
     // Per-format bitrate estimates (bytes per second)
     const rates: Record<string, number> = {
-        '.mp3': 16000,   // ~128 kbps
-        '.wav': 176000,  // ~1411 kbps
-        '.ogg': 14000,   // ~112 kbps Vorbis
-        '.m4a': 16000,   // ~128 kbps AAC
-        '.flac': 75000,  // ~600 kbps variable
-        '.aac': 16000,   // ~128 kbps
+        '.mp3': 16000, // ~128 kbps
+        '.wav': 176000, // ~1411 kbps
+        '.ogg': 14000, // ~112 kbps Vorbis
+        '.m4a': 16000, // ~128 kbps AAC
+        '.flac': 75000, // ~600 kbps variable
+        '.aac': 16000, // ~128 kbps
     };
     const bytesPerSec = rates[ext.toLowerCase()] ?? 16000;
     const estimatedSec = fileSizeBytes / bytesPerSec;

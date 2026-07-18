@@ -15,7 +15,12 @@ const ASPECT_DIMS: Record<string, { w: number; h: number }> = {
     '1:1': { w: 1080, h: 1080 },
 };
 
-export interface DerivativeResult { ok: boolean; outputs: string[]; thumbnail?: string; detail: string; }
+export interface DerivativeResult {
+    ok: boolean;
+    outputs: string[];
+    thumbnail?: string;
+    detail: string;
+}
 
 /**
  * @param aspects aspect ratios to produce (default all three).
@@ -39,14 +44,38 @@ export async function deriveFromVideo(
         const out = path.join(dir, `${base}_${a.replace(':', 'x')}.mp4`);
         // scale to cover the target frame, then center-crop (safe, never distort).
         const vf = `scale=${dim.w}:${dim.h}:force_original_aspect_ratio=increase,crop=${dim.w}:${dim.h}`;
-        const { code } = await runFfmpeg(['-i', file, '-vf', vf, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'copy', '-y', out]);
+        const { code } = await runFfmpeg([
+            '-i',
+            file,
+            '-vf',
+            vf,
+            '-c:v',
+            'libx264',
+            '-pix_fmt',
+            'yuv420p',
+            '-c:a',
+            'copy',
+            '-y',
+            out,
+        ]);
         if (code === 0 && fs.existsSync(out)) outputs.push(out);
     }
 
     let thumb: string | undefined;
     if (thumbnail) {
         thumb = path.join(dir, `${base}_thumb.jpg`);
-        const { code } = await runFfmpeg(['-i', file, '-ss', '00:00:01', '-vframes', '1', '-vf', 'scale=720:-1', '-y', thumb]);
+        const { code } = await runFfmpeg([
+            '-i',
+            file,
+            '-ss',
+            '00:00:01',
+            '-vframes',
+            '1',
+            '-vf',
+            'scale=720:-1',
+            '-y',
+            thumb,
+        ]);
         if (code !== 0 || !fs.existsSync(thumb)) thumb = undefined;
     }
 

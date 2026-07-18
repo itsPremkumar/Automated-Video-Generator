@@ -31,11 +31,23 @@ export interface BrandKit {
     bars?: boolean;
 }
 
-export interface BrandResult { ok: boolean; output?: string; detail: string; }
+export interface BrandResult {
+    ok: boolean;
+    output?: string;
+    detail: string;
+}
 
 export function hexToRgb(hex: string): [number, number, number] {
     const h = hex.replace('#', '');
-    const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16);
+    const n = parseInt(
+        h.length === 3
+            ? h
+                  .split('')
+                  .map((c) => c + c)
+                  .join('')
+            : h,
+        16,
+    );
     return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 function rgbExpr(hex: string): string {
@@ -68,8 +80,18 @@ async function makeCard(text: string, color: string, dur: number, w: number, h: 
     const safe = text.replace(/:/g, '\\:').replace(/'/g, "'\\''");
     const vf = `drawtext=text='${safe}':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2`;
     const { code } = await runFfmpeg([
-        '-f', 'lavfi', '-i', `color=c=${rgb}:s=${w}x${h}:d=${dur}`,
-        '-vf', vf, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-y', out,
+        '-f',
+        'lavfi',
+        '-i',
+        `color=c=${rgb}:s=${w}x${h}:d=${dur}`,
+        '-vf',
+        vf,
+        '-c:v',
+        'libx264',
+        '-pix_fmt',
+        'yuv420p',
+        '-y',
+        out,
     ]);
     return code === 0 && fs.existsSync(out);
 }
@@ -123,14 +145,23 @@ export async function applyBrandKit(
     const filterParts: string[] = [];
     segments.forEach((_, i) => {
         let scale = `[${i}:v]scale=${dims.w}:${dims.h}:force_original_aspect_ratio=increase,crop=${dims.w}:${dims.h}[v${i}]`;
-        if (i === segments.length - 1 && needsVf) scale = `[${i}:v]scale=${dims.w}:${dims.h}:force_original_aspect_ratio=increase,crop=${dims.w}:${dims.h},${vf}[v${i}]`;
+        if (i === segments.length - 1 && needsVf)
+            scale = `[${i}:v]scale=${dims.w}:${dims.h}:force_original_aspect_ratio=increase,crop=${dims.w}:${dims.h},${vf}[v${i}]`;
         filterParts.push(scale);
     });
     const concat = segments.map((_, i) => `[v${i}]`).join('') + `concat=n=${segments.length}:v=1:a=0[outv]`;
     const { code, out: log } = await run([
         ...inputs,
-        '-filter_complex', `${filterParts.join(';')};${concat}`,
-        '-map', '[outv]', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-y', output,
+        '-filter_complex',
+        `${filterParts.join(';')};${concat}`,
+        '-map',
+        '[outv]',
+        '-c:v',
+        'libx264',
+        '-pix_fmt',
+        'yuv420p',
+        '-y',
+        output,
     ]);
     return finalize(code, output, log, `branded with kit (intro=${kit.intro || 0}s, outro=${kit.outro || 0}s)`);
 }

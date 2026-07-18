@@ -18,9 +18,9 @@ interface PunchInConfig {
 }
 
 interface PunchInPoint {
-    atSec: number;      // Time in scene (seconds)
-    scale: number;      // Zoom factor (1.0 = none, 1.5 = 50% zoom)
-    dur: number;        // Duration of zoom (seconds)
+    atSec: number; // Time in scene (seconds)
+    scale: number; // Zoom factor (1.0 = none, 1.5 = 50% zoom)
+    dur: number; // Duration of zoom (seconds)
     easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
 }
 
@@ -33,10 +33,30 @@ const DEFAULT_CONFIG: Required<PunchInConfig> = {
 
 /** Emphasis words that trigger auto punch-in */
 const EMPHASIS_WORDS = [
-    'secret', 'amazing', 'incredible', 'shocking', 'unbelievable',
-    'critical', 'essential', 'key', 'vital', 'crucial', 'game-changer',
-    'breakthrough', 'revolutionary', 'never', 'always', 'best', 'worst',
-    'first', 'last', 'only', 'exclusive', 'revealed', 'exposed', 'truth',
+    'secret',
+    'amazing',
+    'incredible',
+    'shocking',
+    'unbelievable',
+    'critical',
+    'essential',
+    'key',
+    'vital',
+    'crucial',
+    'game-changer',
+    'breakthrough',
+    'revolutionary',
+    'never',
+    'always',
+    'best',
+    'worst',
+    'first',
+    'last',
+    'only',
+    'exclusive',
+    'revealed',
+    'exposed',
+    'truth',
 ];
 
 export const punchInPlugin: AgenticPlugin = {
@@ -48,10 +68,7 @@ export const punchInPlugin: AgenticPlugin = {
         tags: ['zoom', 'emphasis', 'motion', 'keyframe'],
     },
 
-    capabilities: [
-        Capability.MOTION_KEYFRAMES,
-        Capability.SCRIPT_ANALYSIS,
-    ],
+    capabilities: [Capability.MOTION_KEYFRAMES, Capability.SCRIPT_ANALYSIS],
 
     category: PluginCategory.MOTION,
 
@@ -66,7 +83,7 @@ export const punchInPlugin: AgenticPlugin = {
             const enhancedPlan = { ...plan };
             for (const scene of enhancedPlan.scenes) {
                 const text = scene.voiceoverText?.toLowerCase() ?? '';
-                const match = EMPHASIS_WORDS.find(w => text.includes(w));
+                const match = EMPHASIS_WORDS.find((w) => text.includes(w));
                 if (match && !scene.punchIn) {
                     // Place punch-in ~45% through scene
                     const atSec = Math.max(0.3, (scene.durationSec ?? 4) * 0.45);
@@ -119,11 +136,7 @@ export const punchInPlugin: AgenticPlugin = {
 };
 
 /** Build zoompan filter expression from punch-in points */
-function buildZoompanExpression(
-    points: PunchInPoint[],
-    sceneDuration: number,
-    defaultEasing: string
-): string | null {
+function buildZoompanExpression(points: PunchInPoint[], sceneDuration: number, defaultEasing: string): string | null {
     if (points.length === 0) return null;
 
     // zoompan expression: z='if(gt(t,START),min(zoom+RATE,SCALE),zoom)'
@@ -169,7 +182,7 @@ function getPunchInPoints(scene: any, cfg: PunchInConfig, ctx: any): PunchInPoin
     const points: PunchInPoint[] = [];
 
     // 1. Scene-specific config
-    const sceneConfig = cfg.scenes?.find(s => s.atSec >= 0); // Simplified matching
+    const sceneConfig = cfg.scenes?.find((s) => s.atSec >= 0); // Simplified matching
     if (sceneConfig) points.push({ ...cfg.defaults, ...sceneConfig });
 
     // 2. Scene.punchIn set by onPlan (auto-emphasis)

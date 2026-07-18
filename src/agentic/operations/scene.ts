@@ -18,9 +18,16 @@ import * as path from 'path';
 import { runFfmpeg } from './edit.js';
 import { probeMedia, type ProbeRunner } from './probe.js';
 
-export interface SceneCut { time: number; score: number; }
+export interface SceneCut {
+    time: number;
+    score: number;
+}
 
-export interface Chapter { start: number; end: number; label: string; }
+export interface Chapter {
+    start: number;
+    end: number;
+    label: string;
+}
 
 export interface SceneResult {
     ok: boolean;
@@ -77,11 +84,7 @@ export interface SceneOpts {
 /**
  * Detect scenes / trim to best scene / build chapters.
  */
-export async function detectScenes(
-    file: string,
-    out?: string,
-    opts: SceneOpts = {},
-): Promise<SceneResult> {
+export async function detectScenes(file: string, out?: string, opts: SceneOpts = {}): Promise<SceneResult> {
     if (!fs.existsSync(file)) return { ok: false, detail: `input not found: ${file}` };
     const mode = opts.mode ?? 'detect';
     const runner = opts.runner ?? runFfmpeg;
@@ -93,7 +96,7 @@ export async function detectScenes(
     // caller-supplied duration, then to a hint in the log.
     const probe = opts.probe ?? probeMedia;
     const info = await probe(file);
-    const duration = opts.duration ?? (info.duration > 0 ? info.duration : parseDurationHint(det.out) ?? 0);
+    const duration = opts.duration ?? (info.duration > 0 ? info.duration : (parseDurationHint(det.out) ?? 0));
     if ((mode === 'trim' || mode === 'chapters') && !duration) {
         return { ok: false, detail: 'could not determine media duration' };
     }
@@ -115,19 +118,37 @@ export async function detectScenes(
         const output = out ?? path.join(process.cwd(), 'output', `scene_${Date.now()}.mp4`);
         fs.mkdirSync(path.dirname(output), { recursive: true });
         const pass = await runner(['-i', file, '-c', 'copy', '-y', output]);
-        return { ok: pass.code === 0, output: pass.code === 0 ? output : undefined, detail: 'no scene cuts; kept whole clip', kept: { start: 0, end: duration } };
+        return {
+            ok: pass.code === 0,
+            output: pass.code === 0 ? output : undefined,
+            detail: 'no scene cuts; kept whole clip',
+            kept: { start: 0, end: duration },
+        };
     }
     const idx = opts.sceneIndex ?? -1; // -1 → longest
     const chosen = idx >= 0 ? chapters[idx] : longestScene(chapters)!;
     const output = out ?? path.join(process.cwd(), 'output', `scene_${Date.now()}.mp4`);
     fs.mkdirSync(path.dirname(output), { recursive: true });
     const { code, out: log } = await runner([
-        '-i', file, '-ss', String(chosen.start), '-to', String(chosen.end),
-        '-c', 'copy', '-y', output,
+        '-i',
+        file,
+        '-ss',
+        String(chosen.start),
+        '-to',
+        String(chosen.end),
+        '-c',
+        'copy',
+        '-y',
+        output,
     ]);
     if (code !== 0) return { ok: false, detail: `scene trim failed:\n${log.slice(-600)}` };
     if (!fs.existsSync(output)) return { ok: false, detail: 'output not produced' };
-    return { ok: true, output, detail: `trimmed to scene [${chosen.start.toFixed(2)}–${chosen.end.toFixed(2)}]`, kept: { start: chosen.start, end: chosen.end } };
+    return {
+        ok: true,
+        output,
+        detail: `trimmed to scene [${chosen.start.toFixed(2)}–${chosen.end.toFixed(2)}]`,
+        kept: { start: chosen.start, end: chosen.end },
+    };
 }
 
 function parseDurationHint(log: string): number | null {

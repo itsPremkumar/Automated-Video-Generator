@@ -20,7 +20,15 @@ import { createHash } from 'crypto';
 import { AgenticWorkspace } from './workspace.js';
 
 export interface ArchiveFile {
-    role: 'final_video' | 'multi_aspect' | 'thumbnail' | 'subtitles' | 'metadata' | 'contact_sheet' | 'source_asset' | 'audit';
+    role:
+        | 'final_video'
+        | 'multi_aspect'
+        | 'thumbnail'
+        | 'subtitles'
+        | 'metadata'
+        | 'contact_sheet'
+        | 'source_asset'
+        | 'audit';
     src: string;
     dest: string;
     sizeBytes: number;
@@ -73,7 +81,9 @@ export function archiveJob(ws: AgenticWorkspace, rootMp4: string): ArchiveManife
             fs.copyFileSync(src, dest);
             const st = fs.statSync(dest);
             files.push({ role, src, dest, sizeBytes: st.size, sha1: sha1File(dest) });
-        } catch { /* skip unreadable */ }
+        } catch {
+            /* skip unreadable */
+        }
     };
 
     // 1. Final video(s) — primary + any multi-aspect siblings.
@@ -135,7 +145,9 @@ export function archiveJob(ws: AgenticWorkspace, rootMp4: string): ArchiveManife
 
     try {
         fs.writeFileSync(path.join(archiveDir, 'archive-manifest.json'), JSON.stringify(manifest, null, 2));
-    } catch { /* manifest is best-effort */ }
+    } catch {
+        /* manifest is best-effort */
+    }
 
     return manifest;
 }
@@ -147,7 +159,10 @@ export function verifyArchive(manifestPath: string): { ok: boolean; missing: str
         const missing: string[] = [];
         const corrupted: string[] = [];
         for (const f of m.files) {
-            if (!fs.existsSync(f.dest)) { missing.push(f.dest); continue; }
+            if (!fs.existsSync(f.dest)) {
+                missing.push(f.dest);
+                continue;
+            }
             if (f.sha1 && sha1File(f.dest) !== f.sha1) corrupted.push(f.dest);
         }
         return { ok: missing.length === 0 && corrupted.length === 0, missing, corrupted };

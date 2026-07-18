@@ -1,33 +1,33 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Agentic Video Plugin Configuration",
-  "description": "Configuration for all agentic video plugins. Place this file at ./agentic-plugins.config.json or specify via --plugin-config flag.",
-  "type": "array",
-  "items": {
-    "type": "object",
-    "required": ["name", "enabled"],
-    "properties": {
-      "name": {
-        "type": "string",
-        "description": "Plugin name (must match registered plugin)"
-      },
-      "enabled": {
-        "type": "boolean",
-        "description": "Whether to enable this plugin"
-      },
-      "config": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Agentic Video Plugin Configuration",
+    "description": "Configuration for all agentic video plugins. Place this file at ./agentic-plugins.config.json or specify via --plugin-config flag.",
+    "type": "array",
+    "items": {
         "type": "object",
-        "description": "Plugin-specific configuration",
-        "additionalProperties": true
-      },
-      "path": {
-        "type": "string",
-        "description": "Optional path to external plugin file"
-      },
-      "package": {
-        "type": "string",
-        "description": "Optional npm package name for external plugin"
-      }
+        "required": ["name", "enabled"],
+        "properties": {
+            "name": {
+                "type": "string",
+                "description": "Plugin name (must match registered plugin)"
+            },
+            "enabled": {
+                "type": "boolean",
+                "description": "Whether to enable this plugin"
+            },
+            "config": {
+                "type": "object",
+                "description": "Plugin-specific configuration",
+                "additionalProperties": true
+            },
+            "path": {
+                "type": "string",
+                "description": "Optional path to external plugin file"
+            },
+            "package": {
+                "type": "string",
+                "description": "Optional npm package name for external plugin"
+            }
+        }
     }
-  }
 }

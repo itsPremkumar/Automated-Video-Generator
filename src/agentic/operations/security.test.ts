@@ -25,25 +25,20 @@ describe('safeOutputPath', () => {
     });
 
     test('path traversal via ../ is blocked', () => {
-        assert.throws(
-            () => safeOutputPath('../../etc/cron'),
-            /path traversal blocked/,
-        );
+        assert.throws(() => safeOutputPath('../../etc/cron'), /path traversal blocked/);
     });
 
     test('absolute path outside output/ is blocked', () => {
-        assert.throws(
-            () => safeOutputPath('/etc/passwd'),
-            /path traversal blocked/,
-        );
+        assert.throws(() => safeOutputPath('/etc/passwd'), /path traversal blocked/);
     });
 
-    test('windows-style absolute path outside output/ is blocked (windows only)', { skip: process.platform !== 'win32' }, () => {
-        assert.throws(
-            () => safeOutputPath('C:\\Windows\\system32\\evil.dll'),
-            /path traversal blocked/,
-        );
-    });
+    test(
+        'windows-style absolute path outside output/ is blocked (windows only)',
+        { skip: process.platform !== 'win32' },
+        () => {
+            assert.throws(() => safeOutputPath('C:\\Windows\\system32\\evil.dll'), /path traversal blocked/);
+        },
+    );
 });
 
 describe('redactSecrets', () => {

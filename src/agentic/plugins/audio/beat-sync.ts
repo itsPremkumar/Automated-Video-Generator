@@ -24,10 +24,10 @@ interface BeatSyncConfig {
 }
 
 interface BeatInfo {
-    times: number[];      // Beat times in seconds
-    tempo: number;        // BPM
-    confidence: number;   // 0-1
-    onsets: number[];     // All onsets (not just beats)
+    times: number[]; // Beat times in seconds
+    tempo: number; // BPM
+    confidence: number; // 0-1
+    onsets: number[]; // All onsets (not just beats)
 }
 
 const DEFAULT_CONFIG: Required<BeatSyncConfig> = {
@@ -49,10 +49,7 @@ export const beatSyncPlugin: AgenticPlugin = {
         tags: ['beat', 'sync', 'music', 'onset', 'rhythm'],
     },
 
-    capabilities: [
-        Capability.AUDIO_ANALYSIS,
-        Capability.TIME_REMAP,
-    ],
+    capabilities: [Capability.AUDIO_ANALYSIS, Capability.TIME_REMAP],
 
     category: PluginCategory.AUDIO,
 
@@ -173,29 +170,39 @@ async function analyzeWithAubio(trackPath: string): Promise<BeatInfo> {
 async function analyzeWithFfmpeg(trackPath: string): Promise<BeatInfo> {
     const { execFile } = await import('child_process');
     const ffmpegMod: any = (await import('ffmpeg-static')).default;
-    const ffmpegPath: string = (ffmpegMod && typeof ffmpegMod === 'object' && 'path' in ffmpegMod) ? ffmpegMod.path : String(ffmpegMod);
+    const ffmpegPath: string =
+        ffmpegMod && typeof ffmpegMod === 'object' && 'path' in ffmpegMod ? ffmpegMod.path : String(ffmpegMod);
 
     return new Promise((resolve, reject) => {
         // Use astats with metadata=1 to get peak/level info
         // Then post-process to find onsets
-        execFile(ffmpegPath, [
-            '-i', trackPath,
-            '-af', 'astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.Peak_level',
-            '-f', 'null', '-'
-        ], { maxBuffer: 10 * 1024 * 1024 }, (err: Error | null, stdout: string, stderr: string) => {
-            if (err) return reject(err);
+        execFile(
+            ffmpegPath,
+            [
+                '-i',
+                trackPath,
+                '-af',
+                'astats=metadata=1:reset=1,ametadata=print:key=lavfi.astats.Overall.Peak_level',
+                '-f',
+                'null',
+                '-',
+            ],
+            { maxBuffer: 10 * 1024 * 1024 },
+            (err: Error | null, stdout: string, stderr: string) => {
+                if (err) return reject(err);
 
-            // Parse astats output for peaks (simplified onset detection)
-            const peaks = parseAstatsOutput(stderr);
-            const beats = quantizeToTempo(peaks);
+                // Parse astats output for peaks (simplified onset detection)
+                const peaks = parseAstatsOutput(stderr);
+                const beats = quantizeToTempo(peaks);
 
-            resolve({
-                times: beats,
-                tempo: estimateTempo(beats),
-                confidence: 0.6,
-                onsets: peaks,
-            });
-        });
+                resolve({
+                    times: beats,
+                    tempo: estimateTempo(beats),
+                    confidence: 0.6,
+                    onsets: peaks,
+                });
+            },
+        );
     });
 }
 
@@ -209,7 +216,8 @@ function parseAstatsOutput(stderr: string): number[] {
         const match = line.match(/lavfi\.astats\.Overall\.Peak_level=([-\d.]+)/);
         if (match) {
             const level = parseFloat(match[1]);
-            if (level > -20) { // Threshold for onset
+            if (level > -20) {
+                // Threshold for onset
                 peaks.push(time);
             }
             time += 1 / frameRate;
@@ -231,7 +239,7 @@ function quantizeToTempo(peaks: number[]): number[] {
 
     // Snap peaks to grid
     const beatDuration = 60 / tempo;
-    return peaks.map(p => Math.round(p / beatDuration) * beatDuration);
+    return peaks.map((p) => Math.round(p / beatDuration) * beatDuration);
 }
 
 function estimateTempo(peaks: number[]): number {
@@ -268,7 +276,7 @@ function snapToBeat(targetTime: number, beats: BeatInfo, cfg: BeatSyncConfig): n
 
     // Find nearest beat
     const nearest = times.reduce((prev, curr) =>
-        Math.abs(curr - targetTime) < Math.abs(prev - targetTime) ? curr : prev
+        Math.abs(curr - targetTime) < Math.abs(prev - targetTime) ? curr : prev,
     );
 
     // Constrain to min/max interval from last cut

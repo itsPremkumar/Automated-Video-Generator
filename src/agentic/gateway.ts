@@ -13,12 +13,7 @@
  */
 
 import * as fs from 'fs';
-import {
-    AgenticWorkspace,
-    getAgenticWorkspace,
-    writeJson,
-    readJson,
-} from './workspace.js';
+import { AgenticWorkspace, getAgenticWorkspace, writeJson, readJson } from './workspace.js';
 import { acquireAssets, AcquireDeps, FetchedVisual } from './acquire.js';
 import { verifyAll, VerifyDeps, VERIFY_PASS_CONFIDENCE } from './verify.js';
 import { AssetCandidate, AssetDecision, Plan, RenderManifest } from './types.js';
@@ -44,9 +39,10 @@ async function reAcquireScene(
     const scene = plan.scenes[sceneIndex];
     if (!scene) return null; // defensive: scene dropped
     const kind = scene.visualPreference;
-    const dir = kind === 'image'
-        ? require('./workspace').sceneImageDir(ws, sceneIndex)
-        : require('./workspace').sceneVideoDir(ws, sceneIndex);
+    const dir =
+        kind === 'image'
+            ? require('./workspace').sceneImageDir(ws, sceneIndex)
+            : require('./workspace').sceneVideoDir(ws, sceneIndex);
     const fetched: FetchedVisual[] = await deps.fetchVisual(newKeywords, kind, plan.orientation);
     if (fetched.length === 0) return null;
     const f = fetched[0];
@@ -66,7 +62,11 @@ async function reAcquireScene(
     };
 }
 
-export async function runGateway(plan: Plan, initialCandidates: AssetCandidate[], deps: GatewayDeps): Promise<{
+export async function runGateway(
+    plan: Plan,
+    initialCandidates: AssetCandidate[],
+    deps: GatewayDeps,
+): Promise<{
     workspace: AgenticWorkspace;
     decisions: AssetDecision[];
     manifest: RenderManifest;
@@ -94,7 +94,11 @@ export async function runGateway(plan: Plan, initialCandidates: AssetCandidate[]
                 replaced = await reAcquireScene(plan, c.sceneIndex, decided.newKeywords ?? c.keywords, deps, ws);
                 if (replaced) {
                     const rv = (await verifyAll([replaced], ws, deps))[0];
-                    const r2 = await deps.decide(replaced, { passes: rv.passes, confidence: rv.confidence, reason: rv.reason });
+                    const r2 = await deps.decide(replaced, {
+                        passes: rv.passes,
+                        confidence: rv.confidence,
+                        reason: rv.reason,
+                    });
                     if (r2.decision === 'approved') {
                         candidates.push(replaced);
                         decisions.push(mkDecision(replaced, 'approved', r2.rationale, 'agent', false));
@@ -118,7 +122,13 @@ export async function runGateway(plan: Plan, initialCandidates: AssetCandidate[]
     return { workspace: ws, decisions, manifest: manifest! };
 }
 
-function mkDecision(c: AssetCandidate, decision: AssetDecision['decision'], rationale: string, by: 'agent' | 'human' | 'system', fallback: boolean): AssetDecision {
+function mkDecision(
+    c: AssetCandidate,
+    decision: AssetDecision['decision'],
+    rationale: string,
+    by: 'agent' | 'human' | 'system',
+    fallback: boolean,
+): AssetDecision {
     return {
         assetId: `${c.kind}_s${c.sceneIndex}_c${c.candidateIndex}`,
         kind: c.kind,
@@ -160,11 +170,23 @@ export function buildRenderManifest(
         if (!list || list.length === 0) return null; // cannot render: missing scene visual
         // pick the first (acquire stores best-first)
         const pick = list[0];
-        assets.push({ kind: pick.kind, sceneIndex: i, localPath: pick.localPath, license: pick.license, licenseUrl: pick.licenseUrl });
+        assets.push({
+            kind: pick.kind,
+            sceneIndex: i,
+            localPath: pick.localPath,
+            license: pick.license,
+            licenseUrl: pick.licenseUrl,
+        });
     }
     if (approvedMusic.length > 0) {
         const m = approvedMusic[0];
-        assets.push({ kind: 'music', sceneIndex: -1, localPath: m.localPath, license: m.license, licenseUrl: m.licenseUrl });
+        assets.push({
+            kind: 'music',
+            sceneIndex: -1,
+            localPath: m.localPath,
+            license: m.license,
+            licenseUrl: m.licenseUrl,
+        });
     }
 
     return {

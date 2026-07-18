@@ -88,7 +88,11 @@ function ensureFiles(files: string[]): string | null {
  * Re-encodes with a shared pixel format / resolution so clips of differing
  * sizes/codecs concatenate cleanly (the safe filter_complex concat).
  */
-export async function mergeVideos(files: string[], out?: string, orientation: 'portrait' | 'landscape' = 'portrait'): Promise<EditResult> {
+export async function mergeVideos(
+    files: string[],
+    out?: string,
+    orientation: 'portrait' | 'landscape' = 'portrait',
+): Promise<EditResult> {
     const err = ensureFiles(files);
     if (err) return fail(err);
     const output = resolveOut(out, 'mp4', 'merged');
@@ -97,7 +101,10 @@ export async function mergeVideos(files: string[], out?: string, orientation: 'p
     const inputs = files.flatMap((f) => ['-i', f]);
     const labels = files.map((_, i) => `[${i}:v]`).join('');
     const filter = files
-        .map((_, i) => `[${i}:v]scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1[v${i}]`)
+        .map(
+            (_, i) =>
+                `[${i}:v]scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1[v${i}]`,
+        )
         .join(';');
     const concat = files.map((_, i) => `[v${i}]`).join('') + `concat=n=${files.length}:v=1:a=0[outv]`;
     const { code, out: log } = await runFfmpeg([
@@ -216,8 +223,7 @@ export async function rotateVideo(file: string, out?: string, deg: 90 | 180 | 27
     const err = ensureFiles([file]);
     if (err) return fail(err);
     const output = resolveOut(out, 'mp4', 'rotated');
-    const transpose =
-        deg === 90 ? 'transpose=1' : deg === 270 ? 'transpose=2' : 'transpose=1,transpose=1';
+    const transpose = deg === 90 ? 'transpose=1' : deg === 270 ? 'transpose=2' : 'transpose=1,transpose=1';
     const { code, out: log } = await runFfmpeg([
         '-i',
         file,

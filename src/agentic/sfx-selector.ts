@@ -15,7 +15,7 @@ import { SfxClip, SfxKind } from '../lib/free-sfx/models.js';
 
 export interface SceneSfxPlan {
     sceneIndex: number;
-    transitionIn: SfxKind | null;  // SFX when entering this scene
+    transitionIn: SfxKind | null; // SFX when entering this scene
     transitionOut: SfxKind | null; // SFX when leaving this scene
     emphasisPoints: { atMs: number; kind: SfxKind }[]; // during the scene
 }
@@ -50,7 +50,12 @@ function pickTransitionIn(sceneIndex: number, _keywords: string, isIntro: boolea
     return null;
 }
 
-function pickTransitionOut(_sceneIndex: number, _keywords: string, isOutro: boolean, _totalScenes: number): SfxKind | null {
+function pickTransitionOut(
+    _sceneIndex: number,
+    _keywords: string,
+    isOutro: boolean,
+    _totalScenes: number,
+): SfxKind | null {
     if (isOutro) return 'bounce';
     return null;
 }
@@ -61,7 +66,24 @@ function pickEmphasisPoints(text: string, durationSec: number): { atMs: number; 
     const durationMs = durationSec * 1000;
 
     // Find emphasis-worthy words
-    const emphasisWords = ['important', 'amazing', 'warning', 'critical', 'secret', 'key', 'number', 'tip', 'step', 'finally', 'but', 'however', 'introducing', 'announcing', 'breaking', 'urgent'];
+    const emphasisWords = [
+        'important',
+        'amazing',
+        'warning',
+        'critical',
+        'secret',
+        'key',
+        'number',
+        'tip',
+        'step',
+        'finally',
+        'but',
+        'however',
+        'introducing',
+        'announcing',
+        'breaking',
+        'urgent',
+    ];
 
     for (let w = 0; w < words.length; w++) {
         const clean = words[w].replace(/[^a-zA-Z]/g, '').toLowerCase();

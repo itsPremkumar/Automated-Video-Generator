@@ -14,7 +14,13 @@ function fakePlan(texts: string[]): Plan {
         voice: 'en-US-JennyNeural',
         musicQuery: 'ambient lofi chill',
         orientation: 'portrait',
-        scenes: texts.map((t, i) => ({ sceneNumber: i + 1, voiceoverText: t, searchKeywords: [], visualPreference: 'video', durationSec: 4 })),
+        scenes: texts.map((t, i) => ({
+            sceneNumber: i + 1,
+            voiceoverText: t,
+            searchKeywords: [],
+            visualPreference: 'video',
+            durationSec: 4,
+        })),
         totalDurationSec: texts.length * 4,
     };
 }
@@ -58,7 +64,15 @@ describe('applyProEdits', () => {
     });
 
     test('empty plan is safe', async () => {
-        const p: Plan = { jobId: 'j', title: 'T', voice: 'en-US-JennyNeural', musicQuery: 'ambient lofi chill', orientation: 'portrait', scenes: [], totalDurationSec: 0 };
+        const p: Plan = {
+            jobId: 'j',
+            title: 'T',
+            voice: 'en-US-JennyNeural',
+            musicQuery: 'ambient lofi chill',
+            orientation: 'portrait',
+            scenes: [],
+            totalDurationSec: 0,
+        };
         await applyProEdits(p, { hookFirst: true, variablePacing: true });
         assert.ok(true);
     });

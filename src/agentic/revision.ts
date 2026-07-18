@@ -22,17 +22,17 @@ export type ReviewState = 'draft' | 'in_review' | 'changes_requested' | 'approve
 
 export interface RevisionRound {
     round: number;
-    requestedBy: string;        // e.g. 'client', 'producer', 'agent'
-    requestedAt: string;        // ISO timestamp
-    notes: string;              // free-text change requests
+    requestedBy: string; // e.g. 'client', 'producer', 'agent'
+    requestedAt: string; // ISO timestamp
+    notes: string; // free-text change requests
     /** Structured change hints the next run can read (optional). */
     changes?: { scope: 'script' | 'music' | 'visuals' | 'captions' | 'color' | 'other'; detail: string }[];
-    resultJobId?: string;       // jobId of the re-render produced from this round
+    resultJobId?: string; // jobId of the re-render produced from this round
     resolvedAt?: string;
 }
 
 export interface RevisionState {
-    jobId: string;              // the ORIGINAL job this review thread belongs to
+    jobId: string; // the ORIGINAL job this review thread belongs to
     title: string;
     state: ReviewState;
     currentRound: number;
@@ -110,7 +110,12 @@ export function approve(ws: AgenticWorkspace, by = 'client'): RevisionState {
     if (!st) throw new Error('no revision thread open for ' + ws.jobId);
     st.currentRound += st.rounds.length === 0 ? 1 : 0;
     if (st.rounds.length === 0) {
-        st.rounds.push({ round: st.currentRound, requestedBy: by, requestedAt: new Date().toISOString(), notes: 'approved' });
+        st.rounds.push({
+            round: st.currentRound,
+            requestedBy: by,
+            requestedAt: new Date().toISOString(),
+            notes: 'approved',
+        });
     } else {
         st.rounds[st.rounds.length - 1].resolvedAt = new Date().toISOString();
     }

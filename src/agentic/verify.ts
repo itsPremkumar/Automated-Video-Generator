@@ -60,7 +60,9 @@ export async function verifyAll(
             try {
                 const sc = await checkSourceAsset(c.localPath, { kind: 'image', minWidth: 480, targetAspect: 9 / 16 });
                 v.metrics = { ...(v.metrics ?? {}), sourceChecks: sc };
-            } catch { /* probe failure is non-fatal */ }
+            } catch {
+                /* probe failure is non-fatal */
+            }
             results.push(v);
             imageResults.push(v);
         } else if (c.kind === 'video') {
@@ -70,7 +72,9 @@ export async function verifyAll(
             try {
                 const sc = await checkSourceAsset(c.localPath, { kind: 'video', minWidth: 480, targetAspect: 9 / 16 });
                 v.metrics = { ...(v.metrics ?? {}), sourceChecks: sc };
-            } catch { /* probe failure is non-fatal */ }
+            } catch {
+                /* probe failure is non-fatal */
+            }
             results.push(v);
             videoResults.push(v);
         } else {
@@ -108,7 +112,12 @@ function toVerification(id: string, c: AssetCandidate, r: VerificationResult): A
     };
 }
 
-function pushByKind(v: AssetVerification, img: AssetVerification[], vid: AssetVerification[], mus: AssetVerification[]) {
+function pushByKind(
+    v: AssetVerification,
+    img: AssetVerification[],
+    vid: AssetVerification[],
+    mus: AssetVerification[],
+) {
     if (v.kind === 'image') img.push(v);
     else if (v.kind === 'video') vid.push(v);
     else mus.push(v);

@@ -13,13 +13,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { AgenticWorkspace } from './workspace.js';
 
-export type JobState =
-    | 'pending'
-    | 'processing'
-    | 'awaiting_review'
-    | 'completed'
-    | 'failed'
-    | 'cancelled';
+export type JobState = 'pending' | 'processing' | 'awaiting_review' | 'completed' | 'failed' | 'cancelled';
 
 export interface JobRecord {
     jobId: string;
@@ -115,5 +109,7 @@ export function computeMetrics(sceneCounts: number[] = []): JobMetrics {
 export function persistJob(rec: JobRecord): void {
     try {
         fs.writeFileSync(path.join(rec.workspace.root, 'job.json'), JSON.stringify(rec, null, 2), 'utf8');
-    } catch { /* best-effort */ }
+    } catch {
+        /* best-effort */
+    }
 }

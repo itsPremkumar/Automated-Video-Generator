@@ -32,16 +32,15 @@ export function safeOutputPath(out?: string): string | undefined {
     // Canonical traversal check (platform-independent): the resolved path must
     // be exactly the root or live underneath it.
     if (resolved !== root && !resolved.startsWith(root + path.sep)) {
-        throw new Error(
-            `path traversal blocked: output path "${out}" resolves outside the output directory`,
-        );
+        throw new Error(`path traversal blocked: output path "${out}" resolves outside the output directory`);
     }
     // Ensure the parent exists so the op can write.
     fs.mkdirSync(path.dirname(resolved), { recursive: true });
     return resolved;
 }
 
-const SECRET_KEY_RE = /(api[_-]?key|apikey|secret|token|password|passwd|authorization|ghp_|sk-|ai_key|private[_-]?key)\s*[:=]\s*['"]?([^\s'"<>]{4,})/gi;
+const SECRET_KEY_RE =
+    /(api[_-]?key|apikey|secret|token|password|passwd|authorization|ghp_|sk-|ai_key|private[_-]?key)\s*[:=]\s*['"]?([^\s'"<>]{4,})/gi;
 
 /**
  * Replace secret-shaped `key=value` / `key: value` pairs in a string with a

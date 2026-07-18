@@ -63,10 +63,16 @@ export function createAgenticWorkspace(jobId: string): AgenticWorkspace {
             if (fs.existsSync(base)) {
                 for (const sub of fs.readdirSync(base)) {
                     const full = path.join(base, sub);
-                    try { fs.rmSync(full, { recursive: true, force: true }); } catch { /* ignore */ }
+                    try {
+                        fs.rmSync(full, { recursive: true, force: true });
+                    } catch {
+                        /* ignore */
+                    }
                 }
             }
-        } catch { /* ignore */ }
+        } catch {
+            /* ignore */
+        }
     }
 
     for (const dir of [ws.root, ws.assetsDir, ws.imagesDir, ws.videosDir, ws.musicDir, ws.verificationDir]) {
@@ -114,7 +120,8 @@ export function readJson<T = any>(ws: AgenticWorkspace, relativePath: string): T
 export function pruneWorkspaces(maxKeep = 25, root: string = WORKSPACES_ROOT): number {
     try {
         if (!fs.existsSync(root)) return 0;
-        const dirs = fs.readdirSync(root)
+        const dirs = fs
+            .readdirSync(root)
             .map((d) => path.join(root, d))
             .filter((d) => fs.statSync(d).isDirectory());
         // Sort oldest-first by mtime.

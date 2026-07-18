@@ -53,10 +53,7 @@ export const watermarkPlugin: AgenticPlugin = {
         tags: ['watermark', 'branding', 'logo', 'overlay', 'watermark'],
     },
 
-    capabilities: [
-        Capability.OVERLAY_STATIC,
-        Capability.OVERLAY_ANIMATED,
-    ],
+    capabilities: [Capability.OVERLAY_STATIC, Capability.OVERLAY_ANIMATED],
 
     category: PluginCategory.OVERLAY,
 
@@ -93,7 +90,7 @@ export const watermarkPlugin: AgenticPlugin = {
             if (!wmPath) return scene;
 
             // Check scene-specific override
-            const sceneCfg = cfg.scenes?.find(s => s.sceneIndex === scene.sceneIndex - 1);
+            const sceneCfg = cfg.scenes?.find((s) => s.sceneIndex === scene.sceneIndex - 1);
             if (sceneCfg?.enabled === false) return scene;
 
             const opacity = sceneCfg?.opacity ?? cfg.opacity;
@@ -104,12 +101,24 @@ export const watermarkPlugin: AgenticPlugin = {
             // Build overlay position
             let overlayExpr = '';
             switch (position) {
-                case 'tl': overlayExpr = `${margin}:${margin}`; break;
-                case 'tr': overlayExpr = `W-w-${margin}:${margin}`; break;
-                case 'bl': overlayExpr = `${margin}:H-h-${margin}`; break;
-                case 'br': overlayExpr = `W-w-${margin}:H-h-${margin}`; break;
-                case 'center': overlayExpr = `(W-w)/2:(H-h)/2`; break;
-                case 'custom': overlayExpr = `${cfg.customPos?.x ?? 0}:${cfg.customPos?.y ?? 0}`; break;
+                case 'tl':
+                    overlayExpr = `${margin}:${margin}`;
+                    break;
+                case 'tr':
+                    overlayExpr = `W-w-${margin}:${margin}`;
+                    break;
+                case 'bl':
+                    overlayExpr = `${margin}:H-h-${margin}`;
+                    break;
+                case 'br':
+                    overlayExpr = `W-w-${margin}:H-h-${margin}`;
+                    break;
+                case 'center':
+                    overlayExpr = `(W-w)/2:(H-h)/2`;
+                    break;
+                case 'custom':
+                    overlayExpr = `${cfg.customPos?.x ?? 0}:${cfg.customPos?.y ?? 0}`;
+                    break;
             }
 
             // Build filter chain

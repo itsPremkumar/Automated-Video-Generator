@@ -18,7 +18,8 @@ import { ServiceUnavailableError } from './errors';
 import { appLogger } from './logger';
 
 const OLLAMA_BASE_URL = (process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434').replace(/\/+$/, '');
-const OLLAMA_SCRIPT_MODEL = (process.env.OLLAMA_SCRIPT_MODEL || process.env.OLLAMA_MODEL || 'llama3').trim() || 'llama3';
+const OLLAMA_SCRIPT_MODEL =
+    (process.env.OLLAMA_SCRIPT_MODEL || process.env.OLLAMA_MODEL || 'llama3').trim() || 'llama3';
 const AUTO_START = (process.env.OLLAMA_AUTOSTART || 'true').toLowerCase() !== 'false';
 const AUTO_PULL = (process.env.OLLAMA_AUTOPULL || 'true').toLowerCase() !== 'false';
 const MIN_FREE_BYTES = 1.5 * 1024 * 1024 * 1024; // 1.5 GB guard
@@ -75,7 +76,9 @@ export interface OllamaReadyResult {
     detail: string;
 }
 
-export async function ensureOllamaReady(opts: { model?: string; autostart?: boolean; autopull?: boolean } = {}): Promise<OllamaReadyResult> {
+export async function ensureOllamaReady(
+    opts: { model?: string; autostart?: boolean; autopull?: boolean } = {},
+): Promise<OllamaReadyResult> {
     const model = opts.model?.trim() || OLLAMA_SCRIPT_MODEL;
     const autostart = opts.autostart ?? AUTO_START;
     const autopull = opts.autopull ?? AUTO_PULL;
@@ -86,7 +89,13 @@ export async function ensureOllamaReady(opts: { model?: string; autostart?: bool
             return { ready: true, model, started: false, pulled: false, detail: `Ollama ready with ${model}` };
         }
         if (!autopull) {
-            return { ready: false, model, started: false, pulled: false, detail: `Model ${model} not pulled and autopull disabled` };
+            return {
+                ready: false,
+                model,
+                started: false,
+                pulled: false,
+                detail: `Model ${model} not pulled and autopull disabled`,
+            };
         }
         await pullModel(model);
         return { ready: true, model, started: false, pulled: true, detail: `Pulled ${model}` };
@@ -128,7 +137,13 @@ export async function ensureOllamaReady(opts: { model?: string; autostart?: bool
         return { ready: true, model, started: true, pulled: false, detail: `Started Ollama, ${model} present` };
     }
     if (!autopull) {
-        return { ready: false, model, started: true, pulled: false, detail: `Started but ${model} not pulled (autopull off)` };
+        return {
+            ready: false,
+            model,
+            started: true,
+            pulled: false,
+            detail: `Started but ${model} not pulled (autopull off)`,
+        };
     }
     await pullModel(model);
     return { ready: true, model, started: true, pulled: true, detail: `Started Ollama and pulled ${model}` };

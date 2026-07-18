@@ -6,7 +6,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { writeScriptHeuristic } from '../agent.js';
 
-export interface ScriptResult { ok: boolean; script?: string; path?: string; detail: string; }
+export interface ScriptResult {
+    ok: boolean;
+    script?: string;
+    path?: string;
+    detail: string;
+}
 
 const HOOKS = [
     'Did you know that',

@@ -48,14 +48,36 @@ function makeClip(name: string, durSec = 2, color = 'blue'): string {
     const p = path.join(tmp, name);
     execFileSync(
         ffmpeg,
-        ['-f', 'lavfi', '-i', `color=c=${color}:s=720x1280:d=${durSec}`, '-f', 'lavfi', '-i', `sine=frequency=440:duration=${durSec}`, '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-c:a', 'aac', '-shortest', '-y', p],
+        [
+            '-f',
+            'lavfi',
+            '-i',
+            `color=c=${color}:s=720x1280:d=${durSec}`,
+            '-f',
+            'lavfi',
+            '-i',
+            `sine=frequency=440:duration=${durSec}`,
+            '-pix_fmt',
+            'yuv420p',
+            '-c:v',
+            'libx264',
+            '-c:a',
+            'aac',
+            '-shortest',
+            '-y',
+            p,
+        ],
         { stdio: 'ignore' },
     );
     return p;
 }
 
 function dur(file: string): number {
-    const out = execFileSync(ffprobe, ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', file], { encoding: 'utf-8' });
+    const out = execFileSync(
+        ffprobe,
+        ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', file],
+        { encoding: 'utf-8' },
+    );
     return parseFloat(out.trim()) || 0;
 }
 
@@ -174,15 +196,48 @@ describe('route.ts intent classification (heuristic, no model)', () => {
         const r = routeTask(p);
         return isChain(r) ? r.chain[0] : r;
     };
-    test('classifies merge', () => { assert.equal(single('merge a.mp4 and b.mp4 into one video').kind, 'merge'); });
-    test('classifies trim with times', () => { const t = single('trim this clip from 10 to 20 seconds'); assert.equal(t.kind, 'trim'); assert.equal(t.args.start, 10); assert.equal(t.args.end, 20); });
-    test('classifies crop to 9:16', () => { const t = single('crop this video to 9:16 for tiktok'); assert.equal(t.kind, 'crop'); assert.equal(t.args.preset, '9:16'); });
-    test('classifies resize', () => { assert.equal(single('resize this to 360x640').kind, 'resize'); });
-    test('classifies rotate', () => { const t = single('rotate the clip 90 degrees'); assert.equal(t.kind, 'rotate'); assert.equal(t.args.deg, 90); });
-    test('classifies extract audio', () => { assert.equal(single('extract audio from my video').kind, 'separate_audio'); });
-    test('classifies voiceover', () => { const t = single('generate a voiceover of "welcome to my channel"'); assert.equal(t.kind, 'voiceover'); assert.ok((t.args.text || '').includes('welcome')); });
-    test('classifies download image', () => { assert.equal(single('download an image of a coffee cup').kind, 'download_image'); });
-    test('classifies download video', () => { assert.equal(single('download a video of a city').kind, 'download_video'); });
-    test('classifies full video', () => { assert.equal(single('make a video about the benefits of morning walks').kind, 'full_video'); });
-    test('detects 2-step chain', () => { const t = routeTask('crop to 9:16 then add music'); assert.ok(isChain(t)); assert.equal(t.chain.length, 2); });
+    test('classifies merge', () => {
+        assert.equal(single('merge a.mp4 and b.mp4 into one video').kind, 'merge');
+    });
+    test('classifies trim with times', () => {
+        const t = single('trim this clip from 10 to 20 seconds');
+        assert.equal(t.kind, 'trim');
+        assert.equal(t.args.start, 10);
+        assert.equal(t.args.end, 20);
+    });
+    test('classifies crop to 9:16', () => {
+        const t = single('crop this video to 9:16 for tiktok');
+        assert.equal(t.kind, 'crop');
+        assert.equal(t.args.preset, '9:16');
+    });
+    test('classifies resize', () => {
+        assert.equal(single('resize this to 360x640').kind, 'resize');
+    });
+    test('classifies rotate', () => {
+        const t = single('rotate the clip 90 degrees');
+        assert.equal(t.kind, 'rotate');
+        assert.equal(t.args.deg, 90);
+    });
+    test('classifies extract audio', () => {
+        assert.equal(single('extract audio from my video').kind, 'separate_audio');
+    });
+    test('classifies voiceover', () => {
+        const t = single('generate a voiceover of "welcome to my channel"');
+        assert.equal(t.kind, 'voiceover');
+        assert.ok((t.args.text || '').includes('welcome'));
+    });
+    test('classifies download image', () => {
+        assert.equal(single('download an image of a coffee cup').kind, 'download_image');
+    });
+    test('classifies download video', () => {
+        assert.equal(single('download a video of a city').kind, 'download_video');
+    });
+    test('classifies full video', () => {
+        assert.equal(single('make a video about the benefits of morning walks').kind, 'full_video');
+    });
+    test('detects 2-step chain', () => {
+        const t = routeTask('crop to 9:16 then add music');
+        assert.ok(isChain(t));
+        assert.equal(t.chain.length, 2);
+    });
 });

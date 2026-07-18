@@ -244,7 +244,10 @@ export const calculateSafeTrimAfterFrames = (
  * We trim a few frames from the end because some stock clips report a
  * slightly longer duration than the actually seekable final frame.
  */
-export async function getVideoMetadata(filePath: string, renderFps: number = DEFAULT_RENDER_FPS): Promise<VideoMetadata> {
+export async function getVideoMetadata(
+    filePath: string,
+    renderFps: number = DEFAULT_RENDER_FPS,
+): Promise<VideoMetadata> {
     try {
         const ffprobeCmd = typeof ffprobePath === 'string' ? ffprobePath : (ffprobePath as any)?.path || 'ffprobe';
         // Use an async spawn with a hard timeout instead of spawnSync: a
@@ -254,23 +257,56 @@ export async function getVideoMetadata(filePath: string, renderFps: number = DEF
         // caller falls back to conservative defaults.
         const timeoutMs = Number(process.env.AGENTIC_FFPROBE_TIMEOUT_MS || 15000);
         const out = await new Promise<string>((resolve, reject) => {
-            const child = spawn(ffprobeCmd, [
-                '-v', 'quiet', '-count_frames',
-                '-print_format', 'json',
-                '-show_entries', 'format=duration:stream=codec_type,duration,avg_frame_rate,r_frame_rate,nb_frames,nb_read_frames',
-                filePath,
-            ], { encoding: 'utf-8' as const, stdio: ['pipe', 'pipe', 'pipe'] } as any);
+            const child = spawn(
+                ffprobeCmd,
+                [
+                    '-v',
+                    'quiet',
+                    '-count_frames',
+                    '-print_format',
+                    'json',
+                    '-show_entries',
+                    'format=duration:stream=codec_type,duration,avg_frame_rate,r_frame_rate,nb_frames,nb_read_frames',
+                    filePath,
+                ],
+                { encoding: 'utf-8' as const, stdio: ['pipe', 'pipe', 'pipe'] } as any,
+            );
             let stdout = '';
             let stderr = '';
-            const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } reject(new Error('ffprobe timed out')); }, timeoutMs);
-            child.stdout?.on('data', (d: Buffer) => { stdout += d.toString(); });
-            child.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
-            child.on('error', (e: Error) => { clearTimeout(t); reject(e); });
-            child.on('close', (code: number) => { clearTimeout(t); if (code !== 0) reject(new Error(stderr?.trim() || 'FFprobe failed')); else resolve(stdout); });
+            const t = setTimeout(() => {
+                try {
+                    child.kill('SIGKILL');
+                } catch {
+                    /* ignore */
+                }
+                reject(new Error('ffprobe timed out'));
+            }, timeoutMs);
+            child.stdout?.on('data', (d: Buffer) => {
+                stdout += d.toString();
+            });
+            child.stderr?.on('data', (d: Buffer) => {
+                stderr += d.toString();
+            });
+            child.on('error', (e: Error) => {
+                clearTimeout(t);
+                reject(e);
+            });
+            child.on('close', (code: number) => {
+                clearTimeout(t);
+                if (code !== 0) reject(new Error(stderr?.trim() || 'FFprobe failed'));
+                else resolve(stdout);
+            });
         });
         const parsed = JSON.parse(out) as {
             format?: { duration?: string };
-            streams?: Array<{ codec_type?: string; duration?: string; avg_frame_rate?: string; r_frame_rate?: string; nb_frames?: string; nb_read_frames?: string }>;
+            streams?: Array<{
+                codec_type?: string;
+                duration?: string;
+                avg_frame_rate?: string;
+                r_frame_rate?: string;
+                nb_frames?: string;
+                nb_read_frames?: string;
+            }>;
         };
 
         const videoStream = parsed.streams?.find((stream) => stream.codec_type === 'video') ?? parsed.streams?.[0];
@@ -906,7 +942,19 @@ export async function fetchVisualsForScene(
     // Try EACH keyword individually (not the joined string) so a multi-phrase
     // keyword list like ["lions","lions wildlife"] issues separate API queries
     // instead of one mangled "lions lions wildlife" query that returns nothing.
-    const individualQueries = [...new Set(keywords.map((k) => k.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()).filter(Boolean))];
+    const individualQueries = [
+        ...new Set(
+            keywords
+                .map((k) =>
+                    k
+                        .toLowerCase()
+                        .replace(/[^a-z0-9 ]/g, ' ')
+                        .replace(/\s+/g, ' ')
+                        .trim(),
+                )
+                .filter(Boolean),
+        ),
+    ];
     const cache = getCache();
     const preferredType: CachedMediaType = preferVideo ? 'video' : 'image';
     const preferredCacheKey = buildCacheKey(query, orientation, preferredType);
@@ -935,7 +983,8 @@ export async function fetchVisualsForScene(
         console.log(`🧠 [FETCH] Original query: "${query}"`);
     }
 
-    const queriesToTry = sceneText && preferVideo ? await optimizeKeywordsWithGemini(sceneText, individualQueries) : individualQueries;
+    const queriesToTry =
+        sceneText && preferVideo ? await optimizeKeywordsWithGemini(sceneText, individualQueries) : individualQueries;
 
     // console.log('\n🎨 ════════════════════════════════════════════════');
     // console.log(`🎨 [FETCH] Fetching visuals for keywords: [${keywords.join(', ')}]`);
@@ -1092,7 +1141,9 @@ export async function fetchVisualsForScene(
             try {
                 const freeImages = await searchFreeImages(q, 3, orientation === 'none' ? 'portrait' : orientation);
                 if (freeImages.length > 0) {
-                    console.log(`🎨 [FETCH] ✅ Found image on free-image: ${freeImages[0].url} (${freeImages[0].width}x${freeImages[0].height})`);
+                    console.log(
+                        `🎨 [FETCH] ✅ Found image on free-image: ${freeImages[0].url} (${freeImages[0].width}x${freeImages[0].height})`,
+                    );
                     cache[cacheKey] = freeImages[0];
                     saveCache(cache);
                     return freeImages[0];
@@ -1147,7 +1198,9 @@ export async function downloadMedia(
                 videoTrimAfterFrames = vm.trimAfterFrames;
             }
             return { path: outputPath, videoDuration, videoTrimAfterFrames };
-        } catch { /* fall through to live download */ }
+        } catch {
+            /* fall through to live download */
+        }
     }
 
     // Create directory if it doesn't exist

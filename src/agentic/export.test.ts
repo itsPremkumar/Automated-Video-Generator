@@ -17,8 +17,20 @@ function mkPlan(): Plan {
         voice: 'en-US',
         musicQuery: 'ambient',
         scenes: [
-            { sceneNumber: 1, voiceoverText: 'Coffee is the best drink ever made by humans', searchKeywords: ['coffee', 'beans'], visualPreference: 'image', durationSec: 4 },
-            { sceneNumber: 2, voiceoverText: 'It improves focus and mood naturally', searchKeywords: ['focus', 'energy'], visualPreference: 'image', durationSec: 4 },
+            {
+                sceneNumber: 1,
+                voiceoverText: 'Coffee is the best drink ever made by humans',
+                searchKeywords: ['coffee', 'beans'],
+                visualPreference: 'image',
+                durationSec: 4,
+            },
+            {
+                sceneNumber: 2,
+                voiceoverText: 'It improves focus and mood naturally',
+                searchKeywords: ['focus', 'energy'],
+                visualPreference: 'image',
+                durationSec: 4,
+            },
         ],
         totalDurationSec: 8,
     };

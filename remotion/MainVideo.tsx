@@ -149,7 +149,14 @@ interface SceneProps {
     subtitleMode?: SubtitleMode;
 }
 
-const SceneComponent: React.FC<SceneProps> = ({ scene, durationInFrames, showText = true, textConfig, captionSegments, subtitleMode }) => {
+const SceneComponent: React.FC<SceneProps> = ({
+    scene,
+    durationInFrames,
+    showText = true,
+    textConfig,
+    captionSegments,
+    subtitleMode,
+}) => {
     // console.log(`SceneComponent: Rendered scene ${scene.sceneNumber}`, { scene, durationInFrames });
     const frame = useCurrentFrame();
     const { fps } = useVideoConfig();

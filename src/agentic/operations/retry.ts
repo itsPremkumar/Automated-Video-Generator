@@ -26,7 +26,8 @@ const isRetryable = (err: unknown): boolean => {
     if (err && typeof err === 'object') {
         const e = err as Record<string, unknown>;
         const code = String(e.code ?? '');
-        if (['ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'ECONNABORTED'].includes(code)) return true;
+        if (['ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'ECONNABORTED'].includes(code))
+            return true;
         if (typeof e.message === 'string' && /timeout|reset|aborted|network|econn/i.test(e.message)) return true;
         if (e.name === 'FetchError' || e.name === 'AxiosError' || e.name === 'TimeoutError') return true;
     }
@@ -34,10 +35,7 @@ const isRetryable = (err: unknown): boolean => {
     return err == null;
 };
 
-export async function withRetry<T>(
-    fn: () => Promise<T>,
-    opts: RetryOptions = {},
-): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, opts: RetryOptions = {}): Promise<T> {
     const retries = Math.max(1, opts.retries ?? 3);
     const base = opts.baseMs ?? 500;
     const max = opts.maxMs ?? 8000;
@@ -56,7 +54,9 @@ export async function withRetry<T>(
             const wait = Math.round(exp + j);
             if (opts.label) {
                 // eslint-disable-next-line no-console
-                console.warn(`[retry] ${opts.label}: attempt ${attempt} failed (${String((err as any)?.message ?? err)}); retrying in ${wait}ms`);
+                console.warn(
+                    `[retry] ${opts.label}: attempt ${attempt} failed (${String((err as any)?.message ?? err)}); retrying in ${wait}ms`,
+                );
             }
             await new Promise((r) => setTimeout(r, wait));
         }

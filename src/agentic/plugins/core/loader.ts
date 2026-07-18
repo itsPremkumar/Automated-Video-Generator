@@ -58,9 +58,10 @@ export async function loadPlugins(options: PluginLoaderOptions): Promise<PluginR
     const pluginConfigs = loadPluginConfig(configFile);
 
     if (autoDiscover && fs.existsSync(pluginsDir)) {
-        const categories = fs.readdirSync(pluginsDir, { withFileTypes: true })
-            .filter(d => d.isDirectory())
-            .map(d => d.name);
+        const categories = fs
+            .readdirSync(pluginsDir, { withFileTypes: true })
+            .filter((d) => d.isDirectory())
+            .map((d) => d.name);
 
         for (const category of categories) {
             if (category === 'core' || category === 'registry') continue;
@@ -107,15 +108,32 @@ function loadPluginConfig(configFile?: string): PluginConfig[] {
 async function loadExternalPlugin(registry: PluginRegistry, config: PluginConfig): Promise<void> {
     let plugin: AgenticPlugin | null = null;
     if (config.path) {
-        try { const mod = await import(path.resolve(config.path)); plugin = mod.default ?? mod.plugin; } catch (e) { console.error(`[PluginLoader] Failed to load ${config.path}:`, e); }
+        try {
+            const mod = await import(path.resolve(config.path));
+            plugin = mod.default ?? mod.plugin;
+        } catch (e) {
+            console.error(`[PluginLoader] Failed to load ${config.path}:`, e);
+        }
     } else if (config.package) {
-        try { const mod = await import(config.package); plugin = mod.default ?? mod.plugin; } catch (e) { console.error(`[PluginLoader] Failed to load package ${config.package}:`, e); }
+        try {
+            const mod = await import(config.package);
+            plugin = mod.default ?? mod.plugin;
+        } catch (e) {
+            console.error(`[PluginLoader] Failed to load package ${config.package}:`, e);
+        }
     }
     if (plugin) registry.register(plugin, config.config, config.enabled);
 }
 
 export function createDefaultConfigFile(outputPath: string): void {
-    fs.writeFileSync(outputPath, JSON.stringify(DEFAULT_PLUGIN_CONFIG.map(p => ({ name: p.name, enabled: p.enabled, config: p.config })), null, 2));
+    fs.writeFileSync(
+        outputPath,
+        JSON.stringify(
+            DEFAULT_PLUGIN_CONFIG.map((p) => ({ name: p.name, enabled: p.enabled, config: p.config })),
+            null,
+            2,
+        ),
+    );
     console.log(`[PluginLoader] Created default config at ${outputPath}`);
 }
 

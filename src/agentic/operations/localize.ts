@@ -12,7 +12,11 @@ import { writeCaptionSidecars } from '../../lib/captions.js';
 import { localizeSrtSidecars } from '../localize.js';
 import { AgentBrain } from '../brain.js';
 
-export interface LocalizeResult { ok: boolean; outputs: string[]; detail: string; }
+export interface LocalizeResult {
+    ok: boolean;
+    outputs: string[];
+    detail: string;
+}
 
 /**
  * @param srcSrt path to a native .srt, OR null to build one from `text`.
@@ -46,5 +50,9 @@ export async function localizeVideo(
         languages,
         brain: b,
     });
-    return { ok: written.length > 0, outputs: written, detail: `localized to ${written.length} language(s): ${languages.join(', ')}` };
+    return {
+        ok: written.length > 0,
+        outputs: written,
+        detail: `localized to ${written.length} language(s): ${languages.join(', ')}`,
+    };
 }

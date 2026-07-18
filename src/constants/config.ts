@@ -22,10 +22,10 @@ export const HOST = process.env.HOST || '127.0.0.1';
 const AVG_PORT = process.env.AVG_PORT;
 const ENV_PORT = process.env.PORT;
 export const PORT = AVG_PORT
-  ? Number(AVG_PORT)
-  : typeof ENV_PORT === 'string' && ENV_PORT.length > 0 && !process.env.AVG_PORT_IGNORE_ENV
-    ? Number(ENV_PORT)
-    : 3001;
+    ? Number(AVG_PORT)
+    : typeof ENV_PORT === 'string' && ENV_PORT.length > 0 && !process.env.AVG_PORT_IGNORE_ENV
+      ? Number(ENV_PORT)
+      : 3001;
 export const OUTPUT_ROOT = resolveProjectPath('output');
 export const ENV_FILE = resolveProjectPath('.env');
 export const DEFAULT_TITLE = 'Generated Video';

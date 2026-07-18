@@ -10,7 +10,9 @@ import os from 'os';
 import path from 'path';
 import { probeAsset, checkSourceAsset, fileHash, findDuplicates } from './asset-checks.js';
 
-function ffmpeg(): string { return require('ffmpeg-static'); }
+function ffmpeg(): string {
+    return require('ffmpeg-static');
+}
 
 describe('asset-checks', () => {
     let dir: string;
@@ -23,8 +25,14 @@ describe('asset-checks', () => {
         img = path.join(dir, 'img.png');
         vid = path.join(dir, 'vid.mp4');
         dup = path.join(dir, 'img-dup.png');
-        execFileSync(ffmpeg(), ['-y', '-f', 'lavfi', '-i', 'color=c=red:s=1920x1080:d=1', '-frames:v', '1', img], { stdio: 'ignore' });
-        execFileSync(ffmpeg(), ['-y', '-f', 'lavfi', '-i', 'testsrc=s=480x270:r=25:d=3', '-t', '3', '-c:v', 'libx264', vid], { stdio: 'ignore' });
+        execFileSync(ffmpeg(), ['-y', '-f', 'lavfi', '-i', 'color=c=red:s=1920x1080:d=1', '-frames:v', '1', img], {
+            stdio: 'ignore',
+        });
+        execFileSync(
+            ffmpeg(),
+            ['-y', '-f', 'lavfi', '-i', 'testsrc=s=480x270:r=25:d=3', '-t', '3', '-c:v', 'libx264', vid],
+            { stdio: 'ignore' },
+        );
         fs.copyFileSync(img, dup); // identical -> duplicate
         assert.ok(fs.existsSync(img) && fs.existsSync(vid));
     });
@@ -40,7 +48,9 @@ describe('asset-checks', () => {
         const ok = await checkSourceAsset(img, { kind: 'image', minWidth: 480 });
         assert.equal(ok.find((c) => c.id === 'I4')!.pass, true);
         const smallVid = path.join(dir, 'small.mp4');
-        execFileSync(ffmpeg(), ['-y', '-f', 'lavfi', '-i', 'color=c=blue:s=320x240:d=1', '-frames:v', '1', smallVid], { stdio: 'ignore' });
+        execFileSync(ffmpeg(), ['-y', '-f', 'lavfi', '-i', 'color=c=blue:s=320x240:d=1', '-frames:v', '1', smallVid], {
+            stdio: 'ignore',
+        });
         const small = await checkSourceAsset(smallVid, { kind: 'video', minWidth: 480 });
         assert.equal(small.find((c) => c.id === 'V5')!.pass, false, '320px width should fail min 480');
     });
@@ -65,5 +75,11 @@ describe('asset-checks', () => {
         assert.equal(fileHash(img), fileHash(dup));
     });
 
-    test('cleanup', () => { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* */ } });
+    test('cleanup', () => {
+        try {
+            fs.rmSync(dir, { recursive: true, force: true });
+        } catch {
+            /* */
+        }
+    });
 });
