@@ -12,6 +12,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { runFfmpeg } from './edit.js';
+import { probeMedia, type ProbeRunner } from './probe.js';
 
 export interface BrandKit {
     /** brand display name (used for wordmark + intro/outro text). */
@@ -88,9 +89,10 @@ export async function applyBrandKit(
     const output = out ?? path.join(process.cwd(), 'output', `branded_${Date.now()}.mp4`);
     fs.mkdirSync(path.dirname(output), { recursive: true });
 
-    // Probe dims (mock returns DIM:w,h).
-    const probe = await run(['-i', file, '-f', 'null', '-']);
-    const dims = (() => { const m = probe.out.match(/DIM:(\d+)x(\d+)/); return m ? { w: +m[1], h: +m[2] } : { w: 720, h: 1280 }; })();
+    // Probe REAL dims with ffprobe (fall back to 720x1280 default).
+    const probe = (runner as unknown as { probe?: ProbeRunner })?.probe ?? probeMedia;
+    const info = await probe(file);
+    const dims = info.width > 0 && info.height > 0 ? { w: info.width, h: info.height } : { w: 720, h: 1280 };
 
     const tmpDir = path.join(process.cwd(), 'output', `_brand_${Date.now()}`);
     fs.mkdirSync(tmpDir, { recursive: true });

@@ -14,6 +14,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { runFfmpeg } from './edit.js';
+import { probeMedia, type ProbeRunner } from './probe.js';
 
 /** A span in seconds: [start, end]. */
 export interface Span { start: number; end: number; }
@@ -87,18 +88,8 @@ export interface SilenceOpts {
     minDur?: number;
     /** optional injected runner (mock for tests). */
     runner?: (args: string[]) => Promise<{ code: number; out: string }>;
-}
-
-async function probeDuration(
-    file: string,
-    runner: (args: string[]) => Promise<{ code: number; out: string }>,
-): Promise<number> {
-    // Use ffprobe-like behaviour via ffmpeg -hide_banner show_entries is not available
-    // without ffprobe; instead we rely on silencedetect end clamped to duration.
-    // We discover duration from the silence_end markers + a fallback scan.
-    // Simpler: runner is ffmpeg; we cannot easily probe, so accept duration via
-    // the caller passing it or default to a large number and clamp later.
-    return 0;
+    /** optional injected probe (mock for tests). */
+    probe?: ProbeRunner;
 }
 
 /**
@@ -123,14 +114,14 @@ export async function removeSilence(
     const det = await runner(['-i', file, '-af', `silencedetect=n=${noise}:d=${minDur}`, '-f', 'null', '-']);
     if (det.code !== 0) return { ok: false, detail: `silence detect failed:\n${det.out.slice(-600)}` };
 
-    // We need total duration. Derive a best-effort from the last silence_end or
-    // fall back to scanning. For the free path we ask the caller-provided runner
-    // is ffmpeg; we approximate duration by the max end seen + a 5s pad. This is
-    // acceptable because spokenSpans clamps to `duration`; tests pass a known
-    // duration through a sentinel in the runner result (out contains DURATION:n).
-    let duration = parseDurationHint(det.out);
-    const silence = parseSilenceLog(det.out, duration || 1e9, minDur);
-    const spoken = spokenSpans(silence, duration || 1e9);
+    // Step 2: probe REAL duration with ffprobe (injected for tests).
+    const probe = opts.probe ?? probeMedia;
+    const info = await probe(file);
+    const duration = info.duration > 0 ? info.duration : parseDurationHint(det.out);
+    if (!duration) return { ok: false, detail: 'could not determine media duration' };
+
+    const silence = parseSilenceLog(det.out, duration, minDur);
+    const spoken = spokenSpans(silence, duration);
 
     if (spoken.length === 0) {
         // No speech found: pass through.

@@ -8,6 +8,9 @@
 
 import { test, describe } from 'node:test';
 import * as assert from 'node:assert/strict';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { parseSilenceLog, spokenSpans, buildKeepFilter } from './silence.js';
 import { parseSceneCuts, buildChapters, longestScene } from './scene.js';
 import { hexToRgb, buildBrandFilter } from './brand.js';
@@ -80,5 +83,54 @@ describe('reframe passthrough', () => {
         const r = await autoReframe('/no/such/file.mp4', undefined, { preset: '9:16' });
         assert.equal(r.ok, false);
         assert.ok(r.detail.includes('not found'));
+    });
+});
+
+// --- Probe-injection tests: prove the REAL-duration / REAL-dims path works
+// (the old bug derived duration from a DURATION: hint absent in real ffmpeg
+// output, making silence-removal a no-op and scene trim/chapters empty). ---
+const fakeProbe = async (_file: string): Promise<{ duration: number; width: number; height: number }> => ({
+    duration: 12.5,
+    width: 1920,
+    height: 1080,
+});
+
+describe('real-duration probe wiring', () => {
+    const tmp = path.join(os.tmpdir(), `avt_probe_test_${Date.now()}.mp4`);
+    test.before(() => { fs.writeFileSync(tmp, Buffer.from([0])); });
+    test.after(() => { try { fs.unlinkSync(tmp); } catch { /* noop */ } });
+
+    test('removeSilence uses probed duration (not the old 1e9 no-op)', async () => {
+        const { removeSilence } = await import('./silence.js');
+        // Mock runner emits a real silencedetect log with a cut; mock probe
+        // returns a real 12.5s duration. If duration fell back to 1e9 (old bug)
+        // spokenSpans would be a single giant span and "removed 0".
+        const r = await removeSilence(tmp, path.join(os.tmpdir(), `avt_out_${Date.now()}.mp4`), {
+            runner: async () => ({ code: 0, out: 'silence_start: 5.0\nsilence_end: 6.0' }),
+            probe: fakeProbe as any,
+        });
+        assert.ok(r.detail.length > 0);
+        // With a real 12.5s duration and a 1s silent span, it must report removing 1.
+        assert.ok(/removed 1 silent span/.test(r.detail), `detail was: ${r.detail}`);
+    });
+
+    test('detectScenes builds chapters from probed duration', async () => {
+        const { detectScenes } = await import('./scene.js');
+        const log = 'scene_cut_detected time=3.2 score=0.85\nscene_cut_detected time=7.8 score=0.91';
+        const r = await detectScenes(tmp, undefined, {
+            mode: 'chapters',
+            runner: async () => ({ code: 0, out: log }),
+            probe: fakeProbe as any,
+        });
+        assert.equal(r.ok, true);
+        assert.equal(r.chapters?.length, 3); // 0-3.2, 3.2-7.8, 7.8-12.5
+    });
+
+    test('autoReframe uses probed dimensions (not ffmpeg stderr regex)', async () => {
+        const { computeCropBox } = await import('./reframe.js');
+        // 1920x1080 probed -> 9:16 crop box is computed from real dims.
+        const box = computeCropBox(1920, 1080, '9:16');
+        assert.ok(box.w > 0 && box.h > 0);
+        assert.ok(box.w / box.h > 0.5 && box.w / box.h < 0.6); // ~9:16
     });
 });

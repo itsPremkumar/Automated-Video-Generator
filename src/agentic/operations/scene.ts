@@ -16,6 +16,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { runFfmpeg } from './edit.js';
+import { probeMedia, type ProbeRunner } from './probe.js';
 
 export interface SceneCut { time: number; score: number; }
 
@@ -69,6 +70,8 @@ export interface SceneOpts {
     /** total duration (seconds) — needed for chapters/trim. Tests inject it. */
     duration?: number;
     runner?: (args: string[]) => Promise<{ code: number; out: string }>;
+    /** optional injected probe (mock for tests). */
+    probe?: ProbeRunner;
 }
 
 /**
@@ -86,8 +89,16 @@ export async function detectScenes(
     const det = await runner(['-i', file, '-vf', 'scdet', '-f', 'null', '-']);
     if (det.code !== 0) return { ok: false, detail: `scene detect failed:\n${det.out.slice(-600)}` };
 
+    // Probe REAL duration with ffprobe (injected for tests); fall back to the
+    // caller-supplied duration, then to a hint in the log.
+    const probe = opts.probe ?? probeMedia;
+    const info = await probe(file);
+    const duration = opts.duration ?? (info.duration > 0 ? info.duration : parseDurationHint(det.out) ?? 0);
+    if ((mode === 'trim' || mode === 'chapters') && !duration) {
+        return { ok: false, detail: 'could not determine media duration' };
+    }
+
     const cuts = parseSceneCuts(det.out);
-    const duration = opts.duration ?? parseDurationHint(det.out) ?? 0;
 
     if (mode === 'detect') {
         return { ok: true, detail: `detected ${cuts.length} scene cut(s)`, cuts };

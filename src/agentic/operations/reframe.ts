@@ -16,6 +16,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { runFfmpeg } from './edit.js';
+import { probeMedia, type ProbeRunner } from './probe.js';
 
 export type ReframePreset = '9:16' | '16:9' | '1:1';
 
@@ -72,6 +73,8 @@ export interface ReframeOpts {
     salientX?: number;
     salientY?: number;
     runner?: (args: string[]) => Promise<{ code: number; out: string }>;
+    /** optional injected probe (mock for tests). */
+    probe?: ProbeRunner;
 }
 
 /**
@@ -86,9 +89,10 @@ export async function autoReframe(
     const preset = opts.preset ?? '9:16';
     const runner = opts.runner ?? runFfmpeg;
 
-    // Probe source dimensions via the injected/free runner (mock returns DIM:w,h).
-    const probe = await runner(['-i', file, '-f', 'null', '-']);
-    const dims = parseDimsHint(probe.out);
+    // Probe REAL source dimensions with ffprobe (injected for tests).
+    const probe = opts.probe ?? probeMedia;
+    const info = await probe(file);
+    const dims = info.width > 0 && info.height > 0 ? { w: info.width, h: info.height } : parseDimsHint((await runner(['-i', file, '-f', 'null', '-'])).out);
     if (!dims) return { ok: false, detail: 'could not determine source dimensions' };
 
     const box = computeCropBox(dims.w, dims.h, preset, opts.salientX ?? 0.5, opts.salientY ?? 0.5);
