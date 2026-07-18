@@ -122,8 +122,6 @@ jobs:
         # Heavy Chromium+ffmpeg render. By default we run the e2e test in
         # SKIP mode (RUN_RENDER_E2E=0) so CI stays green and fast; set the
         # env to '1' (or run manually) only when you want the real render.
-        # Kept non-blocking as a safety net.
-        continue-on-error: true
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -134,6 +132,8 @@ jobs:
             - name: Install ffmpeg (required for concatenation)
               run: sudo apt-get update && sudo apt-get install -y ffmpeg
             - run: npm ci
-            - run: npm run test:render
+            - name: Render E2E (skipped by default)
+              continue-on-error: true
+              run: npm run test:render
               env:
                   RUN_RENDER_E2E: '0'
