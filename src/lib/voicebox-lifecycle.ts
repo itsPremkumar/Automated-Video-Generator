@@ -69,6 +69,16 @@ export async function isBackendUp(): Promise<boolean> {
  * usable backend is up (either pre-existing or freshly spawned).
  */
 export async function ensureBackend(): Promise<boolean> {
+    // Opt-in guard: only spawn the backend when a REAL Voicebox profile id is
+    // configured. The repo's .env ships a placeholder ("<your-voicebox-profile-id-here>");
+    // dotenv re-injects it even when the shell unset it, so we must treat the
+    // placeholder as "not configured" — otherwise we spawn a doomed backend on
+    // every voiceover call (40s wait + retry storm) before falling back to tones.
+    const profile = process.env.VOICEBOX_PROFILE_ID;
+    if (!profile || profile.includes('your-voicebox-profile-id')) {
+        console.warn('no real Voicebox profile configured — backend not started; pipeline falls back to tones');
+        return false;
+    }
     if (await isBackendUp()) {
         console.log('backend already up');
         return true;

@@ -66,8 +66,12 @@ export async function generateVoiceoverWithVoicebox(
     // `modelSize` kept for backwards-compat with older callers; treated as engine.
     const engine = opts.engine || opts.modelSize || process.env.VOICEBOX_ENGINE || 'kokoro';
     const profileId = opts.profileId || process.env.VOICEBOX_PROFILE_ID;
+    // The repo .env ships a placeholder ("<your-voicebox-profile-id-here>");
+    // treat it as "no profile" so we fall back to tones immediately instead of
+    // doing a doomed 30s x3 HTTP retry per scene (which makes every video hang).
+    const realProfile = profileId && !profileId.includes('your-voicebox-profile-id') ? profileId : '';
 
-    if (!profileId) {
+    if (!realProfile) {
         throw new Error(
             'Voicebox requires a voice profile. Set VOICEBOX_PROFILE_ID (create one via ' +
                 'POST /profiles — a Kokoro preset profile needs no reference audio). ' +

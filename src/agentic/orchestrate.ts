@@ -1321,7 +1321,7 @@ export async function renderAgenticSlideshow(
                 }
             } else {
                 const segs = a.captionSegments?.length
-                    ? a.captionSegments
+                    ? mergeWordsToLines(a.captionSegments)
                     : [{ text: scText, startMs: 0, endMs: Math.round(dur * 1000) }];
                 for (const s of segs) {
                     const start = (tBase + s.startMs / 1000).toFixed(2);
@@ -1412,9 +1412,11 @@ export async function renderAgenticSlideshow(
 
     // ── PASS 1 (segmented / C1): render each ordered clip as an independent
     // segment, then concat. A failed segment is isolated + retried without
-    // losing the whole timeline. Off by default; enable with AGENTIC_SEGMENTED=1.
-    // The proven single-pass below remains the default path. ──
-    const segmented = process.env.AGENTIC_SEGMENTED === '1';
+    // losing the whole timeline. This is the DEFAULT path because it keeps each
+    // ffmpeg -filter_complex tiny (immune to the Windows ~8KB per-arg spawn
+    // limit / ENAMETOOLONG) and contains failures. Opt OUT with
+    // AGENTIC_SEGMENTED=0 to use the legacy single-pass chain. ──
+    const segmented = process.env.AGENTIC_SEGMENTED !== '0';
     let silent: string;
     let expectedDur = 0;
     if (segmented) {
@@ -1444,9 +1446,11 @@ export async function renderAgenticSlideshow(
             const doZoom = clip.kind === 'scene' && !isVideo && opts.kenBurns !== false;
             const zoom = doZoom ? `,zoompan=z=zoom+0.0008:d=1:s=${W}x${H}` : '';
             const grade = clip.kind === 'scene' ? gradeFilter(stylePlan.scenes[clip.idx]?.grade ?? 'neutral') : '';
-            // Per-segment caption SRT (relative t, starts at 0).
-            let segCaptionArg: string[] = [];
-            let segSrt: string | null = null;
+            // Per-segment caption burn via drawtext (the `subtitles`/libass
+            // filter is broken on this static Windows build — it renders the
+            // clip black — so we use drawtext, same as the main path). Segment
+            // time is relative (starts at 0), so cue windows use s.startMs/1000.
+            const segCaptionArg: string[] = [];
             if (clip.kind === 'scene' && burn) {
                 const a = visuals[clip.idx];
                 const raw = a.captionSegments?.length
@@ -1458,20 +1462,18 @@ export async function renderAgenticSlideshow(
                               endMs: Math.round(dur * 1000),
                           },
                       ];
-                const cues = chunkCues(raw)
-                    .map(
-                        (s, n) =>
-                            `${n + 1}\n${fmtSrt(s.startMs / 1000)} --> ${fmtSrt(s.endMs / 1000)}\n${s.text.replace(/\n/g, ' ')}\n`,
-                    )
-                    .join('\n');
-                if (cues.trim()) {
-                    const srRel = `agentic-pipeline/workspaces/${res.workspace.jobId}/render/_segsrt_${res.workspace.jobId}_${ci}.srt`;
-                    const sr = path.resolve(process.cwd(), srRel).replace(/\\/g, '/');
-                    fs.mkdirSync(path.dirname(sr), { recursive: true });
-                    fs.writeFileSync(sr, cues, 'utf8');
-                    segSrt = sr;
-                    // Reference RELATIVE path (ffmpeg subtitles filter chokes on C:\ drive colon).
-                    segCaptionArg = ['subtitles=' + srRel];
+                // Collapse word-level cues into line-level drawtext (keeps each
+                // segment's -filter_complex small; avoids ENAMETOOLONG).
+                const lines = mergeWordsToLines(raw);
+                const theme = resolveCaptionTheme(opts.captionTheme);
+                const { fontcolor: capColor, fontsize: baseSize, boxArgs, yExpr } = captionThemeToDrawtext(theme);
+                for (const s of lines) {
+                    const start = (s.startMs / 1000).toFixed(2);
+                    const end = (s.endMs / 1000).toFixed(2);
+                    const safe = ffmpegDrawtextEscape(s.text).replace(/\n/g, ' ');
+                    segCaptionArg.push(
+                        `drawtext=${FONT_ARG}text='${safe}':fontcolor=${capColor}:fontsize=${baseSize}${boxArgs}:line_spacing=4:x=(w-text_w)/2:y=${yExpr}:enable='between(t\\,${start}\\,${end})'`,
+                    );
                 }
             }
             // Per-segment kinetic (relative t).
@@ -1717,6 +1719,42 @@ export function chunkCues(
         }
     }
     return out;
+}
+
+/**
+ * Collapse word-level caption segments (e.g. from syllableWordTimings / a TTS
+ * word-aligner) into LINE-level captions for drawtext burn-in.
+ *
+ * WHY: burning one drawtext filter per WORD explodes the -filter_complex
+ * argument (15 words/scene x N scenes = hundreds of filters). On Windows that
+ * single argument exceeds the ~8KB per-arg limit and ffmpeg spawn fails with
+ * `ENAMETOOLONG`. Grouping words into lines (<= maxWords) keeps the filtergraph
+ * small and is also far more readable on screen.
+ */
+export function mergeWordsToLines(
+    segs: { text: string; startMs: number; endMs: number }[],
+    maxWords = 7,
+): { text: string; startMs: number; endMs: number }[] {
+    const base = chunkCues(segs);
+    if (base.length <= 1) return base;
+    const lines: { text: string; startMs: number; endMs: number }[] = [];
+    let cur: { text: string; startMs: number; endMs: number } | null = null;
+    for (const s of base) {
+        const w = s.text.trim();
+        if (!w) continue;
+        if (
+            !cur ||
+            cur.text.split(/\s+/).length >= maxWords ||
+            /[.!?]$/.test(cur.text) // start a new line after sentence end
+        ) {
+            cur = { text: w, startMs: s.startMs, endMs: s.endMs };
+            lines.push(cur);
+        } else {
+            cur.text = (cur.text + ' ' + w).trim();
+            cur.endMs = s.endMs;
+        }
+    }
+    return lines;
 }
 
 function fmtSrt(sec: number): string {

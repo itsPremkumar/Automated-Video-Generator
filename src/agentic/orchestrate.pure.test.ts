@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 import { test } from 'node:test';
-import { buildDuckExpression, chunkCues, sourceFromUrl } from './orchestrate.js';
+import { buildDuckExpression, chunkCues, mergeWordsToLines, sourceFromUrl } from './orchestrate.js';
 
 // ── sourceFromUrl ────────────────────────────────────────────────────────────
 test('sourceFromUrl maps known hosts', () => {
@@ -81,4 +81,34 @@ test('chunkCues: leaves a normal <=8-word cue untouched', () => {
 
 test('chunkCues: empty input returns empty', () => {
     assert.deepStrictEqual(chunkCues([]), []);
+});
+
+// ── mergeWordsToLines (fix for Windows ENAMETOOLONG) ────────────────────────
+test('mergeWordsToLines: collapses word-level segments into few lines', () => {
+    const words = 'Water makes up about sixty percent of your body yet most stay dehydrated'.split(' ');
+    const segs = words.map((w, i) => ({ text: w, startMs: i * 300, endMs: i * 300 + 300 }));
+    const lines = mergeWordsToLines(segs);
+    // 11 words -> at most 2 lines (<=7 words each)
+    assert.ok(lines.length <= 2, `expected <=2 lines, got ${lines.length}`);
+    assert.strictEqual(lines[0].text.split(' ').length, 7, 'first line should hold 7 words');
+    // timeline preserved: first starts at 0, last ends at/after the final word
+    assert.strictEqual(lines[0].startMs, 0);
+    assert.ok(lines[lines.length - 1].endMs >= segs[segs.length - 1].endMs);
+});
+
+test('mergeWordsToLines: breaks a new line after a sentence-ending segment (when not merged)', () => {
+    const segs = [
+        { text: 'Drink water now.', startMs: 0, endMs: 500 },
+        { text: 'Hydration helps focus.', startMs: 500, endMs: 1100 },
+    ];
+    const lines = mergeWordsToLines(segs);
+    assert.strictEqual(lines.length, 2);
+    assert.strictEqual(lines[0].text, 'Drink water now.');
+    assert.strictEqual(lines[1].text, 'Hydration helps focus.');
+});
+
+test('mergeWordsToLines: single segment passes through', () => {
+    const segs = [{ text: 'one line', startMs: 0, endMs: 900 }];
+    const lines = mergeWordsToLines(segs);
+    assert.deepStrictEqual(lines, segs);
 });
