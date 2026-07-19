@@ -146,7 +146,9 @@ test('updateEnvConfig: adds new key-value pair when key not present', async () =
         namedExports: {
             existsSync: () => true,
             readFileSync: () => 'EXISTING_KEY=old-value\n',
-            writeFileSync: (_path: string, content: string) => { writtenContent = content; },
+            writeFileSync: (_path: string, content: string) => {
+                writtenContent = content;
+            },
         },
     });
     mock.module('../../shared/runtime/paths', {
@@ -169,7 +171,9 @@ test('updateEnvConfig: updates existing key-value pair', async () => {
         namedExports: {
             existsSync: () => true,
             readFileSync: () => 'MY_KEY=old-value\nOTHER=keep\n',
-            writeFileSync: (_path: string, content: string) => { writtenContent = content; },
+            writeFileSync: (_path: string, content: string) => {
+                writtenContent = content;
+            },
         },
     });
     mock.module('../../shared/runtime/paths', {
@@ -192,7 +196,9 @@ test('updateEnvConfig: creates file if it does not exist', async () => {
     mock.module('fs', {
         namedExports: {
             existsSync: () => false,
-            writeFileSync: (_path: string, content: string) => { writtenContent = content; },
+            writeFileSync: (_path: string, content: string) => {
+                writtenContent = content;
+            },
         },
     });
     mock.module('../../shared/runtime/paths', {
@@ -214,7 +220,9 @@ test('updateEnvConfig: preserves other lines when updating key', async () => {
         namedExports: {
             existsSync: () => true,
             readFileSync: () => 'A=1\nMY_KEY=old\nB=2\n',
-            writeFileSync: (_path: string, content: string) => { writtenContent = content; },
+            writeFileSync: (_path: string, content: string) => {
+                writtenContent = content;
+            },
         },
     });
     mock.module('../../shared/runtime/paths', {
@@ -260,7 +268,9 @@ test('getSystemInfo: returns info object with expected fields', async () => {
 test('getSystemInfo: handles execSync failures gracefully', async () => {
     mock.module('child_process', {
         namedExports: {
-            execSync: () => { throw new Error('command not found'); },
+            execSync: () => {
+                throw new Error('command not found');
+            },
         },
     });
 
@@ -320,7 +330,9 @@ test('healthCheck: ffmpeg check fails gracefully when execSync throws', async ()
     });
     mock.module('child_process', {
         namedExports: {
-            execSync: () => { throw new Error('ffmpeg not found'); },
+            execSync: () => {
+                throw new Error('ffmpeg not found');
+            },
         },
     });
     mock.module('../../shared/runtime/paths', {

@@ -20,8 +20,7 @@ test('readInputScripts: returns empty array when file does not exist', async () 
     });
     mock.module('../../shared/runtime/paths', {
         namedExports: {
-            resolveProjectPath: (...segments: string[]) =>
-                '/tmp/test-project/' + segments.join('/'),
+            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
         },
     });
 
@@ -43,8 +42,7 @@ test('readInputScripts: returns parsed scripts when file exists', async () => {
     });
     mock.module('../../shared/runtime/paths', {
         namedExports: {
-            resolveProjectPath: (...segments: string[]) =>
-                '/tmp/test-project/' + segments.join('/'),
+            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
         },
     });
 
@@ -65,13 +63,14 @@ test('writeInputScript: adds a new script when id does not exist', async () => {
         namedExports: {
             existsSync: () => true,
             readFileSync: () => JSON.stringify(existing),
-            writeFileSync: (_path: string, data: string) => { writtenData = data; },
+            writeFileSync: (_path: string, data: string) => {
+                writtenData = data;
+            },
         },
     });
     mock.module('../../shared/runtime/paths', {
         namedExports: {
-            resolveProjectPath: (...segments: string[]) =>
-                '/tmp/test-project/' + segments.join('/'),
+            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
         },
     });
 
@@ -97,13 +96,14 @@ test('writeInputScript: updates existing script when id matches', async () => {
         namedExports: {
             existsSync: () => true,
             readFileSync: () => JSON.stringify(existing),
-            writeFileSync: (_path: string, data: string) => { writtenData = data; },
+            writeFileSync: (_path: string, data: string) => {
+                writtenData = data;
+            },
         },
     });
     mock.module('../../shared/runtime/paths', {
         namedExports: {
-            resolveProjectPath: (...segments: string[]) =>
-                '/tmp/test-project/' + segments.join('/'),
+            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
         },
     });
 
@@ -125,13 +125,14 @@ test('writeInputScript: handles case when no scripts file exists yet', async () 
     mock.module('fs', {
         namedExports: {
             existsSync: () => false,
-            writeFileSync: (_path: string, data: string) => { writtenData = data; },
+            writeFileSync: (_path: string, data: string) => {
+                writtenData = data;
+            },
         },
     });
     mock.module('../../shared/runtime/paths', {
         namedExports: {
-            resolveProjectPath: (...segments: string[]) =>
-                '/tmp/test-project/' + segments.join('/'),
+            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
         },
     });
 
@@ -160,13 +161,14 @@ test('writeInputScript: merge-fills partial fields on update', async () => {
         namedExports: {
             existsSync: () => true,
             readFileSync: () => JSON.stringify(existing),
-            writeFileSync: (_path: string, data: string) => { writtenData = data; },
+            writeFileSync: (_path: string, data: string) => {
+                writtenData = data;
+            },
         },
     });
     mock.module('../../shared/runtime/paths', {
         namedExports: {
-            resolveProjectPath: (...segments: string[]) =>
-                '/tmp/test-project/' + segments.join('/'),
+            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
         },
     });
 
@@ -197,13 +199,14 @@ test('deleteInputScript: removes script by id', async () => {
         namedExports: {
             existsSync: () => true,
             readFileSync: () => JSON.stringify(existing),
-            writeFileSync: (_path: string, data: string) => { writtenData = data; },
+            writeFileSync: (_path: string, data: string) => {
+                writtenData = data;
+            },
         },
     });
     mock.module('../../shared/runtime/paths', {
         namedExports: {
-            resolveProjectPath: (...segments: string[]) =>
-                '/tmp/test-project/' + segments.join('/'),
+            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
         },
     });
 
@@ -227,13 +230,14 @@ test('deleteInputScript: returns same array when id does not exist', async () =>
         namedExports: {
             existsSync: () => true,
             readFileSync: () => JSON.stringify(existing),
-            writeFileSync: (_path: string, data: string) => { writtenData = data; },
+            writeFileSync: (_path: string, data: string) => {
+                writtenData = data;
+            },
         },
     });
     mock.module('../../shared/runtime/paths', {
         namedExports: {
-            resolveProjectPath: (...segments: string[]) =>
-                '/tmp/test-project/' + segments.join('/'),
+            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
         },
     });
 
@@ -250,13 +254,14 @@ test('deleteInputScript: works on empty scripts array', async () => {
         namedExports: {
             existsSync: () => true,
             readFileSync: () => '[]',
-            writeFileSync: (_path: string, data: string) => { writtenData = data; },
+            writeFileSync: (_path: string, data: string) => {
+                writtenData = data;
+            },
         },
     });
     mock.module('../../shared/runtime/paths', {
         namedExports: {
-            resolveProjectPath: (...segments: string[]) =>
-                '/tmp/test-project/' + segments.join('/'),
+            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
         },
     });
 

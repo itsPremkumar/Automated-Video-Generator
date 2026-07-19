@@ -74,10 +74,7 @@ test('runPipelineCommand: error message lists all allowed commands', async () =>
 test('runPipelineCommand: rejects empty command', async () => {
     const { runPipelineCommand } = await import('./pipeline-commands.js');
 
-    await assert.rejects(
-        () => runPipelineCommand(''),
-        { message: /not whitelisted/ },
-    );
+    await assert.rejects(() => runPipelineCommand(''), { message: /not whitelisted/ });
 });
 
 // ---------------------------------------------------------------------------
@@ -131,10 +128,7 @@ test('runPipelineCommand: allows passing arguments on allowed commands', async (
 test('runPipelineCommand: args with shell metacharacters do NOT bypass allowlist', async () => {
     const { runPipelineCommand } = await import('./pipeline-commands.js');
 
-    await assert.rejects(
-        () => runPipelineCommand('generate; rm -rf /', ['--flag']),
-        { message: /not whitelisted/ },
-    );
+    await assert.rejects(() => runPipelineCommand('generate; rm -rf /', ['--flag']), { message: /not whitelisted/ });
 });
 
 test('runPipelineCommand: each allowed command works with no args', async () => {
