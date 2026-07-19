@@ -37,6 +37,8 @@ export interface SilenceResult {
 
 /** Parse ffmpeg silencedetect stderr into silence spans (seconds). */
 export function parseSilenceLog(log: string, duration: number, minDur: number): Span[] {
+    if (!log || typeof log !== 'string') return [];
+    if (duration <= 0 || isNaN(duration)) return [];
     const starts: number[] = [];
     const ends: number[] = [];
     const durRe = /silence_duration:\s*([\d.]+)/g;
@@ -114,12 +116,22 @@ export async function removeSilence(file: string, out?: string, opts: SilenceOpt
     fs.mkdirSync(path.dirname(output), { recursive: true });
 
     // Step 1: detect silence.
-    const det = await runner(['-i', file, '-af', `silencedetect=n=${noise}:d=${minDur}`, '-f', 'null', '-']);
+    let det: { code: number; out: string };
+    try {
+        det = await runner(['-i', file, '-af', `silencedetect=n=${noise}:d=${minDur}`, '-f', 'null', '-']);
+    } catch (e: unknown) {
+        return { ok: false, detail: `silence detect runner threw: ${(e as Error)?.message ?? e}` };
+    }
     if (det.code !== 0) return { ok: false, detail: `silence detect failed:\n${det.out.slice(-600)}` };
 
     // Step 2: probe REAL duration with ffprobe (injected for tests).
     const probe = opts.probe ?? probeMedia;
-    const info = await probe(file);
+    let info: import('./probe.js').MediaInfo;
+    try {
+        info = await probe(file);
+    } catch (e: unknown) {
+        return { ok: false, detail: `probe failed: ${(e as Error)?.message ?? e}` };
+    }
     const duration = info.duration > 0 ? info.duration : parseDurationHint(det.out);
     if (!duration) return { ok: false, detail: 'could not determine media duration' };
 

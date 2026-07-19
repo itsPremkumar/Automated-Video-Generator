@@ -57,6 +57,10 @@ test.before(() => {
 });
 
 test.after(() => {
+    // Restore original axios methods to prevent mock leaking to other tests
+    axios.post = originalPost;
+    axios.get = originalGet;
+    // Clean up temp dir
     if (fs.existsSync(tempOutputDir)) {
         try {
             fs.rmSync(tempOutputDir, { recursive: true, force: true });

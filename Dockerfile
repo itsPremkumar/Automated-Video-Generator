@@ -39,13 +39,13 @@ ENV PATH="/opt/venv/bin:${PATH}"
 # Retry on flaky networks (ECONNRESET) instead of failing the build.
 COPY package.json package-lock.json* ./
 RUN npm config set fetch-retries 5 \
-    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-retry-mintimeout 60000 \
     && npm config set fetch-retry-maxtimeout 120000 \
     && npm config set fetch-timeout 300000 \
     && for i in 1 2 3; do \
          npm ci --prefer-offline --no-audit --no-fund && break \
          || echo "npm ci attempt $i failed (network), retrying..."; \
-       done
+       done || { echo "ERROR: npm ci failed after 3 retries"; exit 1; }
 
 # Copy source (respects .dockerignore).
 COPY . .

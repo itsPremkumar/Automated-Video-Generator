@@ -16,7 +16,7 @@
  *
  * Config (env):
  *   VOICEBOX_API_URL      default http://127.0.0.1:17493
- *   VOICEBOX_BACKEND_DIR  dir containing backend/ (default C:/one/voicebox)
+ *   VOICEBOX_BACKEND_DIR  dir containing backend/ (default <cwd>/voicebox)
  *   VOICEBOX_PYTHON       python interpreter (default <backend_dir>/.venv/Scripts/python.exe)
  *   VOICEBOX_PORT         default 17493
  */
