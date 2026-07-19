@@ -61,7 +61,7 @@ export class FreeVideoAdapter {
      * rule so a "lion" query never ships a "lion king" trailer or "lion dance"
      * clip. Off-topic compound nouns are excluded; broad topics pass through.
      */
-    private static isOnTopic(keyword: string, title: string): boolean {
+    public static isOnTopic(keyword: string, title: string): boolean {
         const k = keyword.trim().toLowerCase();
         if (!k) return true;
         const generic = ['nature', 'city', 'background', 'texture', 'abstract', 'b roll', 'b-roll'];
@@ -120,7 +120,7 @@ export class FreeVideoAdapter {
         workspaceVideosDir: string,
         orientation: 'portrait' | 'landscape' = 'portrait',
     ): Promise<MediaAsset | null> {
-        const sources = await this.searchAll(keyword, { count: 3, maxDuration: 30, minResolution: 360 });
+        const sources = await this.searchAll(keyword, { count: 6, maxDuration: 30, minResolution: 360 });
         if (sources.length === 0) return null;
 
         // Flatten and pick the best result
@@ -136,22 +136,54 @@ export class FreeVideoAdapter {
             return bRes - aRes;
         });
 
-        const best = sorted[0];
-        const result = await this.downloader.downloadAll([best], workspaceVideosDir);
-        if (result.length === 0 || !result[0].success || !result[0].localPath) return null;
+        // FAILOVER: try each on-topic candidate in order. Wikimedia often
+        // rate-limits (HTTP 429) under burst; if the top pick fails we move to
+        // the next one (e.g. an Internet Archive copy) instead of giving up.
+        for (const candidate of sorted) {
+            const result = await this.downloader.downloadAll([candidate], workspaceVideosDir);
+            if (result.length > 0 && result[0].success && result[0].localPath) {
+                const best = candidate;
+                const localPath = result[0].localPath;
+                const width = best.resolution ? parseInt(best.resolution.split('x')[0] ?? '1080', 10) : 1080;
+                const height = best.resolution ? parseInt(best.resolution.split('x')[1] ?? '1920', 10) : 1920;
+                return {
+                    type: 'video',
+                    url: best.downloadUrl,
+                    width,
+                    height,
+                    photographer: best.creator,
+                    localPath,
+                    videoDuration: best.durationSeconds ?? undefined,
+                };
+            }
+        }
+        return null;
+    }
 
-        const localPath = result[0].localPath;
-        const width = best.resolution ? parseInt(best.resolution.split('x')[0] ?? '1080', 10) : 1080;
-        const height = best.resolution ? parseInt(best.resolution.split('x')[1] ?? '1920', 10) : 1920;
-
-        return {
-            type: 'video',
-            url: best.downloadUrl,
-            width,
-            height,
-            photographer: best.creator,
-            localPath,
-            videoDuration: best.durationSeconds ?? undefined,
-        };
+    /**
+     * Download up to `count` distinct on-topic videos, failing over through the
+     * ranked candidate list so a single throttled source (Wikimedia 429) does
+     * not block the whole batch. Used by bulk agents that need several clips.
+     */
+    async downloadBest(keyword: string, outputDir: string, count = 1): Promise<string[]> {
+        const sources = await this.searchAll(keyword, { count: count * 4, maxDuration: 30, minResolution: 360 });
+        if (sources.length === 0) return [];
+        const sorted = sources
+            .flatMap((s) => s.results)
+            .sort((a, b) => {
+                const aOn = FreeVideoAdapter.isOnTopic(keyword, a.title) ? 1 : 0;
+                const bOn = FreeVideoAdapter.isOnTopic(keyword, b.title) ? 1 : 0;
+                if (aOn !== bOn) return bOn - aOn;
+                const aRes = a.resolution ? parseInt(a.resolution.split('x')[1] ?? '0', 10) : 0;
+                const bRes = b.resolution ? parseInt(b.resolution.split('x')[1] ?? '0', 10) : 0;
+                return bRes - aRes;
+            });
+        const out: string[] = [];
+        for (const candidate of sorted) {
+            if (out.length >= count) break;
+            const res = await this.downloader.downloadAll([candidate], outputDir);
+            if (res.length > 0 && res[0].success && res[0].localPath) out.push(res[0].localPath);
+        }
+        return out;
     }
 }

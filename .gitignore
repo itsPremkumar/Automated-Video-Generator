@@ -92,3 +92,15 @@ agentic-pipeline/**/*.candidate.*
 
 # Voicebox generated test clips (artifacts, not source)
 voicebox-test-output/
+
+# Temporary downloaded assets and runtime generator directories
+images/
+videos/
+music/
+image_*
+video_*
+audio_*
+music_*
+.hermes-*
+.hermes-tmp*
+

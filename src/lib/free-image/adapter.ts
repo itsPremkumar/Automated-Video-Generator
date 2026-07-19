@@ -26,7 +26,7 @@ export class FreeImageAdapter {
      * "nature", "city") are accepted from any provider because they have no
      * single concrete subject to match.
      */
-    private static isOnTopic(keyword: string, title: string): boolean {
+    public static isOnTopic(keyword: string, title: string): boolean {
         const k = keyword.trim().toLowerCase();
         if (!k) return true;
         // Broad/generic topics: accept anything (the provider already filtered).

@@ -208,6 +208,8 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
     }
     const MAX_CONCURRENT_FETCHES = 6;
     const results = await mapWithConcurrencyLimit(sceneFetches, MAX_CONCURRENT_FETCHES);
+    const downloadTasks: (() => Promise<void>)[] = [];
+
     for (const { i, kind, dir, scene, fetched } of results) {
         // No stock candidates for this scene → generate an offline fallback
         // (asset-creator / ffmpeg) instead of leaving the scene blank.
@@ -230,56 +232,58 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
         }
         for (let c = 0; c < Math.min(candidatesPerAsset, fetched.length); c++) {
             const f = fetched[c];
-            const ext = path.extname(f.url).split('?')[0] || (kind === 'image' ? '.jpg' : '.mp4');
-            const filename = `candidate_${c + 1}${ext}`;
-            // Always materialise the asset into THIS scene's isolated dir. Never
-            // trust f.localPath as the final path — it may be a shared cache
-            // or a stale file from a previous job, which would poison the
-            // render (mixed asset kinds, wrong durations). Copy if a real
-            // local file exists, otherwise download from the URL.
-            const destPath = path.join(dir, filename);
-            let localPath = destPath;
-            try {
-                if (f.localPath && fs.existsSync(f.localPath)) {
-                    fs.mkdirSync(dir, { recursive: true });
-                    fs.copyFileSync(f.localPath, destPath);
-                } else {
-                    localPath = await deps.download(f.url, dir, filename);
+            downloadTasks.push(async () => {
+                const ext = path.extname(f.url).split('?')[0] || (kind === 'image' ? '.jpg' : '.mp4');
+                const filename = `candidate_${c + 1}${ext}`;
+                // Always materialise the asset into THIS scene's isolated dir. Never
+                // trust f.localPath as the final path — it may be a shared cache
+                // or a stale file from a previous job, which would poison the
+                // render (mixed asset kinds, wrong durations). Copy if a real
+                // local file exists, otherwise download from the URL.
+                const destPath = path.join(dir, filename);
+                let localPath = destPath;
+                try {
+                    if (f.localPath && fs.existsSync(f.localPath)) {
+                        fs.mkdirSync(dir, { recursive: true });
+                        fs.copyFileSync(f.localPath, destPath);
+                    } else {
+                        localPath = await deps.download(f.url, dir, filename);
+                    }
+                } catch (e) {
+                    console.warn(`⚠ asset materialise failed for scene ${i}: ${(e as Error)?.message ?? e}`);
+                    localPath = destPath;
                 }
-            } catch (e) {
-                console.warn(`⚠ asset materialise failed for scene ${i}: ${(e as Error)?.message ?? e}`);
-                localPath = destPath;
-            }
-            const lic = normalizeLicense(f);
-            // OPT-IN AI verify (acquire stage): score the materialised
-            // candidate with the agent's own model. A non-null FAILING score
-            // drops this candidate (next source in the ladder is tried). A
-            // null result (no model / offline) is ignored -> signal gates decide.
-            if (deps.cfg?.aiVerify?.verifyOnAcquire) {
-                const ai = await aiVerifyAsset(
-                    localPath,
-                    kind,
-                    scene.searchKeywords,
-                    deps.cfg,
-                    resolveAcquireBridge(deps),
-                );
-                if (ai && !ai.pass) {
-                    console.warn(
-                        `⚠ ai(acquire) rejected scene ${i} cand ${c + 1}: ${ai.reason} (conf ${ai.confidence})`,
+                const lic = normalizeLicense(f);
+                // OPT-IN AI verify (acquire stage): score the materialised
+                // candidate with the agent's own model. A non-null FAILING score
+                // drops this candidate (next source in the ladder is tried). A
+                // null result (no model / offline) is ignored -> signal gates decide.
+                if (deps.cfg?.aiVerify?.verifyOnAcquire) {
+                    const ai = await aiVerifyAsset(
+                        localPath,
+                        kind,
+                        scene.searchKeywords,
+                        deps.cfg,
+                        resolveAcquireBridge(deps),
                     );
-                    continue;
+                    if (ai && !ai.pass) {
+                        console.warn(
+                            `⚠ ai(acquire) rejected scene ${i} cand ${c + 1}: ${ai.reason} (conf ${ai.confidence})`,
+                        );
+                        return;
+                    }
                 }
-            }
-            candidates.push({
-                kind,
-                sceneIndex: i,
-                candidateIndex: c + 1,
-                localPath,
-                url: f.url,
-                source: f.source,
-                license: lic.license,
-                licenseUrl: lic.licenseUrl,
-                keywords: scene.searchKeywords,
+                candidates.push({
+                    kind,
+                    sceneIndex: i,
+                    candidateIndex: c + 1,
+                    localPath,
+                    url: f.url,
+                    source: f.source,
+                    license: lic.license,
+                    licenseUrl: lic.licenseUrl,
+                    keywords: scene.searchKeywords,
+                });
             });
         }
     }
@@ -288,42 +292,63 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
     const musicFetched = await deps.fetchMusic(plan.musicQuery, candidatesPerAsset);
     for (let c = 0; c < Math.min(candidatesPerAsset, musicFetched.length); c++) {
         const f = musicFetched[c];
-        const ext = path.extname(f.url).split('?')[0] || '.mp3';
-        const filename = `candidate_${c + 1}${ext}`;
-        const localPath =
-            f.localPath && fs.existsSync(f.localPath) ? f.localPath : await deps.download(f.url, ws.musicDir, filename);
-        const lic = normalizeLicense(f);
-        // OPT-IN AI music-mood check (acquire stage): music has no speech
-        // transcript, so we judge mood-fit from the plan's intended mood
-        // (plan.musicQuery) against the track's tags/source. A non-null
-        // FAILING score drops this candidate. A null result is ignored.
-        if (deps.cfg?.aiVerify?.verifyOnAcquire && deps.cfg?.aiVerify?.checkMusicMood) {
-            const proxy = `intended mood: ${plan.musicQuery}; track source: ${f.source || 'free-music'}`;
-            const ai = await aiVerifyAsset(
-                localPath,
-                'audio',
-                [plan.musicQuery],
-                deps.cfg,
-                resolveAcquireBridge(deps),
-                proxy,
-            );
-            if (ai && !ai.pass) {
-                console.warn(`⚠ ai(acquire) rejected music cand ${c + 1}: ${ai.reason} (conf ${ai.confidence})`);
-                continue;
+        downloadTasks.push(async () => {
+            const ext = path.extname(f.url).split('?')[0] || '.mp3';
+            const filename = `candidate_${c + 1}${ext}`;
+            let localPath;
+            try {
+                localPath =
+                    f.localPath && fs.existsSync(f.localPath) ? f.localPath : await deps.download(f.url, ws.musicDir, filename);
+            } catch (e) {
+                console.warn(`⚠ music materialise failed for cand ${c + 1}: ${(e as Error)?.message ?? e}`);
+                localPath = path.join(ws.musicDir, filename);
             }
-        }
-        candidates.push({
-            kind: 'music',
-            sceneIndex: -1,
-            candidateIndex: c + 1,
-            localPath,
-            url: f.url,
-            source: f.source,
-            license: lic.license,
-            licenseUrl: lic.licenseUrl,
-            keywords: [plan.musicQuery],
+            const lic = normalizeLicense(f);
+            // OPT-IN AI music-mood check (acquire stage): music has no speech
+            // transcript, so we judge mood-fit from the plan's intended mood
+            // (plan.musicQuery) against the track's tags/source. A non-null
+            // FAILING score drops this candidate. A null result is ignored.
+            if (deps.cfg?.aiVerify?.verifyOnAcquire && deps.cfg?.aiVerify?.checkMusicMood) {
+                const proxy = `intended mood: ${plan.musicQuery}; track source: ${f.source || 'free-music'}`;
+                const ai = await aiVerifyAsset(
+                    localPath,
+                    'audio',
+                    [plan.musicQuery],
+                    deps.cfg,
+                    resolveAcquireBridge(deps),
+                    proxy,
+                );
+                if (ai && !ai.pass) {
+                    console.warn(`⚠ ai(acquire) rejected music cand ${c + 1}: ${ai.reason} (conf ${ai.confidence})`);
+                    return;
+                }
+            }
+            candidates.push({
+                kind: 'music',
+                sceneIndex: -1,
+                candidateIndex: c + 1,
+                localPath,
+                url: f.url,
+                source: f.source,
+                license: lic.license,
+                licenseUrl: lic.licenseUrl,
+                keywords: [plan.musicQuery],
+            });
         });
     }
+
+    const MAX_CONCURRENT_DOWNLOADS = 4;
+    await mapWithConcurrencyLimit(downloadTasks, MAX_CONCURRENT_DOWNLOADS);
+
+    // Sort to keep deterministic scene and candidate order in manifest / output
+    candidates.sort((a, b) => {
+        if (a.kind === 'music' && b.kind !== 'music') return 1;
+        if (a.kind !== 'music' && b.kind === 'music') return -1;
+        if (a.sceneIndex !== b.sceneIndex) {
+            return a.sceneIndex - b.sceneIndex;
+        }
+        return a.candidateIndex - b.candidateIndex;
+    });
 
     writeJson(ws, 'candidates.json', candidates);
     return { workspace: ws, candidates };
