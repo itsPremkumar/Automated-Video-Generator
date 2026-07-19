@@ -1497,7 +1497,7 @@ export async function renderAgenticSlideshow(
             // Audio: voiceover (resampled) or silent track; both trimmed to clip duration so
             // every segment has an identical video+audio stream layout (concat demuxer requires it).
             const af = hasVo
-                ? `[1:a]aresample=44100,atrim=0:${dur},asetpts=PTS-STARTPTS[a]`
+                ? `[1:a]aresample=44100,atrim=0:${dur},asetpts=PTS-STARTPTS,alimiter=limit=0.85:asc=1:level=disabled[a]`
                 : `[1:a]atrim=0:${dur},asetpts=PTS-STARTPTS[a]`;
             const fc = vfChain + ';' + af;
             const args: string[] = [
@@ -1604,9 +1604,9 @@ export async function renderAgenticSlideshow(
         let fc = `[1:a]${volFilter}[a]`;
         if (sfxLayer && fs.existsSync(sfxLayer)) {
             inputs.push('-i', sfxLayer);
-            fc += `;[2:a]volume=0.6[sfx];[0:a][a][sfx]amix=inputs=3:duration=shortest[aout]`;
+            fc += `;[2:a]volume=0.6[sfx];[0:a][a][sfx]amix=inputs=3:duration=shortest[amixout];[amixout]alimiter=limit=0.85:asc=1:level=disabled[aout]`;
         } else {
-            fc += `;[0:a][a]amix=inputs=2:duration=shortest[aout]`;
+            fc += `;[0:a][a]amix=inputs=2:duration=shortest[amixout];[amixout]alimiter=limit=0.85:asc=1:level=disabled[aout]`;
         }
         const pass2 = [
             ...inputs,
