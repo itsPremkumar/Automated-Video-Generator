@@ -17,6 +17,61 @@ export class FreeImageAdapter {
         this.met = new MetMuseumImageProvider();
     }
 
+    /**
+     * Relevance gate: an asset is "on topic" only if its title (or source
+     * page) mentions the query token somewhere. Without this, NASA returns
+     * "Lion nebula" space photos and MetMuseum returns "sea lion"/"stone
+     * lion"/"Lion King" art for a "lion" query — which would corrupt the
+     * generated video's actual content. Generic-scope topic words (e.g.
+     * "nature", "city") are accepted from any provider because they have no
+     * single concrete subject to match.
+     */
+    private static isOnTopic(keyword: string, title: string): boolean {
+        const k = keyword.trim().toLowerCase();
+        if (!k) return true;
+        // Broad/generic topics: accept anything (the provider already filtered).
+        const generic = ['nature', 'city', 'background', 'texture', 'abstract'];
+        if (generic.includes(k)) return true;
+        const t = (title || '').toLowerCase();
+        // Compound nouns that share a token with the query but are OFF-TOPIC
+        // (e.g. "lion" → "stone lion", "sea lion", "lion king", "lioness").
+        // These must be rejected even though they contain the query token.
+        const offTopicCompounds: Record<string, RegExp> = {
+            lion: /(stone\s+lion|sea\s+lion|lion\s+king|lioness|lion's|lions'\s|mountain\s+lion|city\s+lion)/,
+            cat: /(lion|tiger|bear|wildcat|cat\s+statue)/,
+            dog: /(hot\s+dog|dog\s+statue|sea\s+dog)/,
+            bear: /(teddy\s+bear|grizzly)/,
+        };
+        for (const tok of k.split(/\s+/).filter((x) => x.length >= 3)) {
+            if (offTopicCompounds[tok] && offTopicCompounds[tok].test(t)) return false;
+            // Require a whole-word boundary so "lion" does not match inside a
+            // larger unrelated word. \b handles the English word edge.
+            const re = new RegExp(`\\b${tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+            if (re.test(t)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Provider participation policy. Wikimedia + Internet Archive are general
+     * photo libraries → always queried. NASA (space) and MetMuseum (art) are
+     * DOMAIN-SPECIFIC and would return OFF-TOPIC results for everyday queries
+     * ("lion" → nebula art), so they are only queried when the keyword is
+     * explicitly space/astronomy/museum-related. This is the core fix for
+     * "the download gave the wrong image and changed the video's content".
+     */
+    private shouldQuery(provider: 'wiki' | 'archive' | 'nasa' | 'met', keyword: string): boolean {
+        if (provider === 'wiki' || provider === 'archive') return true;
+        const k = keyword.trim().toLowerCase();
+        if (provider === 'nasa') {
+            return /space|nasa|galaxy|nebula|star|planet|cosmo|astronom|moon|earth|satellite|telescope|comet|asteroid|universe|milky/.test(
+                k,
+            );
+        }
+        // met = art museum → only for explicitly art/heritage queries
+        return /painting|sculpture|museum|artwork|portrait|renaissance|classical art|artifact|exhibit/.test(k);
+    }
+
     async searchAll(
         keyword: string,
         options?: {
@@ -35,27 +90,26 @@ export class FreeImageAdapter {
             minHeight: options?.minHeight,
         };
 
-        const [wikiResults, archiveResults, nasaResults, metResults] = await Promise.allSettled([
-            this.wiki.search(opts),
-            this.archive.search(opts),
-            this.nasa.search(opts),
-            this.met.search(opts),
-        ]);
+        const tasks: Array<[string, Promise<ImageResult[]>, 'wiki' | 'archive' | 'nasa' | 'met']> = [
+            [this.wiki.name, this.wiki.search(opts), 'wiki'],
+            [this.archive.name, this.archive.search(opts), 'archive'],
+        ];
+        if (this.shouldQuery('nasa', keyword)) tasks.push([this.nasa.name, this.nasa.search(opts), 'nasa']);
+        if (this.shouldQuery('met', keyword)) tasks.push([this.met.name, this.met.search(opts), 'met']);
+
+        const settled = await Promise.allSettled(tasks.map((t) => t[1]));
 
         const output: { source: string; results: ImageResult[] }[] = [];
-
-        if (wikiResults.status === 'fulfilled' && wikiResults.value.length > 0) {
-            output.push({ source: 'wikimedia', results: wikiResults.value });
-        }
-        if (archiveResults.status === 'fulfilled' && archiveResults.value.length > 0) {
-            output.push({ source: 'archive', results: archiveResults.value });
-        }
-        if (nasaResults.status === 'fulfilled' && nasaResults.value.length > 0) {
-            output.push({ source: 'nasa', results: nasaResults.value });
-        }
-        if (metResults.status === 'fulfilled' && metResults.value.length > 0) {
-            output.push({ source: 'metmuseum', results: metResults.value });
-        }
+        settled.forEach((res, i) => {
+            const source = tasks[i][0];
+            if (res.status === 'fulfilled' && res.value.length > 0) {
+                // RELEVANCE FILTER: drop off-topic assets (NASA/MET already
+                // gated at the query stage, but Wikimedia/Archive can still
+                // return "sea lion"/"lion statue" for a "lion" query).
+                const onTopic = res.value.filter((r) => FreeImageAdapter.isOnTopic(keyword, r.title));
+                if (onTopic.length > 0) output.push({ source, results: onTopic });
+            }
+        });
 
         return output;
     }
@@ -73,7 +127,13 @@ export class FreeImageAdapter {
         if (sources.length === 0) return null;
 
         const all = sources.flatMap((s) => s.results);
+        // RELEVANCE-FIRST ranking: prefer on-topic assets, then break ties by
+        // resolution. Fixes the prior bug where a high-res OFF-TOPIC NASA/MET
+        // image beat a lower-res REAL photo purely on pixel count.
         const sorted = all.sort((a, b) => {
+            const aOn = FreeImageAdapter.isOnTopic(keyword, a.title) ? 1 : 0;
+            const bOn = FreeImageAdapter.isOnTopic(keyword, b.title) ? 1 : 0;
+            if (aOn !== bOn) return bOn - aOn;
             const aRes = (a.width ?? 0) * (a.height ?? 0);
             const bRes = (b.width ?? 0) * (b.height ?? 0);
             return bRes - aRes;

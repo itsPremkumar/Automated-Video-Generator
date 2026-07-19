@@ -841,7 +841,30 @@ export async function searchFreeImages(
         const sources = await freeImageAdapter.searchAll(query, { count, orientation });
         const all: any[] = sources.flatMap((s) => s.results);
         if (all.length === 0) return [];
-        return all.slice(0, count).map((r) => ({
+        // RELEVANCE-FIRST: keep on-topic assets (title contains the keyword
+        // token) ahead of any borderline match, so a "lion" query never ships
+        // a "lion statue"/"Lion King" still just because it appeared first.
+        const generic = ['nature', 'city', 'background', 'texture', 'abstract'];
+        const k = query.trim().toLowerCase();
+        const offTopicCompounds: Record<string, RegExp> = {
+            lion: /(stone\s+lion|sea\s+lion|lion\s+king|lioness|lion's|lions'\s|mountain\s+lion|city\s+lion)/,
+            cat: /(lion|tiger|bear|wildcat|cat\s+statue)/,
+            dog: /(hot\s+dog|dog\s+statue|sea\s+dog)/,
+            bear: /(teddy\s+bear|grizzly)/,
+        };
+        const isOnTopic = (r: any) => {
+            if (generic.includes(k)) return true;
+            const t = (r.title || '').toLowerCase();
+            for (const tok of k.split(/\s+/).filter((x: string) => x.length >= 3)) {
+                if (offTopicCompounds[tok] && offTopicCompounds[tok].test(t)) return false;
+                const re = new RegExp(`\\b${tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+                if (re.test(t)) return true;
+            }
+            return false;
+        };
+        const onTopic = all.filter(isOnTopic);
+        const ranked = (onTopic.length > 0 ? onTopic : all).slice(0, count);
+        return ranked.map((r) => ({
             type: 'image' as const,
             url: r.downloadUrl || r.thumbnailUrl || '',
             width: r.width ?? 0,
