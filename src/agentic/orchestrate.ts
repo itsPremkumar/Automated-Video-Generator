@@ -45,7 +45,8 @@ import { generateAgenticVoiceovers } from './tts.js';
 import { createJob, updateJob, persistJob } from './job.js';
 import { AssetCandidate, AssetDecision, Plan, RenderManifest, assetId } from './types.js';
 import { AgentBackendConfig, AgenticBackend, expandKeywordsHeuristic, writeScriptHeuristic } from './agent.js';
-import { AgentBrain } from './brain.js';
+import { AgentBrain, hasModel, envOpts } from './brain.js';
+import { resolveBridge, type LlmBridge, type DriverLlmCallback } from './bridge.js';
 
 /** Hard-timeout wrapper for network/IO promises. A stalled fetch (no response,
  *  hanging socket) must never block the whole pipeline — reject fast so the
@@ -162,6 +163,14 @@ export interface PipelineRequest {
     hookFirst?: boolean;
     /** Pro-edit: alternate scene durations so the rhythm breathes. */
     variablePacing?: boolean;
+    /**
+     * MCP-only: the driver's LLM callback. When supplied, every LLM-capable
+     * step (script, keywords, order, vision, audio) is routed to the DRIVER
+     * FIRST (per the standing "driver has priority" rule), falling back to the
+     * configured free model, then to the signal/heuristic floor. Absent in a
+     * plain CLI run -> bridge behaves exactly like today (model -> null).
+     */
+    driverLLM?: DriverLlmCallback;
 }
 
 export interface PipelineResult {
@@ -236,16 +245,29 @@ export async function runAgenticPipeline(
     pruneWorkspaces(Number(process.env.AGENTIC_KEEP_WORKSPACES ?? 25));
 
     // ── STAGE 1: SCRIPT + PLAN (agent writes the script) ──────────────
-    // AgentBrain makes the advanced decision (free model when configured),
-    // falling back to the heuristic when offline / no key / model error.
-    const brain = new AgentBrain(
-        cfg.brain ? { maxCalls: cfg.brain.maxCalls, maxFails: cfg.brain.maxFails } : undefined,
-    );
-    const brainScript =
+    // Unified LLM bridge: by the user's standing rule the DRIVER that commanded
+    // the generation has first priority (when running under MCP with a driver
+    // callback); otherwise the configured free model (OpenRouter/Ollama), then
+    // the heuristic floor. The bridge already encodes that cascade.
+    const brainOpts = cfg.brain ? { maxCalls: cfg.brain.maxCalls, maxFails: cfg.brain.maxFails } : undefined;
+    const driverLLM: DriverLlmCallback | undefined = req.driverLLM;
+    const bridge: LlmBridge = resolveBridge({
+        hasModelKeys: hasModel(brainOpts ?? envOpts()),
+        driverLLM,
+        modelOpts: brainOpts,
+    });
+    const brain = new AgentBrain(brainOpts);
+
+    const script =
         (cfg.writeScript ? await cfg.writeScript(req.topic, req.title) : null) ??
-        (await brain.writeScript(req.topic, req.title)) ??
+        (
+            await bridge.completeJSON<{ script: string }>(
+                'You are a short-form video scriptwriter. Write a tight, natural, engaging script with a hook, build, and payoff. 3-5 short sentences. No hashtags, no markup.',
+                `Topic: ${req.topic}\nTitle: ${req.title}`,
+                '{"script":"..."}',
+            )
+        )?.script ??
         writeScriptHeuristic(req.topic, req.title);
-    const script = brainScript;
 
     const plan = await buildPlan(
         script,
@@ -661,9 +683,9 @@ export async function runAgenticPipeline(
     // score drops the candidate. When off / no model, acquire.ts ignores this.
     if (cfg.aiVerify?.enabled) {
         acquireDeps.cfg = cfg as any;
-        acquireDeps.brain = new AgentBrain(
-            cfg.brain ? { maxCalls: cfg.brain.maxCalls, maxFails: cfg.brain.maxFails } : undefined,
-        );
+        // Route acquire-stage AI verification through the SAME unified bridge as
+        // the script stage: DRIVER (MCP) first, then configured model, then null.
+        acquireDeps.bridge = bridge;
     }
     const { workspace, candidates } = await acquireAssets(plan, acquireDeps, req.candidatesPerAsset ?? 2);
     emit({ stage: 'acquire', percent: 100, message: `Acquired ${candidates.length} candidates` });

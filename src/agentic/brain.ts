@@ -41,7 +41,7 @@ export interface BrainOptions {
 const DEFAULT_OR_MODEL = 'meta-llama/llama-3.1-8b-instruct:free';
 const DEFAULT_VISION_MODEL = 'google/gemini-2.0-flash-thinking-exp-1219:free';
 
-function envOpts(): BrainOptions {
+export function envOpts(): BrainOptions {
     return {
         openRouterKey: process.env.OPENROUTER_API_KEY || undefined,
         openRouterModel: process.env.OPENROUTER_MODEL || DEFAULT_OR_MODEL,
@@ -52,7 +52,7 @@ function envOpts(): BrainOptions {
     };
 }
 
-function hasModel(o: BrainOptions): boolean {
+export function hasModel(o: BrainOptions): boolean {
     return Boolean(o.openRouterKey || o.ollamaUrl);
 }
 

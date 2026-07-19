@@ -18,6 +18,7 @@ import { AgenticWorkspace, createAgenticWorkspace, sceneImageDir, sceneVideoDir,
 import { AssetCandidate, Plan, ScenePlan } from './types.js';
 import { inputAssetPath } from '../lib/path-safety.js';
 import { aiVerifyAsset } from './ai-verify.js';
+import { ModelBridge, NullBridge, type LlmBridge } from './bridge.js';
 
 /**
  * Run async producers with a bounded concurrency. `tasks` is an array of
@@ -37,6 +38,26 @@ export async function mapWithConcurrencyLimit<T>(tasks: (() => Promise<T>)[], li
     const workers = Array.from({ length: Math.min(limit, tasks.length) }, () => worker());
     await Promise.all(workers);
     return out;
+}
+
+/**
+ * Resolve the LLM bridge for acquire-stage AI verification, honouring the
+ * standing "driver first" rule:
+ *   deps.bridge (already driver-aware) -> ModelBridge(deps.brain) -> NullBridge.
+ * A NullBridge makes every AI check return null so the signal gates decide.
+ * This keeps behaviour identical to before when only `brain` was supplied.
+ */
+function resolveAcquireBridge(deps: AcquireDeps): LlmBridge {
+    if (deps.bridge) return deps.bridge;
+    if (deps.brain) {
+        // Wrap the legacy brain so vision/audio still work through the unified
+        // interface without a driver callback (pure model-tier behaviour).
+        const b = new ModelBridge();
+        // @ts-expect-error inject the caller-supplied brain instance
+        b.brain = deps.brain;
+        return b;
+    }
+    return new NullBridge();
 }
 
 /** Ensure every candidate carries an attribution label so the final gate (X6)
@@ -72,8 +93,12 @@ export interface AcquireDeps {
     fetchMusic: (query: string, count: number) => Promise<FetchedVisual[]>;
     /** OPTIONAL — AI verification (opt-in). When present AND cfg.aiVerify.verifyOnAcquire
      *  is on, each materialised candidate is AI-scored; a failing (non-null)
-     *  score drops the candidate. Absent -> no AI check (signal gates only). */
+     *  score drops the candidate. Absent -> no AI check (signal gates only).
+     *  `bridge` is the unified LLM boundary (DRIVER -> model -> null); when set
+     *  it is used for vision/audio scoring. `brain` is retained for backward
+     *  compatibility and used only as a ModelBridge fallback if `bridge` is absent. */
     cfg?: import('./config.js').AgenticConfig;
+    bridge?: import('./bridge.js').LlmBridge;
     brain?: import('./brain.js').AgentBrain;
 }
 
@@ -230,8 +255,14 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
             // candidate with the agent's own model. A non-null FAILING score
             // drops this candidate (next source in the ladder is tried). A
             // null result (no model / offline) is ignored -> signal gates decide.
-            if (deps.brain && deps.cfg?.aiVerify?.verifyOnAcquire) {
-                const ai = await aiVerifyAsset(localPath, kind, scene.searchKeywords, deps.cfg, deps.brain);
+            if (deps.cfg?.aiVerify?.verifyOnAcquire) {
+                const ai = await aiVerifyAsset(
+                    localPath,
+                    kind,
+                    scene.searchKeywords,
+                    deps.cfg,
+                    resolveAcquireBridge(deps),
+                );
                 if (ai && !ai.pass) {
                     console.warn(
                         `⚠ ai(acquire) rejected scene ${i} cand ${c + 1}: ${ai.reason} (conf ${ai.confidence})`,
@@ -266,9 +297,16 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
         // transcript, so we judge mood-fit from the plan's intended mood
         // (plan.musicQuery) against the track's tags/source. A non-null
         // FAILING score drops this candidate. A null result is ignored.
-        if (deps.brain && deps.cfg?.aiVerify?.verifyOnAcquire && deps.cfg?.aiVerify?.checkMusicMood) {
+        if (deps.cfg?.aiVerify?.verifyOnAcquire && deps.cfg?.aiVerify?.checkMusicMood) {
             const proxy = `intended mood: ${plan.musicQuery}; track source: ${f.source || 'free-music'}`;
-            const ai = await aiVerifyAsset(localPath, 'audio', [plan.musicQuery], deps.cfg, deps.brain, proxy);
+            const ai = await aiVerifyAsset(
+                localPath,
+                'audio',
+                [plan.musicQuery],
+                deps.cfg,
+                resolveAcquireBridge(deps),
+                proxy,
+            );
             if (ai && !ai.pass) {
                 console.warn(`⚠ ai(acquire) rejected music cand ${c + 1}: ${ai.reason} (conf ${ai.confidence})`);
                 continue;

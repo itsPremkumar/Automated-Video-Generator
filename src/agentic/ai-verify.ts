@@ -42,12 +42,15 @@ export async function aiVerifyAsset(
     kind: AiVerifyKind,
     expectation: string[],
     cfg: AgenticConfig,
-    brain: AgentBrain,
+    bridgeOrBrain: import('./bridge.js').LlmBridge | AgentBrain,
     transcript?: string,
 ): Promise<AiScore | null> {
     const av = cfg.aiVerify;
     if (!av || !av.enabled) return null;
-    if (!brain.modelEnabled) return null; // no model running -> signal gates decide
+    // Normalise: callers may still pass a legacy AgentBrain. toBridge wraps it as
+    // a ModelBridge. The bridge is the unified LLM boundary: DRIVER (MCP) ->
+    // configured model -> null. A null result means no AI -> signal gates decide.
+    const bridge = (await import('./bridge.js')).toBridge(bridgeOrBrain as any);
 
     // Default the three check flags to true when unset (matches resolveConfig).
     const checkSubject = av.checkSubjectMatch ?? true;
@@ -59,14 +62,13 @@ export async function aiVerifyAsset(
 
     if (kind === 'image' || kind === 'video') {
         if (!checkSubject && !checkWatermark && !checkSafety) return null;
-        // visionVerify returns null if the model isn't multimodal / offline.
-        const v = await brain.visionVerify(file, expectation);
+        // bridge.visionVerify routes driver -> model -> null (per standing rule).
+        const v = await bridge.visionVerify(file, expectation);
         if (!v) return null;
         const checks: string[] = [];
-        if (av.checkSubjectMatch && !v.passes) checks.push('subject-mismatch');
-        // watermark/safety are folded into the vision reason when the model flags them.
+        if (av.checkSubjectMatch && !v.pass) checks.push('subject-mismatch');
         const confidence = v.confidence ?? 0;
-        const pass = v.passes && confidence >= (av.minConfidence ?? 6);
+        const pass = v.pass && confidence >= (av.minConfidence ?? 6);
         return {
             pass,
             confidence,
@@ -78,7 +80,7 @@ export async function aiVerifyAsset(
     if (kind === 'audio') {
         if (!av.checkMusicMood && !av.checkSpeechClarity && !av.checkBackgroundNoise) return null;
         if (!transcript) return null; // nothing to judge -> signal gates decide
-        const score = await judgeAudio(transcript, expectation, av, brain);
+        const score = await judgeAudio(transcript, expectation, av, bridge);
         if (!score) return null;
         return score;
     }
@@ -87,14 +89,14 @@ export async function aiVerifyAsset(
 }
 
 /**
- * Ask the agent's TEXT model to judge an audio transcript for clarity / mood /
- * noise. Returns null on any failure. Never throws.
+ * Ask the agent's TEXT model (via the bridge) to judge an audio transcript for
+ * clarity / mood / noise. Returns null on any failure. Never throws.
  */
 async function judgeAudio(
     transcript: string,
     expectation: string[],
     av: NonNullable<AgenticConfig['aiVerify']>,
-    brain: AgentBrain,
+    bridge: import('./bridge.js').LlmBridge,
 ): Promise<AiScore | null> {
     const want = expectation.join(', ');
     const wants: string[] = [];
@@ -107,7 +109,7 @@ async function judgeAudio(
         `Check:\n- ${wants.join('\n- ')}\n` +
         `Reply ONLY JSON {"confidence":0-10,"pass":bool,"reason":"..."}.`;
     try {
-        const r = await (brain as any).completeJSON?.(
+        const r = await bridge.completeJSON<{ confidence: number; pass: boolean; reason: string }>(
             'You are a strict but fair audio reviewer. Score 0-10.',
             prompt,
             '{"confidence":0,"pass":false,"reason":"..."}',
