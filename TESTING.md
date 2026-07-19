@@ -161,9 +161,53 @@ registered once, with `STATE.impl` mutated per test — see `pipeline-commands.t
   they never leak (`****` for ≤4, `ab****bc` for 5–8).
 - **Verified:** unit test asserts the clamped output.
 
-### (Pending — see §7) Three parallel subagent sweeps are currently hunting the
-media / render / cli subsystems for any remaining real bugs. Findings are triaged
-and fixed before final commit.
+### B6 — Media download subsystem (advanced subagent sweep, 4 defects)
+- **CRITICAL** `src/lib/media-downloader.ts`: filename derivation (`new URL(hit.url)`)
+  ran *outside* `downloadOneAsset`'s `try`. A malformed/empty URL threw
+  synchronously, escaped the catch, and (via `mapWithConcurrencyLimit`) aborted
+  the whole kind's download → silent 100% offline fallback. Fixed: derive inside
+  `try`; hoist `base`/`dest` so the catch can still reference them.
+- **MED** failover retried the wrong slice (`pool.slice(good.length,…)` — `good.length`
+  is a count, not an index). Fixed: retry FAILED candidates by URL set.
+- **MED** job timeout discarded already-downloaded files and re-ran a fresh sweep.
+  Fixed: `fetchAndVerify` accumulates partials into an `out` array that survives
+  the `withTimeout` rejection; the timeout path tops up instead of discarding.
+- **MED** `src/agentic/acquire.ts`: on copy/download failure, `localPath` was set to
+  an *unwritten* path and the candidate was still registered (ghost ref →
+  `probeAsset` width 0 → source-check fail). Fixed: `return` (skip) on failure,
+  for both image/video and music branches.
+
+### B7 — Render/orchestration subsystem (advanced subagent sweep, 5 defects)
+- **HIGH** `buildSfxLayer` produced no SFX — the filtergraph ended in `[aout]` but
+  the `execFile` args had **no `-map '[aout]'`** → ffmpeg errored → SFX silently
+  dropped. Fixed: added `'-map','[aout]'`.
+- **MED** `buildSfxLayer` used `amix…duration=first` → truncated the SFX bed to the
+  shortest clip. Fixed: `duration=longest`.
+- **HIGH** Remotion renders were **silent** — music candidates have `localPath` but
+  no `audioPath`, so the `if (a.audioPath…)` guard was false and the music entry
+  reached Remotion with `audioPath: undefined`. Fixed: use `a.localPath` as the
+  audio source for `kind==='music'`.
+- **HIGH** X8 duration gate **undercounted** when intro/outro present:
+  `xfadeTransitions` subtracted intro/outro, but the chain loop xfades them too
+  (confirmed at ~line 1256), so real transitions = `orderedTags.length - 1`. Fixed:
+  `xfadeTransitions = orderedTags.length - 1`. (Verified: intro+outro render now
+  reports `X8 Duration matches plan: 13.0s vs 13.0s`.)
+- **MED** Caption/kinetic timeline **drifted** from audio by ~`N*xf` (accumulated raw
+  `dur`, ignoring the xfade overlap the video uses). Fixed: advance the caption
+  (`tBase`) and kinetic (`sceneStarts`) accumulators by `dur - xf` per scene.
+
+### B8 — Brain / CLI subsystem (advanced subagent sweep, 2 defects)
+- **HIGH** Ollama vision path sent a malformed `messages` payload (a bare
+  `{type:'image_url',…}` element next to a `{role:'user',content}` element, no
+  `{type:'text'}` wrapper). Ollama rejected it → `visionVerify` always null → silent
+  fallback to the weaker signal gate. Fixed: single user message whose `content` is
+  the parts array (mirrors the OpenRouter branch).
+- **MED** `expandKeywords` schema hint was invalid JSON (`"…"}` instead of `"…"]`)
+  → model echoed a mismatched shape. Fixed: `'{"keywords":["...","..."]}'`.
+
+> All B6–B8 fixes verified: `npm run typecheck` clean, `npm run test:unit` green
+> (461 pass / 0 fail / 8 skipped), and a live landscape render **with intro+outro+sfx**
+> passes every post-render check (X7–X15, including X8 duration match).
 
 ---
 

@@ -974,12 +974,14 @@ async function buildSfxLayer(
         const totalMs = t;
         // Mix all SFX onto one quiet bed aligned to the timeline via adelay.
         const filter = valid.map((c, i) => `[${i}:a]adelay=${c.atMs}|${c.atMs},volume=0.5[a${i}]`).join(';');
-        const mix = valid.map((_, i) => `[a${i}]`).join('') + `amix=inputs=${valid.length}:duration=first[aout]`;
+        const mix = valid.map((_, i) => `[a${i}]`).join('') + `amix=inputs=${valid.length}:duration=longest[aout]`;
         const tmp = `${tmpDir}/_sfx_${Date.now()}.mp3`;
         const args = [
             ...valid.flatMap((c) => ['-i', c.path]),
             '-filter_complex',
             `${filter};${mix}`,
+            '-map',
+            '[aout]',
             '-t',
             (totalMs / 1000).toFixed(2),
             '-c:a',
@@ -1335,7 +1337,7 @@ export async function renderAgenticSlideshow(
                     ci++;
                 }
             }
-            tBase += dur;
+            tBase += Math.max(0, dur - xf);
         }
         videoMap = ctag;
     }
@@ -1349,7 +1351,7 @@ export async function renderAgenticSlideshow(
         let t = introClip ? (opts.intro!.durationSec ?? 2.5) : 0; // start after the cold-open card
         const sceneStarts = visuals.map((a) => {
             const s = t;
-            t += a.durationSec ?? 4;
+            t += Math.max(0, (a.durationSec ?? 4) - xf); // match the xfaded video timeline (see cursor math at ~1274)
             return s;
         });
         let ktag = videoMap;
@@ -1549,9 +1551,12 @@ export async function renderAgenticSlideshow(
         const introDur = introClip ? (opts.intro!.durationSec ?? 2.5) : 0;
         const outroDur = outroClip ? (opts.outro!.durationSec ?? 3) : 0;
         const scenesDur = visuals.reduce((s, a) => s + (a.durationSec ?? 4), 0);
-        // intro->first scene and last scene->outro are hard cuts (no xfade overlap).
-        const xfadeTransitions =
-            visuals.length + (introClip ? 1 : 0) + (outroClip ? 1 : 0) - 1 - (introClip ? 1 : 0) - (outroClip ? 1 : 0);
+        // intro->first scene and last scene->outro are xfaded too (see chain
+        // loop at ~1256), so the real transition count is (all ordered clips - 1),
+        // where ordered clips include vintro/voutro when present. Using
+        // visuals.length-1 here (old code) undercounted by 2*xf when intro/outro
+        // existed, making expectedDur too large and the X8 duration gate fail.
+        const xfadeTransitions = orderedTags.length - 1;
         const xfadeOverlap = xfadeTransitions * xf;
         const totalSec = Math.max(1, introDur + scenesDur + outroDur - xfadeOverlap);
         expectedDur = totalSec;
@@ -2131,10 +2136,15 @@ export async function renderAgenticWithRemotion(
             }
         }
         let audioRel: string | undefined;
-        if (a.audioPath && fs.existsSync(a.audioPath)) {
-            const adestName = `s${a.sceneIndex}_audio.${a.audioPath.split('.').pop()}`;
+        // For music assets the audio track IS a.localPath (acquire stores music
+        // candidates with localPath only, no separate audioPath). Without this,
+        // Remotion videos render silently — the music entry reached the
+        // composition with audioPath: undefined and was dropped.
+        const audioSrc = a.kind === 'music' ? a.localPath : a.audioPath;
+        if (audioSrc && fs.existsSync(audioSrc)) {
+            const adestName = `s${a.sceneIndex}_audio.${audioSrc.split('.').pop()}`;
             const adest = path.join(jobAssetDir, adestName);
-            fs.copyFileSync(a.audioPath, adest);
+            fs.copyFileSync(audioSrc, adest);
             audioRel = path.join('agentic-assets', String(res.workspace.jobId), adestName).replace(/\\/g, '/');
         }
         const sty = styleByScene.get(a.sceneIndex);

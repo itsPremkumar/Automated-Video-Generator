@@ -225,7 +225,7 @@ export class AgentBrain {
                 this.o,
                 `You are a stock-media search expert. Given a scene's narration, return ${n} diverse, specific, visually-descriptive search queries (e.g. "barista pouring latte art", not "coffee nature"). No repeats.`,
                 `Title: ${title}\nScene narration: ${sceneText}`,
-                '{"keywords":["...","..."}',
+                '{"keywords":["...","..."]}',
             ),
         );
         const k = (r?.keywords || [])
@@ -400,7 +400,7 @@ export class AgentBrain {
                                   { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}` } },
                               ]
                             : [
-                                  { role: 'user', content: `Does this image depict: ${keywords.join(', ')}?` },
+                                  { type: 'text', text: `Does this image depict: ${keywords.join(', ')}?` },
                                   { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}` } },
                               ],
                     },

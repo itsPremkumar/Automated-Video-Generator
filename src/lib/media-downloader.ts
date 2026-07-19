@@ -155,12 +155,18 @@ export async function downloadOneAsset(
     hit: { source: string; title: string; url: string; kind: 'image' | 'video' },
     outDir: string,
 ): Promise<MediaHit> {
-    const ext = (
-        path.extname(new URL(hit.url).pathname).split('?')[0] || (hit.kind === 'video' ? '.mp4' : '.jpg')
-    ).toLowerCase();
-    const base = `${hit.kind}_${hit.source}_${hit.title.replace(/[^\w-]+/g, '_').slice(0, 40)}${ext}`;
-    const dest = path.join(outDir, base);
+    let base = '';
+    let dest = '';
     try {
+        // Derive filename INSIDE the try: a malformed/empty hit.url makes
+        // `new URL(...)` throw synchronously; if it runs outside the try it
+        // escapes this function's catch and (via mapWithConcurrencyLimit)
+        // aborts the whole kind's download, silently forcing 100% offline.
+        const ext = (
+            path.extname(new URL(hit.url).pathname).split('?')[0] || (hit.kind === 'video' ? '.mp4' : '.jpg')
+        ).toLowerCase();
+        base = `${hit.kind}_${hit.source}_${hit.title.replace(/[^\\w-]+/g, '_').slice(0, 40)}${ext}`;
+        dest = path.join(outDir, base);
         if (hit.kind === 'video') {
             // Videos go through the hardened FreeDownloadManager (resume + stall
             // guard). Wrap in a hard per-asset timeout so a hung source (e.g.
@@ -350,6 +356,7 @@ export async function downloadTopicMedia(
         hits: { source: string; title: string; url: string; kind: 'image' | 'video' }[],
         dir: string,
         want: number,
+        out?: MediaHit[],
     ): Promise<MediaHit[]> => {
         const pool = dedupe(hits);
         const results = await mapWithConcurrencyLimit(
@@ -357,16 +364,24 @@ export async function downloadTopicMedia(
             concurrency,
         );
         const good = results.filter((r) => r.ok);
-        // Failover: if we still need more, the search already gave extras; but
-        // the candidate pool is the failover source — re-attempt next best.
+        // Accumulate partials into the outer array as we go, so a job-level
+        // timeout (which rejects the withTimeout wrapper) still keeps whatever
+        // already downloaded instead of discarding it.
+        if (out) out.push(...good);
+        // Failover: retry the FAILED candidates (not a slice by good.length).
+        // good.length is the count of successes, not an index, so slicing by it
+        // skipped failed candidates that sat before that offset.
         if (want > 0 && good.length < want) {
             const need = want - good.length;
-            const extra = pool.slice(good.length, good.length + need * 2);
+            const failedUrls = new Set(results.filter((r) => !r.ok).map((r) => r.url));
+            const extra = pool.filter((h) => failedUrls.has(h.url)).slice(0, need * 2);
             const more = await mapWithConcurrencyLimit(
                 extra.map((h) => () => downloadOneAsset(h, dir)),
                 concurrency,
             );
-            good.push(...more.filter((r) => r.ok));
+            const moreGood = more.filter((r) => r.ok);
+            if (out) out.push(...moreGood);
+            good.push(...moreGood);
         }
         return good.slice(0, want || good.length);
     };
@@ -374,25 +389,32 @@ export async function downloadTopicMedia(
     // STEP 2: download accepted candidates in parallel (bounded), with failover.
     // A hard per-asset timeout (image AbortSignal / video 90s) already bounds
     // each download; the job-level timeout below is a final safety net so the
-    // whole job can NEVER hang — on timeout we return whatever we have and let
-    // the offline backstop fill the rest (instead of throwing FATAL).
+    // whole job can NEVER hang — on timeout we keep whatever already downloaded
+    // (partials accumulate into images/videos via the `out` arg) and let the
+    // offline backstop fill the rest (instead of throwing FATAL).
     let images: MediaHit[] = [];
     let videos: MediaHit[] = [];
     try {
         [images, videos] = await Promise.all([
-            withTimeout(fetchAndVerify(imgCandidates, imgDir, wantImg), opts.timeoutMs ?? 150000, 'image download'),
-            withTimeout(fetchAndVerify(vidCandidates, vidDir, wantVid), opts.timeoutMs ?? 150000, 'video download'),
+            withTimeout(fetchAndVerify(imgCandidates, imgDir, wantImg, images), opts.timeoutMs ?? 150000, 'image download'),
+            withTimeout(fetchAndVerify(vidCandidates, vidDir, wantVid, videos), opts.timeoutMs ?? 150000, 'video download'),
         ]);
     } catch (e: any) {
-        console.warn(`⚠ download job timed out (${String(e?.message || e).slice(0, 60)}); returning partials + offline backfill`);
-        // whatever fetchAndVerify already pushed is lost on timeout; re-run a
-        // fast bounded sweep to recover partials, then offline fills the rest.
-        try {
-            images = await fetchAndVerify(imgCandidates.slice(0, wantImg), imgDir, wantImg).catch(() => []);
-        } catch { images = []; }
-        try {
-            videos = await fetchAndVerify(vidCandidates.slice(0, wantVid), vidDir, wantVid).catch(() => []);
-        } catch { videos = []; }
+        console.warn(`⚠ download job timed out (${String(e?.message || e).slice(0, 60)}); keeping partials + offline backfill`);
+        // Partial downloads already accumulated into images/videos via the `out`
+        // arg; the fresh re-sweep below is a best-effort top-up, not a discard.
+        if (images.length < wantImg) {
+            try {
+                const extra = await fetchAndVerify(imgCandidates.slice(0, wantImg), imgDir, wantImg - images.length, images).catch(() => []);
+                images.push(...extra);
+            } catch { /* offline backstop fills the rest */ }
+        }
+        if (videos.length < wantVid) {
+            try {
+                const extra = await fetchAndVerify(vidCandidates.slice(0, wantVid), vidDir, wantVid - videos.length, videos).catch(() => []);
+                videos.push(...extra);
+            } catch { /* offline backstop fills the rest */ }
+        }
     }
 
     // STEP 3: OFFLINE BACKSTOP — fill any shortfall with local CC0 placeholders.

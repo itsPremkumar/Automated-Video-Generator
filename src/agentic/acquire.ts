@@ -251,7 +251,7 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                     }
                 } catch (e) {
                     console.warn(`⚠ asset materialise failed for scene ${i}: ${(e as Error)?.message ?? e}`);
-                    localPath = destPath;
+                    return; // skip this candidate; never register a ghost (unwritten) path
                 }
                 const lic = normalizeLicense(f);
                 // OPT-IN AI verify (acquire stage): score the materialised
@@ -301,7 +301,7 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                     f.localPath && fs.existsSync(f.localPath) ? f.localPath : await deps.download(f.url, ws.musicDir, filename);
             } catch (e) {
                 console.warn(`⚠ music materialise failed for cand ${c + 1}: ${(e as Error)?.message ?? e}`);
-                localPath = path.join(ws.musicDir, filename);
+                return; // skip this music candidate; never register a ghost (unwritten) path
             }
             const lic = normalizeLicense(f);
             // OPT-IN AI music-mood check (acquire stage): music has no speech
