@@ -15,7 +15,15 @@ export async function readEnvConfig(_showSecrets?: boolean) {
     for (const key of Object.keys(config)) {
         const value = config[key];
         masked[key] = key.match(/KEY|SECRET|PASSWORD|TOKEN|AUTH/i)
-            ? value.substring(0, 4) + '****' + value.substring(Math.max(0, value.length - 4))
+            ? (() => {
+                  const v = value;
+                  if (v.length <= 8) {
+                      // Too short to safely reveal first4+last4 without leaking the
+                      // whole secret — mask entirely except a fixed-length stub.
+                      return v.length <= 4 ? '****' : v.slice(0, 2) + '****' + v.slice(-2);
+                  }
+                  return v.substring(0, 4) + '****' + v.substring(v.length - 4);
+              })()
             : value;
     }
     return masked;

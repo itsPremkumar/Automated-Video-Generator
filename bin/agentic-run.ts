@@ -24,6 +24,7 @@ async function main() {
     const title = arg('title', 'Home Workout');
     const backend = arg('backend', 'agent') as 'agent' | 'vision';
     const orientation = arg('orientation', 'portrait') as 'portrait' | 'landscape';
+    const format = arg('format', 'none') as 'none' | 'square';
     const preferVisual = bool('images') ? 'image' : bool('videos') ? 'video' : undefined;
     const renderer = arg('renderer', 'ffmpeg') as 'ffmpeg' | 'remotion';
     const quality = arg('quality', 'medium') as 'draft' | 'medium' | 'high';
@@ -73,18 +74,28 @@ async function main() {
     const intro = introMode === 'none' ? undefined : { title, subtitle: topic, durationSec: 3 };
     const outro = outroMode === 'none' ? undefined : { ctaText: 'Subscribe for more', showSubscribe: true, hashtags: res.plan.scenes.flatMap((s) => s.searchKeywords).slice(0, 5).map((k) => '#' + k.replace(/\s+/g, '')), durationSec: 4 };
 
+    const renderOrientation = (res.plan.orientation ?? 'portrait') as 'portrait' | 'landscape';
+    // Map orientation/format -> render resolution so --orientation / --format are
+    // honoured end-to-end.
+    const dimensions =
+        format === 'square'
+            ? { w: 1080, h: 1080 }
+            : renderOrientation === 'landscape'
+              ? { w: 1280, h: 720 }
+              : { w: 720, h: 1280 };
+
     let out: string;
     if (renderer === 'remotion') {
         console.log(`\n🎞  Rendering MP4 (Remotion, ${quality})...`);
         try {
-            out = await renderAgenticWithRemotion(res, { intro, outro, kenBurns: !noKenBurns, quality });
+            out = await renderAgenticWithRemotion(res, { intro, outro, kenBurns: !noKenBurns, quality, dimensions });
         } catch (e: any) {
             console.warn(`⚠ Remotion render failed (${e?.message ?? e}); falling back to ffmpeg.`);
-            out = await renderAgenticSlideshow(res, { crossfadeSec: 0.5, burnCaptions: true, sfx, preset, kinetic: !noKinetic });
+            out = await renderAgenticSlideshow(res, { crossfadeSec: 0.5, burnCaptions: true, sfx, preset, kinetic: !noKinetic, dimensions });
         }
     } else {
         console.log(`\n🎞  Rendering MP4 (ffmpeg-static)...`);
-        out = await renderAgenticSlideshow(res, { crossfadeSec: 0.5, burnCaptions: true, sfx, preset, kinetic: !noKinetic });
+        out = await renderAgenticSlideshow(res, { crossfadeSec: 0.5, burnCaptions: true, sfx, preset, kinetic: !noKinetic, dimensions });
     }
 
     // Phase 8.4 — print post-render verification (X7-X9)

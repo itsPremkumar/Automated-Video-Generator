@@ -5,74 +5,95 @@ import assert from 'node:assert/strict';
  * env-tools.test.ts
  *
  * Tests env variable reading tools — masking, update, system info, health check.
- * Uses mock.module() at the top level to intercept fs, child_process, and paths.
+ *
+ * IMPORTANT (Node 22 mock API constraint):
+ *   mock.module() for a given specifier can only be registered ONCE per process.
+ *   There is no mock.resetModules() in this Node version and restoreAll() does
+ *   NOT free a module mock for re-registration. So we register each mock exactly
+ *   ONCE at module top-level, with a mutable STATE object that the mock closure
+ *   reads at call time. Each test mutates STATE before calling the SUT. Because
+ *   the SUT calls fs/child_process/paths inside the functions (call time, not
+ *   module-load time), the cached module picks up the current STATE correctly.
  */
 
 // ---------------------------------------------------------------------------
-// Module-level mocks — set up before any dynamic import
+// Single-registration mocks with mutable state
 // ---------------------------------------------------------------------------
-// We use a per-test mock.module override pattern via test-scoped mocks.
-// Since mock.module needs to be called BEFORE the module is loaded, each test
-// group that needs a different mock setup calls mock.module at the top of its
-// test group (via beforeEach or by loading the module inside the test).
+const fsState: {
+    existsImpl: (p: string) => boolean;
+    readImpl: () => string;
+    writeImpl: (content: string) => void;
+} = {
+    existsImpl: () => false,
+    readImpl: () => '',
+    writeImpl: () => {},
+};
+
+const cpState: {
+    execImpl: (cmd: string) => Buffer;
+} = {
+    execImpl: (cmd: string) => {
+        if (cmd.includes('npm')) return Buffer.from('10.8.0\n');
+        if (cmd.includes('ffmpeg')) return Buffer.from('ffmpeg version 7.1\n');
+        return Buffer.from('');
+    },
+};
+
+const pathState: {
+    resolveImpl: (...segments: string[]) => string;
+} = {
+    resolveImpl: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
+};
+
+mock.module('fs', {
+    namedExports: {
+        existsSync: (p: string) => fsState.existsImpl(p),
+        readFileSync: () => fsState.readImpl(),
+        writeFileSync: (_path: string, content: string) => fsState.writeImpl(content),
+    },
+});
+
+mock.module('child_process', {
+    namedExports: {
+        execSync: (cmd: string) => cpState.execImpl(cmd),
+    },
+});
+
+mock.module('../../shared/runtime/paths', {
+    namedExports: {
+        resolveProjectPath: (...segments: string[]) => pathState.resolveImpl(...segments),
+    },
+});
 
 // ---------------------------------------------------------------------------
 // readEnvConfig
 // ---------------------------------------------------------------------------
-test('readEnvConfig: returns empty object when .env does not exist', async (t) => {
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => false,
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (..._segments: string[]) => '/tmp/test-project/.env',
-        },
-    });
-
+test('readEnvConfig: returns empty object when .env does not exist', async () => {
+    fsState.existsImpl = () => false;
     const { readEnvConfig } = await import('./env-tools.js');
     const result = await readEnvConfig();
     assert.deepEqual(result, {});
 });
 
 test('readEnvConfig: masks secret-shaped values (KEY, SECRET, PASSWORD, TOKEN, AUTH)', async () => {
-    const envContent = [
-        'OPENAI_API_KEY=sk-abc123xyz456',
-        'DATABASE_PASSWORD=s3cret!pass',
-        'AUTH_TOKEN=eyJhbGciOiJIUzI1NiJ9',
-        'NORMAL_VAR=hello-world',
-        'APP_SECRET=my-app-secret-value',
-        'DB_HOST=localhost',
-    ].join('\n');
-
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => true,
-            readFileSync: () => envContent,
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (..._segments: string[]) => '/tmp/test-project/.env',
-        },
-    });
+    fsState.existsImpl = () => true;
+    fsState.readImpl = () =>
+        [
+            'OPENAI_API_KEY=sk-abc1234567890abcd',
+            'DATABASE_PASSWORD=s3cret!pass',
+            'AUTH_TOKEN=eyJhbGciOiJIUzI1NiJ9',
+            'NORMAL_VAR=hello-world',
+            'APP_SECRET=my-app-secret-value',
+            'DB_HOST=localhost',
+        ].join('\n');
 
     const { readEnvConfig } = await import('./env-tools.js');
     const result = await readEnvConfig();
 
-    // Secret keys should be masked (first 4 + '****' + last 4)
-    assert.ok(result.OPENAI_API_KEY!.startsWith('sk-a'));
-    assert.ok(result.OPENAI_API_KEY!.endsWith('456'));
-    assert.ok(result.OPENAI_API_KEY!.includes('****'));
-
-    assert.ok(result.DATABASE_PASSWORD!.startsWith('s3cr'));
-    assert.ok(result.DATABASE_PASSWORD!.endsWith('pass'));
-    assert.ok(result.DATABASE_PASSWORD!.includes('****'));
-
-    assert.ok(result.AUTH_TOKEN!.startsWith('eyJh'));
-    assert.ok(result.AUTH_TOKEN!.endsWith('J9'));
-
+    // Masking format is first4 + '****' + last4
+    assert.equal(result.OPENAI_API_KEY, 'sk-a****abcd');
+    assert.equal(result.DATABASE_PASSWORD, 's3cr****pass');
+    assert.equal(result.AUTH_TOKEN, 'eyJh****NiJ9');
     assert.ok(result.APP_SECRET!.includes('****'));
 
     // Non-secret values appear in full
@@ -81,17 +102,8 @@ test('readEnvConfig: masks secret-shaped values (KEY, SECRET, PASSWORD, TOKEN, A
 });
 
 test('readEnvConfig: keys partially matching secret pattern get masked', async () => {
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => true,
-            readFileSync: () => 'MY_KEY_HOLDER=exposed-value',
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (..._segments: string[]) => '/tmp/test-project/.env',
-        },
-    });
+    fsState.existsImpl = () => true;
+    fsState.readImpl = () => 'MY_KEY_HOLDER=exposed-value';
 
     const { readEnvConfig } = await import('./env-tools.js');
     const result = await readEnvConfig();
@@ -100,17 +112,8 @@ test('readEnvConfig: keys partially matching secret pattern get masked', async (
 });
 
 test('readEnvConfig: ignores _showSecrets parameter (always masks)', async () => {
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => true,
-            readFileSync: () => 'DB_PASSWORD=real-password-value',
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (..._segments: string[]) => '/tmp/test-project/.env',
-        },
-    });
+    fsState.existsImpl = () => true;
+    fsState.readImpl = () => 'DB_PASSWORD=real-password-value';
 
     const { readEnvConfig } = await import('./env-tools.js');
     const result = await readEnvConfig(true);
@@ -119,22 +122,14 @@ test('readEnvConfig: ignores _showSecrets parameter (always masks)', async () =>
 });
 
 test('readEnvConfig: masking preserves last-4 characters for short values', async () => {
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => true,
-            readFileSync: () => 'TOKEN=abc',
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (..._segments: string[]) => '/tmp/test-project/.env',
-        },
-    });
+    fsState.existsImpl = () => true;
+    fsState.readImpl = () => 'TOKEN=abc';
 
     const { readEnvConfig } = await import('./env-tools.js');
     const result = await readEnvConfig();
 
-    assert.equal(result.TOKEN, 'ab****bc');
+    // TOKEN=abc is length 3 (<=4) so it is fully masked to '****' (never leaks the secret)
+    assert.equal(result.TOKEN, '****');
 });
 
 // ---------------------------------------------------------------------------
@@ -142,20 +137,11 @@ test('readEnvConfig: masking preserves last-4 characters for short values', asyn
 // ---------------------------------------------------------------------------
 test('updateEnvConfig: adds new key-value pair when key not present', async () => {
     let writtenContent = '';
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => true,
-            readFileSync: () => 'EXISTING_KEY=old-value\n',
-            writeFileSync: (_path: string, content: string) => {
-                writtenContent = content;
-            },
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (..._segments: string[]) => '/tmp/test-project/.env',
-        },
-    });
+    fsState.existsImpl = () => true;
+    fsState.readImpl = () => 'EXISTING_KEY=old-value\n';
+    fsState.writeImpl = (content: string) => {
+        writtenContent = content;
+    };
 
     const { updateEnvConfig } = await import('./env-tools.js');
     const result = await updateEnvConfig('NEW_KEY', 'new-value');
@@ -167,20 +153,11 @@ test('updateEnvConfig: adds new key-value pair when key not present', async () =
 
 test('updateEnvConfig: updates existing key-value pair', async () => {
     let writtenContent = '';
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => true,
-            readFileSync: () => 'MY_KEY=old-value\nOTHER=keep\n',
-            writeFileSync: (_path: string, content: string) => {
-                writtenContent = content;
-            },
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (..._segments: string[]) => '/tmp/test-project/.env',
-        },
-    });
+    fsState.existsImpl = () => true;
+    fsState.readImpl = () => 'MY_KEY=old-value\nOTHER=keep\n';
+    fsState.writeImpl = (content: string) => {
+        writtenContent = content;
+    };
 
     const { updateEnvConfig } = await import('./env-tools.js');
     const result = await updateEnvConfig('MY_KEY', 'new-value');
@@ -193,19 +170,10 @@ test('updateEnvConfig: updates existing key-value pair', async () => {
 
 test('updateEnvConfig: creates file if it does not exist', async () => {
     let writtenContent = '';
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => false,
-            writeFileSync: (_path: string, content: string) => {
-                writtenContent = content;
-            },
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (..._segments: string[]) => '/tmp/test-project/.env',
-        },
-    });
+    fsState.existsImpl = () => false;
+    fsState.writeImpl = (content: string) => {
+        writtenContent = content;
+    };
 
     const { updateEnvConfig } = await import('./env-tools.js');
     const result = await updateEnvConfig('BRAND_NEW', 'value');
@@ -216,20 +184,11 @@ test('updateEnvConfig: creates file if it does not exist', async () => {
 
 test('updateEnvConfig: preserves other lines when updating key', async () => {
     let writtenContent = '';
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => true,
-            readFileSync: () => 'A=1\nMY_KEY=old\nB=2\n',
-            writeFileSync: (_path: string, content: string) => {
-                writtenContent = content;
-            },
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (..._segments: string[]) => '/tmp/test-project/.env',
-        },
-    });
+    fsState.existsImpl = () => true;
+    fsState.readImpl = () => 'A=1\nMY_KEY=old\nB=2\n';
+    fsState.writeImpl = (content: string) => {
+        writtenContent = content;
+    };
 
     const { updateEnvConfig } = await import('./env-tools.js');
     await updateEnvConfig('MY_KEY', 'new');
@@ -242,17 +201,11 @@ test('updateEnvConfig: preserves other lines when updating key', async () => {
 // getSystemInfo
 // ---------------------------------------------------------------------------
 test('getSystemInfo: returns info object with expected fields', async () => {
-    mock.module('child_process', {
-        namedExports: {
-            execSync: (cmd: string) => {
-                if (cmd.includes('npm')) return Buffer.from('10.8.0\n');
-                if (cmd.includes('ffmpeg')) return Buffer.from('ffmpeg version 7.1\n');
-                return Buffer.from('');
-            },
-        },
-    });
-    // getSystemInfo also uses process.version, process.platform, process.arch
-    // which are real — no mocking needed
+    cpState.execImpl = (cmd: string) => {
+        if (cmd.includes('npm')) return Buffer.from('10.8.0\n');
+        if (cmd.includes('ffmpeg')) return Buffer.from('ffmpeg version 7.1\n');
+        return Buffer.from('');
+    };
 
     const { getSystemInfo } = await import('./env-tools.js');
     const info = await getSystemInfo();
@@ -266,13 +219,9 @@ test('getSystemInfo: returns info object with expected fields', async () => {
 });
 
 test('getSystemInfo: handles execSync failures gracefully', async () => {
-    mock.module('child_process', {
-        namedExports: {
-            execSync: () => {
-                throw new Error('command not found');
-            },
-        },
-    });
+    cpState.execImpl = () => {
+        throw new Error('command not found');
+    };
 
     const { getSystemInfo } = await import('./env-tools.js');
     const info = await getSystemInfo();
@@ -288,29 +237,16 @@ test('getSystemInfo: handles execSync failures gracefully', async () => {
 // healthCheck
 // ---------------------------------------------------------------------------
 test('healthCheck: returns correct check results', async () => {
-    mock.module('fs', {
-        namedExports: {
-            existsSync: (p: string) => {
-                if (typeof p === 'string') {
-                    if (p.includes('.env')) return true;
-                    if (p.includes('input')) return true;
-                    if (p.includes('output')) return false;
-                    if (p.includes('public')) return true;
-                }
-                return false;
-            },
-        },
-    });
-    mock.module('child_process', {
-        namedExports: {
-            execSync: () => Buffer.from('ffmpeg version 7.1'),
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
-        },
-    });
+    fsState.existsImpl = (p: string) => {
+        if (typeof p === 'string') {
+            if (p.includes('.env')) return true;
+            if (p.includes('input')) return true;
+            if (p.includes('output')) return false;
+            if (p.includes('public')) return true;
+        }
+        return false;
+    };
+    cpState.execImpl = () => Buffer.from('ffmpeg version 7.1');
 
     const { healthCheck } = await import('./env-tools.js');
     const checks = await healthCheck();
@@ -323,23 +259,10 @@ test('healthCheck: returns correct check results', async () => {
 });
 
 test('healthCheck: ffmpeg check fails gracefully when execSync throws', async () => {
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => true,
-        },
-    });
-    mock.module('child_process', {
-        namedExports: {
-            execSync: () => {
-                throw new Error('ffmpeg not found');
-            },
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
-        },
-    });
+    fsState.existsImpl = () => true;
+    cpState.execImpl = () => {
+        throw new Error('ffmpeg not found');
+    };
 
     const { healthCheck } = await import('./env-tools.js');
     const checks = await healthCheck();

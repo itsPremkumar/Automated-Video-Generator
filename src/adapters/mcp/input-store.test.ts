@@ -5,25 +5,43 @@ import assert from 'node:assert/strict';
  * input-store.test.ts
  *
  * Tests input script storage operations — read, write, delete + schema validation.
- * Filesystem-dependent tests use mock.module() + dynamic import per test group.
- * Schema validation tests need no mocking (pure Zod).
+ *
+ * Node 22 mock API constraint: mock.module() for a given specifier can only be
+ * registered ONCE per process (no mock.resetModules(), restoreAll() does NOT free
+ * it for re-registration). So we register fs + paths exactly ONCE at top-level
+ * with a mutable STATE the mock closures read at call time; each test mutates
+ * STATE before calling the SUT. Schema-validation tests need no fs/paths behavior.
  */
+
+const fsState: {
+    existsImpl: () => boolean;
+    readImpl: () => string;
+    writeImpl: (content: string) => void;
+} = {
+    existsImpl: () => false,
+    readImpl: () => '[]',
+    writeImpl: () => {},
+};
+
+mock.module('fs', {
+    namedExports: {
+        existsSync: () => fsState.existsImpl(),
+        readFileSync: () => fsState.readImpl(),
+        writeFileSync: (_path: string, content: string) => fsState.writeImpl(content),
+    },
+});
+
+mock.module('../../shared/runtime/paths', {
+    namedExports: {
+        resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
+    },
+});
 
 // ---------------------------------------------------------------------------
 // readInputScripts
 // ---------------------------------------------------------------------------
 test('readInputScripts: returns empty array when file does not exist', async () => {
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => false,
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
-        },
-    });
-
+    fsState.existsImpl = () => false;
     const { readInputScripts } = await import('./input-store.js');
     const result = await readInputScripts();
     assert.deepEqual(result, []);
@@ -34,17 +52,8 @@ test('readInputScripts: returns parsed scripts when file exists', async () => {
         { id: '001', title: 'Test Video', script: '[Visual: sunset] Narrate...' },
         { id: '002', title: 'Another', script: '[Visual: ocean] Narrate...' },
     ];
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => true,
-            readFileSync: () => JSON.stringify(mockData),
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
-        },
-    });
+    fsState.existsImpl = () => true;
+    fsState.readImpl = () => JSON.stringify(mockData);
 
     const { readInputScripts } = await import('./input-store.js');
     const result = await readInputScripts();
@@ -58,21 +67,11 @@ test('readInputScripts: returns parsed scripts when file exists', async () => {
 test('writeInputScript: adds a new script when id does not exist', async () => {
     let writtenData = '';
     const existing = [{ id: '001', title: 'Existing', script: 'Old script' }];
-
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => true,
-            readFileSync: () => JSON.stringify(existing),
-            writeFileSync: (_path: string, data: string) => {
-                writtenData = data;
-            },
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
-        },
-    });
+    fsState.existsImpl = () => true;
+    fsState.readImpl = () => JSON.stringify(existing);
+    fsState.writeImpl = (data: string) => {
+        writtenData = data;
+    };
 
     const { writeInputScript } = await import('./input-store.js');
     const newScript = { id: '002', title: 'New Video', script: '[Visual: city] New' };
@@ -91,21 +90,11 @@ test('writeInputScript: updates existing script when id matches', async () => {
         { id: '001', title: 'Original Title', script: 'Original script' },
         { id: '002', title: 'Unchanged', script: 'Will stay' },
     ];
-
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => true,
-            readFileSync: () => JSON.stringify(existing),
-            writeFileSync: (_path: string, data: string) => {
-                writtenData = data;
-            },
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
-        },
-    });
+    fsState.existsImpl = () => true;
+    fsState.readImpl = () => JSON.stringify(existing);
+    fsState.writeImpl = (data: string) => {
+        writtenData = data;
+    };
 
     const { writeInputScript } = await import('./input-store.js');
     const update = { id: '001', title: 'Updated Title', script: 'Updated script' };
@@ -122,19 +111,10 @@ test('writeInputScript: updates existing script when id matches', async () => {
 
 test('writeInputScript: handles case when no scripts file exists yet', async () => {
     let writtenData = '';
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => false,
-            writeFileSync: (_path: string, data: string) => {
-                writtenData = data;
-            },
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
-        },
-    });
+    fsState.existsImpl = () => false;
+    fsState.writeImpl = (data: string) => {
+        writtenData = data;
+    };
 
     const { writeInputScript } = await import('./input-store.js');
     const newScript = { id: '001', title: 'First', script: 'First script' };
@@ -156,21 +136,11 @@ test('writeInputScript: merge-fills partial fields on update', async () => {
             showText: true,
         },
     ];
-
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => true,
-            readFileSync: () => JSON.stringify(existing),
-            writeFileSync: (_path: string, data: string) => {
-                writtenData = data;
-            },
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
-        },
-    });
+    fsState.existsImpl = () => true;
+    fsState.readImpl = () => JSON.stringify(existing);
+    fsState.writeImpl = (data: string) => {
+        writtenData = data;
+    };
 
     const { writeInputScript } = await import('./input-store.js');
     const update = { id: '001', title: 'New Title', script: 'New script' };
@@ -194,21 +164,11 @@ test('deleteInputScript: removes script by id', async () => {
         { id: '002', title: 'Second', script: 'B' },
         { id: '003', title: 'Third', script: 'C' },
     ];
-
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => true,
-            readFileSync: () => JSON.stringify(existing),
-            writeFileSync: (_path: string, data: string) => {
-                writtenData = data;
-            },
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
-        },
-    });
+    fsState.existsImpl = () => true;
+    fsState.readImpl = () => JSON.stringify(existing);
+    fsState.writeImpl = (data: string) => {
+        writtenData = data;
+    };
 
     const { deleteInputScript } = await import('./input-store.js');
     const result = await deleteInputScript('002');
@@ -225,21 +185,11 @@ test('deleteInputScript: removes script by id', async () => {
 test('deleteInputScript: returns same array when id does not exist', async () => {
     let writtenData = '';
     const existing = [{ id: '001', title: 'Only', script: 'Lone script' }];
-
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => true,
-            readFileSync: () => JSON.stringify(existing),
-            writeFileSync: (_path: string, data: string) => {
-                writtenData = data;
-            },
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
-        },
-    });
+    fsState.existsImpl = () => true;
+    fsState.readImpl = () => JSON.stringify(existing);
+    fsState.writeImpl = (data: string) => {
+        writtenData = data;
+    };
 
     const { deleteInputScript } = await import('./input-store.js');
     const result = await deleteInputScript('nonexistent');
@@ -250,20 +200,11 @@ test('deleteInputScript: returns same array when id does not exist', async () =>
 
 test('deleteInputScript: works on empty scripts array', async () => {
     let writtenData = '';
-    mock.module('fs', {
-        namedExports: {
-            existsSync: () => true,
-            readFileSync: () => '[]',
-            writeFileSync: (_path: string, data: string) => {
-                writtenData = data;
-            },
-        },
-    });
-    mock.module('../../shared/runtime/paths', {
-        namedExports: {
-            resolveProjectPath: (...segments: string[]) => '/tmp/test-project/' + segments.join('/'),
-        },
-    });
+    fsState.existsImpl = () => true;
+    fsState.readImpl = () => '[]';
+    fsState.writeImpl = (data: string) => {
+        writtenData = data;
+    };
 
     const { deleteInputScript } = await import('./input-store.js');
     const result = await deleteInputScript('anything');
@@ -272,7 +213,7 @@ test('deleteInputScript: works on empty scripts array', async () => {
 });
 
 // ---------------------------------------------------------------------------
-// validateScriptFormat — pure Zod validation, no mocking needed
+// validateScriptFormat — pure Zod validation, no fs/paths behavior needed
 // ---------------------------------------------------------------------------
 test('validateScriptFormat: accepts valid script with all fields', async () => {
     const { validateScriptFormat } = await import('./input-store.js');
@@ -339,7 +280,7 @@ test('validateScriptFormat: rejects invalid orientation value', async () => {
         title: 'Bad Orientation',
         script: 'Content',
         orientation: 'square',
-    });
+    } as any);
     assert.equal(result.success, false);
     if (!result.success) {
         assert.ok(result.error.issues.some((i: any) => i.path.includes('orientation')));
@@ -349,7 +290,7 @@ test('validateScriptFormat: rejects invalid orientation value', async () => {
 test('validateScriptFormat: rejects non-string id', async () => {
     const { validateScriptFormat } = await import('./input-store.js');
 
-    const result = validateScriptFormat({ id: 123, title: 'Numeric ID', script: 'Script' });
+    const result = validateScriptFormat({ id: 123, title: 'Numeric ID', script: 'Script' } as any);
     assert.equal(result.success, false);
 });
 

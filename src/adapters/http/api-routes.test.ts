@@ -1,5 +1,7 @@
-import { mock, test } from 'node:test';
+import { mock, test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+
+afterEach(() => mock.restoreAll());
 
 test('api-routes registers all expected routes', async () => {
     const schemaNames = [
@@ -182,10 +184,13 @@ test('api-routes registers all expected routes', async () => {
         `Expected ${expectedRoutes.length} routes but found ${registered.length}`,
     );
 
-    // Verify middleware-only layers exist (rate limiters, validate, etc.)
-    const middlewareLayers = router.stack.filter((l: any) => !l.route);
+    // Verify protected routes apply auth/rate-limit middleware as per-route handlers
+    // (api-routes applies these inline per route, not via top-level router.use()).
+    const protectedRoutes = router.stack.filter(
+        (l: any) => l.route && Array.isArray(l.route.stack) && l.route.stack.length >= 2,
+    );
     assert.ok(
-        middlewareLayers.length >= 2,
-        `Should have at least 2 middleware-only layers (got ${middlewareLayers.length})`,
+        protectedRoutes.length >= 2,
+        `Should have at least 2 routes guarded by middleware handlers (got ${protectedRoutes.length})`,
     );
 });
