@@ -93,6 +93,10 @@ jobs:
     secret-scan:
         name: Secret Scan (gitleaks)
         runs-on: ubuntu-latest
+        # gitleaks-action@v3 requires a GITHUB_TOKEN to scan pull requests.
+        permissions:
+            contents: read
+            pull-requests: read
         steps:
             - uses: actions/checkout@v5
               with:
