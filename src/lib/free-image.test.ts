@@ -11,14 +11,27 @@ const axios = require('axios');
 /**
  * Quick ping — if the provider's host is unreachable the test skips instead
  * of timing out after the global 60s node:test timeout.
+ *
+ * In CI environments external hosts are often blocked or rate-limited, so we
+ * skip proactively rather than waiting for a 30s+ timeout on the actual API call.
+ *
+ * @param url       The host URL to probe
+ * @param ctx       The node:test context (t)
+ * @param timeoutMs HEAD probe timeout in ms (default 3000)
  */
-async function skipIfUnreachable(url: string, ctx: any): Promise<void> {
+async function skipIfUnreachable(url: string, ctx: any, timeoutMs = 3000): Promise<void> {
+    // CI environments often block or rate-limit external hosts.
+    // Skip rather than wait for a 30s+ timeout on the actual API call.
+    if (process.env.CI === 'true') {
+        ctx.skip(`CI env: skipping test for ${url}`);
+        // ctx.skip() marks the test as skipped but does NOT abort execution.
+        // We must throw to prevent the test body from continuing to run.
+        throw new Error(`CI env: skipping test for ${url}`);
+    }
     try {
-        await axios.head(url, { timeout: 3000 });
+        await axios.head(url, { timeout: timeoutMs });
     } catch {
         ctx.skip(`host unreachable: ${url}`);
-        // ctx.skip() marks the test as skipped but does NOT abort execution
-        // We must throw to prevent the test body from continuing to run
         throw new Error(`host unreachable: ${url}`);
     }
 }
