@@ -36,10 +36,7 @@ export const VOICEBOX_DEFAULT_PORT = 17493;
 export const VOICEBOX_DEFAULT_URL = process.env.VOICEBOX_API_URL || `http://127.0.0.1:${VOICEBOX_DEFAULT_PORT}`;
 
 function backendDir(): string {
-    return (
-        process.env.VOICEBOX_BACKEND_DIR ||
-        (fs.existsSync('C:/one/voicebox') ? 'C:/one/voicebox' : path.resolve(process.cwd(), 'voicebox'))
-    );
+    return process.env.VOICEBOX_BACKEND_DIR || path.resolve(process.cwd(), 'voicebox');
 }
 
 function pythonExe(): string {
