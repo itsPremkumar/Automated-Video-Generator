@@ -78,3 +78,31 @@ test('OFFLINE video: "lion" ranks a REAL lion clip first (relevance-first)', asy
     const titles = all.flatMap((s: any) => s.results.map((r: any) => r.title));
     assert.ok(!titles.some((t: string) => /lion king|sea lion|lion dance/i.test(t)), 'no off-topic clip in results');
 });
+
+test('OFFLINE video: "lion" rejects Japanese brand commercials (ライオン ナテラ)', async () => {
+    const adapter = new FreeVideoAdapter() as any;
+    // Archive.org returns "LION" the detergent brand's TV commercials for the
+    // keyword "lion". These must be filtered out (non-Latin + commercial tokens).
+    adapter.archive = {
+        name: 'archive',
+        search: async () =>
+            fakeVideos([
+                'ライオン ナテラ 篠ひろ子 懐かCM 1993年11月 LION',
+                'Lion MyLink startup animation',
+                'LION detergent commercial',
+            ]),
+    };
+    adapter.wiki = { name: 'wikimedia', search: async () => fakeVideos(['Male lion resting in savanna']) };
+
+    const all = await adapter.searchAll('lion', { count: 10 });
+    const titles = all.flatMap((s: any) => s.results.map((r: any) => r.title));
+    assert.ok(titles.length >= 1, 'at least the real lion video remains');
+    assert.ok(
+        !titles.some((t: string) => /ライオン|ナテラ|mylink|detergent|cm|commercial/i.test(t)),
+        'Japanese brand / commercial clips must be filtered out',
+    );
+    assert.ok(
+        titles.some((t: string) => /lion/i.test(t) && !/ナテラ|mylink/i.test(t)),
+        'real lion video present',
+    );
+});

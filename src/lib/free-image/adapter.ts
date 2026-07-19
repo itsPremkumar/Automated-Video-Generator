@@ -42,6 +42,16 @@ export class FreeImageAdapter {
             dog: /(hot\s+dog|dog\s+statue|sea\s+dog)/,
             bear: /(teddy\s+bear|grizzly)/,
         };
+        // Brand / commercial leakage (e.g. "LION" the detergent brand). A topic
+        // query like "lion" must NOT ship these as an image either.
+        const commercialTokens =
+            /\b(cm|commercial|advert|detergent|shampoo|soap|brand|mylink|ナテラ|広告|商品|公式)\b|ライオン/;
+        if (commercialTokens.test(t)) return false;
+        // Non-Latin title for a Latin query => almost always a foreign brand /
+        // media still, not the requested English topic. Reject to avoid leakage.
+        const isLatinQuery = /^[\x00-\x7F]+$/.test(k);
+        const nonLatinRatio = (t.match(/[぀-ヿ一-鿿]/g) || []).length / Math.max(1, t.replace(/\s/g, '').length);
+        if (isLatinQuery && nonLatinRatio > 0.3) return false;
         for (const tok of k.split(/\s+/).filter((x) => x.length >= 3)) {
             if (offTopicCompounds[tok] && offTopicCompounds[tok].test(t)) return false;
             // Require a whole-word boundary so "lion" does not match inside a
