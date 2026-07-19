@@ -56,11 +56,17 @@ function resolveBundledProjectPath(...segments: string[]): string {
 }
 
 export function resolveProjectPath(...segments: string[]): string {
-    if (!isElectronPackaged || segments.length === 0) {
-        return resolveBundledProjectPath(...segments);
+    // SECURITY: strip `..`/`.` in ALL runtimes (not just Electron). The previous
+    // server-mode branch called resolveBundledProjectPath directly, so a crafted
+    // `..` segment (e.g. via API-bound localAsset/publicId) escaped the intended
+    // directory. normalizeRelativeSegments throws on `..` (path traversal).
+    const safeSegments = normalizeRelativeSegments(segments);
+
+    if (!isElectronPackaged || safeSegments.length === 0) {
+        return resolveBundledProjectPath(...safeSegments);
     }
 
-    const [first, ...rest] = segments;
+    const [first, ...rest] = safeSegments;
     const safeRest = normalizeRelativeSegments(rest);
 
     if (runtimeManagedRoots.has(first)) {

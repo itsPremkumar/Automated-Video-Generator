@@ -3,6 +3,7 @@ import apiRoutes from './adapters/http/api-routes';
 import viewRoutes from './adapters/http/view-routes';
 import fileRoutes from './adapters/http/file-routes';
 import agenticRoutes from './adapters/http/agentic-controller.js';
+import { requireLocalAccess } from './middleware/local-only';
 import { startJobController } from './adapters/http/jobs-controller';
 import { RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS } from './constants/config';
 import { resolveProjectPath, resolveRuntimePublicPath } from './shared/runtime/paths';
@@ -169,7 +170,9 @@ app.use('/api', apiRoutes);
 app.use(fileRoutes);
 app.use(viewRoutes);
 // PHASE 9.1: agentic pipeline REST endpoints (additive; legacy /api untouched).
-app.use('/api/agentic', agenticRoutes);
+// Guarded by requireLocalAccess so only loopback clients (the local app, a
+// local agent, CI on this host) can drive generation — never remote callers.
+app.use('/api/agentic', requireLocalAccess, agenticRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

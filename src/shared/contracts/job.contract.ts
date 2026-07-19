@@ -6,7 +6,11 @@ export const safeFilenameSchema = z
     .trim()
     .min(1)
     .max(255)
-    .regex(/^[^\\/]+$/, 'Invalid filename.');
+    .regex(/^[^\\/]+$/, 'Invalid filename.')
+    // SECURITY: reject path-traversal segments so a crafted value cannot escape
+    // the intended directory when joined into a resolved project path.
+    .refine((s) => !s.includes('..'), 'Filename must not contain "..".')
+    .refine((s) => s !== '.', 'Filename must not be ".".');
 
 export const textConfigSchema = z
     .object({
@@ -25,8 +29,8 @@ export const textConfigSchema = z
 
 export const pipelineJobRequestSchema = z
     .object({
-        id: z.string().trim().min(1).max(128).optional(),
-        publicId: z.string().trim().min(1).max(128).optional(),
+        id: safeFilenameSchema.optional(),
+        publicId: safeFilenameSchema.optional(),
         title: z.string().trim().min(1).max(MAX_TITLE_LENGTH),
         script: z.string().trim().min(10).max(5000),
         orientation: z.enum(['portrait', 'landscape']).default('portrait'),

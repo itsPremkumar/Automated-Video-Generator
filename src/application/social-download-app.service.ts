@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import { videoDownloaderService, DownloadProgress } from '../lib/video-downloader-service';
 import { resolveProjectPath } from '../shared/runtime/paths';
 import { toPublicRelativePath } from '../pipeline-workspace';
+import { isSafeUrl } from '../lib/net-safety';
 import { logInfo, logError } from '../shared/logging/runtime-logging';
 
 export class SocialDownloadAppService {
@@ -14,6 +15,13 @@ export class SocialDownloadAppService {
         mode: 'both' | 'video' | 'audio' = 'both',
         onProgress?: (p: DownloadProgress) => void,
     ): Promise<{ localPath: string; filename: string; absolutePath: string }> {
+        // SECURITY: block SSRF — refuse to fetch internal/loopback/link-local/
+        // cloud-metadata hosts. The request schema only validates URL shape, not
+        // the target, so this guard is the real protection.
+        const safe = isSafeUrl(url);
+        if (!safe.ok) {
+            throw new Error(`Refused unsafe download URL: ${safe.reason}`);
+        }
         logInfo(`[SOCIAL-SERVICE] Processing social download (${mode}) for: ${url}`);
 
         const outputDir = resolveProjectPath('output', 'downloads', 'social');

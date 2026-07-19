@@ -7,7 +7,11 @@ const safeFilenameSchema = z
     .trim()
     .min(1)
     .max(255)
-    .regex(/^[^\\/]+$/, 'Invalid filename.');
+    .regex(/^[^\\/]+$/, 'Invalid filename.')
+    // SECURITY: reject path-traversal segments so a crafted value cannot escape
+    // the intended directory when joined into a resolved project path.
+    .refine((s) => !s.includes('..'), 'Filename must not contain "..".')
+    .refine((s) => s !== '.', 'Filename must not be ".".');
 
 const textConfigSchema = z
     .object({

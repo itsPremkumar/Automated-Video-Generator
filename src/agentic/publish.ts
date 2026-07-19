@@ -102,7 +102,9 @@ export function buildPublishManifest(input: PublishInput): PublishManifest {
     }));
     const manifest: PublishManifest = {
         jobId,
-        topic: cfg.topic,
+        // `cfg` may be a Plan (no `topic` field) or a full AgenticConfig.
+        // Fall back to title so the published manifest never carries `undefined`.
+        topic: (cfg as { topic?: string }).topic ?? title ?? '',
         title,
         description,
         hashtags,

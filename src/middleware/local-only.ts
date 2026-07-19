@@ -11,7 +11,11 @@ function isLoopbackAddress(address: string | undefined): boolean {
 }
 
 export function isLocalRequest(req: Request): boolean {
-    if (process.env.ALLOW_UNSAFE_REMOTE_ADMIN === '1') {
+    // SECURITY: ALLOW_UNSAFE_REMOTE_ADMIN is a deliberate escape hatch for
+    // trusted LAN/dev use. It must NEVER downgrade write/destructive routes —
+    // those stay loopback-only so a remote caller cannot read or write the
+    // local filesystem or .env. Only read-only (GET/HEAD) requests are relaxed.
+    if (process.env.ALLOW_UNSAFE_REMOTE_ADMIN === '1' && (req.method === 'GET' || req.method === 'HEAD')) {
         return true;
     }
 

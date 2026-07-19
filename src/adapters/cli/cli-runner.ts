@@ -47,10 +47,12 @@ function parseArgs() {
             : undefined;
 
     const onlyRaw = readFlagValue(args, '--only');
+    // Sanitize the same way job ids are derived (sanitizeFilename), so a human
+    // writing `--only "Home Workout"` actually matches the job id `home_workout`.
     const onlyIds = onlyRaw
         ? onlyRaw
               .split(',')
-              .map((s) => s.trim())
+              .map((s) => sanitizeFilename(s.trim()))
               .filter(Boolean)
         : undefined;
 

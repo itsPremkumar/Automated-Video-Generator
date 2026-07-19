@@ -187,7 +187,19 @@ export function registerAgenticTools(server: McpServer) {
             );
             if (!c || !fs.existsSync(c.localPath)) return errorResponse('Asset not found.');
             const b64 = fs.readFileSync(c.localPath).toString('base64');
-            return { content: [{ type: 'image', data: b64, mimeType: 'image/jpeg' }] } as any;
+            // Derive MIME from the real file type (assets may be video, not jpeg).
+            const ext = path.extname(c.localPath).toLowerCase();
+            const mime =
+                ext === '.png'
+                    ? 'image/png'
+                    : ext === '.gif'
+                      ? 'image/gif'
+                      : ext === '.webp'
+                        ? 'image/webp'
+                        : ext === '.mp4' || ext === '.webm' || ext === '.mov'
+                          ? 'video/mp4'
+                          : 'image/jpeg';
+            return { content: [{ type: 'image', data: b64, mimeType: mime }] } as any;
         },
     );
 

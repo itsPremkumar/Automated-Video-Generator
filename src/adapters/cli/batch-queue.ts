@@ -212,6 +212,15 @@ export async function runBatch(
 
     const manifest: BatchManifest = previous ?? emptyManifest(concurrency, maxRetries);
 
+    // Keep the on-disk manifest in sync with live progress. The `jobs` array is
+    // rebuilt from the live `entries` map before every write so a crash mid-batch
+    // leaves an accurate manifest for `--resume` (previously it held stale data
+    // until the very end, causing completed jobs to be re-run).
+    const syncManifest = () => {
+        manifest.jobs = [...entries.values()].sort((a, b) => a.index - b.index);
+        writeManifest(manifestPath, manifest);
+    };
+
     const orderedQueue = [...queue].sort((a, b) => a.index - b.index);
     const active = new Set<Promise<void>>();
     let failedHard = false;
@@ -229,7 +238,7 @@ export async function runBatch(
 
         entry.startedAt = Date.now();
         entry.attempts = 0;
-        writeManifest(manifestPath, manifest);
+        syncManifest();
 
         for (;;) {
             attempts += 1;
@@ -262,7 +271,7 @@ export async function runBatch(
         entry.error = outcome === 'failed' ? lastError : undefined;
         entry.finishedAt = Date.now();
         entries.set(input.id, entry);
-        writeManifest(manifestPath, manifest);
+        syncManifest();
 
         if (outcome === 'failed' && options.failFast) {
             failedHard = true;

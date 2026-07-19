@@ -33,8 +33,10 @@ const fsState: { existsImpl: () => boolean; readImpl: () => string; writeImpl: (
 
 mock.module('child_process', {
     namedExports: {
-        exec: mock.fn((cmd: string, _opts: any, cb?: (e: any, out: string, err: string) => void) => {
-            execState.impl(cmd, cb);
+        execFile: mock.fn((file: string, args: string[], _opts: any, cb?: (e: any, out: string, err: string) => void) => {
+            // Capture as a shell-style string so the test's execState.impl
+            // (which pushes/inspects the command) keeps working.
+            execState.impl(`${file} ${args.join(' ')}`, cb);
             return {} as any;
         }),
     },

@@ -88,7 +88,9 @@ router.get(
         if (!finalMp4) return res.status(404).json({ error: 'video not rendered' });
         res.setHeader('Content-Type', 'video/mp4');
         res.setHeader('Content-Disposition', `inline; filename="${job.workspace.jobId}.mp4"`);
-        fs.createReadStream(finalMp4).pipe(res);
+        const videoStream = fs.createReadStream(finalMp4);
+        videoStream.on('error', () => res.destroy());
+        videoStream.pipe(res);
     }),
 );
 
@@ -101,7 +103,9 @@ router.get(
         const img = path.join(job.workspace.root, 'contact-sheet.png');
         if (!fs.existsSync(img)) return res.status(404).json({ error: 'contact sheet not built' });
         res.setHeader('Content-Type', 'image/png');
-        fs.createReadStream(img).pipe(res);
+        const imgStream = fs.createReadStream(img);
+        imgStream.on('error', () => res.destroy());
+        imgStream.pipe(res);
     }),
 );
 

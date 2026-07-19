@@ -1000,6 +1000,32 @@ async function buildSfxLayer(
     }
 }
 
+/**
+ * Wrap a caption into lines that fit the frame width. ffmpeg drawtext does NOT
+ * auto-wrap, so long captions silently overflow the right edge and get cut off.
+ * Returns an array of lines (word-boundary split, never mid-word); the caller
+ * emits one drawtext layer per line, stacked vertically. Embedded newlines in
+ * the input are preserved as separate paragraphs.
+ */
+function wrapCaptionLines(text: string, frameW: number, fontsize: number): string[] {
+    const maxChars = Math.max(10, Math.floor((frameW * 0.82) / (fontsize * 0.62)));
+    const out: string[] = [];
+    for (const para of String(text).split('\n')) {
+        const words = para.split(/\s+/).filter(Boolean);
+        let cur = '';
+        for (const w of words) {
+            if (!cur) cur = w;
+            else if ((cur + ' ' + w).length <= maxChars) cur += ' ' + w;
+            else {
+                out.push(cur);
+                cur = w;
+            }
+        }
+        if (cur) out.push(cur);
+    }
+    return out.length ? out : [''];
+}
+
 export async function renderAgenticSlideshow(
     res: PipelineResult,
     opts: {
@@ -1202,10 +1228,10 @@ export async function renderAgenticSlideshow(
     const sceneFilters = visuals.map((a, i) => {
         const dur = a.durationSec ?? 4;
         // Gentle Ken Burns zoom (spec 7.1). Comma inside the min() expression is
-        // escaped as '\\,' and NO single quotes (filtergraph isn't shell-parsed).
+        // escaped as '\,' and NO single quotes (filtergraph isn't shell-parsed).
         // Honors opts.kenBurns (config surface): when false, no zoom on images.
         const doZoom = a.kind === 'image' && opts.kenBurns !== false;
-        const zoom = doZoom ? `,zoompan=z=min(zoom+0.0008\\,1.04):d=1:s=${W}x${H}` : '';
+        const zoom = doZoom ? `,zoompan=z=min(zoom+0.0008\,1.04):d=1:s=${W}x${H}` : '';
         // Editing engine v1: per-scene color grade (no LUT file needed).
         const grade = gradeFilter(stylePlan.scenes[i]?.grade ?? 'neutral');
         const tag = '[' + i + ':v]';
@@ -1316,7 +1342,7 @@ export async function renderAgenticSlideshow(
                     const out = `c${ci}`;
                     // current word highlighted yellow, rest of sentence dim white below
                     vfArgs.push(
-                        `${ctag}drawtext=${FONT_ARG}text='${safe}':fontcolor=yellow:fontsize=38:box=1:boxcolor=black@0.55:boxborderw=12:x=(w-text_w)/2:y=h-text_h-140:enable='between(t\\,${start}\\,${end})'[${out}]`,
+                        `${ctag}drawtext=${FONT_ARG}text='${safe}':fontcolor=yellow:fontsize=38:box=1:boxcolor=black@0.55:boxborderw=12:x=(w-text_w)/2:y=h-text_h-140:enable='between(t\\,${start}\,${end})'[${out}]`,
                     );
                     ctag = `[${out}]`;
                     ci++;
@@ -1328,13 +1354,20 @@ export async function renderAgenticSlideshow(
                 for (const s of segs) {
                     const start = (tBase + s.startMs / 1000).toFixed(2);
                     const end = (tBase + s.endMs / 1000).toFixed(2);
-                    const safe = ffmpegDrawtextEscape(s.text).replace(/\n/g, ' ');
-                    const out = `c${ci}`;
-                    vfArgs.push(
-                        `${ctag}drawtext=${FONT_ARG}text='${safe}':fontcolor=${capColor}:fontsize=${baseSize}${boxArgs}:line_spacing=4:x=(w-text_w)/2:y=${yExpr}:enable='between(t\\,${start}\\,${end})'[${out}]`,
-                    );
-                    ctag = `[${out}]`;
-                    ci++;
+                    // Wrap to frame width: ffmpeg drawtext has no auto-wrap, so
+                    // emit one stacked drawtext layer per wrapped line.
+                    const lines = wrapCaptionLines(s.text, W, baseSize);
+                    const lineH = Math.round(baseSize * 1.3);
+                    lines.forEach((ln, li) => {
+                        const safe = ffmpegDrawtextEscape(ln).replace(/\n/g, ' ');
+                        const out = `c${ci}`;
+                        const y = li === 0 ? yExpr : `(${yExpr})-${li * lineH}`;
+                        vfArgs.push(
+                            `drawtext=${FONT_ARG}text='${safe}':fontcolor=${capColor}:fontsize=${baseSize}${boxArgs}:line_spacing=4:x=(w-text_w)/2:y=${y}:enable='between(t\\,${start}\\\,${end})'`,
+                        );
+                        ctag = `[${out}]`;
+                        ci++;
+                    });
                 }
             }
             tBase += Math.max(0, dur - xf);
@@ -1347,7 +1380,9 @@ export async function renderAgenticSlideshow(
     // `alpha` expression ("Not yet implemented"), so we use enable= only — the
     // text appears/disappears at the window edges, which still reads as a pop.
     // Apostrophes are swapped for ’ because drawtext breaks on bare single quotes.
-    if (stylePlan && opts.kinetic !== false) {
+    // Kinetic overlays are skipped when captions are burned, so the two text
+    // layers don't stack/overlap into a ghosted duplicate at the bottom.
+    if (stylePlan && opts.kinetic !== false && opts.captions === 'none') {
         let t = introClip ? (opts.intro!.durationSec ?? 2.5) : 0; // start after the cold-open card
         const sceneStarts = visuals.map((a) => {
             const s = t;
@@ -1363,11 +1398,11 @@ export async function renderAgenticSlideshow(
                 const safe = cue.text.replace(/'/g, '’').replace(/:/g, '\\:');
                 if (cue.kind === 'lowerthird') {
                     vfArgs.push(
-                        `${ktag}drawtext=${FONT_ARG}text='${safe}':fontcolor=white:fontsize=34:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=h-text_h-90:enable='between(t\\,${start}\\,${end})'[k${i}]`,
+                        `${ktag}drawtext=${FONT_ARG}text='${safe}':fontcolor=white:fontsize=34:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=h-text_h-90:enable='between(t\\,${start}\,${end})'[k${i}]`,
                     );
                 } else {
                     vfArgs.push(
-                        `${ktag}drawtext=${FONT_ARG}text='${safe}':fontcolor=yellow:fontsize=64:box=1:boxcolor=black@0.0:borderw=3:bordercolor=yellow:x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t\\,${start}\\,${end})'[k${i}]`,
+                        `${ktag}drawtext=${FONT_ARG}text='${safe}':fontcolor=yellow:fontsize=64:box=1:boxcolor=black@0.0:borderw=3:bordercolor=yellow:x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t\\,${start}\,${end})'[k${i}]`,
                     );
                 }
                 ktag = `[k${i}]`;
@@ -1472,10 +1507,17 @@ export async function renderAgenticSlideshow(
                 for (const s of lines) {
                     const start = (s.startMs / 1000).toFixed(2);
                     const end = (s.endMs / 1000).toFixed(2);
-                    const safe = ffmpegDrawtextEscape(s.text).replace(/\n/g, ' ');
-                    segCaptionArg.push(
-                        `drawtext=${FONT_ARG}text='${safe}':fontcolor=${capColor}:fontsize=${baseSize}${boxArgs}:line_spacing=4:x=(w-text_w)/2:y=${yExpr}:enable='between(t\\,${start}\\,${end})'`,
-                    );
+                    // Wrap to frame width: ffmpeg drawtext has no auto-wrap, so
+                    // emit one stacked drawtext layer per wrapped line.
+                    const wrapped = wrapCaptionLines(s.text, W, baseSize);
+                    const lineH = Math.round(baseSize * 1.3);
+                    wrapped.forEach((ln, li) => {
+                        const safe = ffmpegDrawtextEscape(ln).replace(/\n/g, ' ');
+                        const y = li === 0 ? yExpr : `(${yExpr})-${li * lineH}`;
+                        segCaptionArg.push(
+                            `drawtext=${FONT_ARG}text='${safe}':fontcolor=${capColor}:fontsize=${baseSize}${boxArgs}:line_spacing=4:x=(w-text_w)/2:y=${y}:enable='between(t\\,${start}\\\,${end})'`,
+                        );
+                    });
                 }
             }
             // Per-segment kinetic (relative t).
@@ -1486,7 +1528,7 @@ export async function renderAgenticSlideshow(
                     const end = (cue.atSec + (cue.kind === 'wordpop' ? 0.9 : 2.6)).toFixed(2);
                     const safe = cue.text.replace(/'/g, '’').replace(/:/g, '\\:');
                     kin.push(
-                        `drawtext=${FONT_ARG}text='${safe}':fontcolor=${cue.kind === 'wordpop' ? 'yellow' : 'white'}:fontsize=${cue.kind === 'wordpop' ? 64 : 34}:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=${cue.kind === 'wordpop' ? '(h-text_h)/2' : 'h-text_h-90'}:enable='between(t\\,${start}\\,${end})'`,
+                        `drawtext=${FONT_ARG}text='${safe}':fontcolor=${cue.kind === 'wordpop' ? 'yellow' : 'white'}:fontsize=${cue.kind === 'wordpop' ? 64 : 34}:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=${cue.kind === 'wordpop' ? '(h-text_h)/2' : 'h-text_h-90'}:enable='between(t\\,${start}\,${end})'`,
                     );
                 }
             }
@@ -1665,7 +1707,7 @@ function offsetFor(visuals: { durationSec?: number }[], i: number, xf: number): 
 
 /**
  * Phase 4.1 — build a per-frame volume expression that ducks music during
- * speech. `between(t,s,e)` returns 1 during a speech segment; summing and
+ * speech. `between(t\\,s,e)` returns 1 during a speech segment; summing and
  * gating with gt() yields 1 when ANY segment is active. Music = full level
  * normally, ducked by (full-duck) during speech.
  */
@@ -1682,7 +1724,7 @@ export function buildDuckExpression(
         t += dur;
     }
     if (segs.length === 0) return null;
-    const terms = segs.map((x) => `between(t\\,${x.s.toFixed(3)}\\,${x.e.toFixed(3)})`).join('+');
+    const terms = segs.map((x) => `between(t\,${x.s.toFixed(3)}\\,${x.e.toFixed(3)})`).join('+');
     // 0.18 - (0.18-0.06)*gt(<sum>,0)  -> ducked during speech
     return `${full}-${(full - duck).toFixed(3)}*gt(${terms},0)`;
 }
@@ -2075,10 +2117,31 @@ export async function renderAgenticWithRemotion(
 ): Promise<string> {
     const { bundle } = require('@remotion/bundler');
 
-    const { renderMedia, selectComposition } = require('@remotion/renderer');
+    const { renderMedia, selectComposition, ensureBrowser } = require('@remotion/renderer');
     const fs = require('fs');
     const os = require('os');
     const path = require('path');
+
+    // PRE-FLIGHT: Remotion needs a Chromium binary. Without one, renderMedia
+    // silently hangs for the full timeout (we saw 9-minute stalls on a
+    // Chrome-less box). Fail FAST here so the caller's try/catch can fall back
+    // to the ffmpeg renderer instead of blocking the whole run.
+    if (!process.env.CHROME_EXECUTABLE) {
+        try {
+            await Promise.race([
+                ensureBrowser(),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Chrome readiness timed out')), 20000),
+                ),
+            ]);
+        } catch (e: any) {
+            throw new Error(
+                'Remotion renderer unavailable (no Chromium). ' +
+                    (e?.message ?? e) +
+                    ' — use --renderer ffmpeg on this host.',
+            );
+        }
+    }
 
     const fps = 30;
     const publicDir = path.resolve(process.cwd(), 'public');

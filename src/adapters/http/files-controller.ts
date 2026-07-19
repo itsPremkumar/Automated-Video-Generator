@@ -30,6 +30,7 @@ export const viewFile = (req: Request, res: Response) => {
     const result = filesystemAppService.getViewFile(String(req.query.path), req.headers.range);
     if (result.type === 'range') {
         const stream = fs.createReadStream(result.filePath, { start: result.start, end: result.end });
+        stream.on('error', () => res.destroy());
         res.writeHead(206, {
             'Content-Range': `bytes ${result.start}-${result.end}/${result.stat.size}`,
             'Accept-Ranges': 'bytes',

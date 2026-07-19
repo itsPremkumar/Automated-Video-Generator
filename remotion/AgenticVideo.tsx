@@ -12,6 +12,7 @@ import {
     useVideoConfig,
 } from 'remotion';
 import { SubtitleOverlay } from './SubtitleOverlay';
+import { KaraokeCaptions } from './KaraokeCaptions';
 
 /**
  * Phase-1 agentic Remotion composition — driven to an advanced level:
@@ -337,6 +338,17 @@ function TransitionedScene({
                     glow: true,
                 }}
             />
+            {/* A8 — true word-level karaoke via @remotion/captions (Remotion's
+                production caption engine). Used when speech-timed cues exist;
+                auto-wraps and highlights the spoken word like pro shorts. */}
+            {asset.captionSegments && asset.captionSegments.length > 0 && (
+                <KaraokeCaptions
+                    captionSegments={asset.captionSegments}
+                    accentColor={accent}
+                    fontSize={asset.textConfig?.fontSize ?? 48}
+                    position={asset.textConfig?.position ?? 'bottom'}
+                />
+            )}
             {asset.kinetic && asset.kinetic.length > 0 && (
                 <KineticLayer cues={asset.kinetic} durationInFrames={durationInFrames} fps={fps} accent={accent} />
             )}

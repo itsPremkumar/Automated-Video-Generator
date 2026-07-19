@@ -2,6 +2,7 @@ import { spawn } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import { getPythonExecutable } from './python-runtime';
+import { isSafeUrl } from './net-safety';
 import { logInfo, logError } from '../shared/logging/runtime-logging';
 
 export interface DownloadProgress {
@@ -21,6 +22,14 @@ export class VideoDownloaderService {
         mode: 'both' | 'video' | 'audio' = 'both',
         onProgress?: (p: DownloadProgress) => void,
     ): Promise<string> {
+        // SECURITY: block SSRF — refuse to fetch internal/loopback/link-local/
+        // cloud-metadata hosts. This is the real guard (the request schema only
+        // validates URL shape, not the target).
+        const safe = isSafeUrl(url);
+        if (!safe.ok) {
+            throw new Error(`Refused unsafe download URL: ${safe.reason}`);
+        }
+
         const python = getPythonExecutable();
         if (!python) {
             throw new Error('Python runtime not found.');
