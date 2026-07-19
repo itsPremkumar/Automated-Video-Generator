@@ -43,13 +43,42 @@ export class FreeVideoAdapter {
         const output: { source: string; results: VideoResult[] }[] = [];
 
         if (wikiResults.status === 'fulfilled' && wikiResults.value.length > 0) {
-            output.push({ source: 'wikimedia', results: wikiResults.value });
+            // RELEVANCE FILTER: drop off-topic videos (e.g. "lion king trailer",
+            // "lion dance") whose title doesn't contain the query token.
+            const onTopic = wikiResults.value.filter((v) => FreeVideoAdapter.isOnTopic(keyword, v.title));
+            if (onTopic.length > 0) output.push({ source: 'wikimedia', results: onTopic });
         }
         if (archiveResults.status === 'fulfilled' && archiveResults.value.length > 0) {
-            output.push({ source: 'archive', results: archiveResults.value });
+            const onTopic = archiveResults.value.filter((v) => FreeVideoAdapter.isOnTopic(keyword, v.title));
+            if (onTopic.length > 0) output.push({ source: 'archive', results: onTopic });
         }
 
         return output;
+    }
+
+    /**
+     * Whole-word relevance gate for video titles. Mirrors the image adapter's
+     * rule so a "lion" query never ships a "lion king" trailer or "lion dance"
+     * clip. Off-topic compound nouns are excluded; broad topics pass through.
+     */
+    private static isOnTopic(keyword: string, title: string): boolean {
+        const k = keyword.trim().toLowerCase();
+        if (!k) return true;
+        const generic = ['nature', 'city', 'background', 'texture', 'abstract', 'b roll', 'b-roll'];
+        if (generic.includes(k)) return true;
+        const t = (title || '').toLowerCase();
+        const offTopicCompounds: Record<string, RegExp> = {
+            lion: /(stone\s+lion|sea\s+lion|lion\s+king|lioness|lion's|lions'\s|mountain\s+lion|city\s+lion|lion\s+dance)/,
+            cat: /(lion|tiger|bear|wildcat)/,
+            dog: /(hot\s+dog|sea\s+dog)/,
+            bear: /(teddy\s+bear|grizzly)/,
+        };
+        for (const tok of k.split(/\s+/).filter((x) => x.length >= 3)) {
+            if (offTopicCompounds[tok] && offTopicCompounds[tok].test(t)) return false;
+            const re = new RegExp(`\\b${tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+            if (re.test(t)) return true;
+        }
+        return false;
     }
 
     async downloadToWorkspace(
@@ -86,8 +115,12 @@ export class FreeVideoAdapter {
 
         // Flatten and pick the best result
         const allResults = sources.flatMap((s) => s.results);
-        // Prefer videos with resolution matching orientation
+        // RELEVANCE-FIRST ranking: prefer on-topic videos, then by resolution.
+        // Fixes the prior bug where a high-res OFF-TOPIC clip beat a real one.
         const sorted = allResults.sort((a, b) => {
+            const aOn = FreeVideoAdapter.isOnTopic(keyword, a.title) ? 1 : 0;
+            const bOn = FreeVideoAdapter.isOnTopic(keyword, b.title) ? 1 : 0;
+            if (aOn !== bOn) return bOn - aOn;
             const aRes = a.resolution ? parseInt(a.resolution.split('x')[1] ?? '0', 10) : 0;
             const bRes = b.resolution ? parseInt(b.resolution.split('x')[1] ?? '0', 10) : 0;
             return bRes - aRes;

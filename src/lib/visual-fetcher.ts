@@ -6,7 +6,7 @@ import { spawnSync, spawn } from 'child_process';
 import { logInfo, resolveProjectPath } from '../runtime';
 import { generateContent as ollamaGenerateContent } from './ollama-client';
 import { searchOpenverseImages } from './openverse-fetcher';
-import { wikiProvider, archiveProvider, freeVideoDownloader } from './free-video/index';
+import { freeVideoDownloader, freeVideoAdapter } from './free-video/index';
 import { freeImageAdapter } from './free-image/index';
 export { freeImageAdapter } from './free-image/index';
 
@@ -1070,44 +1070,40 @@ export async function fetchVisualsForScene(
                 }
             }
 
-            // Try free video sources (Wikimedia Commons + Internet Archive) before Openverse fallback
+            // Try free video sources (Wikimedia Commons + Internet Archive) before Openverse fallback.
+            // Route through FreeVideoAdapter.searchAll so the relevance filter + relevance-first
+            // ranking apply (a "lion" query must not ship a "lion king" trailer or "sea lion" clip).
             for (const q of queriesToTry) {
                 console.log(`🎨 [FETCH] 🆓 Trying free sources for: "${q}"...`);
-                for (const provider of [wikiProvider, archiveProvider]) {
-                    try {
-                        const freeResults = await provider.search({
-                            keyword: q,
-                            count: 3,
-                            maxDurationSeconds: 30,
-                            minResolutionHeight: MIN_WIDTH,
-                        });
-                        if (freeResults.length > 0) {
-                            const best = freeResults[0];
-                            const videosDir = path.dirname(path.resolve(process.cwd(), 'public/jobs'));
-                            const dlResults = await freeVideoDownloader.downloadAll([best], videosDir);
-                            if (dlResults.length > 0 && dlResults[0].success && dlResults[0].localPath) {
-                                const asset: MediaAsset = {
-                                    type: 'video',
-                                    url: best.downloadUrl,
-                                    width: best.resolution
-                                        ? parseInt(best.resolution.split('x')[0] ?? '1080', 10)
-                                        : 1080,
-                                    height: best.resolution
-                                        ? parseInt(best.resolution.split('x')[1] ?? '1920', 10)
-                                        : 1920,
-                                    photographer: best.creator,
-                                    localPath: dlResults[0].localPath,
-                                    videoDuration: best.durationSeconds ?? undefined,
-                                };
-                                cache[cacheKey] = asset;
-                                saveCache(cache);
-                                console.log(`🎨 [FETCH] ✅ Found free video from ${provider.name}: ${best.title}`);
-                                return asset;
-                            }
+                try {
+                    const sources = await freeVideoAdapter.searchAll(q, {
+                        count: 3,
+                        maxDuration: 30,
+                        minResolution: MIN_WIDTH,
+                    });
+                    const freeResults = sources.flatMap((s) => s.results);
+                    if (freeResults.length > 0) {
+                        const best = freeResults[0];
+                        const videosDir = path.dirname(path.resolve(process.cwd(), 'public/jobs'));
+                        const dlResults = await freeVideoDownloader.downloadAll([best], videosDir);
+                        if (dlResults.length > 0 && dlResults[0].success && dlResults[0].localPath) {
+                            const asset: MediaAsset = {
+                                type: 'video',
+                                url: best.downloadUrl,
+                                width: best.resolution ? parseInt(best.resolution.split('x')[0] ?? '1080', 10) : 1080,
+                                height: best.resolution ? parseInt(best.resolution.split('x')[1] ?? '1920', 10) : 1920,
+                                photographer: best.creator,
+                                localPath: dlResults[0].localPath,
+                                videoDuration: best.durationSeconds ?? undefined,
+                            };
+                            cache[cacheKey] = asset;
+                            saveCache(cache);
+                            console.log(`🎨 [FETCH] ✅ Found free video from ${best.provider}: ${best.title}`);
+                            return asset;
                         }
-                    } catch (err: any) {
-                        console.log(`🎨 [FETCH] ⚠️ Free provider ${provider.name} error: ${err.message}`);
                     }
+                } catch (err: any) {
+                    console.log(`🎨 [FETCH] ⚠️ Free video error: ${err.message}`);
                 }
             }
 
