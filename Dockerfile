@@ -4,11 +4,33 @@
 #   1. Pin a single, well-tested Node base (node:20-bookworm). engines require >=18.
 #   2. Install ALL deps (no --only=production) because the app runs via `tsx`
 #      (a devDependency) at runtime — dropping devDeps breaks `npm run dev`.
+#      The Docker image therefore includes devDependencies (~929 MB of desktop-only
+#      tools: electron, ffprobe-static, app-builder-bin, etc.). These are correctly
+#      classified as devDependencies in package.json for desktop-only use (Electron
+#      build), and are only brought into Docker because all-deps install is needed
+#      for tsx.
 #   3. ffmpeg-static ships its OWN platform binary; we do NOT rely on apt ffmpeg,
 #      which avoids version drift between the bundled binary and system ffmpeg.
-#   4. Non-root user for stability + security.
-#   5. Healthcheck hits the REAL route (/api/health) mounted in api-routes.ts.
-
+#   4. ffprobe-static is in devDependencies (not dependencies) — most src/ imports
+#      have graceful fallback to system `ffprobe`, and the multi-stage build plan
+#      below would install it via apt instead.
+#   5. Non-root user for stability + security.
+#   6. Healthcheck hits the REAL route (/api/health) mounted in api-routes.ts.
+#
+# === Multi-stage build plan (future optimization, ~800 MB reduction) ===
+# Stage 1 (builder):  FROM node:20-bookworm AS builder
+#   — npm ci (full install, dev + prod)
+#   — npm run typecheck
+#   — (optional: tsc build → dist/ if switching to compiled output)
+#
+# Stage 2 (runner):   FROM node:20-bookworm-slim
+#   — apt-get install python3 python3-pip chromium fonts-... ffmpeg
+#   — COPY dist/ from builder (or use tsx if still needed)
+#   — npm ci --only=production (skips electron, ffprobe-static, electron-builder, etc.)
+#   — Result: ~800 MB smaller image because 929 MB of desktop-only deps are skipped
+# Caveat: Stage 2 without tsx requires a build step (tsc) in stage 1.
+#         Until the app is compiled (tsc → dist/), the single-stage install is correct.
+#
 FROM node:20-bookworm
 
 LABEL org.opencontainers.image.title="Automated Video Generator"
