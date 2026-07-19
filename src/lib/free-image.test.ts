@@ -6,6 +6,23 @@ import { NasaImageProvider } from './free-image/providers/nasa.js';
 import { MetMuseumImageProvider } from './free-image/providers/metmuseum.js';
 import { FreeImageAdapter } from './free-image/adapter.js';
 
+const axios = require('axios');
+
+/**
+ * Quick ping — if the provider's host is unreachable the test skips instead
+ * of timing out after the global 60s node:test timeout.
+ */
+async function skipIfUnreachable(url: string, ctx: any): Promise<void> {
+    try {
+        await axios.head(url, { timeout: 3000 });
+    } catch {
+        ctx.skip(`host unreachable: ${url}`);
+        // ctx.skip() marks the test as skipped but does NOT abort execution
+        // We must throw to prevent the test body from continuing to run
+        throw new Error(`host unreachable: ${url}`);
+    }
+}
+
 test('WikimediaImageProvider returns results for "city"', async () => {
     const provider = new WikimediaImageProvider();
     const results = await provider.search({ keyword: 'city', count: 3 });
@@ -29,7 +46,8 @@ test('WikimediaImageProvider returns empty for impossible keyword', async () => 
     assert.ok(results.length === 0, 'should return empty array');
 });
 
-test('ArchiveOrgImageProvider returns results for "sunset"', async () => {
+test('ArchiveOrgImageProvider returns results for "sunset"', async (t) => {
+    await skipIfUnreachable('https://archive.org', t);
     const provider = new ArchiveOrgImageProvider();
     const results = await provider.search({ keyword: 'sunset', count: 2, minWidth: 200, minHeight: 200 });
     assert.ok(results.length > 0, 'should return at least one image');
@@ -39,7 +57,8 @@ test('ArchiveOrgImageProvider returns results for "sunset"', async () => {
     }
 });
 
-test('ArchiveOrgImageProvider respects orientation filter', async () => {
+test('ArchiveOrgImageProvider respects orientation filter', async (t) => {
+    await skipIfUnreachable('https://archive.org', t);
     const provider = new ArchiveOrgImageProvider();
     const results = await provider.search({ keyword: 'portrait photography', count: 3, orientation: 'portrait' });
     assert.ok(results.length >= 0, 'should handle orientation filter');
