@@ -22,6 +22,7 @@ import { verifyAll } from '../../agentic/verify.js';
 import { runGateway, GatewayDeps } from '../../agentic/gateway.js';
 import { runFinalGate } from '../../agentic/gate.js';
 import { runAgenticPipeline } from '../../agentic/orchestrate.js';
+import { getDriverLlm } from './driver-llm.js';
 import { AgenticWorkspace, workspaceRootFor, readJson } from '../../agentic/workspace.js';
 import { AssetCandidate, AssetDecision } from '../../agentic/types.js';
 
@@ -252,6 +253,11 @@ export function registerAgenticTools(server: McpServer) {
                 orientation: args.orientation,
                 voice: args.voice,
                 candidatesPerAsset: args.candidatesPerAsset,
+                // Driver-first: if a host registered its LLM callback, every
+                // LLM-capable step is routed to the DRIVER first (per the
+                // standing rule), then the configured model, then the signal
+                // floor. Undefined here -> behaves exactly as before.
+                driverLLM: getDriverLlm(),
             });
             const approved = res.decisions.filter((d: any) => d.decision === 'approved').length;
             return res.gate.pass
