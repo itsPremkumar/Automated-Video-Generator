@@ -23,7 +23,8 @@ async function skipIfUnreachable(url: string, ctx: any): Promise<void> {
     }
 }
 
-test('WikimediaImageProvider returns results for "city"', async () => {
+test('WikimediaImageProvider returns results for "city"', async (t) => {
+    await skipIfUnreachable('https://commons.wikimedia.org', t);
     const provider = new WikimediaImageProvider();
     const results = await provider.search({ keyword: 'city', count: 3 });
     assert.ok(results.length > 0, 'should return at least one image for "city"');
@@ -34,13 +35,15 @@ test('WikimediaImageProvider returns results for "city"', async () => {
     }
 });
 
-test('WikimediaImageProvider respects count limit', async () => {
+test('WikimediaImageProvider respects count limit', async (t) => {
+    await skipIfUnreachable('https://commons.wikimedia.org', t);
     const provider = new WikimediaImageProvider();
     const results = await provider.search({ keyword: 'city skyline', count: 5 });
     assert.ok(results.length <= 5, 'should not exceed requested count');
 });
 
-test('WikimediaImageProvider returns empty for impossible keyword', async () => {
+test('WikimediaImageProvider returns empty for impossible keyword', async (t) => {
+    await skipIfUnreachable('https://commons.wikimedia.org', t);
     const provider = new WikimediaImageProvider();
     const results = await provider.search({ keyword: 'xyznonexistentkeyword12345', count: 3 });
     assert.ok(results.length === 0, 'should return empty array');
@@ -71,7 +74,8 @@ test('ArchiveOrgImageProvider respects orientation filter', async (t) => {
     }
 });
 
-test('NasaImageProvider returns results for "nebula"', async () => {
+test('NasaImageProvider returns results for "nebula"', async (t) => {
+    await skipIfUnreachable('https://images-api.nasa.gov', t);
     const provider = new NasaImageProvider();
     const results = await provider.search({ keyword: 'nebula', count: 3 });
     assert.ok(results.length > 0, 'should return at least one image');
@@ -82,13 +86,15 @@ test('NasaImageProvider returns results for "nebula"', async () => {
     }
 });
 
-test('NasaImageProvider returns results for "mars rover"', async () => {
+test('NasaImageProvider returns results for "mars rover"', async (t) => {
+    await skipIfUnreachable('https://images-api.nasa.gov', t);
     const provider = new NasaImageProvider();
     const results = await provider.search({ keyword: 'mars rover', count: 2 });
     assert.ok(results.length > 0, 'should return at least one image');
 });
 
-test('MetMuseumImageProvider returns results for "sunflowers"', async () => {
+test('MetMuseumImageProvider returns results for "sunflowers"', async (t) => {
+    await skipIfUnreachable('https://collectionapi.metmuseum.org', t);
     const provider = new MetMuseumImageProvider();
     const results = await provider.search({ keyword: 'sunflowers', count: 2 });
     assert.ok(results.length > 0, 'should return at least one image');
@@ -98,13 +104,15 @@ test('MetMuseumImageProvider returns results for "sunflowers"', async () => {
     }
 });
 
-test('MetMuseumImageProvider returns results for "landscape painting"', async () => {
+test('MetMuseumImageProvider returns results for "landscape painting"', async (t) => {
+    await skipIfUnreachable('https://collectionapi.metmuseum.org', t);
     const provider = new MetMuseumImageProvider();
     const results = await provider.search({ keyword: 'landscape painting', count: 3 });
     assert.ok(results.length >= 0, 'should handle search gracefully');
 });
 
-test('FreeImageAdapter.searchAll aggregates from all providers', async () => {
+test('FreeImageAdapter.searchAll aggregates from all providers', async (t) => {
+    await skipIfUnreachable('https://commons.wikimedia.org', t);
     const adapter = new FreeImageAdapter();
     const sources = await adapter.searchAll('waterfall', { count: 2 });
     assert.ok(sources.length > 0, 'should find images from at least one provider');
@@ -113,7 +121,8 @@ test('FreeImageAdapter.searchAll aggregates from all providers', async () => {
     }
 });
 
-test('FreeImageAdapter.searchBest returns highest resolution image', async () => {
+test('FreeImageAdapter.searchBest returns highest resolution image', async (t) => {
+    await skipIfUnreachable('https://commons.wikimedia.org', t);
     const adapter = new FreeImageAdapter();
     const best = await adapter.searchBest('aurora borealis', { count: 3 });
     assert.ok(best !== null, 'should find a best image');
