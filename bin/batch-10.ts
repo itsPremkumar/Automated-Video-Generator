@@ -45,6 +45,7 @@ const JOBS: Job[] = [
             'Water cushions your joints and carries nutrients to the muscles that need them most. [running shoes and a water bottle]',
             'Hydrated skin stays plump and clear, making water the cheapest skincare step you will take. [glowing skin close up]',
             'Sip steadily through the day and let these small habits build lasting natural energy. [glass of water with lemon]',
+            'Start tomorrow with one glass before the phone, and the habit sticks. [glass of water on nightstand]',
         ]),
     },
     {
@@ -63,6 +64,7 @@ const JOBS: Job[] = [
             'Ten minutes of movement beats an hour of scrolling later on. [person stretching]',
             'Write the single most important task so the day has a clear target. [notebook and pen]',
             'Protect the first hour from meetings and noise. [quiet desk]',
+            'A good morning is a promise you keep to the person you want to be. [sunrise window]',
         ]),
     },
     {
@@ -79,6 +81,9 @@ const JOBS: Job[] = [
             'Break every bug into the smallest failing case you can reproduce. [debugging terminal]',
             'Build in public so feedback finds the gaps you cannot see. [github pull request]',
             'Consistency beats intensity; twenty minutes daily compounds fast. [calendar checkmarks]',
+            'Teach what you learn and the holes in your understanding show up fast. [explaining to a friend]',
+            'Ship the ugly version, then let real use tell you what to polish next. [shipped app on phone]',
+            'The compiler does not care about your mood, only your logic. [code building green]',
         ]),
     },
     {
@@ -95,6 +100,8 @@ const JOBS: Job[] = [
             'Squats build real strength using only your bodyweight. [bodyweight squats]',
             'A plank a day trains the core that protects your back. [plank pose]',
             'Cool down with slow stretches so tomorrow stays pain free. [stretching floor]',
+            'Two short sessions beat one you dread and keep skipping. [calendar with checkmarks]',
+            'Consistency at home builds the habit that outlasts any gym membership. [water bottle and shoes]',
         ]),
     },
     {
@@ -110,6 +117,9 @@ const JOBS: Job[] = [
             'Add a protein like eggs, beans, or tofu to stay full. [cooked beans bowl]',
             'Finish with lemon and herbs instead of heavy sauce. [lemon and herbs]',
             'One tray, ten minutes of prep, zero guilt. [plated healthy meal]',
+            'Cook twice the grains so tomorrow lunch is already solved. [meal prep containers]',
+            'Eat slowly and the same meal feels like more than it was. [person eating calmly]',
+            'Cook with color and the plate looks as good as it tastes. [colorful salad bowl]',
         ]),
     },
     {
@@ -126,6 +136,8 @@ const JOBS: Job[] = [
             'Kill high interest debt before chasing risky returns. [credit card crossed out]',
             'An emergency fund of three months changes every decision. [savings jar]',
             'Automate the boring parts so discipline is not required. [recurring transfer]',
+            'Track one number each week so small leaks stay visible. [budget spreadsheet]',
+            'Wealth is quiet habits repeated, not a single lucky win. [coins dropped in jar]',
         ]),
     },
     {
@@ -142,6 +154,9 @@ const JOBS: Job[] = [
             'Eat where the locals eat and the prices drop fast. [street food stall]',
             'Walk the first day to learn the shape of a city. [walking a street]',
             'The best views are usually the ones without a ticket. [hilltop viewpoint]',
+            'Travel slow in fewer places and each one actually stays with you. [quiet cafe abroad]',
+            'A notebook of small moments beats a camera roll you never open. [travel journal]',
+            'Say yes to the unexpected detour, not the crowded itinerary. [path diverging in woods]',
         ]),
     },
     {
@@ -159,6 +174,8 @@ const JOBS: Job[] = [
             'Screens an hour before bed steal the sleep you need. [phone face down]',
             'Caffeine has a half life of hours, so stop it by early afternoon. [coffee cup]',
             'A slow breath routine tells the body it is safe to rest. [calm breathing]',
+            'A wind down ritual trains the brain that night has begun. [reading in bed]',
+            'Protect eight hours like a meeting you cannot cancel. [clock showing time]',
         ]),
     },
     {
@@ -174,6 +191,9 @@ const JOBS: Job[] = [
             'Use a single visible timer so the block has a shape. [kitchen timer]',
             'One tab, one task, one goal for the next fifty minutes. [single browser tab]',
             'Protect the result, not the hours, and quality follows. [completed work]',
+            'Batch shallow tasks so they never leak into the deep block. [checklist done]',
+            'Rest is part of the system; a tired brain only pretends to focus. [walking away from desk]',
+            'Say no to good opportunities so you can say yes to the great ones. [door sign showing closed]',
         ]),
     },
     {
@@ -191,6 +211,8 @@ const JOBS: Job[] = [
             'A walk clears the thoughts a chair keeps circling. [park bench]',
             'Green space lifts mood even on an ordinary afternoon. [green field]',
             'The cure for a busy mind is often just a quiet trail. [mountain trail]',
+            'Leave the headphones behind and let the place actually speak. [quiet lakeside]',
+            'A little dirt under the nails is a small price for a calm head. [hands in soil]',
         ]),
     },
 ];
@@ -214,7 +236,8 @@ async function runOne(job: Job): Promise<{ name: string; ok: boolean; detail: st
             if (p.percent === 100) process.stdout.write('.');
         });
         if (!res.gate.pass) {
-            return { name: job.name, ok: false, detail: 'GATE FAIL: ' + (res.gate.reasons || []).join('; ') };
+            const failed = res.gate.checks.filter((c) => !c.pass).map((c) => `${c.id}: ${c.detail}`);
+            return { name: job.name, ok: false, detail: 'GATE FAIL: ' + failed.join('; ') };
         }
         const out = await renderAgenticSlideshow(res, {
             preset: job.preset,
