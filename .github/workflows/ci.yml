@@ -104,6 +104,9 @@ jobs:
                   fetch-depth: 0
             - name: Run gitleaks
               uses: gitleaks/gitleaks-action@v3
+              with:
+                  # gitleaks-action@v3 requires the token explicitly for PR scans.
+                  token: ${{ secrets.GITHUB_TOKEN }}
               env:
                   GITLEAKS_ENABLE_UPLOAD: 'false'
 
