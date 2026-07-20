@@ -1,11 +1,8 @@
 node_modules/
 coverage/
 output/
-public/videos/
-public/audio/
-public/images/
 public/jobs/
-public/visuals/
+public/audio/
 .git/
 .github/
 .vscode/

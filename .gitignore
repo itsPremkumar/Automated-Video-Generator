@@ -9,10 +9,8 @@ release/
 output/
 .remotion/
 *.remotion
-public/visuals/
 public/jobs/
 public/audio/
-public/agentic-assets/
 coverage/
 
 # Environment Variables
