@@ -2110,6 +2110,93 @@ export function writeDecisionsReport(res: PipelineResult): string {
  * NOTE: this requires Chrome + sufficient RAM. On RAM-starved hosts it may fail;
  * callers should fall back to `renderAgenticSlideshow` (ffmpeg-static, no Chrome).
  */
+/**
+ * prepareRemotionAssets — build the per-scene asset descriptors for the
+ * AgenticVideo Remotion composition.
+ *
+ * A10 (robustness): a missing/broken image|video asset is replaced with a
+ * branded placeholder PNG so the render never 404s and aborts. Music assets
+ * are left silent when missing (acceptable). Returns descriptors keyed by
+ * `agentic-assets/<jobId>/<destName>` (served via staticFile from public/).
+ */
+export async function prepareRemotionAssets(
+    res: PipelineResult,
+    opts: { brand?: { accentColor?: string }; preset?: string; kinetic?: boolean; quality?: 'draft' | 'medium' | 'high' },
+    jobAssetDir: string,
+    runFfmpeg: (args: string[], timeoutMs?: number) => Promise<number>,
+): Promise<any[]> {
+    const fs = require('fs');
+    const path = require('path');
+    const assetsForComposition: any[] = [];
+    const targetH = opts.quality === 'draft' ? 1280 : 1920;
+    const { computeStylePlan } = await import('./style-engine.js');
+    const _sp = computeStylePlan(res.plan, { preset: (opts.preset as any) ?? 'cinematic', kinetic: opts.kinetic });
+    const styleByScene = new Map(_sp.scenes.map((s: any) => [s.sceneIndex, s]));
+    const makePlaceholder = async (destPath: string, accent: string) => {
+        const code = await runFfmpeg([
+            '-f', 'lavfi',
+            '-i', `color=c=${accent.replace('#', '0x')}:s=720x1280`,
+            '-frames:v', '1', '-y', destPath,
+        ]);
+        if (code !== 0) {
+            fs.writeFileSync(destPath, Buffer.from(
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
+                'base64',
+            ));
+        }
+    };
+    for (const a of res.manifest.assets) {
+        const src = a.localPath;
+        const destName = `s${a.sceneIndex}_${a.kind}_${path.basename(src).replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+        const dest = path.join(jobAssetDir, destName);
+        let copied = false;
+        try {
+            if (a.kind === 'video' && /\.(mp4|webm|mov|m4v)$/i.test(src) && fs.existsSync(src)) {
+                const code = await runFfmpeg([
+                    '-i', src, '-vf', `scale=-2:${targetH}`,
+                    '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast',
+                    '-crf', '23', '-c:a', 'aac', '-y', dest,
+                ]);
+                copied = code === 0;
+            } else if (fs.existsSync(src)) {
+                fs.copyFileSync(src, dest);
+                copied = true;
+            }
+        } catch {
+            copied = false;
+        }
+        if (!copied && a.kind !== 'music') {
+            await makePlaceholder(dest, opts.brand?.accentColor ?? '#FF6B35');
+            copied = fs.existsSync(dest);
+        }
+        if (!copied) continue;
+        let audioRel: string | undefined;
+        const audioSrc = a.kind === 'music' ? a.localPath : a.audioPath;
+        if (audioSrc && fs.existsSync(audioSrc)) {
+            const adestName = `s${a.sceneIndex}_audio.${audioSrc.split('.').pop()}`;
+            const adest = path.join(jobAssetDir, adestName);
+            fs.copyFileSync(audioSrc, adest);
+            audioRel = path.join('agentic-assets', String(res.workspace.jobId), adestName).replace(/\\/g, '/');
+        }
+        const sty = styleByScene.get(a.sceneIndex);
+        assetsForComposition.push({
+            kind: a.kind,
+            sceneIndex: a.sceneIndex,
+            localPath: path.join('agentic-assets', String(res.workspace.jobId), destName).replace(/\\/g, '/'),
+            audioPath: audioRel,
+            durationSec: a.durationSec,
+            captionSegments: a.captionSegments ?? [],
+            transitionIn: (sty?.transitionIn ?? 'fade') as any,
+            grade: (sty?.grade ?? 'neutral') as any,
+            kinetic: (sty?.kinetic ?? []) as any,
+            textConfig: { position: 'bottom', fontSize: 48 },
+            hasVoice: a.kind !== 'music' && Boolean(a.audioPath),
+            license: a.license,
+        });
+    }
+    return assetsForComposition;
+}
+
 export async function renderAgenticWithRemotion(
     res: PipelineResult,
     opts: {
@@ -2162,104 +2249,7 @@ export async function renderAgenticWithRemotion(
     fs.rmSync(jobAssetDir, { recursive: true, force: true });
     fs.mkdirSync(jobAssetDir, { recursive: true });
 
-    const assetsForComposition: any[] = [];
-    // Cap source resolution so Remotion/Chrome doesn't decode 4K originals on a
-    // RAM-starved box. The composition outputs 1080x1920; transcode to 720p for
-    // draft, 1080p otherwise — fast and light via ffmpeg.
-    const targetH = opts.quality === 'draft' ? 1280 : 1920;
-    // A1/A2/A3 — compute the per-scene style plan so the Remotion composition
-    // can apply transitions, grades, and kinetic cues (parity with ffmpeg path).
-    const { computeStylePlan } = await import('./style-engine.js');
-    const _sp = computeStylePlan(res.plan, { preset: (opts.preset as any) ?? 'cinematic', kinetic: opts.kinetic });
-    const styleByScene = new Map(_sp.scenes.map((s: any) => [s.sceneIndex, s]));
-    const makePlaceholder = async (destPath: string, accent: string) => {
-        // Branded solid-color PNG so a missing download degrades gracefully
-        // instead of 404ing the whole Remotion render. Uses the async ffmpeg
-        // runner (never execFileSync — it blocks the event loop on a small box).
-        const code = await runFfmpeg([
-            '-f', 'lavfi',
-            '-i', `color=c=${accent.replace('#', '0x')}:s=720x1280`,
-            '-frames:v', '1', '-y', destPath,
-        ]);
-        if (code !== 0) {
-            // last-resort: 1x1 px so the frame still decodes
-            fs.writeFileSync(destPath, Buffer.from(
-                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
-                'base64',
-            ));
-        }
-    };
-    for (const a of res.manifest.assets) {
-        const src = a.localPath;
-        const destName = `s${a.sceneIndex}_${a.kind}_${path.basename(src).replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-        const dest = path.join(jobAssetDir, destName);
-        let copied = false;
-        try {
-            if (a.kind === 'video' && /\.(mp4|webm|mov|m4v)$/i.test(src) && fs.existsSync(src)) {
-                // Downscale + normalize so Chrome renders light.
-                const code = await runFfmpeg([
-                    '-i',
-                    src,
-                    '-vf',
-                    `scale=-2:${targetH}`,
-                    '-c:v',
-                    'libx264',
-                    '-pix_fmt',
-                    'yuv420p',
-                    '-preset',
-                    'veryfast',
-                    '-crf',
-                    '23',
-                    '-c:a',
-                    'aac',
-                    '-y',
-                    dest,
-                ]);
-                copied = code === 0;
-            } else if (fs.existsSync(src)) {
-                fs.copyFileSync(src, dest);
-                copied = true;
-            }
-        } catch {
-            copied = false;
-        }
-        // A10 — missing/broken image|video asset => branded placeholder, not a
-        // hard render crash. Music assets are skipped (silence is acceptable).
-        if (!copied && a.kind !== 'music') {
-            await makePlaceholder(dest, opts.brand?.accentColor ?? '#FF6B35');
-            copied = fs.existsSync(dest);
-        }
-        if (!copied) continue;
-        let audioRel: string | undefined;
-        // For music assets the audio track IS a.localPath (acquire stores music
-        // candidates with localPath only, no separate audioPath). Without this,
-        // Remotion videos render silently — the music entry reached the
-        // composition with audioPath: undefined and was dropped.
-        const audioSrc = a.kind === 'music' ? a.localPath : a.audioPath;
-        if (audioSrc && fs.existsSync(audioSrc)) {
-            const adestName = `s${a.sceneIndex}_audio.${audioSrc.split('.').pop()}`;
-            const adest = path.join(jobAssetDir, adestName);
-            fs.copyFileSync(audioSrc, adest);
-            audioRel = path.join('agentic-assets', String(res.workspace.jobId), adestName).replace(/\\/g, '/');
-        }
-        const sty = styleByScene.get(a.sceneIndex);
-        assetsForComposition.push({
-            kind: a.kind,
-            sceneIndex: a.sceneIndex,
-            localPath: path.join('agentic-assets', String(res.workspace.jobId), destName).replace(/\\/g, '/'),
-            audioPath: audioRel,
-            durationSec: a.durationSec,
-            captionSegments: a.captionSegments ?? [],
-            // A1/A2/A3 — drive the Remotion composition to parity with ffmpeg.
-            transitionIn: (sty?.transitionIn ?? 'fade') as any,
-            grade: (sty?.grade ?? 'neutral') as any,
-            kinetic: (sty?.kinetic ?? []) as any,
-            textConfig: { position: 'bottom', fontSize: 48 },
-            hasVoice: a.kind !== 'music' && Boolean(a.audioPath),
-            license: a.license,
-        });
-    }
-
+    const assetsForComposition = await prepareRemotionAssets(res, opts, jobAssetDir, runFfmpeg);
     const inputProps = {
         title: res.plan.title,
         orientation: res.plan.orientation ?? 'portrait',
