@@ -1703,6 +1703,7 @@ export async function renderAgenticSlideshow(
         aiVerify: opts.aiVerify,
         brain: aiBrain,
         keywords: res.plan.scenes.flatMap((s) => s.searchKeywords ?? []),
+        expectedDimensions: { w: W, h: H },
     });
     return out;
 }
@@ -2304,6 +2305,7 @@ export async function renderAgenticWithRemotion(
                 aiVerify: opts.aiVerify,
                 brain: opts.aiVerify?.verifyOnRender ? new AgentBrain() : undefined,
                 keywords: res.plan.scenes.flatMap((s) => s.searchKeywords ?? []),
+                expectedDimensions: { w: a.w ?? 0, h: a.h ?? 0 },
             });
         } catch (e) {
             console.warn(`⚠ remotion aspect ${a.s || 'native'} failed: ${(e as Error).message}`);

@@ -9,6 +9,7 @@
 import { AssetCandidate, AssetDecision, Plan, RenderManifest } from './types.js';
 import { aiVerifyAsset } from './ai-verify.js';
 import { verifyFinalRender } from '../lib/media-verifier.js';
+import * as ana from './video-analyzer.js';
 
 export interface GateReport {
     pass: boolean;
@@ -133,6 +134,9 @@ export async function verifyRenderedVideo(
         aiVerify?: import('./config.js').AgenticConfig['aiVerify'];
         brain?: import('./brain.js').AgentBrain;
         keywords?: string[];
+        /** Requested output dimensions (w,h) so X14 can catch a wrong aspect
+         * ratio instead of passing any non-zero rectangle. */
+        expectedDimensions?: { w: number; h: number };
     },
 ): Promise<PostRenderCheck> {
     const ffmpeg: string = require('ffmpeg-static');
@@ -216,9 +220,7 @@ export async function verifyRenderedVideo(
         });
 
         // ── X10–X15: FINAL-OUTPUT quality (the real gap). ──
-        // Imported lazily so offline tests that stub ffmpeg don't pay for it.
-
-        const ana = require('./video-analyzer.js');
+        // video-analyzer is imported at top (so tests can mock.module it).
         try {
             const black = await ana.detectBlackFrames(mp4Path);
             const longestBlack = black.reduce((m: number, b: any) => Math.max(m, b.duration), 0);
@@ -261,14 +263,32 @@ export async function verifyRenderedVideo(
             });
 
             const dim = await ana.analyzeDimensions(mp4Path);
-            const portraitOk = dim.height >= dim.width; // 9:16 / 1:1 expected portrait-ish
-            const landscapeOk = dim.width >= dim.height;
-            const dimOk = dim.width > 0 && dim.height > 0 && (portraitOk || landscapeOk);
+            // X14: validate against the REQUESTED dimensions when known, so a
+            // wrong aspect ratio (e.g. portrait request rendered landscape) is
+            // caught instead of passing every non-zero rectangle. Fall back to
+            // the loose portrait/landscape sanity check only when no expected
+            // size is supplied.
+            const exp = opts?.expectedDimensions;
+            let dimOk: boolean;
+            let dimDetail: string;
+            if (exp && exp.w > 0 && exp.h > 0) {
+                const wOk = Math.abs(dim.width - exp.w) <= Math.max(2, exp.w * 0.02);
+                const hOk = Math.abs(dim.height - exp.h) <= Math.max(2, exp.h * 0.02);
+                dimOk = dim.width > 0 && dim.height > 0 && wOk && hOk;
+                dimDetail = dimOk
+                    ? `${dim.width}x${dim.height} (expected ${exp.w}x${exp.h})`
+                    : `${dim.width}x${dim.height} MISMATCH expected ${exp.w}x${exp.h}`;
+            } else {
+                const portraitOk = dim.height >= dim.width;
+                const landscapeOk = dim.width >= dim.height;
+                dimOk = dim.width > 0 && dim.height > 0 && (portraitOk || landscapeOk);
+                dimDetail = `${dim.width}x${dim.height} ${dim.codec}`;
+            }
             checks.push({
                 id: 'X14',
                 label: 'Output dimensions valid',
                 pass: dimOk,
-                detail: `${dim.width}x${dim.height} ${dim.codec}`,
+                detail: dimDetail,
             });
 
             const codecOk = /^(h264|hevc|vp9|av1)$/.test(dim.codec);

@@ -1,8 +1,22 @@
 import assert from 'node:assert';
-import { test } from 'node:test';
-import { runFinalGate } from './gate.js';
+import { test, mock } from 'node:test';
 import { assetId } from './types.js';
 import type { AssetCandidate, AssetDecision, Plan, RenderManifest } from './types.js';
+
+const _vaState: any = {
+    dimensions: { width: 1080, height: 1080, codec: 'h264' },
+    audio: { peakDb: -12, meanVolumeDb: -20, clipping: false },
+};
+// Mock video-analyzer so the X14 tests below don't spawn ffmpeg. Registered
+// before any `await import('./gate.js')` so the loader applies it.
+mock.module('./video-analyzer.js', {
+    namedExports: {
+        analyzeDimensions: () => _vaState.dimensions,
+        detectBlackFrames: async () => [],
+        detectFreezeFrames: async () => [],
+        analyzeAudio: async () => _vaState.audio,
+    },
+});
 
 function plan(scenes = 2, totalDurationSec = 30): Plan {
     return {
@@ -52,7 +66,8 @@ function approve(
     };
 }
 
-test('runFinalGate: all green when every scene approved with license + manifest present', () => {
+test('runFinalGate: all green when every scene approved with license + manifest present', async () => {
+    const { runFinalGate } = await import('./gate.js');
     const p = plan(2, 30);
     const candidates = [imageCandidate(0), imageCandidate(1)];
     const decisions = [approve('approved', 0), approve('approved', 1)];
@@ -70,7 +85,6 @@ test('runFinalGate: all green when every scene approved with license + manifest 
     };
     const r = runFinalGate(p, candidates, decisions, manifest);
     assert.strictEqual(r.pass, true);
-    // All X1..X6 present
     const ids = r.checks.map((c) => c.id);
     for (const id of ['X1', 'X2', 'X3', 'X4', 'X5', 'X6']) {
         assert.ok(ids.includes(id), `missing check ${id}`);
@@ -78,7 +92,8 @@ test('runFinalGate: all green when every scene approved with license + manifest 
     for (const c of r.checks) assert.strictEqual(c.pass, true, `check ${c.id} should pass: ${c.detail}`);
 });
 
-test('runFinalGate: X2 fails when a scene has no approved visual', () => {
+test('runFinalGate: X2 fails when a scene has no approved visual', async () => {
+    const { runFinalGate } = await import('./gate.js');
     const p = plan(3, 30);
     const candidates = [imageCandidate(0), imageCandidate(1), imageCandidate(2)];
     const decisions = [approve('approved', 0), approve('approved', 1)]; // scene 2 missing
@@ -88,7 +103,8 @@ test('runFinalGate: X2 fails when a scene has no approved visual', () => {
     assert.strictEqual(r.pass, false);
 });
 
-test('runFinalGate: X3 fails when an asset has no decision (unresolved)', () => {
+test('runFinalGate: X3 fails when an asset has no decision (unresolved)', async () => {
+    const { runFinalGate } = await import('./gate.js');
     const p = plan(2, 30);
     const candidates = [imageCandidate(0), imageCandidate(1)];
     const decisions = [approve('approved', 0)]; // candidate 1 un-decided
@@ -97,7 +113,8 @@ test('runFinalGate: X3 fails when an asset has no decision (unresolved)', () => 
     assert.strictEqual(x3.pass, false);
 });
 
-test('runFinalGate: X4 + overall fail when manifest is null', () => {
+test('runFinalGate: X4 + overall fail when manifest is null', async () => {
+    const { runFinalGate } = await import('./gate.js');
     const p = plan(2, 30);
     const candidates = [imageCandidate(0), imageCandidate(1)];
     const decisions = [approve('approved', 0), approve('approved', 1)];
@@ -106,7 +123,8 @@ test('runFinalGate: X4 + overall fail when manifest is null', () => {
     assert.strictEqual(r.pass, false);
 });
 
-test('runFinalGate: X5 fails when runtime exceeds platform cap', () => {
+test('runFinalGate: X5 fails when runtime exceeds platform cap', async () => {
+    const { runFinalGate } = await import('./gate.js');
     const p = plan(1, 200); // 200s
     const candidates = [imageCandidate(0)];
     const decisions = [approve('approved', 0)];
@@ -116,7 +134,8 @@ test('runFinalGate: X5 fails when runtime exceeds platform cap', () => {
     assert.match(x5.detail, /200s <= 60s/);
 });
 
-test('runFinalGate: X5 honours explicit maxRuntimeSec override', () => {
+test('runFinalGate: X5 honours explicit maxRuntimeSec override', async () => {
+    const { runFinalGate } = await import('./gate.js');
     const p = plan(1, 200);
     const candidates = [imageCandidate(0)];
     const decisions = [approve('approved', 0)];
@@ -124,7 +143,8 @@ test('runFinalGate: X5 honours explicit maxRuntimeSec override', () => {
     assert.strictEqual(r.checks.find((c) => c.id === 'X5')!.pass, true);
 });
 
-test('runFinalGate: X6 fails when an approved asset lacks a license', () => {
+test('runFinalGate: X6 fails when an approved asset lacks a license', async () => {
+    const { runFinalGate } = await import('./gate.js');
     const p = plan(2, 30);
     const candidates = [imageCandidate(0, 0, 'CC-BY'), imageCandidate(1, 0, '')]; // second has no license
     const decisions = [approve('approved', 0), approve('approved', 1)];
@@ -134,7 +154,8 @@ test('runFinalGate: X6 fails when an approved asset lacks a license', () => {
     assert.match(x6.detail, /1 asset\(s\) without any license/);
 });
 
-test('runFinalGate: X1 aligns when manifest durations match plan (within 10% drift)', () => {
+test('runFinalGate: X1 aligns when manifest durations match plan (within 10% drift)', async () => {
+    const { runFinalGate } = await import('./gate.js');
     const p = plan(1, 30);
     const candidates = [imageCandidate(0)];
     const decisions = [approve('approved', 0)];
@@ -151,7 +172,8 @@ test('runFinalGate: X1 aligns when manifest durations match plan (within 10% dri
     assert.strictEqual(x1.pass, true);
 });
 
-test('runFinalGate: X1 fails when manifest durations drift beyond 10%', () => {
+test('runFinalGate: X1 fails when manifest durations drift beyond 10%', async () => {
+    const { runFinalGate } = await import('./gate.js');
     const p = plan(1, 30);
     const candidates = [imageCandidate(0)];
     const decisions = [approve('approved', 0)];
@@ -166,4 +188,31 @@ test('runFinalGate: X1 fails when manifest durations drift beyond 10%', () => {
     };
     const x1 = runFinalGate(p, candidates, decisions, manifest).checks.find((c) => c.id === 'X1')!;
     assert.strictEqual(x1.pass, false);
+});
+
+// ── verifyRenderedVideo X14 dimension validation (regression test). ──
+// Proves X14 catches a wrong aspect ratio when expectedDimensions is supplied
+// (previously it passed ANY non-zero rectangle). Uses the mocked analyzer.
+// verifyRenderedVideo only runs X10–X15 when the file exists, so we write a
+// dummy file first.
+import { writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+const _tmp = join(tmpdir(), 'gate_x14_dummy.mp4');
+writeFileSync(_tmp, 'dummy');
+
+test('verifyRenderedVideo: X14 fails on wrong aspect ratio when expectedDimensions set', async () => {
+    const { verifyRenderedVideo } = await import('./gate.js');
+    _vaState.dimensions = { width: 720, height: 1280, codec: 'h264' }; // portrait, but square requested
+    const r = await verifyRenderedVideo(_tmp, 10, { expectedDimensions: { w: 1080, h: 1080 } });
+    const x14 = r.checks.find((c) => c.id === 'X14')!;
+    assert.strictEqual(x14.pass, false, `X14 should fail on 720x1280 when 1080x1080 expected: ${x14.detail}`);
+});
+
+test('verifyRenderedVideo: X14 passes when dimensions match expected', async () => {
+    const { verifyRenderedVideo } = await import('./gate.js');
+    _vaState.dimensions = { width: 1080, height: 1080, codec: 'h264' };
+    const r = await verifyRenderedVideo(_tmp, 10, { expectedDimensions: { w: 1080, h: 1080 } });
+    const x14 = r.checks.find((c) => c.id === 'X14')!;
+    assert.strictEqual(x14.pass, true, `X14 should pass on matching dims: ${x14.detail}`);
 });
