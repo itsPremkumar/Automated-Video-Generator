@@ -56,8 +56,8 @@ export class SocialDownloadAppService {
             // or we add a new static route for /downloads/social
             // Let's copy it to a specialized "social" job folder to reuse existing static serving for /jobs
             const sessionId = `social_${Date.now()}`;
-            const publicJobsRoot = resolveRuntimePublicPath('jobs');
-            const targetDir = path.join(publicJobsRoot, sessionId);
+            const publicRoot = resolveRuntimePublicPath();
+            const targetDir = path.join(publicRoot, sessionId);
 
             if (!fs.existsSync(targetDir)) {
                 fs.mkdirSync(targetDir, { recursive: true });
@@ -70,7 +70,7 @@ export class SocialDownloadAppService {
             logInfo(`[SOCIAL-SERVICE] Video available at: ${targetPath}`);
 
             return {
-                localPath: `/jobs/${sessionId}/${filename}`,
+                localPath: `/${sessionId}/${filename}`,
                 filename: filename,
                 absolutePath: absolutePath,
             };

@@ -71,7 +71,7 @@ export function registerAdminTools(server: McpServer) {
                         inputAssetsDir: inputAssetPath(),
                         outputDir: resolveProjectPath('output'),
                         publicDir: resolveProjectPath('public'),
-                        publicJobsDir: resolveRuntimePublicPath('jobs'),
+                        publicRuntimeDir: resolveRuntimePublicPath(),
                     },
                     null,
                     2,

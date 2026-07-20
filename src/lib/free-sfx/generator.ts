@@ -5,7 +5,7 @@ import ffmpegStatic from 'ffmpeg-static';
 import { SfxClip, SfxKind } from './models.js';
 import { resolveProjectPath } from '../../shared/runtime/paths.js';
 
-const SFX_CACHE_DIR = resolveProjectPath('workspace', 'tmp', 'sfx-cache');
+const SFX_CACHE_DIR = resolveProjectPath('workspace', 'cache', 'sfx');
 
 const SFX_SPECS: Record<SfxKind, { description: string; args: string[]; durationMs: number }> = {
     whoosh: {

@@ -110,7 +110,7 @@ export class FreeVideoAdapter {
             publicPath = toPublicRelativePath(localPath);
         } catch {
             // Fallback: just return the filename relative to workspace
-            publicPath = `jobs/${path.relative(resolveRuntimePublicPath(), localPath).replace(/\\/g, '/')}`;
+            publicPath = `${path.relative(resolveRuntimePublicPath(), localPath).replace(/\\/g, '/')}`;
         }
 
         logInfo(`[FREE-VIDEO] Downloaded "${videoResult.title}" to ${localPath}`);

@@ -136,7 +136,7 @@ export class FreeVideoAppService {
         try {
             publicPath = toPublicRelativePath(localPath);
         } catch {
-            publicPath = `jobs/free-video/${path.basename(localPath)}`;
+            publicPath = `free-video/${path.basename(localPath)}`;
         }
 
         logInfo(`[FREE-VIDEO] Downloaded to ${localPath}`);

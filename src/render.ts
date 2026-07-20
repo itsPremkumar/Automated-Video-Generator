@@ -159,10 +159,10 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
             ? resolveAssetWorkspaceDir(sceneData.assetNamespace)
             : createPipelineWorkspace(outputDir).workspaceDir;
 
-        // Stage assets from workspace/<id>/ to public/jobs/<id>/ for Remotion staticFile()
+        // Stage assets from workspace/<id>/ to staging/<id>/ for Remotion staticFile()
         if (assetWorkspaceDir && sceneData.assetNamespace) {
-            const publicJobsRoot = resolveRuntimePublicPath('jobs');
-            const jobPublicDir = path.join(publicJobsRoot, path.basename(assetWorkspaceDir));
+            const publicRoot = resolveRuntimePublicPath();
+            const jobPublicDir = path.join(publicRoot, path.basename(assetWorkspaceDir));
             if (fs.existsSync(assetWorkspaceDir) && assetWorkspaceDir !== jobPublicDir) {
                 fs.rmSync(jobPublicDir, { recursive: true, force: true });
                 fs.mkdirSync(jobPublicDir, { recursive: true });

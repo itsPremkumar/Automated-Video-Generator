@@ -1084,7 +1084,7 @@ export async function fetchVisualsForScene(
                     const freeResults = sources.flatMap((s) => s.results);
                     if (freeResults.length > 0) {
                         const best = freeResults[0];
-                        const videosDir = resolveRuntimePublicPath('jobs');
+                        const videosDir = resolveRuntimePublicPath();
                         const dlResults = await freeVideoDownloader.downloadAll([best], videosDir);
                         if (dlResults.length > 0 && dlResults[0].success && dlResults[0].localPath) {
                             const asset: MediaAsset = {

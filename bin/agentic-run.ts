@@ -103,9 +103,9 @@ async function main() {
         console.log(`\n✅ POST-RENDER CHECKS`);
         for (const c of res.postRender.checks) console.log(`   ${c.pass ? '✓' : '✗'} ${c.id} ${c.label}: ${c.detail}`);
     }
+    const cs = `workspace/jobs/${res.workspace.jobId}/contact-sheet.png`;
 
-    const cs = `workspace/runs/${res.workspace.jobId}/contact-sheet.png`;
-    const dr = `workspace/runs/${res.workspace.jobId}/decisions-report.txt`;
+    const dr = `workspace/jobs/${res.workspace.jobId}/decisions-report.txt`;
     console.log(`\n🎉 DONE → ${out}\n   backend=${res.backend} fullyAgentDriven=${res.fullyAgentDriven}`);
     console.log(`   🖼  See every approved asset: ${cs}`);
     console.log(`   📝 Decision report:         ${dr}`);

@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
@@ -86,10 +87,10 @@ export function resolveRuntimePublicPath(...segments: string[]): string {
 
 export function resolvePublicFilePath(relativePath: string): string {
     const normalized = normalizeRelativeSegments([relativePath]);
-    if (normalized[0] === 'jobs') {
-        return resolveRuntimePublicPath(...normalized);
+    const stagingPath = resolveRuntimePublicPath(...normalized);
+    if (fs.existsSync(stagingPath)) {
+        return stagingPath;
     }
-
     return resolveBundledProjectPath('public', ...normalized);
 }
 

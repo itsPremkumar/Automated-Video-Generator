@@ -155,7 +155,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 
-app.use('/jobs', express.static(resolveRuntimePublicPath('jobs')));
+app.use(express.static(resolveRuntimePublicPath()));
 app.use(express.static(resolveProjectPath('public')));
 app.use('/assets/input', express.static(resolveProjectPath('input')));
 

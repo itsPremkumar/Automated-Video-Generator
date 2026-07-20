@@ -8,15 +8,15 @@ import { createPipelineWorkspace, resolveAssetWorkspaceDir } from './pipeline-wo
 import { projectRoot } from './shared/runtime/paths';
 
 test('createPipelineWorkspace reuses output id from public namespace', () => {
-    const workspace = createPipelineWorkspace(path.join(projectRoot, 'output', 'demo_video'), 'jobs/demo_video');
+    const workspace = createPipelineWorkspace(path.join(projectRoot, 'output', 'demo_video'), 'demo_video');
 
     assert.equal(workspace.outputId, 'demo_video');
-    assert.equal(workspace.publicNamespace, 'jobs/demo_video');
+    assert.equal(workspace.publicNamespace, 'demo_video');
 });
 
 test('resolveAssetWorkspaceDir rejects invalid namespaces', () => {
     assert.throws(() => resolveAssetWorkspaceDir('../outside'), /Invalid asset namespace/);
-    assert.throws(() => resolveAssetWorkspaceDir('jobs/demo/extra'), /Invalid asset namespace/);
+    assert.throws(() => resolveAssetWorkspaceDir('demo/extra'), /Invalid asset namespace/);
 });
 
 test('deleteOutput rejects path traversal video ids', async () => {

@@ -71,7 +71,7 @@ async function main() {
         for (const c of res.postRender.checks) console.log(`   ${c.pass ? '✓' : '✗'} ${c.id} ${c.label}: ${c.detail}`);
     }
 
-    const ws = `workspace/runs/${res.workspace.jobId}`;
+    const ws = `workspace/jobs/${res.workspace.jobId}`;
     console.log(`\n🎉 DONE → ${out}`);
     console.log(`   backend=${res.backend} fullyAgentDriven=${res.fullyAgentDriven}`);
     console.log(`   🖼  contact-sheet: ${ws}/contact-sheet.png`);

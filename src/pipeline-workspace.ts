@@ -27,20 +27,14 @@ function normalizePreferredId(value: string | undefined, fallbackOutputDir: stri
         return path.basename(path.resolve(fallbackOutputDir));
     }
 
-    const normalized = value.trim().replace(/\\/g, '/');
-    const namespaceMatch = /^jobs\/([a-zA-Z0-9_-]+)$/.exec(normalized);
-    if (namespaceMatch) {
-        return namespaceMatch[1];
-    }
-
-    return normalized;
+    return value.trim().replace(/\\/g, '/');
 }
 
 export function createPipelineWorkspace(outputDir: string, preferredId?: string): PipelineWorkspace {
     const derivedId = normalizePreferredId(preferredId, outputDir);
     const outputId = sanitizeOutputId(derivedId);
     const publicRoot = resolveRuntimePublicPath();
-    const publicNamespace = `jobs/${outputId}`;
+    const publicNamespace = outputId;
     const workspaceDir = resolveWorkspacePath(outputId);
 
     return {
@@ -64,13 +58,11 @@ export function ensurePipelineWorkspace(workspace: PipelineWorkspace): void {
 
 export function resolveAssetWorkspaceDir(assetNamespace: string): string {
     const normalized = assetNamespace.trim().replace(/\\/g, '/');
-    const match = /^jobs\/([a-zA-Z0-9_-]+)$/.exec(normalized);
-
-    if (!match) {
+    if (!/^[a-zA-Z0-9_-]+$/.test(normalized)) {
         throw new Error(`Invalid asset namespace: ${assetNamespace}`);
     }
 
-    return resolveWorkspacePath(match[1]);
+    return resolveWorkspacePath(normalized);
 }
 
 export function toPublicRelativePath(absolutePath: string): string {
@@ -85,7 +77,7 @@ export function toPublicRelativePath(absolutePath: string): string {
     if (relativeToWs !== '' && !relativeToWs.startsWith('..') && !path.isAbsolute(relativeToWs)) {
         const m = /^([^\\/]+)[\\/](.+)$/.exec(relativeToWs);
         if (m) {
-            return `jobs/${m[1]}/${m[2].replace(/\\/g, '/')}`;
+            return `${m[1]}/${m[2].replace(/\\/g, '/')}`;
         }
     }
 

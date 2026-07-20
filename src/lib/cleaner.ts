@@ -8,7 +8,7 @@ function isPathWithin(parentPath: string, candidatePath: string): boolean {
 }
 
 function canCleanupDirectory(directory: string): boolean {
-    const allowedRoots = [resolveProjectPath('tmp'), resolveRuntimePublicPath('jobs'), resolveWorkspacePath()];
+    const allowedRoots = [resolveProjectPath('tmp'), resolveRuntimePublicPath(), resolveWorkspacePath()];
 
     return allowedRoots.some((root) => isPathWithin(root, directory));
 }
