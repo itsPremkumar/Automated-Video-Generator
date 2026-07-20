@@ -15,7 +15,6 @@ import { SubtitleOverlay } from './SubtitleOverlay';
 import { KaraokeCaptions } from './KaraokeCaptions';
 import { IntroSceneCard, OutroSceneCard } from './IntroOutroCards';
 import { VoiceoverWaveform } from './VoiceoverWaveform';
-import { AgenticTransitionSeries, type RichTransitionKind } from './transitions';
 import { MotionBlur } from './motion-effects';
 import { KineticText } from './kinetic-text';
 import { ShapeAccent } from './shape-accents';
@@ -96,8 +95,6 @@ export interface AgenticVideoProps {
     height?: number;
     /** A1 — crossfade length in seconds. */
     crossfadeSec?: number;
-    /** c16 — use @remotion/transitions (circleWipe/flip/slide) instead of manual fade. */
-    richTransitions?: boolean;
     /** c16 — styled-caption variant for karaoke (neon/glow/pop/fire/glitch/typewriter). */
     captionStyle?: 'neon' | 'glow' | 'pop' | 'fire' | 'glitch' | 'typewriter';
     /** c16b — apply CameraMotionBlur to moving scene layers (cinematic). */
@@ -419,7 +416,6 @@ export const AgenticVideo: React.FC<AgenticVideoProps> = ({
     outroCard,
     kenBurns = true,
     crossfadeSec = 0.5,
-    richTransitions = false,
     captionStyle,
     motionBlur = false,
     kineticTitle = false,
