@@ -175,7 +175,7 @@ confidence 0 = completely unrelated, 10 = perfect match.`;
         'json',
     );
 
-    return parseVerificationResponse(response);
+    return parseVerificationResponse(response, opts);
 }
 
 async function verifyWithGemini(
@@ -218,10 +218,10 @@ Answer ONLY with a JSON object: {"passes": true/false, "confidence": 0-10, "reas
     );
 
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    return parseVerificationResponse(text);
+    return parseVerificationResponse(text, opts);
 }
 
-function parseVerificationResponse(text: string): VerificationResult {
+function parseVerificationResponse(text: string, opts: VisionCheckOptions): VerificationResult {
     try {
         const cleaned = text
             .replace(/```json\s*/gi, '')
@@ -230,7 +230,9 @@ function parseVerificationResponse(text: string): VerificationResult {
         const jsonStart = cleaned.indexOf('{');
         const jsonEnd = cleaned.lastIndexOf('}');
         if (jsonStart === -1 || jsonEnd === -1) {
-            return { passes: true, confidence: 5, reason: 'Could not parse AI response' };
+            // No JSON object in the response -> could not actually verify.
+            // Fail-closed so unparseable AI output can't silently pass.
+            return unavailableResult('Could not parse AI response (no JSON found)', opts);
         }
         const parsed = JSON.parse(cleaned.slice(jsonStart, jsonEnd + 1));
         return {
@@ -239,7 +241,8 @@ function parseVerificationResponse(text: string): VerificationResult {
             reason: parsed.reason || 'No reason given',
         };
     } catch {
-        return { passes: true, confidence: 5, reason: 'Could not parse AI response' };
+        // JSON present but invalid -> fail-closed, do NOT silently pass.
+        return unavailableResult('Could not parse AI response', opts);
     }
 }
 
