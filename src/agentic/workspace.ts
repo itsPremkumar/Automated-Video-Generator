@@ -21,7 +21,7 @@ export interface AgenticWorkspace {
 }
 
 const WORKSPACES_ROOT = resolveProjectPath('workspace', 'runs');
-export const AGENTIC_OUTPUT_DIR = resolveProjectPath('workspace', 'output');
+export const AGENTIC_OUTPUT_DIR = resolveProjectPath('output');
 export const AGENTIC_TMP_DIR = resolveProjectPath('workspace', 'tmp');
 
 export function workspaceRootFor(jobId: string): string {
