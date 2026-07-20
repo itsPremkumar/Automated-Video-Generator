@@ -9,7 +9,7 @@
  * component is OPTIONAL and only mounted when a scene has an audioPath.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, useCurrentFrame, useVideoConfig, staticFile } from 'remotion';
 import { getAudioData, visualizeAudio, type MediaUtilsAudioData } from '@remotion/media-utils';
 
 export const VoiceoverWaveform: React.FC<{
@@ -17,18 +17,35 @@ export const VoiceoverWaveform: React.FC<{
     accent?: string;
     bars?: number;
     height?: number;
-}> = ({ audioPath, accent = '#FF6B35', bars = 48, height = 80 }) => {
+}> = ({ audioPath, accent = '#FF6B35', bars = 64, height = 80 }) => {
     const frame = useCurrentFrame();
     const { fps } = useVideoConfig();
     const [audioData, setAudioData] = useState<MediaUtilsAudioData | null>(null);
     const [failed, setFailed] = useState(false);
     const tried = useRef(false);
+    // visualizeAudio's numberOfSamples must be a power of two (64/128/...);
+    // round any caller-supplied value up so we never crash the render.
+    const sampleCount = (() => {
+        let n = bars;
+        while ((n & (n - 1)) !== 0) n++;
+        return n;
+    })();
 
     useEffect(() => {
         if (tried.current) return;
         tried.current = true;
         let cancelled = false;
-        getAudioData(audioPath)
+        // audioPath is a relative public/ path; getAudioData fetches it as a URL,
+        // so it MUST be wrapped in staticFile() (a bare relative path 404s in
+        // the browser and the waveform would never render).
+        let src: string;
+        try {
+            src = staticFile(audioPath);
+        } catch {
+            setFailed(true);
+            return;
+        }
+        getAudioData(src)
             .then((d) => {
                 if (!cancelled) setAudioData(d);
             })
@@ -46,7 +63,7 @@ export const VoiceoverWaveform: React.FC<{
         audioData,
         frame,
         fps,
-        numberOfSamples: bars,
+        numberOfSamples: sampleCount,
     });
     const max = Math.max(1, ...samples);
 
