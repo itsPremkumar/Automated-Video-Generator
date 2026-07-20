@@ -18,7 +18,10 @@ const MAX_DIRECTORY_ITEMS = 500;
 
 function assertPathWithinProject(filePath: string): void {
     const resolved = path.resolve(filePath);
-    if (!resolved.startsWith(projectRoot)) {
+    // Require a path-separator boundary so a sibling directory whose name is a
+    // prefix of projectRoot (e.g. `<root>_evil`) cannot slip past the guard.
+    const allowed = resolved === projectRoot || resolved.startsWith(projectRoot + path.sep);
+    if (!allowed) {
         throw new BadRequestError(`Access denied: path is outside the project directory (${projectRoot})`);
     }
 }
@@ -171,7 +174,14 @@ export class LocalFilesystem {
     }
 
     getViewFile(rawPath: string, range?: string): ViewFileResult {
-        const filePath = path.isAbsolute(rawPath) ? path.resolve(rawPath) : resolvePublicFilePath(rawPath);
+        // Only serve files under public/. Reject absolute paths outright — an
+        // absolute rawPath would bypass resolvePublicFilePath's normalization
+        // and could reach files outside public/ (with the guard above as the
+        // only backstop). Relative paths are resolved through the public root.
+        if (!rawPath || path.isAbsolute(rawPath)) {
+            throw new BadRequestError('Only relative public paths are viewable.');
+        }
+        const filePath = resolvePublicFilePath(rawPath);
         assertPathWithinProject(filePath);
         if (!fs.existsSync(filePath)) {
             throw new NotFoundError('File not found.');

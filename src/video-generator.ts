@@ -360,7 +360,11 @@ export async function generateVideo(
                     query: title || parsed.videoStyle || 'ambient lofi',
                 });
                 if (freeMusic) {
-                    backgroundMusic = `music/__auto__/${path.basename(freeMusic.localPath)}`;
+                    // resolveFreeBackgroundMusic already returns a fully-resolved
+                    // absolute path under input/music/__auto__/. Re-wrapping it as
+                    // `music/__auto__/<name>` would double the prefix
+                    // (input/music/music/__auto__/...) and break the lookup below.
+                    backgroundMusic = freeMusic.localPath;
                 }
             } catch (musicErr: any) {
                 console.warn(`[AUTO-MUSIC] Skipped (non-fatal): ${musicErr?.message || musicErr}`);

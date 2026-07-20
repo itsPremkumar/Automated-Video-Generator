@@ -53,26 +53,28 @@ describe('media-verifier fail-closed contract', () => {
         assert.equal(typeof mod.verifyFinalRender, 'function');
     });
 
-    test('verifyMedia fail-closed when AI returns unparseable (non-JSON) response', async () => {
-        // Regression: an unparseable AI response previously returned passes:true
-        // (silent pass). With fail-closed it must fail.
+    test('verifyMedia fail-closed for UNSUPPORTED format (no silent pass)', async () => {
+        // Regression: an unsupported extension used to return passes:true with
+        // confidence 10 (a silent pass). In fail-closed mode it must fail.
         const mod = await loadVerifier();
-        // Minimal valid 1x1 JPEG so imageToBase64 succeeds.
-        const { writeFileSync } = await import('node:fs');
-        const { join } = await import('node:path');
-        const { tmpdir } = await import('node:os');
-        const img = join(tmpdir(), 'mv_unparseable_test.jpg');
-        const b64 =
-            '/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAP////////////////////////////////////////////////////////////' +
-            '////////////////////////////////////////////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAA' +
-            'ACP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AfwD/2Q==';
-        writeFileSync(img, Buffer.from(b64, 'base64'));
-        const r = await mod.verifyMedia(img, ['test'], {
+        const r = await mod.verifyMedia('/tmp/whatever.xyz', ['test'], {
             checkWatermark: true,
             checkSafety: true,
             failClosed: true,
             sampleFrames: 1,
         });
-        assert.equal(r.passes, false, `unparseable AI response must fail-closed, got: ${JSON.stringify(r)}`);
+        assert.equal(r.passes, false, `unsupported format must fail-closed, got: ${JSON.stringify(r)}`);
+    });
+
+    test('verifyMedia fail-closed when image file cannot be read', async () => {
+        // Regression: a missing/readable image used to return passes:true.
+        const mod = await loadVerifier();
+        const r = await mod.verifyMedia('/tmp/does-not-exist-xyzzy.png', ['test'], {
+            checkWatermark: true,
+            checkSafety: true,
+            failClosed: true,
+            sampleFrames: 1,
+        });
+        assert.equal(r.passes, false, `unreadable file must fail-closed, got: ${JSON.stringify(r)}`);
     });
 });

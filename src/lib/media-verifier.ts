@@ -256,7 +256,7 @@ export async function verifyMedia(
     const isImage = ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
 
     if (!isVideo && !isImage) {
-        return { passes: true, confidence: 10, reason: `Unsupported format: ${ext}` };
+        return unavailableResult(`Unsupported format: ${ext}`, opts);
     }
 
     let imagePath = filePath;
@@ -267,7 +267,7 @@ export async function verifyMedia(
         const outputDir = path.dirname(filePath);
         const frame = await extractVideoFrame(filePath, outputDir);
         if (!frame) {
-            return { passes: true, confidence: 5, reason: 'Could not extract video frame' };
+            return unavailableResult('Could not extract video frame', opts);
         }
         imagePath = frame;
     }
@@ -278,7 +278,7 @@ export async function verifyMedia(
 
     const base64 = imageToBase64(imagePath);
     if (!base64) {
-        return { passes: true, confidence: 5, reason: 'Could not read image file' };
+        return unavailableResult('Could not read image file', opts);
     }
 
     const keywordStr = keywords.join(', ');

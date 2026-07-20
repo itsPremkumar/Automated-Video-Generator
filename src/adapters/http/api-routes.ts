@@ -110,16 +110,17 @@ router.post(
     validateRequest({ body: generateScriptBodySchema }),
     asyncHandler(AiController.generateScriptAI),
 );
-router.post('/video-download/process', asyncHandler(VideoDownloadController.processDownloadRequest));
+router.post('/video-download/process', requireLocalAccess, asyncHandler(VideoDownloadController.processDownloadRequest));
 router.post(
     '/social-download/process',
+    requireLocalAccess,
     validateRequest({ body: socialDownloadBodySchema }),
     asyncHandler(SocialDownloadController.processSocialDownloadRequest),
 );
 
-router.get('/free-video/sources', asyncHandler(FreeVideoController.sources));
-router.get('/free-video/search', asyncHandler(FreeVideoController.search));
-router.post('/free-video/download', asyncHandler(FreeVideoController.download));
+router.get('/free-video/sources', requireLocalAccess, asyncHandler(FreeVideoController.sources));
+router.get('/free-video/search', requireLocalAccess, asyncHandler(FreeVideoController.search));
+router.post('/free-video/download', requireLocalAccess, asyncHandler(FreeVideoController.download));
 
 router.get(
     '/fs/ls',

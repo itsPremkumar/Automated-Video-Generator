@@ -313,7 +313,12 @@ function TransitionedScene({
     captionStyle?: 'neon' | 'glow' | 'pop' | 'fire' | 'glitch' | 'typewriter';
 }) {
     const frame = useCurrentFrame();
-    const local = frame - from;
+    // TransitionedScene is rendered inside <Sequence from={from}>, so
+    // useCurrentFrame() ALREADY returns the local frame (SequenceContext
+    // offsets it). Subtracting `from` again double-counts and makes `local`
+    // negative for the first `from` frames of every non-first scene — which
+    // clamps fadeIn to 0 and renders a black gap + broken crossfades.
+    const local = frame;
     const isFirst = from === 0;
     const fadeIn =
         isFirst || transition === 'cut'

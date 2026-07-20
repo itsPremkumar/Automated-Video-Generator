@@ -1233,11 +1233,13 @@ export async function renderAgenticSlideshow(
         H = opts.dimensions?.h ?? 1280;
     const sceneFilters = visuals.map((a, i) => {
         const dur = a.durationSec ?? 4;
-        // Gentle Ken Burns zoom (spec 7.1). Comma inside the min() expression is
-        // escaped as '\,' and NO single quotes (filtergraph isn't shell-parsed).
+        // Gentle Ken Burns zoom (spec 7.1). The comma inside min() MUST be
+        // escaped as '\,' or ffmpeg parses it as a filter separator and the
+        // filtergraph fails to build ("No option name near '1:s=...'"). The
+        // filtergraph string is NOT shell-parsed, so '\,' is the correct escape.
         // Honors opts.kenBurns (config surface): when false, no zoom on images.
         const doZoom = a.kind === 'image' && opts.kenBurns !== false;
-        const zoom = doZoom ? `,zoompan=z=min(zoom+0.0008,1.04):d=1:s=${W}x${H}` : '';
+        const zoom = doZoom ? `,zoompan=z=min(zoom+0.0008\\,1.04):d=1:s=${W}x${H}` : '';
         // Editing engine v1: per-scene color grade (no LUT file needed).
         const grade = gradeFilter(stylePlan.scenes[i]?.grade ?? 'neutral');
         const tag = '[' + i + ':v]';
