@@ -11,6 +11,7 @@ import { writeJson, readJson } from '../workspace.js';
 import { chunkCues, mergeWordsToLines, fmtSrt } from './captions.js';
 import { runFfmpeg, estimateAudioDurationSafe } from './ffmpeg.js';
 import type { PipelineResult } from './types.js';
+import { OUTPUT_ROOT } from '../../constants/config.js';
 
 /** Wrap a caption into lines that fit the frame width (ffmpeg drawtext has no auto-wrap). */
 function wrapCaptionLines(text: string, frameW: number, fontsize: number): string[] {
@@ -225,6 +226,19 @@ async function writeOutputArtifacts(
             console.log(`🧩 plugin post-render hooks applied`);
         }
     } catch { /* plugin hooks are best-effort */ }
+    try {
+        const outputDir = path.resolve(OUTPUT_ROOT, res.workspace.jobId);
+        fs.mkdirSync(outputDir, { recursive: true });
+        const files = fs.readdirSync(outDir).filter((f) => f.startsWith(res.workspace.jobId));
+        let copied = 0;
+        for (const f of files) {
+            const src = path.join(outDir, f);
+            const dst = path.join(outputDir, f);
+            try { fs.copyFileSync(src, dst); copied++; } catch { /* skip individual failures */ }
+        }
+        if (copied > 0)
+            console.log(`📁 ${copied} deliverable artifact(s) copied → ${outputDir}`);
+    } catch { /* output copy is best-effort */ }
 }
 
 export async function renderAgenticSlideshow(
