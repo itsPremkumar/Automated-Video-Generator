@@ -600,12 +600,34 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
             }
         }
 
-        // Delete concat list
+        // Delete concat list + segments dir
         try {
             fs.unlinkSync(concatListPath);
             fs.rmdirSync(segmentsDir);
         } catch (e) {
             // Ignore cleanup errors
+        }
+
+        // Delete scene-data.json and metadata from outputDir (working files, not final MP4)
+        try { if (fs.existsSync(sceneDataPath)) fs.unlinkSync(sceneDataPath); } catch { /* ignore */ }
+        const thumbPath = path.join(outputDir, 'thumbnail.jpg');
+        try { if (fs.existsSync(thumbPath)) fs.unlinkSync(thumbPath); } catch { /* ignore */ }
+        const detailsPath = path.join(outputDir, `${safeFilename} details.txt`);
+        try { if (fs.existsSync(detailsPath)) fs.unlinkSync(detailsPath); } catch { /* ignore */ }
+
+        // Delete per-job workspace (videos, audio, visuals)
+        if (assetWorkspaceDir && fs.existsSync(assetWorkspaceDir)) {
+            try {
+                fs.rmSync(assetWorkspaceDir, { recursive: true, force: true });
+                console.log(`🧹 [RENDER] Cleaned workspace: ${assetWorkspaceDir}`);
+            } catch { /* ignore */ }
+        }
+
+        // Delete staging copy (if still around)
+        if (stagingDir && fs.existsSync(stagingDir)) {
+            try {
+                fs.rmSync(stagingDir, { recursive: true, force: true });
+            } catch { /* ignore */ }
         }
 
         console.log(`🧹 [RENDER] Cleaned up ${validSegments.length} segment files`);
