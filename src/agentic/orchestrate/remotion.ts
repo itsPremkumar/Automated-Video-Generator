@@ -3,6 +3,7 @@ import * as path from 'path';
 import { verifyRenderedVideo } from '../gate.js';
 import { AgentBrain } from '../brain.js';
 import { runFfmpeg } from './ffmpeg.js';
+import { resolveRuntimePublicPath } from '../../shared/runtime/paths.js';
 import type { PipelineResult } from './types.js';
 
 /**
@@ -123,8 +124,8 @@ export async function renderAgenticWithRemotion(
     }
 
     const fps = 30;
-    const publicDir = path.resolve(process.cwd(), 'public');
-    const jobAssetDir = path.join(publicDir, 'agentic-assets', String(res.workspace.jobId));
+    const stagingDir = resolveRuntimePublicPath();
+    const jobAssetDir = path.join(stagingDir, 'agentic-assets', String(res.workspace.jobId));
     fs.rmSync(jobAssetDir, { recursive: true, force: true });
     fs.mkdirSync(jobAssetDir, { recursive: true });
 
@@ -150,6 +151,7 @@ export async function renderAgenticWithRemotion(
 
     const bundleLoc = await bundle(path.resolve(process.cwd(), 'remotion/index.ts'), () => undefined, {
         webpackCacheDisabled: true,
+        publicDir: stagingDir,
     });
     const outDir = res.workspace.root + '/render';
     fs.mkdirSync(outDir, { recursive: true });
