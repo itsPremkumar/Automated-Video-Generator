@@ -73,7 +73,7 @@
     "test": "npm run typecheck && npm run test:unit",
     "test:unit": "node --import tsx --test --test-timeout=120000 --experimental-test-module-mocks \"src/**/*.test.ts\" \"remotion/**/*.test.ts\"",
     "test:render": "tsx --test \"src/render.e2e.test.ts\"",
-    "test:coverage": "node --experimental-test-coverage --test \"src/**/*.test.ts\"",
+    "test:coverage": "node --import tsx --experimental-test-coverage --test --experimental-test-module-mocks \"src/**/*.test.ts\" \"remotion/**/*.test.ts\"",
     "mcp": "tsx src/mcp-server.ts",
     "agentic": "tsx bin/agentic-run.ts",
     "agentic:batch": "tsx bin/agentic-batch.ts",

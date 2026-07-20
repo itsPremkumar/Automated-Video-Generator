@@ -2172,10 +2172,28 @@ export async function renderAgenticWithRemotion(
     const { computeStylePlan } = await import('./style-engine.js');
     const _sp = computeStylePlan(res.plan, { preset: (opts.preset as any) ?? 'cinematic', kinetic: opts.kinetic });
     const styleByScene = new Map(_sp.scenes.map((s: any) => [s.sceneIndex, s]));
+    const makePlaceholder = async (destPath: string, accent: string) => {
+        // Branded solid-color PNG so a missing download degrades gracefully
+        // instead of 404ing the whole Remotion render. Uses the async ffmpeg
+        // runner (never execFileSync — it blocks the event loop on a small box).
+        const code = await runFfmpeg([
+            '-f', 'lavfi',
+            '-i', `color=c=${accent.replace('#', '0x')}:s=720x1280`,
+            '-frames:v', '1', '-y', destPath,
+        ]);
+        if (code !== 0) {
+            // last-resort: 1x1 px so the frame still decodes
+            fs.writeFileSync(destPath, Buffer.from(
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
+                'base64',
+            ));
+        }
+    };
     for (const a of res.manifest.assets) {
         const src = a.localPath;
         const destName = `s${a.sceneIndex}_${a.kind}_${path.basename(src).replace(/[^a-zA-Z0-9._-]/g, '_')}`;
         const dest = path.join(jobAssetDir, destName);
+        let copied = false;
         try {
             if (a.kind === 'video' && /\.(mp4|webm|mov|m4v)$/i.test(src) && fs.existsSync(src)) {
                 // Downscale + normalize so Chrome renders light.
@@ -2197,17 +2215,21 @@ export async function renderAgenticWithRemotion(
                     '-y',
                     dest,
                 ]);
-                if (code !== 0) fs.copyFileSync(src, dest);
-            } else {
+                copied = code === 0;
+            } else if (fs.existsSync(src)) {
                 fs.copyFileSync(src, dest);
+                copied = true;
             }
         } catch {
-            try {
-                fs.copyFileSync(src, dest);
-            } catch {
-                continue;
-            }
+            copied = false;
         }
+        // A10 — missing/broken image|video asset => branded placeholder, not a
+        // hard render crash. Music assets are skipped (silence is acceptable).
+        if (!copied && a.kind !== 'music') {
+            await makePlaceholder(dest, opts.brand?.accentColor ?? '#FF6B35');
+            copied = fs.existsSync(dest);
+        }
+        if (!copied) continue;
         let audioRel: string | undefined;
         // For music assets the audio track IS a.localPath (acquire stores music
         // candidates with localPath only, no separate audioPath). Without this,

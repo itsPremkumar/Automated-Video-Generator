@@ -37,3 +37,9 @@ jobs:
         # automatically when their host is unreachable (see TESTING.md §6), so
         # CI does not require external network access or API keys.
         run: npm run test:unit
+
+      - name: Coverage
+        # Produces a coverage report (lines/functions/branches). Not enforced
+        # with a hard threshold yet (would need a seeded baseline), but the
+        # numbers are surfaced on every run so regressions are visible.
+        run: npm run test:coverage
