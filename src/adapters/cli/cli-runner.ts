@@ -3,11 +3,12 @@ import * as path from 'path';
 import { pipelineAppService } from '../../application/pipeline-app.service';
 import { cleanupAssets } from '../../lib/cleaner';
 import { resetInMemoryCache } from '../../lib/visual-fetcher';
+import { resolveWorkspacePath } from '../../shared/runtime/paths';
 import { PipelineJobRequest } from '../../shared/contracts/job.contract';
 import { runBatch, summarize, type BatchJobInput, type BatchJobResult } from './batch-queue';
 
-const INPUT_DIR = path.join(process.cwd(), 'input');
-const INPUT_SCRIPTS_FILE = path.join(INPUT_DIR, 'input-scripts.json');
+    const INPUT_DIR = path.join(process.cwd(), 'input', 'scripts');
+    const INPUT_SCRIPTS_FILE = path.join(INPUT_DIR, 'input-scripts.json');
 
 type CliVideoJob = {
     id?: string;
@@ -127,8 +128,8 @@ async function prepareWorkspace(resume: boolean) {
     }
 
     console.log('[STARTUP] Cleaning old assets to avoid conflicts...');
-    const videoDir = path.join(process.cwd(), 'public', 'videos');
-    const audioDir = path.join(process.cwd(), 'public', 'audio');
+    const videoDir = resolveWorkspacePath('tmp', 'videos');
+    const audioDir = resolveWorkspacePath('tmp', 'audio');
     await cleanupAssets([videoDir, audioDir]);
     console.log('[STARTUP] Resetting .video-cache.json for fresh run');
     resetInMemoryCache();
@@ -199,8 +200,8 @@ export async function runCli() {
                 await runGenerateJob(job, index, jobs.length, request);
             }
         } finally {
-            const videoDir = path.join(process.cwd(), 'public', 'videos');
-            const audioDir = path.join(process.cwd(), 'public', 'audio');
+            const videoDir = resolveWorkspacePath('tmp', 'videos');
+            const audioDir = resolveWorkspacePath('tmp', 'audio');
             await cleanupAssets([videoDir, audioDir]);
         }
     }
@@ -251,8 +252,8 @@ async function runBatchMode(jobs: CliVideoJob[], options: BatchModeOptions): Pro
             }
             return { outcome: 'failed', error: result.error || result.message };
         } finally {
-            const videoDir = path.join(process.cwd(), 'public', 'videos');
-            const audioDir = path.join(process.cwd(), 'public', 'audio');
+            const videoDir = resolveWorkspacePath('tmp', 'videos');
+            const audioDir = resolveWorkspacePath('tmp', 'audio');
             await cleanupAssets([videoDir, audioDir]);
         }
     };

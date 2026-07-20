@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { pipelineAppService } from '../../application/pipeline-app.service';
 import { assertSafeMutationAllowed } from '../../shared/capabilities';
 import { getSystemInfo, readEnvConfig, updateEnvConfig } from './env-tools';
-import { projectRoot, resolveProjectPath } from '../../shared/runtime/paths';
+import { projectRoot, resolveProjectPath, resolveRuntimePublicPath } from '../../shared/runtime/paths';
 import { inputAssetPath, INPUT_ASSETS_DIR } from '../../lib/path-safety';
 import { errorResponse, textResponse } from './responses';
 
@@ -71,7 +71,7 @@ export function registerAdminTools(server: McpServer) {
                         inputAssetsDir: inputAssetPath(),
                         outputDir: resolveProjectPath('output'),
                         publicDir: resolveProjectPath('public'),
-                        publicJobsDir: resolveProjectPath('public', 'jobs'),
+                        publicJobsDir: resolveRuntimePublicPath('jobs'),
                     },
                     null,
                     2,

@@ -39,6 +39,8 @@ module.exports = {
         '!**/desktop.ini',
         '!tmp/**/*',
         '!temp/**/*',
+        '!workspace/staging/**/*',
+        '!workspace/tmp/**/*',
         '!.cache/**/*',
         '!.vscode/**/*',
         '!.idea/**/*',

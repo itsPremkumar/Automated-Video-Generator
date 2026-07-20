@@ -9,8 +9,8 @@ release/
 output/
 .remotion/
 *.remotion
-public/jobs/
-public/audio/
+workspace/staging/
+workspace/tmp/
 coverage/
 
 # Environment Variables

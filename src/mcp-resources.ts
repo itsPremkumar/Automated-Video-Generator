@@ -1,7 +1,7 @@
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import * as fs from 'fs';
 import * as path from 'path';
-import { projectRoot, resolveProjectPath } from './shared/runtime/paths';
+import { projectRoot, resolveProjectPath, resolveRuntimePublicPath } from './shared/runtime/paths';
 import { inputAssetPath, INPUT_ASSETS_DIR } from './lib/path-safety';
 import { readInputScripts } from './adapters/mcp/input-store';
 import { listOutputVideos, readOutputFile } from './adapters/mcp/output-store';
@@ -70,7 +70,7 @@ export function registerResources(server: McpServer) {
                                 inputAssetsDir: inputAssetPath(),
                                 outputDir: resolveProjectPath('output'),
                                 publicDir: resolveProjectPath('public'),
-                                publicJobsDir: resolveProjectPath('public', 'jobs'),
+                                publicJobsDir: resolveRuntimePublicPath('jobs'),
                             },
                             null,
                             2,

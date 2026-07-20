@@ -1,8 +1,8 @@
 node_modules/
 coverage/
 output/
-public/jobs/
-public/audio/
+workspace/staging/
+workspace/tmp/
 .git/
 .github/
 .vscode/

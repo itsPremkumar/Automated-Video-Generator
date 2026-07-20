@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { wikiProvider, archiveProvider, freeVideoDownloader } from '../lib/free-video/index';
 import { VideoResult, SearchFilters } from '../lib/free-video/models';
-import { resolveProjectPath } from '../shared/runtime/paths';
+import { resolveProjectPath, resolveRuntimePublicPath } from '../shared/runtime/paths';
 import { toPublicRelativePath } from '../pipeline-workspace';
 import { logInfo, logError } from '../shared/logging/runtime-logging';
 
@@ -104,7 +104,7 @@ export class FreeVideoAppService {
         license: string,
         format: string,
     ): Promise<FreeVideoDownloadResponse> {
-        const outputDir = resolveProjectPath('public', 'jobs', 'free-video');
+        const outputDir = resolveRuntimePublicPath('jobs', 'free-video');
         if (!fs.existsSync(outputDir)) {
             fs.mkdirSync(outputDir, { recursive: true });
         }

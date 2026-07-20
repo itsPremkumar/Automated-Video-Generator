@@ -5,6 +5,7 @@ import { WikimediaProvider } from './providers/wikimedia.js';
 import { ArchiveOrgProvider } from './providers/archive.js';
 import { FreeDownloadManager } from './download/downloader.js';
 import { toPublicRelativePath } from '../../pipeline-workspace.js';
+import { resolveRuntimePublicPath } from '../../shared/runtime/paths.js';
 import { logInfo } from '../../shared/logging/runtime-logging.js';
 
 export class FreeVideoAdapter {
@@ -109,7 +110,7 @@ export class FreeVideoAdapter {
             publicPath = toPublicRelativePath(localPath);
         } catch {
             // Fallback: just return the filename relative to workspace
-            publicPath = `jobs/${path.relative(path.resolve(process.cwd(), 'public'), localPath).replace(/\\/g, '/')}`;
+            publicPath = `jobs/${path.relative(resolveRuntimePublicPath(), localPath).replace(/\\/g, '/')}`;
         }
 
         logInfo(`[FREE-VIDEO] Downloaded "${videoResult.title}" to ${localPath}`);

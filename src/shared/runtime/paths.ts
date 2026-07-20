@@ -27,9 +27,9 @@ function resolvePackagedDataRoot(): string {
 
 export const dataRoot = isElectronPackaged ? resolvePackagedDataRoot() : projectRoot;
 
-const runtimePublicRoot = isElectronPackaged ? path.join(dataRoot, 'public') : path.join(projectRoot, 'public');
+const runtimePublicRoot = isElectronPackaged ? path.join(dataRoot, 'staging') : path.join(projectRoot, 'workspace', 'staging');
 
-const runtimeManagedRoots = new Set(['.env', '.mcp-jobs.json', '.video-cache.json', 'logs', 'output', 'tmp']);
+const runtimeManagedRoots = new Set(['.env', '.mcp-jobs.json', '.video-cache.json', 'logs', 'output', 'tmp', 'staging']);
 
 function normalizeRelativeSegments(segments: string[]): string[] {
     const normalized: string[] = [];
@@ -71,10 +71,6 @@ export function resolveProjectPath(...segments: string[]): string {
 
     if (runtimeManagedRoots.has(first)) {
         return path.join(dataRoot, first, ...safeRest);
-    }
-
-    if (first === 'public' && safeRest[0] === 'jobs') {
-        return path.join(runtimePublicRoot, ...safeRest);
     }
 
     return resolveBundledProjectPath(first, ...rest);

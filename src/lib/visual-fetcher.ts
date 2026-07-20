@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { config } from 'dotenv';
 import { spawnSync, spawn } from 'child_process';
-import { logInfo, resolveProjectPath, resolveWorkspacePath } from '../runtime';
+import { logInfo, resolveProjectPath, resolveRuntimePublicPath, resolveWorkspacePath } from '../runtime';
 import { generateContent as ollamaGenerateContent } from './ollama-client';
 import { searchOpenverseImages } from './openverse-fetcher';
 import { freeVideoDownloader, freeVideoAdapter } from './free-video/index';
@@ -1084,7 +1084,7 @@ export async function fetchVisualsForScene(
                     const freeResults = sources.flatMap((s) => s.results);
                     if (freeResults.length > 0) {
                         const best = freeResults[0];
-                        const videosDir = path.dirname(path.resolve(process.cwd(), 'public/jobs'));
+                        const videosDir = resolveRuntimePublicPath('jobs');
                         const dlResults = await freeVideoDownloader.downloadAll([best], videosDir);
                         if (dlResults.length > 0 && dlResults[0].success && dlResults[0].localPath) {
                             const asset: MediaAsset = {

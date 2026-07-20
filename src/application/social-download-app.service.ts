@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { videoDownloaderService, DownloadProgress } from '../lib/video-downloader-service';
-import { resolveProjectPath } from '../shared/runtime/paths';
+import { resolveProjectPath, resolveRuntimePublicPath } from '../shared/runtime/paths';
 import { toPublicRelativePath } from '../pipeline-workspace';
 import { isSafeUrl } from '../lib/net-safety';
 import { logInfo, logError } from '../shared/logging/runtime-logging';
@@ -56,7 +56,7 @@ export class SocialDownloadAppService {
             // or we add a new static route for /downloads/social
             // Let's copy it to a specialized "social" job folder to reuse existing static serving for /jobs
             const sessionId = `social_${Date.now()}`;
-            const publicJobsRoot = path.join(resolveProjectPath('public'), 'jobs');
+            const publicJobsRoot = resolveRuntimePublicPath('jobs');
             const targetDir = path.join(publicJobsRoot, sessionId);
 
             if (!fs.existsSync(targetDir)) {
