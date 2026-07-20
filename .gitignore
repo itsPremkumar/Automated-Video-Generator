@@ -72,6 +72,9 @@ assets/icon.ico
 # TypeScript
 *.tsbuildinfo
 
+# Remotion study-only clones (MIT reference repos, NOT project source — do not commit/push)
+remotion/_study/
+
 # Docker
 .docker/
 

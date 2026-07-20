@@ -15,5 +15,5 @@
         "jsx": "react"
     },
     "include": ["src/**/*.ts", "remotion/**/*.ts"],
-    "exclude": ["node_modules", "dist", "dist-electron"]
+    "exclude": ["node_modules", "dist", "dist-electron", "remotion/_study"]
 }

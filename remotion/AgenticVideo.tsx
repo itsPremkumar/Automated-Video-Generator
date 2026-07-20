@@ -13,6 +13,13 @@ import {
 } from 'remotion';
 import { SubtitleOverlay } from './SubtitleOverlay';
 import { KaraokeCaptions } from './KaraokeCaptions';
+import { IntroSceneCard, OutroSceneCard } from './IntroOutroCards';
+import { VoiceoverWaveform } from './VoiceoverWaveform';
+import { AgenticTransitionSeries, type RichTransitionKind } from './transitions';
+import { MotionBlur } from './motion-effects';
+import { KineticText } from './kinetic-text';
+import { ShapeAccent } from './shape-accents';
+import { Animated } from './animated-entrances';
 
 /**
  * Phase-1 agentic Remotion composition — driven to an advanced level:
@@ -89,6 +96,16 @@ export interface AgenticVideoProps {
     height?: number;
     /** A1 — crossfade length in seconds. */
     crossfadeSec?: number;
+    /** c16 — use @remotion/transitions (circleWipe/flip/slide) instead of manual fade. */
+    richTransitions?: boolean;
+    /** c16 — styled-caption variant for karaoke (neon/glow/pop/fire/glitch/typewriter). */
+    captionStyle?: 'neon' | 'glow' | 'pop' | 'fire' | 'glitch' | 'typewriter';
+    /** c16b — apply CameraMotionBlur to moving scene layers (cinematic). */
+    motionBlur?: boolean;
+    /** c16c — render intro/outro titles with per-character kinetic spring text. */
+    kineticTitle?: boolean;
+    /** c16d — render decorative @remotion/shapes accents (star/circle/polygon/arrow). */
+    shapeAccents?: boolean;
 }
 
 function dimsFromProps(p: AgenticVideoProps): { w: number; h: number } {
@@ -286,6 +303,7 @@ function TransitionedScene({
     transition,
     kenBurns,
     accent,
+    captionStyle,
 }: {
     asset: AgenticVideoAsset;
     fps: number;
@@ -295,6 +313,7 @@ function TransitionedScene({
     transition: TransitionKind;
     kenBurns: boolean;
     accent: string;
+    captionStyle?: 'neon' | 'glow' | 'pop' | 'fire' | 'glitch' | 'typewriter';
 }) {
     const frame = useCurrentFrame();
     const local = frame - from;
@@ -347,7 +366,11 @@ function TransitionedScene({
                     accentColor={accent}
                     fontSize={asset.textConfig?.fontSize ?? 48}
                     position={asset.textConfig?.position ?? 'bottom'}
+                    style={captionStyle}
                 />
+            )}
+            {asset.audioPath && (
+                <VoiceoverWaveform audioPath={asset.audioPath} accent={accent} />
             )}
             {asset.kinetic && asset.kinetic.length > 0 && (
                 <KineticLayer cues={asset.kinetic} durationInFrames={durationInFrames} fps={fps} accent={accent} />
@@ -395,6 +418,11 @@ export const AgenticVideo: React.FC<AgenticVideoProps> = ({
     outroCard,
     kenBurns = true,
     crossfadeSec = 0.5,
+    richTransitions = false,
+    captionStyle,
+    motionBlur = false,
+    kineticTitle = false,
+    shapeAccents = false,
 }) => {
     const { width: vw } = useVideoConfig();
     _widthForSlide = vw || 1080;
@@ -418,27 +446,52 @@ export const AgenticVideo: React.FC<AgenticVideoProps> = ({
         <AbsoluteFill style={{ backgroundColor: brand?.primaryColor ?? '#0a0a12' }}>
             {introCard && (
                 <Sequence from={0} durationInFrames={introDur}>
-                    <IntroScene card={introCard} accent={accent} />
+                    <IntroSceneCard card={introCard} accent={accent} primary={brand?.primaryColor} />
+                    {shapeAccents && <ShapeAccent kind="star" xPct={85} yPct={15} size={90} color={accent} spin />}
+                    {kineticTitle && (
+                        <KineticText text={introCard.title} fontSize={72} color="#fff" delay={0.1} />
+                    )}
                 </Sequence>
             )}
             {scenePlan.map(({ asset, from, dur, transition }) => (
                 // overlap frames at tail so the next scene can crossfade in
                 <Sequence key={asset.sceneIndex} from={from} durationInFrames={dur + overlap}>
-                    <TransitionedScene
-                        asset={asset}
-                        fps={fps}
-                        durationInFrames={dur}
-                        from={from}
-                        overlap={overlap}
-                        transition={transition}
-                        kenBurns={kenBurns}
-                        accent={accent}
-                    />
+                    {motionBlur ? (
+                        <MotionBlur>
+                            <TransitionedScene
+                                asset={asset}
+                                fps={fps}
+                                durationInFrames={dur}
+                                from={from}
+                                overlap={overlap}
+                                transition={transition}
+                                kenBurns={kenBurns}
+                                accent={accent}
+                                captionStyle={captionStyle}
+                            />
+                        </MotionBlur>
+                    ) : (
+                        <TransitionedScene
+                            asset={asset}
+                            fps={fps}
+                            durationInFrames={dur}
+                            from={from}
+                            overlap={overlap}
+                            transition={transition}
+                            kenBurns={kenBurns}
+                            accent={accent}
+                            captionStyle={captionStyle}
+                        />
+                    )}
                 </Sequence>
             ))}
             {outroCard && (
                 <Sequence from={t} durationInFrames={outroDur}>
-                    <OutroScene card={outroCard} accent={accent} />
+                    <OutroSceneCard card={outroCard} accent={accent} primary={brand?.primaryColor} />
+                    {shapeAccents && <ShapeAccent kind="polygon" xPct={15} yPct={85} size={90} color={accent} spin />}
+                    {kineticTitle && (
+                        <KineticText text={outroCard.ctaText} fontSize={56} color="#fff" delay={0.1} />
+                    )}
                 </Sequence>
             )}
             {music && music.audioPath && (
@@ -451,103 +504,3 @@ export const AgenticVideo: React.FC<AgenticVideoProps> = ({
         </AbsoluteFill>
     );
 };
-
-function IntroScene({ card, accent }: { card: IntroCard; accent: string }) {
-    const frame = useCurrentFrame();
-    const titleOpacity = interpolate(frame, [5, 20], [0, 1], {
-        extrapolateRight: 'clamp',
-        easing: Easing.out(Easing.cubic),
-    });
-    const subOpacity = interpolate(frame, [20, 35], [0, 1], {
-        extrapolateRight: 'clamp',
-        easing: Easing.out(Easing.cubic),
-    });
-    return (
-        <AbsoluteFill
-            style={{
-                justifyContent: 'center',
-                alignItems: 'center',
-                background: `linear-gradient(135deg, #004E89 0%, ${accent} 100%)`,
-            }}
-        >
-            <div
-                style={{
-                    opacity: titleOpacity,
-                    color: '#fff',
-                    fontSize: 72,
-                    fontWeight: 800,
-                    textAlign: 'center',
-                    padding: 40,
-                }}
-            >
-                {card.title}
-            </div>
-            {card.subtitle && (
-                <div
-                    style={{
-                        opacity: subOpacity,
-                        color: '#fff',
-                        fontSize: 40,
-                        marginTop: 20,
-                        textAlign: 'center',
-                        padding: 20,
-                    }}
-                >
-                    {card.subtitle}
-                </div>
-            )}
-        </AbsoluteFill>
-    );
-}
-
-function OutroScene({ card, accent }: { card: OutroCard; accent: string }) {
-    const frame = useCurrentFrame();
-    const ctaOpacity = interpolate(frame, [5, 25], [0, 1], {
-        extrapolateRight: 'clamp',
-        easing: Easing.out(Easing.cubic),
-    });
-    return (
-        <AbsoluteFill
-            style={{
-                justifyContent: 'center',
-                alignItems: 'center',
-                background: `linear-gradient(135deg, #1A1A2E 0%, #004E89 100%)`,
-            }}
-        >
-            <div
-                style={{
-                    opacity: ctaOpacity,
-                    color: '#fff',
-                    fontSize: 56,
-                    fontWeight: 800,
-                    textAlign: 'center',
-                    padding: 40,
-                }}
-            >
-                {card.ctaText}
-            </div>
-            {card.showSubscribe && (
-                <div
-                    style={{
-                        opacity: ctaOpacity,
-                        color: '#fff',
-                        fontSize: 32,
-                        marginTop: 24,
-                        padding: '12px 28px',
-                        border: `2px solid ${accent}`,
-                        borderRadius: 40,
-                    }}
-                >
-                    Subscribe
-                </div>
-            )}
-            {card.hashtags && (
-                <div
-                    style={{ opacity: ctaOpacity, color: '#FFB38A', fontSize: 28, marginTop: 24, textAlign: 'center' }}
-                >
-                    {card.hashtags.join(' ')}
-                </div>
-            )}
-        </AbsoluteFill>
-    );
-}

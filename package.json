@@ -71,7 +71,7 @@
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
     "test": "npm run typecheck && npm run test:unit",
-    "test:unit": "node --import tsx --test --test-timeout=120000 --experimental-test-module-mocks \"src/**/*.test.ts\"",
+    "test:unit": "node --import tsx --test --test-timeout=120000 --experimental-test-module-mocks \"src/**/*.test.ts\" \"remotion/**/*.test.ts\"",
     "test:render": "tsx --test \"src/render.e2e.test.ts\"",
     "test:coverage": "node --experimental-test-coverage --test \"src/**/*.test.ts\"",
     "mcp": "tsx src/mcp-server.ts",

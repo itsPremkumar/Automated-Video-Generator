@@ -1,6 +1,7 @@
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { createTikTokStyleCaptions } from '@remotion/captions';
+import { StyledCaption, type CaptionStyleKind } from './caption-styles';
 
 /**
  * KaraokeCaptions — true word-level karaoke powered by @remotion/captions.
@@ -28,14 +29,26 @@ interface KaraokeCaptionsProps {
     position?: 'top' | 'center' | 'bottom';
     accentColor?: string;
     fontSize?: number;
+    /** Optional styled-caption variant (neon/glow/pop) overlaying the karaoke. */
+    style?: CaptionStyleKind;
 }
 
-function KaraokeInner({ captionSegments, accentColor = '#FF6B35', fontSize = 48, position = 'bottom' }: KaraokeCaptionsProps) {
+function KaraokeInner({ captionSegments, accentColor = '#FF6B35', fontSize = 48, position = 'bottom', style }: KaraokeCaptionsProps) {
     const frame = useCurrentFrame();
     const { fps } = useVideoConfig();
     const nowMs = (frame / fps) * 1000;
 
     if (!captionSegments || captionSegments.length === 0) return null;
+
+    // When a styled variant is requested, render it INSTEAD of the token karaoke
+    // (styled variants show the whole active line with a glow/pop effect).
+    if (style) {
+        const activeLine = (createTikTokStyleCaptions({ captions: captionSegments as any, combineTokensWithinMilliseconds: 400 }).pages as any[]).find(
+            (l) => nowMs >= l.startMs && nowMs < l.startMs + (l.durationMs ?? Infinity),
+        );
+        if (!activeLine) return null;
+        return <StyledCaption kind={style} text={activeLine.text} accent={accentColor} position={position} fontSize={fontSize} />;
+    }
 
     // createTikTokStyleCaptions accepts our {text,startMs,endMs} cues and
     // returns { pages: [{ text, startMs, tokens: [{text, fromMs, toMs}], durationMs }] }.
