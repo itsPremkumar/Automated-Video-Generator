@@ -17,14 +17,9 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import {
-    runAgenticPipeline,
-    PipelineRequest,
-    PipelineProgress,
-    renderAgenticSlideshow,
-    renderAgenticWithRemotion,
-} from '../orchestrator/index.js';
-import { PipelineResult } from '../orchestrator/index.js';
+import { runAgenticPipeline, renderAgenticSlideshow, renderAgenticWithRemotion } from '../orchestrator/index.js';
+import type { PipelineRequest } from '../orchestrator/types.js';
+import type { PipelineProgress, PipelineResult } from '../types.js';
 import { AgentBrain } from '../ai/brain.js';
 
 export interface AutoRunEvent {

@@ -104,3 +104,25 @@ export interface RenderManifest {
 export function assetId(kind: AssetKind, sceneIndex: number, candidateIndex: number): string {
     return `${kind}_s${sceneIndex}_c${candidateIndex}`;
 }
+
+export interface PipelineResult {
+    backend: import('./ai/agent.js').AgenticBackend;
+    plan: Plan;
+    workspace: import('./management/workspace.js').AgenticWorkspace;
+    candidates: AssetCandidate[];
+    decisions: AssetDecision[];
+    gate: { pass: boolean; checks: { id: string; pass: boolean; label: string; detail: string }[] };
+    manifest: RenderManifest;
+    voiceovers: import('./media/tts.js').VoiceoverResult | null;
+    fullyAgentDriven: boolean;
+    postRender?: import('./pipeline/gate.js').PostRenderCheck;
+    aiVerify?: import('./config.js').AgenticConfig['aiVerify'];
+}
+
+export interface PipelineProgress {
+    stage: 'plan' | 'acquire' | 'verify' | 'decide' | 'gate' | 'voiceover' | 'render';
+    percent: number;
+    message: string;
+    sceneIndex?: number;
+    candidateIndex?: number;
+}

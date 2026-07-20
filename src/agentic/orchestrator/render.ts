@@ -685,3 +685,17 @@ export async function renderAgenticSlideshow(
     });
     return out;
 }
+
+export async function renderVariant(res: PipelineResult, preset: string, tag: string): Promise<string | null> {
+    try {
+        const out = await renderAgenticSlideshow(res, {
+            preset,
+            outPath: path.join(res.workspace.root, 'render', `${res.workspace.jobId}_${tag}.mp4`),
+            kenBurns: true,
+        });
+        return out;
+    } catch (e) {
+        console.warn(`variant ${tag} failed: ${(e as Error).message}`);
+        return null;
+    }
+}

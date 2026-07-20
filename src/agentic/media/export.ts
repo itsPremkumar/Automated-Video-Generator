@@ -17,8 +17,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Plan } from '../types.js';
-import { renderAgenticSlideshow } from '../orchestrator/index.js';
-import { PipelineResult } from '../orchestrator/index.js';
+import type { PipelineResult } from '../types.js';
 
 export type Aspect = '9:16' | '16:9' | '1:1';
 
@@ -155,25 +154,6 @@ export async function renderThumbnail(srcMp4: string, plan: Plan): Promise<strin
         const code = await runFfmpeg(['-y', '-ss', '00:00:01', '-i', srcMp4, '-frames:v', '1', '-vf', filter, out]);
         return code === 0 && fs.existsSync(out) ? out : null;
     } catch {
-        return null;
-    }
-}
-
-/**
- * A/B variant: re-render the SAME plan with an alternate preset (e.g. a
- * "reels" punchy cut vs the "cinematic" cut) so the user can compare. Free
- * (no new assets fetched — reuses the approved manifest).
- */
-export async function renderVariant(res: PipelineResult, preset: string, tag: string): Promise<string | null> {
-    try {
-        const out = await renderAgenticSlideshow(res, {
-            preset,
-            outPath: path.join(res.workspace.root, 'render', `${res.workspace.jobId}_${tag}.mp4`),
-            kenBurns: true,
-        });
-        return out;
-    } catch (e) {
-        console.warn(`⚠ variant ${tag} failed: ${(e as Error).message}`);
         return null;
     }
 }
