@@ -36,3 +36,32 @@ test('callsRemaining reflects budget', async () => {
     const b = new AgentBrain({ openRouterKey: 'k', maxCalls: 3 });
     assert.equal(b.callsRemaining, 3);
 });
+
+// Regression: OpenRouter calls MUST send `Authorization: Bearer <key>`, not
+// the broken `*** <key>` prefix (which OpenRouter rejects with 401). Otherwise
+// every model-driven brain decision silently fails and falls back to heuristic.
+test('OpenRouter request sends "Authorization: Bearer <key>" header', async () => {
+    let capturedAuth: string | undefined;
+    let capturedUrl = '';
+    const origFetch = globalThis.fetch;
+    (globalThis as any).fetch = async (url: any, init: any) => {
+        capturedUrl = String(url);
+        capturedAuth = init?.headers?.Authorization;
+        return {
+            ok: true,
+            json: async () => ({ choices: [{ message: { content: '{"script":"hi"}' } }] }),
+        } as any;
+    };
+    try {
+        const b = new AgentBrain({ openRouterKey: 'sk-test-123', openRouterModel: 'x' });
+        const r = await b.writeScript('topic', 'title');
+        assert.equal(capturedUrl.includes('openrouter.ai'), true, 'should call OpenRouter');
+        assert.ok(
+            capturedAuth === 'Bearer sk-test-123',
+            `Authorization must be "Bearer sk-test-123", got: ${JSON.stringify(capturedAuth)}`,
+        );
+        assert.equal(r, 'hi');
+    } finally {
+        (globalThis as any).fetch = origFetch;
+    }
+});
