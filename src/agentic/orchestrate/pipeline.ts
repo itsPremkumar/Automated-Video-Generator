@@ -5,7 +5,7 @@ import { fetchVisualsForScene, searchImages } from '../../lib/visual-fetcher.js'
 import { downloadMedia } from '../../lib/visual-fetcher.js';
 import { verifyMedia } from '../../lib/media-verifier.js';
 import { resolveFreeBackgroundMusic } from '../../lib/free-music.js';
-import { inputAssetPath } from '../../lib/path-safety.js';
+import { inputAssetPath, inputVoiceoverPath } from '../../lib/path-safety.js';
 import { buildPlan, applyProEdits } from '../plan.js';
 import { acquireAssets, AcquireDeps, FetchedVisual } from '../acquire.js';
 import { verifyAll, VerifyDeps } from '../verify.js';
@@ -456,7 +456,7 @@ export async function runAgenticPipeline(
                     scene.durationSec = vd;
                 }
             }
-            const pa = scene?.personalAudio ? inputAssetPath(scene.personalAudio) : undefined;
+            const pa = scene?.personalAudio ? inputVoiceoverPath(scene.personalAudio) : undefined;
             if (pa && fs.existsSync(pa)) {
                 const dur = await estimateAudioDurationSafe(pa);
                 a.audioPath = pa;

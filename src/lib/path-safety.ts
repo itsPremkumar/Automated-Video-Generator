@@ -27,9 +27,23 @@ export function inputAssetPath(...segments: string[]): string {
 export const INPUT_BGM_ROOT = resolveProjectPath('input', 'bgm');
 
 /**
+ * Resolve a path under the input/bgm directory.
+ */
+export function inputBgmPath(...segments: string[]): string {
+    return resolveProjectPath('input', 'bgm', ...segments);
+}
+
+/**
  * Root directory for user-uploaded personal voiceover audio
  */
 export const INPUT_VOICEOVER_ROOT = resolveProjectPath('input', 'voiceover');
+
+/**
+ * Resolve a path under the input/voiceover directory.
+ */
+export function inputVoiceoverPath(...segments: string[]): string {
+    return resolveProjectPath('input', 'voiceover', ...segments);
+}
 
 /**
  * Resolve a filename to its absolute path within the asset root
