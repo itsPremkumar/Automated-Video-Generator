@@ -16,14 +16,14 @@ import * as path from 'path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
-import { buildPlan } from '../../agentic/plan.js';
-import { acquireAssets } from '../../agentic/acquire.js';
-import { verifyAll } from '../../agentic/verify.js';
-import { runGateway, GatewayDeps } from '../../agentic/gateway.js';
-import { runFinalGate } from '../../agentic/gate.js';
+import { buildPlan } from '../../agentic/pipeline/plan.js';
+import { acquireAssets } from '../../agentic/pipeline/acquire.js';
+import { verifyAll } from '../../agentic/pipeline/verify.js';
+import { runGateway, GatewayDeps } from '../../agentic/pipeline/gateway.js';
+import { runFinalGate } from '../../agentic/pipeline/gate.js';
 import { runAgenticPipeline } from '../../agentic/orchestrate.js';
 import { getDriverLlm } from './driver-llm.js';
-import { AgenticWorkspace, workspaceRootFor, readJson } from '../../agentic/workspace.js';
+import { AgenticWorkspace, workspaceRootFor, readJson } from '../../agentic/management/workspace.js';
 import { AssetCandidate, AssetDecision } from '../../agentic/types.js';
 
 import { parseScript } from '../../lib/script-parser.js';

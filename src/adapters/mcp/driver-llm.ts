@@ -22,7 +22,7 @@
  * pipeline behaves EXACTLY as before: configured model -> signal floor.
  */
 
-import type { DriverLlmCallback } from '../../agentic/bridge.js';
+import type { DriverLlmCallback } from '../../agentic/ai/bridge.js';
 
 let registered: DriverLlmCallback | undefined;
 

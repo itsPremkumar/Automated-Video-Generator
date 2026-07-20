@@ -26,7 +26,7 @@ import * as path from 'path';
 import { FreeImageAdapter } from './free-image/adapter.js';
 import { FreeVideoAdapter } from './free-video/adapter.js';
 import { freeVideoDownloader } from './free-video/index.js';
-import { mapWithConcurrencyLimit } from '../agentic/acquire.js';
+import { mapWithConcurrencyLimit } from '../agentic/pipeline/acquire.js';
 import { searchPexelsImages, searchPexelsVideos, pexelsKeyPresent } from './pexels.js';
 
 export interface MediaHit {

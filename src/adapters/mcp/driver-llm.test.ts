@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { setDriverLlm, getDriverLlm, hasDriverLlm } from './driver-llm.js';
-import type { DriverLlmCallback } from '../../agentic/bridge.js';
+import type { DriverLlmCallback } from '../../agentic/ai/bridge.js';
 
 test('driver-llm registry: empty by default', () => {
     setDriverLlm(undefined);

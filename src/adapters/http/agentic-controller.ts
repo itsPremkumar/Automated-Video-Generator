@@ -17,7 +17,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { asyncHandler } from '../../lib/validation.js';
 import { runAgenticPipeline, renderAgenticSlideshow } from '../../agentic/orchestrate.js';
-import { getJob } from '../../agentic/job.js';
+import { getJob } from '../../agentic/management/job.js';
 
 const router = Router();
 

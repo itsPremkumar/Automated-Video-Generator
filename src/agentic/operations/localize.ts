@@ -9,8 +9,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { writeCaptionSidecars } from '../../lib/captions.js';
-import { localizeSrtSidecars } from '../localize.js';
-import { AgentBrain } from '../brain.js';
+import { localizeSrtSidecars } from '../media/localize.js';
+import { AgentBrain } from '../ai/brain.js';
 
 export interface LocalizeResult {
     ok: boolean;

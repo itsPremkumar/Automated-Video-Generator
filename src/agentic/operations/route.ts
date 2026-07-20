@@ -13,7 +13,7 @@
  * configured (heuristic fallback always returns a valid task).
  */
 
-import { AgentBrain } from '../brain.js';
+import { AgentBrain } from '../ai/brain.js';
 
 export type TaskKind =
     | 'merge'

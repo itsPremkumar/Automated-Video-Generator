@@ -4,7 +4,7 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { writeScriptHeuristic } from '../agent.js';
+import { writeScriptHeuristic } from '../ai/agent.js';
 
 export interface ScriptResult {
     ok: boolean;

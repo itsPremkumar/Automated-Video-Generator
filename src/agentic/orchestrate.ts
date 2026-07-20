@@ -16,17 +16,17 @@
  *   remotion.ts    — prepareRemotionAssets, renderAgenticWithRemotion
  */
 
-export { sourceFromUrl } from './orchestrate/source.js';
-export { chunkCues, mergeWordsToLines, fmtSrt, escapeFilterPath } from './orchestrate/captions.js';
+export { sourceFromUrl } from './orchestrator/source.js';
+export { chunkCues, mergeWordsToLines, fmtSrt, escapeFilterPath } from './orchestrator/captions.js';
 export {
     withTimeout,
     estimateAudioDurationSafe,
     runFfmpeg,
     makePlaceholder,
     normalizeAudio,
-} from './orchestrate/ffmpeg.js';
-export type { PipelineRequest, PipelineResult, PipelineProgress } from './orchestrate/types.js';
-export { runAgenticPipeline } from './orchestrate/pipeline.js';
-export { renderAgenticSlideshow, buildDuckExpression } from './orchestrate/render.js';
-export { makeContactSheet, writeDecisionsReport } from './orchestrate/artifacts.js';
-export { prepareRemotionAssets, renderAgenticWithRemotion } from './orchestrate/remotion.js';
+} from './orchestrator/ffmpeg.js';
+export type { PipelineRequest, PipelineResult, PipelineProgress } from './orchestrator/types.js';
+export { runAgenticPipeline } from './orchestrator/pipeline.js';
+export { renderAgenticSlideshow, buildDuckExpression } from './orchestrator/render.js';
+export { makeContactSheet, writeDecisionsReport } from './orchestrator/artifacts.js';
+export { prepareRemotionAssets, renderAgenticWithRemotion } from './orchestrator/remotion.js';

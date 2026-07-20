@@ -4,13 +4,13 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
-import { buildPlan, deriveMusicQuery, Parser } from '../../src/agentic/plan.js';
-import { acquireAssets, AcquireDeps, FetchedVisual } from '../../src/agentic/acquire.js';
-import { verifyAll, VERIFY_PASS_CONFIDENCE } from '../../src/agentic/verify.js';
-import { runFinalGate } from '../../src/agentic/gate.js';
-import { runGateway, GatewayDeps } from '../../src/agentic/gateway.js';
+import { buildPlan, deriveMusicQuery, Parser } from '../../src/agentic/pipeline/plan.js';
+import { acquireAssets, AcquireDeps, FetchedVisual } from '../../src/agentic/pipeline/acquire.js';
+import { verifyAll, VERIFY_PASS_CONFIDENCE } from '../../src/agentic/pipeline/verify.js';
+import { runFinalGate } from '../../src/agentic/pipeline/gate.js';
+import { runGateway, GatewayDeps } from '../../src/agentic/pipeline/gateway.js';
 import { Plan, AssetCandidate, AssetDecision } from '../../src/agentic/types.js';
-import { writeScriptHeuristic, expandKeywordsHeuristic, agentDecide } from '../../src/agentic/agent.js';
+import { writeScriptHeuristic, expandKeywordsHeuristic, agentDecide } from '../../src/agentic/ai/agent.js';
 
 // ── helpers ──────────────────────────────────────────────
 function tmpFile(ext: string): string {

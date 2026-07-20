@@ -31,8 +31,8 @@ import { applyBrandKit } from './brand.js';
 import * as path from 'path';
 import { RouteResult, RoutedTask, RoutedChain, isChain, routeTask } from './route.js';
 import { runAgenticPipeline } from '../orchestrate.js';
-import { verifyRenderedVideo } from '../gate.js';
-import { AgentBrain } from '../brain.js';
+import { verifyRenderedVideo } from '../pipeline/gate.js';
+import { AgentBrain } from '../ai/brain.js';
 import * as fs from 'fs';
 import { safeOutputPath } from './security.js';
 
