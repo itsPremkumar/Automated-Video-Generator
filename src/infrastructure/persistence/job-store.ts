@@ -8,9 +8,9 @@ import {
     JobTextConfig,
     StoredJobRequest,
 } from '../../shared/contracts/job.contract';
-import { resolveProjectPath } from '../../shared/runtime/paths';
+import { resolveProjectPath, resolveWorkspacePath } from '../../shared/runtime/paths';
 
-const JOBS_FILE = resolveProjectPath('.mcp-jobs.json');
+const JOBS_FILE = resolveWorkspacePath('cache', 'jobs.json');
 
 const VALID_JOB_STATES: JobState[] = [
     'pending',

@@ -18,7 +18,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { z } from 'zod';
-import { resolveProjectPath } from '../../shared/runtime/paths';
+import { resolveProjectPath, resolveWorkspacePath } from '../../shared/runtime/paths';
 
 /**
  * Read an integer env knob at *call time* (not at module load) so the batch
@@ -51,7 +51,7 @@ function readRetryBackoffMs(): number {
     return Math.max(0, readEnvInt('AVG_BATCH_RETRY_BACKOFF_MS', 1500, 0));
 }
 
-export const BATCH_MANIFEST_PATH = resolveProjectPath('output', 'batch-manifest.json');
+export const BATCH_MANIFEST_PATH = resolveWorkspacePath('cache', 'batch-manifest.json');
 
 export type JobOutcome = 'completed' | 'failed' | 'cancelled' | 'pending';
 

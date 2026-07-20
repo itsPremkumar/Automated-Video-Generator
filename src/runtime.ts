@@ -8,6 +8,7 @@ export {
     resolveProjectPath,
     resolveResourcePath,
     resolveRuntimePublicPath,
+    resolveWorkspacePath,
 } from './shared/runtime/paths';
 
 export { logError, logInfo, logWarn, writeProgress } from './shared/logging/runtime-logging';

@@ -97,6 +97,10 @@ export function resolvePublicFilePath(relativePath: string): string {
     return resolveBundledProjectPath('public', ...normalized);
 }
 
+export function resolveWorkspacePath(...segments: string[]): string {
+    return resolveProjectPath('workspace', ...normalizeRelativeSegments(segments));
+}
+
 export function resolveResourcePath(...segments: string[]): string {
     if (resourcesPath) {
         return path.join(resourcesPath, ...segments);

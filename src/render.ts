@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import { spawnSync } from 'child_process';
 import { cleanupAssets } from './lib/cleaner';
 import { logError, logInfo, logWarn, writeProgress } from './shared/logging/runtime-logging';
-import { resolveProjectPath, resolvePublicFilePath, resolveRuntimePublicPath } from './shared/runtime/paths';
+import { resolveProjectPath, resolvePublicFilePath, resolveRuntimePublicPath, resolveWorkspacePath } from './shared/runtime/paths';
 import { createPipelineWorkspace, resolveAssetWorkspaceDir } from './pipeline-workspace';
 import { JobCancellationError, isJobCancellationError } from './lib/job-cancellation';
 
@@ -124,7 +124,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
 
     // Fix for Windows: Avoid spaces in system TEMP path (e.g. "PREM KUMAR")
     // by pointing REMOTION_TMPDIR to a local project-relative folder.
-    const localTmpDir = resolveProjectPath('tmp', 'remotion');
+    const localTmpDir = resolveWorkspacePath('tmp', 'remotion');
     if (!fs.existsSync(localTmpDir)) {
         fs.mkdirSync(localTmpDir, { recursive: true });
     }
@@ -133,6 +133,7 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
 
     let bundleLocation: string | undefined;
     let assetWorkspaceDir: string | undefined;
+    let stagingDir: string | undefined;
     let renderCompleted = false;
     const segmentsDir = path.join(outputDir, 'segments');
 
@@ -157,6 +158,19 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
         assetWorkspaceDir = sceneData.assetNamespace
             ? resolveAssetWorkspaceDir(sceneData.assetNamespace)
             : createPipelineWorkspace(outputDir).workspaceDir;
+
+        // Stage assets from workspace/<id>/ to public/jobs/<id>/ for Remotion staticFile()
+        if (assetWorkspaceDir && sceneData.assetNamespace) {
+            const publicJobsRoot = resolveRuntimePublicPath('jobs');
+            const jobPublicDir = path.join(publicJobsRoot, path.basename(assetWorkspaceDir));
+            if (fs.existsSync(assetWorkspaceDir) && assetWorkspaceDir !== jobPublicDir) {
+                fs.rmSync(jobPublicDir, { recursive: true, force: true });
+                fs.mkdirSync(jobPublicDir, { recursive: true });
+                copyRecursiveSync(assetWorkspaceDir, jobPublicDir);
+                stagingDir = jobPublicDir;
+                console.log(`📦 [RENDER] Staged assets: ${assetWorkspaceDir} → ${jobPublicDir}`);
+            }
+        }
 
         console.log(`📋 [RENDER] Loaded ${sceneData.scenes.length} scenes`);
         console.log(`📋 [RENDER] Total duration: ${sceneData.totalDuration}s`);
@@ -636,16 +650,31 @@ export const renderVideo = async (outputDir: string = resolveProjectPath('output
 
         throw err;
     } finally {
-        // Cleanup assets regardless of success/failure
-        await runCleanup(bundleLocation, renderCompleted ? assetWorkspaceDir : undefined);
+        if (!renderCompleted && stagingDir) {
+            try { fs.rmSync(stagingDir, { recursive: true, force: true }); } catch { /* ignore */ }
+        }
+        await runCleanup(bundleLocation, renderCompleted ? stagingDir : undefined);
     }
 };
 
-const runCleanup = async (bundleLocation?: string, assetWorkspaceDir?: string) => {
+function copyRecursiveSync(src: string, dest: string): void {
+    for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+        const s = path.join(src, entry.name);
+        const d = path.join(dest, entry.name);
+        if (entry.isDirectory()) {
+            fs.mkdirSync(d, { recursive: true });
+            copyRecursiveSync(s, d);
+        } else {
+            fs.copyFileSync(s, d);
+        }
+    }
+}
+
+const runCleanup = async (bundleLocation?: string, stagingDir?: string) => {
     const dirsToClean: string[] = [];
 
-    if (assetWorkspaceDir) {
-        dirsToClean.push(assetWorkspaceDir);
+    if (stagingDir) {
+        dirsToClean.push(stagingDir);
     }
 
     if (bundleLocation) {

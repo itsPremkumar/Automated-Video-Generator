@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { resolveProjectPath, resolveRuntimePublicPath } from '../shared/runtime/paths';
+import { resolveProjectPath, resolveRuntimePublicPath, resolveWorkspacePath } from '../shared/runtime/paths';
 
 function isPathWithin(parentPath: string, candidatePath: string): boolean {
     const relative = path.relative(path.resolve(parentPath), path.resolve(candidatePath));
@@ -8,7 +8,7 @@ function isPathWithin(parentPath: string, candidatePath: string): boolean {
 }
 
 function canCleanupDirectory(directory: string): boolean {
-    const allowedRoots = [resolveProjectPath('tmp'), resolveRuntimePublicPath('jobs')];
+    const allowedRoots = [resolveProjectPath('tmp'), resolveRuntimePublicPath('jobs'), resolveWorkspacePath()];
 
     return allowedRoots.some((root) => isPathWithin(root, directory));
 }

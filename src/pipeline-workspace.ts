@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { resolveRuntimePublicPath } from './shared/runtime/paths';
+import { resolveRuntimePublicPath, resolveWorkspacePath } from './shared/runtime/paths';
 
 export interface PipelineWorkspace {
     outputId: string;
@@ -41,7 +41,7 @@ export function createPipelineWorkspace(outputDir: string, preferredId?: string)
     const outputId = sanitizeOutputId(derivedId);
     const publicRoot = resolveRuntimePublicPath();
     const publicNamespace = `jobs/${outputId}`;
-    const workspaceDir = resolveRuntimePublicPath('jobs', outputId);
+    const workspaceDir = resolveWorkspacePath(outputId);
 
     return {
         outputId,
@@ -70,16 +70,24 @@ export function resolveAssetWorkspaceDir(assetNamespace: string): string {
         throw new Error(`Invalid asset namespace: ${assetNamespace}`);
     }
 
-    return resolveRuntimePublicPath('jobs', match[1]);
+    return resolveWorkspacePath(match[1]);
 }
 
 export function toPublicRelativePath(absolutePath: string): string {
     const publicRoot = resolveRuntimePublicPath();
-    const relativePath = path.relative(publicRoot, absolutePath);
-
-    if (!relativePath || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
-        throw new Error(`Path is outside the public directory: ${absolutePath}`);
+    const relativeToPublic = path.relative(publicRoot, absolutePath);
+    if (relativeToPublic !== '' && !relativeToPublic.startsWith('..') && !path.isAbsolute(relativeToPublic)) {
+        return relativeToPublic.replace(/\\/g, '/');
     }
 
-    return relativePath.replace(/\\/g, '/');
+    const wsPrefix = resolveWorkspacePath();
+    const relativeToWs = path.relative(wsPrefix, absolutePath);
+    if (relativeToWs !== '' && !relativeToWs.startsWith('..') && !path.isAbsolute(relativeToWs)) {
+        const m = /^([^\\/]+)[\\/](.+)$/.exec(relativeToWs);
+        if (m) {
+            return `jobs/${m[1]}/${m[2].replace(/\\/g, '/')}`;
+        }
+    }
+
+    throw new Error(`Path is outside accessible directories: ${absolutePath}`);
 }

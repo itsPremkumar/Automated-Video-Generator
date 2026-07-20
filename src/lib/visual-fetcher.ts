@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { config } from 'dotenv';
 import { spawnSync, spawn } from 'child_process';
-import { logInfo, resolveProjectPath } from '../runtime';
+import { logInfo, resolveProjectPath, resolveWorkspacePath } from '../runtime';
 import { generateContent as ollamaGenerateContent } from './ollama-client';
 import { searchOpenverseImages } from './openverse-fetcher';
 import { freeVideoDownloader, freeVideoAdapter } from './free-video/index';
@@ -46,7 +46,7 @@ const OPENVERSE_ENABLED = process.env.OPENVERSE_ENABLED !== 'false';
 const MEDIA_VERIFICATION_ENABLED = process.env.MEDIA_VERIFICATION_ENABLED !== 'false';
 
 const BASE_URL = 'https://api.pexels.com/v1';
-const CACHE_FILE = resolveProjectPath('.video-cache.json');
+const CACHE_FILE = resolveWorkspacePath('cache', 'video-cache.json');
 const MAX_DOWNLOAD_BYTES = Math.max(
     40 * 1024 * 1024,
     Number.parseInt(process.env.MAX_DOWNLOAD_BYTES || '', 10) || 150 * 1024 * 1024,

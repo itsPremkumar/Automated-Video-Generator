@@ -252,7 +252,7 @@ export async function resolveFreeBackgroundMusic(
     }
 
     const query = opts.query?.trim() || 'ambient lofi chill';
-    const cacheDir = opts.cacheDir || resolveProjectPath('input', 'music', '__auto__');
+    const cacheDir = opts.cacheDir || resolveProjectPath('workspace', 'cache', 'free-music');
     const providers = opts.preferProviders
         ? defaultProviders().filter((p) => opts.preferProviders!.includes(p.name))
         : defaultProviders();
