@@ -1,11 +1,11 @@
 # 🎬 Automated-Video-Generator — Improvement Assessment
 
-> Verified live: working tree clean, `npm audit --omit=dev` = **0 vulnerabilities**, 11 test files,
+> Verified live: working tree clean, `npm audit --omit=dev` = **0 vulnerabilities**, 75 test files,
 > `youtube-upload/` module present (committed). This is the snapshot as of the latest session.
 
 ## ✅ What's already solid (no change needed)
-- **MCP server** (23 tools / 13 resources / 4 prompts) — agent-driveable, unique advantage
-- **0 vulnerabilities**, prettier-clean, typecheck-clean, 57/57 unit tests
+- **MCP server** (60 tools / 9 resources / 4 prompts) — agent-driveable, unique advantage
+- **0 vulnerabilities**, prettier-clean, typecheck-clean, 487+ unit tests across 75 files
 - **Local-first, free**: Remotion + Edge-TTS + Openverse/Pexels, no GPU, no API keys
 - **YouTube adapter** present (`youtube-upload/`) — dry-run verified
 - **Multi-platform**: CLI, HTTP, Electron, MCP
@@ -24,11 +24,10 @@ No AI presenter (HeyGen-style). Videos are faceless narrated slides.
 - **Fix:** Add `sadtalker` / `wav2lip` as an "avatar presenter" mode (drive a portrait with TTS audio).
 - **Impact:** Medium-High — opens "AI spokesperson" use cases, higher engagement.
 
-### 3. No real-render E2E test
-All 57 tests are unit/mock. No test actually runs a Remotion render end-to-end.
-- **Fix:** Add one integration test that runs `remotion render` on a tiny composition (CI-gated,
-  ffmpeg-guarded) OR a local `npm run test:render` script.
-- **Impact:** Medium — proves the pipeline truly produces a video, not just that functions return.
+### 3. No real-render E2E test (partially addressed)
+An E2E render test now exists at `src/render.e2e.test.ts` (run via `npm run test:render`).
+All 487+ tests include unit, integration, and this E2E test. The remaining gap is CI gating
+for GPU/Chromium-heavy renders.
 
 ### 4. No visual/timeline editor
 It's script-driven (JSON in → video out). No drag-drop timeline (unlike `clip-js`).
@@ -44,7 +43,7 @@ The adapter is built and dry-run verified, but real upload needs YOUR Google OAu
 ## 📋 Prioritized plan
 | Priority | Improvement | Effort | Value |
 |---|---|---|---|
-| P0 | Real-render E2E test | Low | Confidence the product actually works |
+| P0 | Real-render E2E test (CI gating) | Low | Confidence the product actually works |
 | P1 | CogVideoX B-roll module | Med | True AI video generation |
 | P1 | YouTube live upload (OAuth) | Med | Closes publish loop |
 | P2 | sadtalker avatar mode | Med | AI presenter videos |
@@ -52,7 +51,7 @@ The adapter is built and dry-run verified, but real upload needs YOUR Google OAu
 
 ## Bottom line
 The project is **production-clean and uniquely MCP-ready** — a strong Product #1 for the AI company.
-The only *functional* limits are: it stitches stock (no generative footage), has no avatar, and
-lacks a real render test. All are additive, non-breaking improvements.
+The only *functional* limits are: it stitches stock (no generative footage), and has no avatar.
+All are additive, non-breaking improvements.
 
 See `ai-company/departments/18-video-generation.md` + `06-ai-ml.md` for the open-source companions.

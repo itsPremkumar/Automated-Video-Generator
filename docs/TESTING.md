@@ -2,7 +2,7 @@
 
 > Clear, agent-ready reference for testing the **entire** agentic video pipeline,
 > what was fixed to make it production-ready, and how to reproduce every result.
-> Last verified: full suite `461 pass / 0 fail / 8 skipped`, `tsc` clean,
+> Last verified: full suite `487+ pass / 0 fail / 8 skipped`, `tsc` clean,
 > 3 real videos rendered (portrait / landscape / square).
 
 ---
@@ -11,7 +11,7 @@
 
 | Check | Command | Result |
 |-------|---------|--------|
-| Unit + integration tests | `npm run test:unit` | **469 run · 461 pass · 0 fail · 8 skipped** |
+| Unit + integration tests | `npm run test:unit` | **487+ run · 479+ pass · 0 fail · 8 skipped** |
 | Typecheck | `npm run typecheck` | **clean (exit 0)** |
 | End-to-end render (portrait) | `npm run agentic -- --topic "..." --orientation portrait` | MP4 `720x1280` ✓ |
 | End-to-end render (landscape) | `... --orientation landscape` | MP4 `1280x720` ✓ |
@@ -29,7 +29,7 @@ MetMuseum) that *skip* when the host is unreachable — see §6. They are NOT fa
 npm install
 
 # run the WHOLE test suite (typed, mocked, includes integration)
-npm run test:unit          # = node --import tsx --test --experimental-test-module-mocks "src/**/*.test.ts"
+npm run test:unit          # = node --import tsx --test --experimental-test-module-mocks "src/**/*.test.ts" "remotion/**/*.test.ts"
 
 # typecheck only
 npm run typecheck
@@ -56,7 +56,7 @@ The project uses **Node's built-in `node:test`** runner — **not** Jest/Mocha.
 `package.json` `test:unit` is:
 
 ```json
-"test:unit": "node --import tsx --test --test-timeout=120000 --experimental-test-module-mocks \"src/**/*.test.ts\""
+"test:unit": "node --import tsx --test --test-timeout=120000 --experimental-test-module-mocks \"src/**/*.test.ts\" \"remotion/**/*.test.ts\""
 ```
 
 `--experimental-test-module-mocks` is **required** for `mock.module(...)` to work.
@@ -120,6 +120,14 @@ registered once, with `STATE.impl` mutated per test — see `pipeline-commands.t
 | Adapters (HTTP) | `src/adapters/http/*.test.ts` | api-routes, server-bootstrap, videos-controller, files-controller |
 | Media lib | `src/lib/**/*.test.ts` | media-downloader, pexels, free-image providers, captions, ffprobe |
 | CLI / config / export | `src/cli.ts`, `src/agentic/{config,export,plan}.test.ts` | arg parsing, aspect/format mapping, publish manifest |
+| Adapters (CLI) | `src/adapters/cli/*.test.ts` | batch queue |
+| Adapters (Agentic MCP) | `src/adapters/mcp/register-agentic-tools.test.ts` | agentic tool tests |
+| Infrastructure | `src/infrastructure/**/*.test.ts` | filesystem, persistence |
+| Middleware | `src/middleware/*.test.ts` | rate limiting |
+| Shared | `src/shared/**/*.test.ts` | contracts |
+| Runtime | `src/runtime-safety.test.ts` | runtime safety checks |
+| Integration | `src/integration.pipeline.test.ts` | full pipeline integration |
+| Remotion | `remotion/*.test.ts` | video composition tests |
 
 ---
 
@@ -206,7 +214,7 @@ registered once, with `STATE.impl` mutated per test — see `pipeline-commands.t
   → model echoed a mismatched shape. Fixed: `'{"keywords":["...","..."]}'`.
 
 > All B6–B8 fixes verified: `npm run typecheck` clean, `npm run test:unit` green
-> (461 pass / 0 fail / 8 skipped), and a live landscape render **with intro+outro+sfx**
+> (487+ pass / 0 fail / 8 skipped), and a live landscape render **with intro+outro+sfx**
 > passes every post-render check (X7–X15, including X8 duration match).
 
 ---
@@ -286,7 +294,7 @@ not an application defect.
 cd C:/one/Automated-Video-Generator
 npm install
 npm run typecheck          # must be exit 0
-npm run test:unit          # 461 pass / 0 fail / 8 skipped
+npm run test:unit          # 487+ pass / 0 fail / 8 skipped
 # then the 3 renders in §5
 ```
 

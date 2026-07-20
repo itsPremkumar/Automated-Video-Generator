@@ -41,8 +41,9 @@ src/agentic/plugins/
 │   └── platform-export.ts   # TikTok/Reels/Shorts specs
 ├── index.ts                 # Main exports & setup
 ├── integration-example.ts   # Usage examples
-├── plugin-config.schema.json # JSON Schema for config
-└── agentic-plugins.config.json # Example config
+└── plugin-config.schema.json # JSON Schema for config
+
+> The main config file `agentic-plugins.config.json` lives at the **project root** (not in this directory).
 ```
 
 ## 🚀 Quick Start
@@ -205,7 +206,7 @@ Generates platform-compliant outputs with:
 
 ```typescript
 // my-plugins/custom-zoom.ts
-import { AgenticPlugin, PluginCategory, Capability } from '../src/agentic/plugins/core/types.js';
+import { AgenticPlugin, PluginCategory, Capability } from './src/agentic/plugins/core/types.js';
 
 export const customZoomPlugin: AgenticPlugin = {
     metadata: {

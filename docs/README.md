@@ -8,7 +8,7 @@ Welcome to the Automated Video Generator documentation.
 
 | Resource | Description |
 |----------|-------------|
-| [Quick Start (README)](../README.md#-quick-start-5-minutes) | 5-minute guide to your first video |
+| [Quick Start (README)](../README.md#quick-start-5-minutes) | 5-minute guide to your first video |
 | [Installation Guide](./installation.md) | Full setup instructions for all platforms |
 | [Configuration Reference](./configuration.md) | All environment variables explained |
 
@@ -45,11 +45,11 @@ Welcome to the Automated Video Generator documentation.
 | Resource | Description |
 |----------|-------------|
 | [Architecture Deep-Dive](./ARCHITECTURE.md) | Hexagonal architecture explained |
-| [Contributing Guide](../CONTRIBUTING.md) | How to contribute |
-| [Roadmap](../ROADMAP.md) | Future plans and milestones |
-| [Changelog](../CHANGELOG.md) | Release history |
-| [Code of Conduct](../CODE_OF_CONDUCT.md) | Community guidelines |
-| [Security Policy](../SECURITY.md) | Vulnerability reporting |
+| [Contributing Guide](./CONTRIBUTING.md) | How to contribute |
+| [Roadmap](./ROADMAP.md) | Future plans and milestones |
+| [Changelog](./CHANGELOG.md) | Release history |
+| [Code of Conduct](./CODE_OF_CONDUCT.md) | Community guidelines |
+| [Security Policy](./SECURITY.md) | Vulnerability reporting |
 
 ## Reference
 
@@ -58,15 +58,15 @@ Welcome to the Automated Video Generator documentation.
 | [FAQ](./faq.md) | Frequently asked questions |
 | [Troubleshooting](./troubleshooting.md) | Common issues and solutions |
 | [Crash Troubleshooting](./CRASH-TROUBLESHOOTING.md) | Debugging crashes |
-| [Comparison](../COMPARISON.md) | AVG vs other tools |
-| [Supported Versions](../SUPPORTED_VERSIONS.md) | Version support policy |
+| [Comparison](./COMPARISON.md) | AVG vs other tools |
+| [Supported Versions](./SUPPORTED_VERSIONS.md) | Version support policy |
 
 ## Examples
 
 | Resource | Description |
 |----------|-------------|
 | [Examples Directory](../examples/) | Ready-to-run usage examples |
-| [Visual Assets Guide](../AVS_ASSETS_GUIDE.md) | Creating banners, diagrams, and GIFs |
+| [Visual Assets Guide](./AVS_ASSETS_GUIDE.md) | Creating banners, diagrams, and GIFs |
 
 ## AI-Friendly References
 

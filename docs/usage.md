@@ -51,7 +51,7 @@ download_free_video { "url": "...", "title": "clip" }
 
 **Pipeline fallback:** Free sources activate automatically when Pexels/Pixabay return no results. No config needed.
 
-**Docs:** [docs/FREE_VIDEO.md](FREE_VIDEO.md) — SEO/AEO/GEO-optimized reference
+**Docs:** [FREE_VIDEO.md](FREE_VIDEO.md) — SEO/AEO/GEO-optimized reference
 
 ## Director Mode
 
@@ -79,6 +79,6 @@ Generated videos are saved as MP4 files with optional subtitles, background musi
 
 ## Next Steps
 
-- [Configuration](configuration) — Set up voices, API keys, and output settings
-- [Installation](installation) — Reinstall or set up on a new machine
-- [Troubleshooting](troubleshooting) — Fix common issues
+- [Configuration](configuration.md) — Set up voices, API keys, and output settings
+- [Installation](installation.md) — Reinstall or set up on a new machine
+- [Troubleshooting](troubleshooting.md) — Fix common issues

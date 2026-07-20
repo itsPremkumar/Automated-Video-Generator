@@ -282,7 +282,7 @@ Important desktop files:
 
 ## Related Docs
 
-- [../QUICKSTART.md](../QUICKSTART.md)
+- [QUICKSTART.md](./QUICKSTART.md)
 - [SETUP.md](./SETUP.md)
 - [PRODUCTION_HARDENING.md](./PRODUCTION_HARDENING.md)
 - [ARCHITECTURE.md](./ARCHITECTURE.md)

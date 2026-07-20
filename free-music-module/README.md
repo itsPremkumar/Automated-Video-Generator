@@ -5,10 +5,10 @@ All free music download options for commercial use, programmatically accessible 
 ```bash
 cd free-music-module
 npm install
-npx tsx src/test.ts all    # 12/12 tests pass
+npx tsx src/test.ts all    # tests pass
 ```
 
-## 6 Providers
+## 7 Providers (5 active + 2 experimental)
 
 | Provider | Tracks | License | API Key | Status |
 |----------|--------|---------|---------|--------|
@@ -39,7 +39,7 @@ for (const p of provs) {
 ## Running Tests
 
 ```bash
-npm run test:all          # all 6 download providers + 1 generator
+npm run test:all          # all 7 download providers + 1 generator
 npm run test:search       # all providers search test
 npm run test:download     # archive download test
 npm run test:ace          # ACE-Step status check

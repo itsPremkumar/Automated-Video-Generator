@@ -35,8 +35,8 @@ docker compose up -d
 
 ## Next Steps
 
-- [Usage Guide](usage) — Learn how to generate videos
-- [Configuration](configuration) — Set up voices, API keys, and output settings
-- [Troubleshooting](troubleshooting) — Fix common issues
+- [Usage Guide](usage.md) — Learn how to generate videos
+- [Configuration](configuration.md) — Set up voices, API keys, and output settings
+- [Troubleshooting](troubleshooting.md) — Fix common issues
 
 See [SETUP.md](./SETUP.md) for detailed instructions.

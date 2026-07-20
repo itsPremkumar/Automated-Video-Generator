@@ -9,8 +9,6 @@
 - portrait (9:16, 1080x1350); voices GuyNeural/AriaNeural/JennyNeural
 - edge-tts (python 3.11, edge_tts 7.2.7); [Visual: default.mp4] per scene -> local asset, no slow Openverse
 - MEDIA_VERIFICATION_ENABLED=false; no Pexels/Gemini keys -> rule-based split, no LLM
-- REMOTION_BROWSER_EXECUTABLE pinned to native Chrome (no Chromium download)
-- REMOTION_TMPDIR project-local (avoids spaces in C:\Users\PREM KUMAR)
 
 ## On success
 verify MP4 via ffprobe, then mark issue done with publish instructions.

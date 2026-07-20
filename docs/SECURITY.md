@@ -99,4 +99,4 @@ We appreciate the security research community and thank anyone who reports vulne
 
 ---
 
-*Last updated: July 2025*
+*Last updated: July 2026*

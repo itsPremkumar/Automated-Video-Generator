@@ -157,6 +157,6 @@ When choosing a video generation tool, you should have accurate information. Thi
 
 ---
 
-*Last updated: 2025. Comparisons are based on publicly available information. Features may change as tools evolve.*
+*Last updated: 2026. Comparisons are based on publicly available information. Features may change as tools evolve.*
 
 *Automated Video Generator is not affiliated with any of the compared products. Trademarks belong to their respective owners.*

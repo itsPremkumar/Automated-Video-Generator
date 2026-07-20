@@ -23,7 +23,7 @@ Try `python` instead of `py`, or install Python from [python.org](https://python
 ### Portal doesn't open
 - Check the terminal for errors
 - Ensure port 3001 is not in use
-- Try `http://localhost:3001/health` to verify the server is running
+- Try `http://localhost:3001/api/health` to verify the server is running
 
 ### TypeScript type errors
 - Run `npx tsc --noEmit` for detailed error output

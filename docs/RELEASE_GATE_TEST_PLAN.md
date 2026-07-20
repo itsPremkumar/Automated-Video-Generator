@@ -76,7 +76,7 @@ If S1–S5 are green, the build is a **release candidate**. G5–G7 are the deep
 ### G2 — Unit + integration (`npm run test:unit`)
 - `tsx --test "src/**/*.test.ts"`. Covers: validation middleware, script-parser, voice-engine, job-cancellation, path-safety (traversal), pipeline-app service, job contracts, runtime-safety.
 - Environment-gated subtests (e.g. real ffmpeg render) must SKIP with a clear log, never fail. A `fail` here is a NO-GO.
-- Current baseline (this run): **60 passed, 1 skipped, 0 failed**.
+- Current baseline (this run): **479+ passed, 8 skipped, 0 failed**.
 
 ### G3 — Lint (`npm run lint`)
 - `eslint src/`. No errors. Warnings are non-blocking but must be triaged.

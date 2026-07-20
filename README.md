@@ -94,11 +94,11 @@ Choose your path:
 
 | Path                                               | Time  | Difficulty | For           |
 | -------------------------------------------------- | ----- | ---------- | ------------- |
-| [Windows Desktop App](#-windows-desktop-app)       | 2 min | ★☆☆        | Everyone      |
-| [One-Click Launcher](#-one-click-launcher-windows) | 3 min | ★☆☆        | Windows users |
-| [Manual Setup](#-manual-setup)                     | 5 min | ★★☆        | Developers    |
-| [Docker](#-docker)                                 | 3 min | ★★☆        | DevOps        |
-| [npm (MCP)](#-npm-mcp-server)                      | 1 min | ★☆☆        | AI agents     |
+| [Windows Desktop App](#windows-desktop-app)       | 2 min | ★☆☆        | Everyone      |
+| [One-Click Launcher](#one-click-launcher-windows) | 3 min | ★☆☆        | Windows users |
+| [Manual Setup](#manual-setup)                     | 5 min | ★★☆        | Developers    |
+| [Docker](#docker)                                 | 3 min | ★★☆        | DevOps        |
+| [npm (MCP)](#npm-mcp-server)                      | 1 min | ★☆☆        | AI agents     |
 
 ### 🎬 Your first video in 2 commands
 
@@ -268,8 +268,8 @@ ALLOW_UNSAFE_MCP_TOOLS=1 npm run mcp
 
 **What the server provides:**
 
-- **Tools (23):** `write_input_script`, `read_input_script`, `delete_input_script`, `validate_input_script`, `upload_asset`, `delete_asset`, `list_output_videos`, `read_output_file`, `delete_output`, `generate_video`, `get_video_status`, `run_pipeline_command`, `list_jobs`, `read_env_config`, `update_env_config`, `get_system_info`, `health_check`, `get_workspace_paths`, `list_public_files`, `list_voices`, `list_local_assets`, `search_free_video`, `download_free_video`
-- **Resources (13):** project overview, input scripts, input assets, input format docs, output videos, per-video detail, public tree, env/pipeline config
+- **Tools (60):** `write_input_script`, `read_input_script`, `delete_input_script`, `validate_input_script`, `upload_asset`, `delete_asset`, `list_output_videos`, `read_output_file`, `delete_output`, `generate_video`, `get_video_status`, `run_pipeline_command`, `list_jobs`, `get_batch_status`, `read_env_config`, `update_env_config`, `get_system_info`, `health_check`, `get_workspace_paths`, `list_public_files`, `list_voices`, `list_local_assets`, `search_free_video`, `download_free_video`, `agentic_plan`, `agentic_acquire`, `agentic_verify_all`, `list_pending_assets`, `get_asset_preview`, `approve_asset`, `reject_asset`, `agentic_gate`, `agentic_run`, `do_task`, `merge_videos`, `trim_video`, `crop_video`, `resize_video`, `rotate_video`, `extract_audio`, `split_video`, `add_captions`, `add_music`, `add_audio_track`, `localize_video`, `grade_video`, `slow_motion`, `speed_ramp`, `add_watermark`, `add_lower_third`, `add_progress_bar`, `derive_outputs`, `make_voiceover`, `download_image`, `download_video`, `remove_silence`, `detect_scenes`, `auto_reframe`, `reduce_noise`, `apply_brand_kit`
+- **Resources (9):** project overview, input scripts, input assets, input format docs, output videos, per-video detail, public tree, env/pipeline config
 - **Prompts (4):** `create-marketing-video`, `create-youtube-short`, `batch-generate`, `debug-pipeline`
 
 ---
@@ -366,16 +366,25 @@ AI_PROVIDER=ollama
 npm run generate              # Generate videos from input/input-scripts.json
 npm run resume                # Resume an interrupted run
 npm run segment               # Rebuild from existing scene data
+npm run agentic               # Generate a video from a topic (agentic pipeline)
+npm run agentic:batch         # Generate + verify multiple videos
 npm run dev                   # Start the local web portal
 npm run mcp                   # Start the MCP server
 npm run typecheck             # TypeScript validation
+npm run test                  # Typecheck + unit tests
 npm run test:unit             # Run unit tests
+npm run test:render           # Run E2E render test
+npm run test:coverage         # Run tests with coverage
 npm run lint                  # ESLint
 npm run format                # Prettier formatting
 npm run remotion:studio       # Open Remotion Studio for composition preview
+npm run remotion:render       # Render using the Remotion pipeline
 npm run electron:dev          # Run the desktop app in development mode
 npm run electron:build        # Build the Windows desktop installer
+npm run electron:pack         # Create unpacked release for testing
 npm run docker:build          # Build Docker image
+npm run docker:run            # Run Docker container
+npm run batch                 # Batch mode alias
 ```
 
 [Full CLI docs →](docs/cli-reference.md)
@@ -491,7 +500,7 @@ One of the project's standout features: **you can generate videos without regist
 | **Batch mode**             | ✅ Built-in                | ✅               | Limited         |
 | **Desktop app**            | ✅ Windows (.exe)          | ✅               | Rare            |
 
-[Full comparison →](COMPARISON.md)
+[Full comparison →](docs/COMPARISON.md)
 
 ---
 
@@ -524,11 +533,11 @@ One of the project's standout features: **you can generate videos without regist
 
 Contributions of all kinds are welcome — code, docs, bug reports, feature ideas, and community support.
 
-- [Contributing Guide](CONTRIBUTING.md)
-- [Code of Conduct](CODE_OF_CONDUCT.md)
-- [Security Policy](SECURITY.md)
-- [Roadmap](ROADMAP.md)
-- [Changelog](CHANGELOG.md)
+- [Contributing Guide](docs/CONTRIBUTING.md)
+- [Code of Conduct](docs/CODE_OF_CONDUCT.md)
+- [Security Policy](docs/SECURITY.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Changelog](docs/CHANGELOG.md)
 
 ### Quick contributor workflow
 
@@ -553,7 +562,7 @@ git push origin feat/my-feature
 
 **Long-term (v7.0+):** Cloud rendering, marketplace, storyboard AI, mobile companion
 
-[Full roadmap →](ROADMAP.md)
+[Full roadmap →](docs/ROADMAP.md)
 
 ---
 

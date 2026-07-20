@@ -117,11 +117,11 @@ agentic system is purely additive.
 5. With `backend=agent` and no network, asset fetching gracefully falls back to
    ffmpeg-generated placeholder cards/music, so the pipeline still yields a
 
-## Production Status (verified 2026-07-16)
+## Production Status (verified 2026-07-20)
 
 The agentic pipeline is **end-to-end production-functional**: a topic in → a
 verified MP4 out, with all 10 post-render checks (X7–X15) passing on every
-generated video. 195 unit tests pass; typecheck and lint are clean.
+generated video. 487+ unit tests pass across 75 test files; typecheck and lint are clean.
 
 **Editing-style surface (all real, no stubs):**
 - `src/agentic/style-engine.ts` — `computeStylePlan()` picks per-scene

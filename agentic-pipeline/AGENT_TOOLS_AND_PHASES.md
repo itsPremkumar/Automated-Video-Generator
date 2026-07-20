@@ -57,14 +57,14 @@ rationale; at L0/L1 those same tools surface to a human for confirmation.
 
 ### Phase 4 — Decision gateway + editing
 - `src/agentic/gateway.ts`: loop acquire→verify→decide; retry ≤3; fallback `defaultVideo`.
-- `src/agentic/edit.ts`: crop/trim/adjust via `ffmpeg-static`; `regenerate_scene`.
+- `src/agentic/operations/edit.ts`: crop/trim/adjust via `ffmpeg-static`; `regenerate_scene`.
 - Writes `approval-manifest.json`.
 - **Tests:** simulate reject→replace→approve cycle; assert manifest correctness.
 - **CI:** typecheck + `test:unit`.
 
 ### Phase 5 — Final gate + render integration
 - `src/agentic/gate.ts`: X1–X6 cross-checks; blocks render on any fail.
-- `src/agentic/render.ts`: feed only APPROVED assets to existing Remotion path
+- `src/agentic/orchestrate.ts` (`renderAgenticSlideshow`): feed only APPROVED assets to existing Remotion path
   (`src/video-generator.ts`), writing `render-manifest.json`.
 - Wire `verifyMedia` into the **image** branch of `video-generator.ts`.
 - **Tests:** e2e with a tiny sample script → asserts approved-only render + gate log.

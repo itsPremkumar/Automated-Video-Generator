@@ -116,7 +116,7 @@ examples/
 │   └── input-scripts.json
 ├── mcp-agent/                   # Advanced: AI agent workflows
 │   ├── README.md
-│   └── input-scripts.json
+│   └── example-script.json
 ├── multi-language/              # Beginner: Multi-language
 │   ├── README.md
 │   └── input-scripts.json

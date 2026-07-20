@@ -1,6 +1,6 @@
 # Agentic Video Pipeline — Master Plan (v1)
 
-> Status: **IMPLEMENTD & VERIFIED** (typecheck EXIT 0; 8/8 agentic unit
+> Status: **IMPLEMENTED & VERIFIED** (typecheck EXIT 0; 8/8 agentic unit
 > tests + 23/23 existing tests pass). Phases 1–5 code-complete; Phase 6
 > (render integration + OpenClaw skill) wired.
 >
@@ -143,7 +143,7 @@ tools to a human instead of auto-deciding.
 - `src/lib/music-verifier.ts` — `verifyMusic()` (duration/bitrate/silence/license/mood).
 - `src/agentic/verify.ts` — runs all checks, writes `verification/*.json`.
 - `src/agentic/gateway.ts` — decision loop + final gate.
-- `src/agentic/edit.ts` — agent edit ops (crop/trim/adjust/regenerate).
+- `src/agentic/operations/edit.ts` — agent edit ops (crop/trim/adjust/regenerate).
 - `src/adapters/mcp/register-agentic-tools.ts` — the MCP surface (see `AGENT_TOOLS_AND_PHASES.md`).
 - Extend `verifyMedia` prompt for watermark/NSFW/safety on images + videos.
 - Wire `verifyMedia` into the **image** branch of `video-generator.ts`.

@@ -246,7 +246,7 @@ The repo is in a much better place now, but these are still strong next steps:
 ## Related Docs
 
 - [../README.md](../README.md)
-- [../QUICKSTART.md](../QUICKSTART.md)
+- [QUICKSTART.md](./QUICKSTART.md)
 - [SETUP.md](./SETUP.md)
 - [WINDOWS_INSTALLER.md](./WINDOWS_INSTALLER.md)
 - [ARCHITECTURE.md](./ARCHITECTURE.md)

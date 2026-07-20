@@ -123,8 +123,8 @@ Find your video in `output/quickstart-demo/final.mp4`.
 
 ## Next Steps
 
-- [Explore examples →](examples/)
-- [Browse documentation →](docs/)
-- [View the roadmap →](ROADMAP.md)
-- [Learn how to contribute →](CONTRIBUTING.md)
+- [Explore examples →](../examples/)
+- [Browse documentation →](../docs/)
+- [View the roadmap →](./ROADMAP.md)
+- [Learn how to contribute →](./CONTRIBUTING.md)
 - [Star the repo →](https://github.com/itsPremkumar/Automated-Video-Generator)

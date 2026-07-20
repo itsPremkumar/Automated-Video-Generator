@@ -31,7 +31,7 @@ Copy `.env.example` to `.env` and configure:
 
 These sources are always available and require no environment variables. They activate automatically in the pipeline fallback chain.
 
-**Docs:** [docs/FREE_VIDEO.md](FREE_VIDEO.md) — full reference
+**Docs:** [FREE_VIDEO.md](FREE_VIDEO.md) — full reference
 
 ## Voice Settings
 
@@ -97,8 +97,8 @@ See [VOICE_CLONING_GUIDE.md](./VOICE_CLONING_GUIDE.md) for details.
 
 ## Next Steps
 
-- [Usage Guide](usage) — Learn how to generate videos
-- [Installation](installation) — Set up on a new machine
-- [Troubleshooting](troubleshooting) — Fix common issues
+- [Usage Guide](usage.md) — Learn how to generate videos
+- [Installation](installation.md) — Set up on a new machine
+- [Troubleshooting](troubleshooting.md) — Fix common issues
 
 See [SETUP.md](./SETUP.md) for full setup instructions.

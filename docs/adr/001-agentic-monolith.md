@@ -35,9 +35,10 @@ Adopt the **agentic monolith**:
   `verify.ts`, `agent.ts` + `gateway.ts`, `gate.ts`, `tts.ts`) so the whole pipeline is
   unit-testable **offline**.
 - A separate **single-task operations library** (`src/agentic/operations/*`) handles
-  one-off edits; a natural-language router (`route.ts`) + dispatcher (`dispatch.ts`) let an
-  agent say "crop to 9:16 then add music" without invoking the full pipeline (except
-  `full_video`, which delegates back to `runAgenticPipeline`).
+  one-off edits; a natural-language router (`src/agentic/operations/route.ts`) + dispatcher
+  (`src/agentic/operations/dispatch.ts`) let an agent say "crop to 9:16 then add music"
+  without invoking the full pipeline (except `full_video`, which delegates back to
+  `runAgenticPipeline`).
 - The MCP surface (`src/adapters/mcp/*`) is a **thin adapter** that registers these
   functions as tools; it contains no pipeline logic of its own.
 

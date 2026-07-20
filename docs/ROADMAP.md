@@ -6,7 +6,7 @@ The vision: **Automated Video Generator** aims to become the open-source standar
 
 ## Milestones
 
-### ✅ v5.x — Current (2025)
+### ✅ v5.x — Current (2026)
 
 | Feature | Status |
 |---------|--------|
@@ -80,4 +80,4 @@ See [CHANGELOG.md](./CHANGELOG.md) for release history.
 
 ---
 
-*Last updated: July 2025*
+*Last updated: July 2026*

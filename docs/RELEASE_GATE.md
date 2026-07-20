@@ -37,7 +37,7 @@ A release is **blocked** if any BLOCKER check fails. WARN checks are non-blockin
 | # | Check | Command / Method | Pass criteria |
 |---|---|---|---|
 | B1 | TypeScript compiles clean | `npm run typecheck` | exit 0, 0 errors (strict mode) |
-| B2 | Unit tests green | `npm run test:unit` | all `*.test.ts` pass (current baseline: 16 tests) |
+| B2 | Unit tests green | `npm run test:unit` | all `*.test.ts` pass (current baseline: 487+ tests) |
 | B3 | Dependency audit clean | `npm audit --audit-level=high` | 0 high/critical |
 | B4 | Package builds & is self-contained | `npm pack --dry-run` | version matches tag, `bin/`, `src/`, `remotion/` included; `npm pack` tarball `node --check` on `bin/mcp.js` |
 | B5 | MCP server boots (stdio) | spawn `node bin/mcp.js` | process starts, writes MCP banner, responds to `initialize` |

@@ -100,5 +100,5 @@ This local asset behavior is shared across all runtime entrypoints:
 
 Related docs:
 - [../README.md](../README.md)
-- [../QUICKSTART.md](../QUICKSTART.md)
+- [QUICKSTART.md](./QUICKSTART.md)
 - [ARCHITECTURE.md](./ARCHITECTURE.md)

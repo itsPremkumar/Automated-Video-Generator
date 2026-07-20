@@ -197,10 +197,14 @@ src/
       register-input-tools.ts
       register-job-tools.ts
       register-output-tools.ts
+      register-free-video-tools.ts
+      register-operations-tools.ts
+      register-agentic-tools.ts
       input-store.ts
       output-store.ts
       env-tools.ts
       pipeline-commands.ts
+      driver-llm.ts
       responses.ts
 ```
 
@@ -228,37 +232,30 @@ Use resources when Claude needs project context without mutating anything.
 
 ## Current MCP Tools
 
-The current server exposes these tools:
+The current server exposes **60 tools** in the following groups:
 
-### Input Tools
-- `write_input_script`
-- `read_input_script`
-- `delete_input_script`
-- `validate_input_script`
+### Input Tools (6)
+`write_input_script`, `read_input_script`, `delete_input_script`, `validate_input_script`, `upload_asset`, `delete_asset`
 
-### Output Tools
-- `list_output_videos`
-- `read_output_file`
-- `delete_output`
+### Output Tools (3)
+`list_output_videos`, `read_output_file`, `delete_output`
 
-### Asset Tools
-- `upload_asset`
-- `delete_asset`
+### Job Tools (5)
+`generate_video`, `get_video_status`, `run_pipeline_command`, `list_jobs`, `get_batch_status`
 
-### Pipeline Tools
-- `generate_video`
-- `get_video_status`
-- `run_pipeline_command`
+### Admin / Diagnostics Tools (8)
+`read_env_config`, `update_env_config`, `get_system_info`, `health_check`, `get_workspace_paths`, `list_public_files`, `list_voices`, `list_local_assets`
 
-### Environment / Diagnostics Tools
-- `read_env_config`
-- `update_env_config`
-- `get_system_info`
-- `health_check`
+### Free-Video Tools (2)
+`search_free_video`, `download_free_video`
 
-### Workspace Inspection Tools
-- `get_workspace_paths`
-- `list_public_files`
+### Operations / Editing Tools (27)
+`do_task`, `merge_videos`, `trim_video`, `crop_video`, `resize_video`, `rotate_video`, `extract_audio`, `split_video`, `add_captions`, `add_music`, `add_audio_track`, `localize_video`, `grade_video`, `slow_motion`, `speed_ramp`, `add_watermark`, `add_lower_third`, `add_progress_bar`, `derive_outputs`, `make_voiceover`, `download_image`, `download_video`, `remove_silence`, `detect_scenes`, `auto_reframe`, `reduce_noise`, `apply_brand_kit`
+
+### Agentic Pipeline Tools (9)
+`agentic_plan`, `agentic_acquire`, `agentic_verify_all`, `list_pending_assets`, `get_asset_preview`, `approve_asset`, `reject_asset`, `agentic_gate`, `agentic_run`
+
+See [API.md](./API.md) for the full reference with inputs and outputs for each tool.
 
 ## Current MCP Prompts
 
@@ -402,4 +399,4 @@ It is now a structured MCP adapter over the shared application core, with:
 - safer stock clip handling
 - output folders that map cleanly to each Claude request
 
-For top-level project documentation, see [README.md](README.md) and [docs/ARCHITECTURE.md](./ARCHITECTURE.md).
+For top-level project documentation, see [README.md](README.md) and [ARCHITECTURE.md](./ARCHITECTURE.md).

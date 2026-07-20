@@ -109,30 +109,30 @@ When the app crashes or behaves unexpectedly, check these locations:
 
 | Log Type | Location |
 |----------|----------|
-| **Desktop Log** | `%APPDATA%\automated-video-generator\logs\desktop-*.log` |
-| **Chromium Log** | `%APPDATA%\automated-video-generator\logs\chromium-*.log` |
-| **Crash Dumps** | `%APPDATA%\automated-video-generator\crashDumps\` |
-| **Diagnostic Snapshots** | `%APPDATA%\automated-video-generator\diagnostics\` |
-| **Failure Snapshots** | `%APPDATA%\automated-video-generator\diagnostics\failure-*.json` |
+| **Desktop Log** | `%LOCALAPPDATA%\Automated Video Generator\logs\desktop-*.log` |
+| **Chromium Log** | `%LOCALAPPDATA%\Automated Video Generator\logs\chromium-*.log` |
+| **Crash Dumps** | `%LOCALAPPDATA%\Automated Video Generator\crashDumps\` |
+| **Diagnostic Snapshots** | `%LOCALAPPDATA%\Automated Video Generator\diagnostics\` |
+| **Failure Snapshots** | `%LOCALAPPDATA%\Automated Video Generator\diagnostics\failure-*.json` |
 
 ### How to Read the Logs
 
 1. **Open the logs folder:**
    - From the app: Click the system tray icon → "Open Desktop Log"
-   - Manually: Open `%APPDATA%\automated-video-generator\logs\` in File Explorer
+   - Manually: Open `%LOCALAPPDATA%\Automated Video Generator\logs\` in File Explorer
 
 2. **Find the latest log:** Sort by "Date Modified" — the most recent `desktop-*.log` file is from the latest session.
 
 3. **Search for errors:**
    ```powershell
    # Find all errors in the latest log
-   $log = Get-ChildItem "$env:APPDATA\automated-video-generator\logs\desktop-*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-   Select-String -Path $log.FullName -Pattern "UNCAUGHT|CRASHED|fatal|EPIPE|EXCEPTION" -CaseSensitive:$false
+    $log = Get-ChildItem "$env:LOCALAPPDATA\Automated Video Generator\logs\desktop-*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    Select-String -Path $log.FullName -Pattern "UNCAUGHT|CRASHED|fatal|EPIPE|EXCEPTION" -CaseSensitive:$false
    ```
 
 4. **Read failure snapshots:** These JSON files contain full diagnostic info including error stack traces, dependency states, and runtime states:
    ```powershell
-   Get-ChildItem "$env:APPDATA\automated-video-generator\diagnostics\failure-*" | Sort-Object LastWriteTime -Descending
+    Get-ChildItem "$env:LOCALAPPDATA\Automated Video Generator\diagnostics\failure-*" | Sort-Object LastWriteTime -Descending
    ```
 
 ---
@@ -215,7 +215,7 @@ When the app crashes or behaves unexpectedly, check these locations:
 2. Ensure internet connectivity for stock media fetching
 3. Check the desktop log for per-scene error details:
    ```powershell
-   $log = Get-ChildItem "$env:APPDATA\automated-video-generator\logs\desktop-*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+   $log = Get-ChildItem "$env:LOCALAPPDATA\Automated Video Generator\logs\desktop-*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
    Select-String -Path $log.FullName -Pattern "Scene.*failed|❌ Scene"
    ```
 4. Try "Retry Job" — the renderer has resume capability and will skip already-completed segments
@@ -231,7 +231,7 @@ When the app crashes and you need to investigate:
 
 ```powershell
 # 1. Clear old diagnostics
-Remove-Item "$env:APPDATA\automated-video-generator\diagnostics\failure-*" -Force -ErrorAction SilentlyContinue
+Remove-Item "$env:LOCALAPPDATA\Automated Video Generator\diagnostics\failure-*" -Force -ErrorAction SilentlyContinue
 
 # 2. Run the app (dev mode for console output):
 cd C:\one\Automated-Video-Generator
@@ -245,14 +245,14 @@ npm run electron:debug
 
 ```powershell
 # Check for failure snapshots (most useful)
-Get-ChildItem "$env:APPDATA\automated-video-generator\diagnostics\failure-*" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
+Get-ChildItem "$env:LOCALAPPDATA\Automated Video Generator\diagnostics\failure-*" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
 
 # Read the latest failure snapshot
-$failure = Get-ChildItem "$env:APPDATA\automated-video-generator\diagnostics\failure-*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+$failure = Get-ChildItem "$env:LOCALAPPDATA\Automated Video Generator\diagnostics\failure-*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if ($failure) { Get-Content $failure.FullName -Raw }
 
 # Check the latest desktop log
-$log = Get-ChildItem "$env:APPDATA\automated-video-generator\logs\desktop-*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+$log = Get-ChildItem "$env:LOCALAPPDATA\Automated Video Generator\logs\desktop-*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 Get-Content $log.FullName -Tail 30
 ```
 
@@ -260,7 +260,7 @@ Get-Content $log.FullName -Tail 30
 
 ```powershell
 # Search for error patterns in the log
-$log = Get-ChildItem "$env:APPDATA\automated-video-generator\logs\desktop-*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+$log = Get-ChildItem "$env:LOCALAPPDATA\Automated Video Generator\logs\desktop-*" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 
 # All errors
 Select-String -Path $log.FullName -Pattern "error|crash|fatal|UNCAUGHT|EXCEPTION|failed" -CaseSensitive:$false | Select-Object -First 20 | ForEach-Object { $_.Line.Substring(0, [Math]::Min(200, $_.Line.Length)) }
@@ -289,7 +289,7 @@ Copy-Item "dist-electron\*.js.map" "release\win-unpacked\resources\app\dist-elec
 
 # 6. Verify no crashes
 Start-Sleep -Seconds 30
-$failures = Get-ChildItem "$env:APPDATA\automated-video-generator\diagnostics\failure-*" -ErrorAction SilentlyContinue
+$failures = Get-ChildItem "$env:LOCALAPPDATA\Automated Video Generator\diagnostics\failure-*" -ErrorAction SilentlyContinue
 if ($failures) { Write-Host "CRASHES FOUND:"; $failures | ForEach-Object { $_.Name } } else { Write-Host "NO CRASHES - Fix verified!" }
 ```
 

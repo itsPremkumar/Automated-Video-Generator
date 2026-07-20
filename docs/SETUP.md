@@ -95,7 +95,7 @@ ffmpeg -version
 ### 5. Configure environment variables
 
 Copy `.env.example` to `.env`. For a full list of every variable and its
-default, see [docs/ENVIRONMENT.md](./ENVIRONMENT.md).
+default, see [ENVIRONMENT.md](./ENVIRONMENT.md).
 
 Windows PowerShell:
 
@@ -190,7 +190,7 @@ npm run electron:verify-release
 Start the portal and open:
 
 ```text
-http://localhost:3001/health
+http://localhost:3001/api/health
 ```
 
 The health response helps verify:
@@ -267,7 +267,7 @@ That checks the unpacked desktop build for the expected bundled runtime files.
 
 ## Related Docs
 
-- [../QUICKSTART.md](../QUICKSTART.md)
+- [QUICKSTART.md](./QUICKSTART.md)
 - [WINDOWS_INSTALLER.md](./WINDOWS_INSTALLER.md)
 - [PRODUCTION_HARDENING.md](./PRODUCTION_HARDENING.md)
 - [ARCHITECTURE.md](./ARCHITECTURE.md)

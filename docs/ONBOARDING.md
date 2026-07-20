@@ -89,8 +89,8 @@ Read [`ARCHITECTURE.md`](./ARCHITECTURE.md) for the diagram and the data-flow ta
 
 ## Next reads
 
-- `docs/ARCHITECTURE.md` — full system design
-- `docs/API.md` — every MCP tool, with examples
-- `docs/adr/` — why the big decisions were made (agentic monolith, Voicebox lifecycle,
+- `ARCHITECTURE.md` — full system design
+- `API.md` — every MCP tool, with examples
+- `adr/` — why the big decisions were made (agentic monolith, Voicebox lifecycle,
   free-stack mandate)
-- `docs/CONTRIBUTING.md` — branch/test policy + how to add an operation
+- `CONTRIBUTING.md` — branch/test policy + how to add an operation
