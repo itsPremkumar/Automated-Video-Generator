@@ -22,9 +22,14 @@ export function inputAssetPath(...segments: string[]): string {
 }
 
 /**
- * Root directory for user-uploaded music/audio
+ * Root directory for user-uploaded background music
  */
-export const INPUT_MUSIC_ROOT = resolveProjectPath('input', 'music');
+export const INPUT_BGM_ROOT = resolveProjectPath('input', 'bgm');
+
+/**
+ * Root directory for user-uploaded personal voiceover audio
+ */
+export const INPUT_VOICEOVER_ROOT = resolveProjectPath('input', 'voiceover');
 
 /**
  * Resolve a filename to its absolute path within the asset root

@@ -363,7 +363,7 @@ export async function runAgenticPipeline(
                 const m = await resolveFreeBackgroundMusic({ query, enabled: true });
                 let localPath = m?.localPath && fs.existsSync(m.localPath) ? m.localPath : '';
                 if (!localPath) {
-                    const fallback = ['./input/music/twenty_minutes.mp3', './input/music/two_minutes.mp3'].find((p) =>
+                    const fallback = ['./input/bgm/twenty_minutes.mp3', './input/bgm/two_minutes.mp3'].find((p) =>
                         fs.existsSync(p),
                     );
                     localPath = fallback ?? makePlaceholder([query], 'music');

@@ -117,7 +117,7 @@ export function getVideo(publicId: string, req: Request): VideoRecord | null {
 }
 
 export function listMusicFiles(): string[] {
-    const musicDir = resolveProjectPath('input', 'music');
+    const musicDir = resolveProjectPath('input', 'bgm');
     if (!fs.existsSync(musicDir)) {
         fs.mkdirSync(musicDir, { recursive: true });
         return [];

@@ -65,7 +65,7 @@ export function buildRecentCards(videos: VideoRecord[]): string {
 export function buildMusicOptions(musicFiles: string[]): string {
     const options = ['<option value="">No music</option>'];
     if (musicFiles.length === 0) {
-        options.push('<option value="" disabled>No music found in input/music</option>');
+        options.push('<option value="" disabled>No music found in input/bgm</option>');
         return options.join('');
     }
     musicFiles.forEach((file) => {

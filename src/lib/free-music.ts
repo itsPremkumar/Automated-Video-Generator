@@ -7,7 +7,7 @@
  * Providers (all free, no API key required):
  *  - open-lofi         → CC0 public-domain lo-fi (GitHub-hosted catalog)
  *  - internet-archive  → Public Domain / CC audio from archive.org
- *  - local             → user-dropped tracks already in input/music/
+ *  - local             → user-dropped tracks already in input/bgm/
  *
  * Designed to be additive and non-breaking: returns null on any failure so the
  * caller simply proceeds without music.
@@ -153,7 +153,7 @@ class LocalFreeProvider implements FreeMusicProvider {
     readonly name = 'local';
 
     async search(_query: string, count = 5): Promise<FreeMusicTrack[]> {
-        const musicDir = resolveProjectPath('input', 'music');
+        const musicDir = resolveProjectPath('input', 'bgm');
         if (!fs.existsSync(musicDir)) return [];
         const out: FreeMusicTrack[] = [];
         for (const entry of fs.readdirSync(musicDir, { withFileTypes: true })) {
@@ -179,7 +179,7 @@ class LocalFreeProvider implements FreeMusicProvider {
     }
 
     resolveLocalPath(track: FreeMusicTrack): string | null {
-        const musicDir = resolveProjectPath('input', 'music');
+        const musicDir = resolveProjectPath('input', 'bgm');
         const fileName = track.id.replace(/^local_/, '');
         const full = path.join(musicDir, fileName);
         return fs.existsSync(full) ? full : null;

@@ -8,7 +8,8 @@ import {
     ensureAllowedExtension,
     INPUT_ASSET_ROOT,
     INPUT_ASSETS_DIR,
-    INPUT_MUSIC_ROOT,
+    INPUT_BGM_ROOT,
+    INPUT_VOICEOVER_ROOT,
     resolveAssetPath,
 } from '../../lib/path-safety';
 import { projectRoot, resolvePublicFilePath } from '../../shared/runtime/paths';
@@ -124,7 +125,7 @@ export class LocalFilesystem {
 
         const filename = path.basename(sourcePath);
         const mediaType = type === 'music' || type === 'personalAudio' ? 'audio' : 'visual';
-        const targetDir = mediaType === 'audio' ? INPUT_MUSIC_ROOT : INPUT_ASSET_ROOT;
+        const targetDir = type === 'personalAudio' ? INPUT_VOICEOVER_ROOT : type === 'music' ? INPUT_BGM_ROOT : INPUT_ASSET_ROOT;
         ensureAllowedExtension(
             filename,
             mediaType === 'audio'
@@ -138,7 +139,7 @@ export class LocalFilesystem {
         const targetPath = buildUniqueFilePath(targetDir, filename);
         fs.copyFileSync(sourcePath, targetPath);
         const savedFilename = path.basename(targetPath);
-        const folderName = mediaType === 'audio' ? 'music' : INPUT_ASSETS_DIR;
+        const folderName = type === 'personalAudio' ? 'voiceover' : type === 'music' ? 'bgm' : INPUT_ASSETS_DIR;
 
         return {
             filename: savedFilename,

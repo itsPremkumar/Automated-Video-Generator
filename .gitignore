@@ -37,7 +37,8 @@ yarn-error.log*
 
 # Application Input
 input/visuals/
-input/music/
+input/bgm/
+input/voiceover/
 
 # OS and IDE files
 .DS_Store

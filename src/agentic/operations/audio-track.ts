@@ -34,7 +34,7 @@ export async function addMusic(file: string, query = 'ambient lofi', out?: strin
         musicPath = '';
     }
     if (!musicPath) {
-        const fallback = ['./input/music/twenty_minutes.mp3', './input/music/two_minutes.mp3'].find((p) =>
+        const fallback = ['./input/bgm/twenty_minutes.mp3', './input/bgm/two_minutes.mp3'].find((p) =>
             fs.existsSync(p),
         );
         musicPath = fallback ?? '';

@@ -28,4 +28,4 @@ BACKGROUND_MUSIC_VOLUME=0.15
 BACKGROUND_MUSIC_DUCKING=0.05
 ```
 
-Music files go in `input/music/` in supported formats (MP3, WAV, M4A).
+Background music files go in `input/bgm/` in supported formats (MP3, WAV, M4A). Personal voiceover recordings go in `input/voiceover/`.

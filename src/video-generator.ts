@@ -123,7 +123,7 @@ export async function generateVideo(
             (!hasManualVisuals && parsed.scenes.every((s) => s.voiceoverText.length < 50));
 
         if (isMinimalScript && personalAudio) {
-            const personalAudioPath = resolveProjectPath('input', 'music', personalAudio);
+            const personalAudioPath = resolveProjectPath('input', 'voiceover', personalAudio);
             let totalDuration = 30;
 
             if (fs.existsSync(personalAudioPath)) {
@@ -333,7 +333,7 @@ export async function generateVideo(
 
         if (personalAudio) {
             reportProgress('audio', 55, 'Processing personal audio recording');
-            const personalAudioPath = resolveProjectPath('input', 'music', personalAudio);
+            const personalAudioPath = resolveProjectPath('input', 'voiceover', personalAudio);
 
             if (fs.existsSync(personalAudioPath)) {
                 const totalDuration = await getAudioDuration(personalAudioPath);
@@ -361,9 +361,9 @@ export async function generateVideo(
                 });
                 if (freeMusic) {
                     // resolveFreeBackgroundMusic already returns a fully-resolved
-                    // absolute path under input/music/__auto__/. Re-wrapping it as
-                    // `music/__auto__/<name>` would double the prefix
-                    // (input/music/music/__auto__/...) and break the lookup below.
+                    // absolute path under input/bgm/__auto__/. Re-wrapping it as
+                    // `bgm/__auto__/<name>` would double the prefix
+                    // (input/bgm/bgm/__auto__/...) and break the lookup below.
                     backgroundMusic = freeMusic.localPath;
                 }
             } catch (musicErr: any) {
@@ -371,7 +371,7 @@ export async function generateVideo(
             }
         }
         if (backgroundMusic) {
-            const musicInputPath = resolveProjectPath('input', 'music', backgroundMusic);
+            const musicInputPath = resolveProjectPath('input', 'bgm', backgroundMusic);
             if (fs.existsSync(musicInputPath)) {
                 reportProgress('audio', 80, 'Applying auto-ducking to background music');
 

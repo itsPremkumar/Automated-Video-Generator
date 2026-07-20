@@ -100,7 +100,7 @@ async function main() {
     const music = await resolveFreeBackgroundMusic({ query: 'calm lofi', enabled: true });
     const musicPath = music?.localPath && fs.existsSync(music.localPath)
         ? music.localPath
-        : (['./input/music/twenty_minutes.mp3', './input/music/two_minutes.mp3'].find((p) => fs.existsSync(p)) ?? null);
+        : (['./input/bgm/twenty_minutes.mp3', './input/bgm/two_minutes.mp3'].find((p) => fs.existsSync(p)) ?? null);
 
     const out = `${ws}/normal.mp4`;
     const expectedDur = visuals.length * 4;
