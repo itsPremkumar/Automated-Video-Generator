@@ -28,9 +28,6 @@ coverage/
 *.mov
 *.log
 logs.txt
-temp_voices.txt
-voices_output.txt
-voices_output_utf8.txt
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

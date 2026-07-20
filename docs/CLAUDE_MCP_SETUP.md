@@ -36,7 +36,7 @@ The underlying generation and rendering flow is:
 
 The MCP adapter adds:
 - async job tracking in `.mcp-jobs.json`
-- per-job asset workspaces under `public/jobs/<outputId>/`
+- per-job asset workspaces under `workspace/staging/<outputId>/`
 - Claude-readable resources for `input`, `output`, `public`, and config state
 
 ## Latest End-To-End Process
@@ -55,7 +55,7 @@ Claude calls the `generate_video` MCP tool with:
 The MCP server creates:
 - a job ID in `.mcp-jobs.json`
 - an output folder under `output/<outputId>/`
-- a public asset namespace under `public/jobs/<outputId>/`
+- a public asset namespace under `workspace/staging/<outputId>/`
 
 ### 2. Script Parsing
 
@@ -86,8 +86,8 @@ This is used to avoid Remotion seeking into the unsafe tail end of stock clips.
 Each MCP run gets isolated assets here:
 
 ```text
-public/
-  jobs/
+workspace/
+  staging/
     <outputId>/
       audio/
       videos/
@@ -101,7 +101,7 @@ This prevents one Claude job from overwriting another Claude job's temporary med
 Voiceovers are generated scene-by-scene into:
 
 ```text
-public/jobs/<outputId>/audio/
+workspace/staging/<outputId>/audio/
 ```
 
 The generator now tolerates truly silent scenes instead of treating them as hard failures.
@@ -365,7 +365,7 @@ These are important and current:
 
 - check `.mcp-jobs.json`
 - inspect `output/<outputId>/scene-data.json`
-- inspect `public/jobs/<outputId>/`
+- inspect `workspace/staging/<outputId>/`
 - run `health_check`
 - run `get_system_info`
 

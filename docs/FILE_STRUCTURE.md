@@ -59,8 +59,9 @@ Legend:
                               │   ├── scripts/        │
                               │   │   └── input-      │  served at /assets/input
                               │   │       scripts.json│
-                              │   ├── visuals/        │  user images/videos
-                              │   └── music/          │  user audio
+│   ├── visuals/        │  user images/videos
+│   ├── bgm/            │  user background music
+│   └── voiceover/      │  user personal narration
                               └──────────────────────┘
 
                               ┌──────────────────────┐

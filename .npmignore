@@ -3,7 +3,6 @@
 .mcp-jobs.json
 .video-cache.json
 output/
-public/jobs/
 .github/
 .agent/
 .claude-plugin/
@@ -27,7 +26,7 @@ portable-python/
 dist/
 dist-electron/
 stderr-test.log
-temp_voices.txt
+
 
 # Media files
 *.mp4

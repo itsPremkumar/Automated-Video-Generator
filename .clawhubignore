@@ -3,7 +3,6 @@ release/
 dist/
 dist-electron/
 output/
-public/jobs/
 portable-python/
 .git/
 .github/
@@ -11,7 +10,7 @@ assets/
 input/
 logs.txt
 stderr-test.log
-temp_voices.txt
+
 *.mp4
 *.mp3
 *.wav

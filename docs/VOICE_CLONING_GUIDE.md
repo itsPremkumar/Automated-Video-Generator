@@ -259,7 +259,7 @@ docker run -p 8880:8880 ghcr.io/remsky/kokoro-fastapi:latest
 # unit tests (no live API)
 npm run test:unit
 
-# generate voices only (no render) — audio lands in public/jobs/<job_id>/audio/
+# generate voices only (no render) — audio lands in workspace/staging/<job_id>/audio/
 npm run generate -- --segment
 ```
 

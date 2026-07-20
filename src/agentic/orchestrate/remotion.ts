@@ -6,6 +6,8 @@ import { runFfmpeg } from './ffmpeg.js';
 import { resolveRuntimePublicPath } from '../../shared/runtime/paths.js';
 import type { PipelineResult } from './types.js';
 
+const AGENTIC_ASSETS_DIR = 'agentic-assets';
+
 /**
  * prepareRemotionAssets — build the per-scene asset descriptors for the
  * AgenticVideo Remotion composition.
@@ -65,13 +67,13 @@ export async function prepareRemotionAssets(
             const adestName = `s${a.sceneIndex}_audio.${audioSrc.split('.').pop()}`;
             const adest = path.join(jobAssetDir, adestName);
             fs.copyFileSync(audioSrc, adest);
-            audioRel = path.join('agentic-assets', String(res.workspace.jobId), adestName).replace(/\\/g, '/');
+            audioRel = path.join(AGENTIC_ASSETS_DIR, String(res.workspace.jobId), adestName).replace(/\\/g, '/');
         }
         const sty = styleByScene.get(a.sceneIndex);
         assetsForComposition.push({
             kind: a.kind,
             sceneIndex: a.sceneIndex,
-            localPath: path.join('agentic-assets', String(res.workspace.jobId), destName).replace(/\\/g, '/'),
+            localPath: path.join(AGENTIC_ASSETS_DIR, String(res.workspace.jobId), destName).replace(/\\/g, '/'),
             audioPath: audioRel,
             durationSec: a.durationSec,
             captionSegments: a.captionSegments ?? [],
@@ -125,7 +127,7 @@ export async function renderAgenticWithRemotion(
 
     const fps = 30;
     const stagingDir = resolveRuntimePublicPath();
-    const jobAssetDir = path.join(stagingDir, 'agentic-assets', String(res.workspace.jobId));
+    const jobAssetDir = path.join(stagingDir, AGENTIC_ASSETS_DIR, String(res.workspace.jobId));
     fs.rmSync(jobAssetDir, { recursive: true, force: true });
     fs.mkdirSync(jobAssetDir, { recursive: true });
 

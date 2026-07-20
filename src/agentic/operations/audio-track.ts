@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { runFfmpeg } from './edit.js';
 import { resolveFreeBackgroundMusic } from '../../lib/free-music.js';
+import { inputBgmPath } from '../../lib/path-safety.js';
 import { applyAutoDucking } from '../../lib/audio-processor.js';
 
 export interface AudioTrackResult {
@@ -34,7 +35,7 @@ export async function addMusic(file: string, query = 'ambient lofi', out?: strin
         musicPath = '';
     }
     if (!musicPath) {
-        const fallback = ['./input/bgm/twenty_minutes.mp3', './input/bgm/two_minutes.mp3'].find((p) =>
+        const fallback = [inputBgmPath('twenty_minutes.mp3'), inputBgmPath('two_minutes.mp3')].find((p) =>
             fs.existsSync(p),
         );
         musicPath = fallback ?? '';

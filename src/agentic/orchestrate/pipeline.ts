@@ -5,7 +5,7 @@ import { fetchVisualsForScene, searchImages } from '../../lib/visual-fetcher.js'
 import { downloadMedia } from '../../lib/visual-fetcher.js';
 import { verifyMedia } from '../../lib/media-verifier.js';
 import { resolveFreeBackgroundMusic } from '../../lib/free-music.js';
-import { inputAssetPath, inputVoiceoverPath } from '../../lib/path-safety.js';
+import { inputAssetPath, inputBgmPath, inputVoiceoverPath } from '../../lib/path-safety.js';
 import { buildPlan, applyProEdits } from '../plan.js';
 import { acquireAssets, AcquireDeps, FetchedVisual } from '../acquire.js';
 import { verifyAll, VerifyDeps } from '../verify.js';
@@ -363,7 +363,7 @@ export async function runAgenticPipeline(
                 const m = await resolveFreeBackgroundMusic({ query, enabled: true });
                 let localPath = m?.localPath && fs.existsSync(m.localPath) ? m.localPath : '';
                 if (!localPath) {
-                    const fallback = ['./input/bgm/twenty_minutes.mp3', './input/bgm/two_minutes.mp3'].find((p) =>
+                    const fallback = [inputBgmPath('twenty_minutes.mp3'), inputBgmPath('two_minutes.mp3')].find((p) =>
                         fs.existsSync(p),
                     );
                     localPath = fallback ?? makePlaceholder([query], 'music');
