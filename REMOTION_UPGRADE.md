@@ -197,6 +197,20 @@ Items 3–6 are the "full capability" the user is asking for.
 
 ---
 
+## 7. Fix log (round-2 + Remotion work)
+
+- **buildDuckExpression backslash regression (REAL bug, not a harness artifact):**
+  a global backslash-normalization script (`fix_escape.cjs`) over-corrected
+  `buildDuckExpression`'s `between(t\,...\,...)` output from **2 backslashes** to
+  **0**, breaking 3 ducking-expression unit tests
+  (`enhancement.test.ts` #3, `orchestrate.pure.test.ts` #4/#5). Restored to the
+  correct 2-backslash form via `` String.raw`between(t\,${...}\,${...})` `` so the
+  template produces exactly `between(t\,0.000\,1.500)` at runtime — the value
+  ffmpeg's `volume='...'` expression requires and the tests expect. Full suite:
+  **469 / 461 pass / 0 fail / 8 skipped** (green).
+
+---
+
 ## 6. Open questions for the user (blocking nothing, but shape scope)
 - **Chrome availability**: the agentic Remotion path needs a Chromium binary.
   Do you want me to (a) wire `CHROME_EXECUTABLE` + auto-fallback only, or

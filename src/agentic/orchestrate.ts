@@ -1724,7 +1724,7 @@ export function buildDuckExpression(
         t += dur;
     }
     if (segs.length === 0) return null;
-    const terms = segs.map((x) => `between(t\,${x.s.toFixed(3)}\\,${x.e.toFixed(3)})`).join('+');
+    const terms = segs.map((x) => String.raw`between(t\,${x.s.toFixed(3)}\,${x.e.toFixed(3)})`).join('+');
     // 0.18 - (0.18-0.06)*gt(<sum>,0)  -> ducked during speech
     return `${full}-${(full - duck).toFixed(3)}*gt(${terms},0)`;
 }
