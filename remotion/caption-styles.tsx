@@ -33,20 +33,22 @@ function posToFlex(position: StyleProps['position']): React.CSSProperties {
     }
 }
 
-const NeonCaption: React.FC<StyleProps & { frame: number }> = ({ text, accent = '#00eaff', frame, fontSize = 56 }) => {
+const NeonCaption: React.FC<StyleProps & { frame: number }> = ({ text, frame, fontSize = 56 }) => {
     const opacity = interpolate(frame, [0, 6], [0, 1], { extrapolateRight: 'clamp' });
-    const glow = `rgba(0,234,255,${opacity})`;
+    // Neon is defined by its electric-cyan halo — use a fixed cyan regardless of
+    // the brand accent so the "neon" identity is unmistakable and readable.
+    const cyan = '#00eaff';
     return (
         <div
             style={{
                 opacity,
                 fontFamily: 'system-ui, sans-serif',
                 fontSize,
-                fontWeight: 800,
+                fontWeight: 900,
                 color: '#fff',
                 textAlign: 'center',
-                textShadow: `0 0 8px ${glow}, 0 0 18px ${glow}, 0 0 30px ${accent}, 0 0 42px ${accent}`,
-                letterSpacing: 1,
+                textShadow: `0 0 6px #fff, 0 0 14px ${cyan}, 0 0 26px ${cyan}, 0 0 44px ${cyan}, 0 0 66px ${cyan}`,
+                letterSpacing: 1.5,
             }}
         >
             {text}

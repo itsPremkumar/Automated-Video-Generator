@@ -346,27 +346,28 @@ function TransitionedScene({
     return (
         <AbsoluteFill style={{ opacity, transform: slideX ? `translateX(${slideX}px)` : undefined }}>
             <SceneVisual asset={asset} durationInFrames={durationInFrames} kenBurns={kenBurns} grade={asset.grade} />
-            <SubtitleOverlay
-                text={asset.captionSegments?.[0]?.text ?? ''}
-                durationInFrames={durationInFrames}
-                captionSegments={asset.captionSegments}
-                config={{
-                    position: asset.textConfig?.position ?? 'bottom',
-                    fontSize: asset.textConfig?.fontSize ?? 48,
-                    animation: 'fade',
-                    glow: true,
-                }}
-            />
-            {/* A8 — true word-level karaoke via @remotion/captions (Remotion's
-                production caption engine). Used when speech-timed cues exist;
-                auto-wraps and highlights the spoken word like pro shorts. */}
-            {asset.captionSegments && asset.captionSegments.length > 0 && (
+            {/* Captions: use word-level karaoke when speech-timed cues exist,
+                otherwise fall back to the static SubtitleOverlay. Rendering BOTH
+                double-stamps the text (ghost caption), so they are mutually exclusive. */}
+            {asset.captionSegments && asset.captionSegments.length > 0 ? (
                 <KaraokeCaptions
                     captionSegments={asset.captionSegments}
                     accentColor={accent}
                     fontSize={asset.textConfig?.fontSize ?? 48}
                     position={asset.textConfig?.position ?? 'bottom'}
                     style={captionStyle}
+                />
+            ) : (
+                <SubtitleOverlay
+                    text={asset.captionSegments?.[0]?.text ?? ''}
+                    durationInFrames={durationInFrames}
+                    captionSegments={asset.captionSegments}
+                    config={{
+                        position: asset.textConfig?.position ?? 'bottom',
+                        fontSize: asset.textConfig?.fontSize ?? 48,
+                        animation: 'fade',
+                        glow: true,
+                    }}
                 />
             )}
             {asset.audioPath && (
@@ -446,7 +447,7 @@ export const AgenticVideo: React.FC<AgenticVideoProps> = ({
         <AbsoluteFill style={{ backgroundColor: brand?.primaryColor ?? '#0a0a12' }}>
             {introCard && (
                 <Sequence from={0} durationInFrames={introDur}>
-                    <IntroSceneCard card={introCard} accent={accent} primary={brand?.primaryColor} />
+                    <IntroSceneCard card={introCard} accent={accent} primary={brand?.primaryColor} hideTitle={kineticTitle} />
                     {shapeAccents && <ShapeAccent kind="star" xPct={85} yPct={15} size={90} color={accent} spin />}
                     {kineticTitle && (
                         <KineticText text={introCard.title} fontSize={72} color="#fff" delay={0.1} />
@@ -487,7 +488,7 @@ export const AgenticVideo: React.FC<AgenticVideoProps> = ({
             ))}
             {outroCard && (
                 <Sequence from={t} durationInFrames={outroDur}>
-                    <OutroSceneCard card={outroCard} accent={accent} primary={brand?.primaryColor} />
+                    <OutroSceneCard card={outroCard} accent={accent} primary={brand?.primaryColor} hideTitle={kineticTitle} />
                     {shapeAccents && <ShapeAccent kind="polygon" xPct={15} yPct={85} size={90} color={accent} spin />}
                     {kineticTitle && (
                         <KineticText text={outroCard.ctaText} fontSize={56} color="#fff" delay={0.1} />
