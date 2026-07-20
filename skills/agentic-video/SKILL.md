@@ -86,7 +86,7 @@ The pipeline runs with **one of two backends** (set per call):
 → `agentic_gate` → render.
 
 ## Old workflow is UNTOUCHED
-The classic path (`input/input-scripts.json` → `npm run generate`, the Electron app, the
+The classic path (`input/scripts/input-scripts.json` → `npm run generate`, the Electron app, the
 existing MCP `generate_video` tool) is **completely unaffected**. This agentic pipeline is
 additive — a parallel, agent-driven path. Turn it on only when you want the agent in control.
 1. Call `agentic_plan` with the script.

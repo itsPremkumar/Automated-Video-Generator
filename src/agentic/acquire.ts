@@ -167,7 +167,7 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
         const dir = kind === 'image' ? sceneImageDir(ws, i) : sceneVideoDir(ws, i);
 
         // P1a — local asset reuse: if this scene is bound to a user file in
-        // input/input-assets/, copy it in directly and skip stock fetching.
+        // input/visuals/, copy it in directly and skip stock fetching.
         if (scene.localAsset) {
             const srcPath = inputAssetPath(scene.localAsset);
             if (fs.existsSync(srcPath)) {

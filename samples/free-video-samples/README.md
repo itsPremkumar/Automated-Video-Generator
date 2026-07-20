@@ -3,9 +3,9 @@
 This directory contains sample scripts and metadata for testing the free
 video downloader integration (Wikimedia Commons + Internet Archive).
 
-## Sample `input/input-scripts.json`
+## Sample `input/scripts/input-scripts.json`
 
-The file `input/input-scripts.json` has been updated with 2 test jobs:
+The file `input/scripts/input-scripts.json` has been updated with 2 test jobs:
 
 | Job ID | Title | Orientation | Keywords |
 |--------|-------|-------------|----------|

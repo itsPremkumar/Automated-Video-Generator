@@ -43,7 +43,7 @@ explicitly controlled.**
 | Video verification on download | called in STEP 3 | `src/video-generator.ts:244` | ✅ auto, opaque |
 | Image verification | **not called** on image branch | `src/video-generator.ts:287` | ❌ gap |
 | Music auto-pick | `resolveFreeBackgroundMusic()` | `src/lib/free-music.ts` | ✅ no verification |
-| Separate module folders | `free-image-search/`, `free-music-module/`, `free-video-gen-lab/`, `video-downloader/` | repo root | ✅ reusable |
+| Separate module folders | `sub-modules/free-image-search/`, `sub-modules/free-music-module/`, `sub-modules/free-video-gen-lab/`, `sub-modules/video-downloader/` | repo root | ✅ reusable |
 | MCP server for agents | 20+ tools | `src/mcp-server.ts` + `src/adapters/mcp/*` | ✅ extensible |
 | OpenClaw plugin | `openclaw.plugin.json` | repo root | ✅ |
 
@@ -134,7 +134,7 @@ tools to a human instead of auto-deciding.
 **Reused (no rewrite):**
 - `verifyMedia()` — image + video vision check (extend prompt for watermark/NSFW).
 - `free-music.ts` — music search/download (open-lofi, internet-archive, local).
-- Module folders `free-image-search/`, `free-video-gen-lab/`, `video-downloader/`.
+- Module folders `sub-modules/free-image-search/`, `sub-modules/free-video-gen-lab/`, `sub-modules/video-downloader/`.
 - Remotion render path in `src/video-generator.ts` (feed it only approved assets).
 
 **New:**

@@ -8,25 +8,25 @@ This document describes all visual assets needed for the Automated Video Generat
 
 | Asset | File Path | Purpose | Dimensions | Status |
 |-------|-----------|---------|------------|--------|
-| Logo | `assets/logo.svg` | Repository logo, docs site | 512×512 | ✅ Exists |
-| Logo (automation theme) | `assets/logo-automation.png` | README display | 200×200 | ✅ Exists |
-| Logo (creative theme) | `assets/logo-creative.png` | Alternative branding | 200×200 | ✅ Exists |
-| Hero banner | `assets/hero-banner.png` | README top hero section | 1200×600 | ❌ Placeholder |
-| Hero banner (dark) | `assets/hero-banner-dark.png` | Dark mode variant | 1200×600 | ❌ Placeholder |
-| Social preview | `assets/github-social-preview.svg` | GitHub social share card | 1280×640 | ✅ Exists |
-| Demo thumbnail | `assets/demo-thumbnail.png` | YouTube demo link preview | 1280×720 | ✅ Exists |
-| Workflow GIF | `assets/workflow-demo.gif` | Terminal recording of workflow | 800×600 (optimized) | ❌ Placeholder |
-| Architecture diagram | `assets/architecture.svg` | Architecture overview | 800×600 | ❌ Placeholder |
+| Logo | `assets/logos/logo.svg` | Repository logo, docs site | 512×512 | ✅ Exists |
+| Logo (automation theme) | `assets/logos/logo-automation.png` | README display | 200×200 | ✅ Exists |
+| Logo (creative theme) | `assets/logos/logo-creative.png` | Alternative branding | 200×200 | ✅ Exists |
+| Hero banner | `assets/logos/hero-banner.png` | README top hero section | 1200×600 | ❌ Placeholder |
+| Hero banner (dark) | `assets/logos/hero-banner-dark.png` | Dark mode variant | 1200×600 | ❌ Placeholder |
+| Social preview | `assets/diagrams/github-social-preview.svg` | GitHub social share card | 1280×640 | ✅ Exists |
+| Demo thumbnail | `assets/demo/demo-thumbnail.png` | YouTube demo link preview | 1280×720 | ✅ Exists |
+| Workflow GIF | `assets/demo/workflow-demo.gif` | Terminal recording of workflow | 800×600 (optimized) | ❌ Placeholder |
+| Architecture diagram | `assets/diagrams/architecture.svg` | Architecture overview | 800×600 | ❌ Placeholder |
 | Feature illustrations | `assets/features/` | Per-feature illustrations | 400×300 each | ❌ Not created |
-| Tray icon | `assets/tray-icon.png` | Electron system tray | 32×32 | ✅ Exists |
-| App icon | `assets/icon.ico` | Windows app icon | 256×256 | ✅ Exists |
+| Tray icon | `assets/icons/tray-icon.png` | Electron system tray | 32×32 | ✅ Exists |
+| App icon | `assets/icons/icon.ico` | Windows app icon | 256×256 | ✅ Exists |
 | Favicon | `public/favicon.ico` | Web portal favicon | 32×32 | ✅ Exists |
 
 ---
 
 ## Asset Specifications
 
-### Hero Banner (`assets/hero-banner.png`)
+### Hero Banner (`assets/logos/hero-banner.png`)
 
 **Design direction:**
 - Dark gradient background (deep blue/purple to dark)
@@ -35,9 +35,9 @@ This document describes all visual assets needed for the Automated Video Generat
 - Clean, minimal, tech-forward aesthetic
 - Text overlay: "Automated Video Generator" + "Free · Open Source · Self-Hosted"
 
-**Same for dark variant** (`assets/hero-banner-dark.png`) with darker tones.
+**Same for dark variant** (`assets/logos/hero-banner-dark.png`) with darker tones.
 
-### Architecture Diagram (`assets/architecture.svg`)
+### Architecture Diagram (`assets/diagrams/architecture.svg`)
 
 **Design direction:**
 - Hexagonal layers visualization
@@ -47,14 +47,14 @@ This document describes all visual assets needed for the Automated Video Generat
 - Arrows showing request flow
 - Color-coded by layer
 
-### Workflow GIF (`assets/workflow-demo.gif`)
+### Workflow GIF (`assets/demo/workflow-demo.gif`)
 
 **Tools to create:**
 - [VHS](https://github.com/charmbracelet/vhs) — declarative terminal GIFs
 - [asciinema](https://asciinema.org/) + [agg](https://github.com/asciinema/agg)
 
 **Content:**
-1. Show editing `input/input-scripts.json`
+1. Show editing `input/scripts/input-scripts.json`
 2. Run `npm run generate`
 3. Show progress output
 4. Open `output/` directory with resulting MP4
@@ -97,16 +97,16 @@ Use tools like:
 Example VHS tape file:
 
 ```tape
-Output assets/workflow-demo.gif
+Output assets/demo/workflow-demo.gif
 Set FontSize 16
 Set Width 800
 Set Height 600
 Set Padding 32
-Type "cat input/input-scripts.json"
+Type "cat input/scripts/input-scripts.json"
 Sleep 2s
 Type "npm run generate"
 Sleep 5s
-Type "ls -la output/my-video/"
+Type "ls -la output/""
 Sleep 2s
 ```
 
@@ -126,6 +126,6 @@ Sleep 2s
 | Format | Tool | Command |
 |--------|------|---------|
 | PNG | `pngquant` | `pngquant --quality=80 --output out.png -- input.png` |
-| SVG | `svgo` | `npx svgo assets/architecture.svg` |
+| SVG | `svgo` | `npx svgo assets/diagrams/architecture.svg` |
 | GIF | `gifsicle` | `gifsicle -O3 --lossy=80 -o optimized.gif input.gif` |
 | JPEG | `jpegtran` | `jpegtran -optimize -copy none -outfile out.jpg input.jpg` |

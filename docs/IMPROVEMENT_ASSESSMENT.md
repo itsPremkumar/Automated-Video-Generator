@@ -1,13 +1,13 @@
 # 🎬 Automated-Video-Generator — Improvement Assessment
 
 > Verified live: working tree clean, `npm audit --omit=dev` = **0 vulnerabilities**, 75 test files,
-> `youtube-upload/` module present (committed). This is the snapshot as of the latest session.
+> `sub-modules/youtube-upload/` module present (committed). This is the snapshot as of the latest session.
 
 ## ✅ What's already solid (no change needed)
 - **MCP server** (60 tools / 9 resources / 4 prompts) — agent-driveable, unique advantage
 - **0 vulnerabilities**, prettier-clean, typecheck-clean, 487+ unit tests across 75 files
 - **Local-first, free**: Remotion + Edge-TTS + Openverse/Pexels, no GPU, no API keys
-- **YouTube adapter** present (`youtube-upload/`) — dry-run verified
+- **YouTube adapter** present (`sub-modules/youtube-upload/`) — dry-run verified
 - **Multi-platform**: CLI, HTTP, Electron, MCP
 
 ## 🔴 Genuine gaps (real improvements)

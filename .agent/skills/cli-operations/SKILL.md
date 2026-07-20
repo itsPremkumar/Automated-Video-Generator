@@ -25,7 +25,7 @@ These commands are used for a "Fresh Start." They clean up old temporary files t
 - **What it does:**
   1. Wipes the `.video-cache.json` file.
   2. Cleans the `public/videos` and `public/audio` folders.
-  3. Parses your script from `input/input-scripts.json`.
+   3. Parses your script from `input/scripts/input-scripts.json`.
   4. Downloads new stock footage and generates voiceovers.
   5. Renders the video scene-by-scene (Segmented Mode).
 - **When to use:** When you have a new script or want to see fresh visuals for an existing script.
@@ -74,11 +74,11 @@ These commands save time by reusing already-completed work.
 
 ## 5. Configuration (JSON Script)
 
-When editing `input/input-scripts.json`, agents can use these newer properties:
+When editing `input/scripts/input-scripts.json`, agents can use these newer properties:
 
 | Property | Type | Description |
 | :--- | :--- | :--- |
 | `showText` | Boolean | Set to `false` to disable on-screen subtitles. |
-| `defaultVideo` | String | Filename in `input/input-assets/` to use as a visual fallback. |
+| `defaultVideo` | String | Filename in `input/visuals/` to use as a visual fallback. |
 | `orientation` | String | `portrait` or `landscape`. |
 | `voice` | String | AI voice ID (e.g., `en-US-JennyNeural`). |

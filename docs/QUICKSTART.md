@@ -97,7 +97,7 @@ Did you know that honey never spoils? Archaeologists have found pots of honey in
 
 ### Via CLI
 
-Create `input/input-scripts.json`:
+Create `input/scripts/input-scripts.json`:
 
 ```json
 [

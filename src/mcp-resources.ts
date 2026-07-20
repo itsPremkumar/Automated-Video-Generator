@@ -86,7 +86,7 @@ export function registerResources(server: McpServer) {
         'input://scripts',
         {
             title: 'Current Input Scripts',
-            description: 'Current contents of input/input-scripts.json.',
+            description: 'Current contents of input/scripts/input-scripts.json.',
         },
         async (uri) => {
             const scripts = await readInputScripts();
@@ -103,7 +103,7 @@ export function registerResources(server: McpServer) {
     );
 
     server.registerResource(
-        'input-assets',
+        'input-visuals',
         'input://assets',
         {
             title: 'Input Assets',

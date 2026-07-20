@@ -8,7 +8,7 @@ generation pipeline. Format: **Title** → **Body**. Labels: `good first issue`.
 ### Issue 1 — Add an architecture SVG diagram to the README
 **Body:**
 The README has an ASCII architecture diagram. A clean SVG would read better and look more professional on the landing page.
-- Create `assets/architecture.svg` showing: Runtimes → Application → Infrastructure → Lib/Services (hexagonal style)
+- Create `assets/diagrams/architecture.svg` showing: Runtimes → Application → Infrastructure → Lib/Services (hexagonal style)
 - Use brand color `#4F46E5`
 - Replace the ASCII block in `README.md`
 Labels: `good first issue`, `documentation`
@@ -16,7 +16,7 @@ Labels: `good first issue`, `documentation`
 ### Issue 2 — Write an end-to-end render smoke test for CI
 **Body:**
 Current integration tests cover parse→validate→workspace but not an actual Remotion render. A headless 1-scene render test would catch regressions.
-- Add a CI job (or `test:e2e` script) that renders a single scene using a local asset + bundled `input/input-assets/default.mp4`
+- Add a CI job (or `test:e2e` script) that renders a single scene using a local asset + bundled `input/visuals/default.mp4`
 - Skip gracefully if ffmpeg/Remotion unavailable
 - Files: `src/`, `.github/workflows/ci.yml`
 Labels: `good first issue`, `testing`
@@ -39,7 +39,7 @@ Labels: `good first issue`, `documentation`
 ### Issue 5 — Add an Instagram/TikTok upload adapter
 **Body:**
 We have a working YouTube upload adapter in `youtube-upload/` (OAuth + resumable upload, dry-run verified). Extend the pattern to Instagram Graph API and TikTok Content Posting API.
-- Mirror `youtube-upload/src/uploader.ts` structure
+- Mirror `sub-modules/youtube-upload/src/uploader.ts` structure
 - Keep dry-run mode (no credentials needed to verify)
 - Files: new `instagram-upload/`, `tiktok-upload/`
 Labels: `good first issue`, `enhancement`

@@ -59,7 +59,7 @@ Use `[Visual: description]` tags in your script for exact visual control over ea
 
 ## Batch Generation
 
-Place multiple scripts in `input/input-scripts.json` and run:
+Place multiple scripts in `input/scripts/input-scripts.json` and run:
 
 ```bash
 npm run generate

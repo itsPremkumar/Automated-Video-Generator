@@ -72,7 +72,7 @@ post-render gate X7–X15, watermark/safety verify.
 ### P1 — High value, low effort (port from legacy, mostly copy)
 1. **Local asset reuse** (`localAsset` path in `video-generator.ts:202-228`).
    Agentic currently cannot use the user's own images/videos from
-   `input/input-assets/`. This is a frequently-requested feature ("use MY photos").
+   `input/visuals/`. This is a frequently-requested feature ("use MY photos").
    Port: add a `localAssets` config field; in `acquire.ts`, check the asset dir
    first before fetching. ~40 LOC, reuses `inputAssetPath()` from `path-safety.ts`.
 2. **Default-video fallback chain** (legacy `:263-295`). When fetch fails, legacy
@@ -97,7 +97,7 @@ post-render gate X7–X15, watermark/safety verify.
 ### P3 — Lower priority / already exceeded
 7. **Text animation richness** (typewriter/pop/zoom). Agentic's kinetic engine covers
    word-pop + lower-third; legacy's typewriter is a nice-to-have. Skip unless requested.
-8. **YouTube/social publish** — legacy has it as a SEPARATE module (`src/youtube-upload/`),
+8. **YouTube/social publish** — legacy has it as a SEPARATE module (`sub-modules/youtube-upload/`),
    not in `generateVideo`. Neither system publishes inline. Out of scope for agentic
    core; can be a post-render CLI step.
 
@@ -132,7 +132,7 @@ post-render gate X7–X15, watermark/safety verify.
 3. **Leave P2.5/P2.6 (language, personal audio)** for a follow-up; they need online
    TTS/Whisper which the current offline box can't validate.
 4. **Do NOT port legacy's lack of gates/self-heal/diversity** — agentic already exceeds.
-5. Keep legacy `generateVideo` + `input/input-scripts.json` workflow UNTOUCHED
+5. Keep legacy `generateVideo` + `input/scripts/input-scripts.json` workflow UNTOUCHED
    (user's standing rule: "don't delete anything"). Porting is additive only.
 
 ## 7. Effort Estimate

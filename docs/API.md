@@ -211,19 +211,19 @@ Hermes writes the script, expands keywords, acquires, verifies and **decides** e
 > All mutating tools require `assertSafeMutationAllowed('mcp', …)`.
 
 ### `write_input_script`
-Write/update a script in `input/input-scripts.json`. Schema = `videoScriptSchema`.
+Write/update a script in `input/scripts/input-scripts.json`. Schema = `videoScriptSchema`.
 ### `read_input_script`
-Read all scripts from `input/input-scripts.json`. (No inputs.)
+Read all scripts from `input/scripts/input-scripts.json`. (No inputs.)
 ### `delete_input_script`
 Delete a script by ID. **Inputs:** `id: string`.
 ### `validate_input_script`
 Validate a script format before saving. Schema = `videoScriptSchema`.
 ### `upload_asset`
-Upload a base64 file to `input/input-assets/` (max 50 MB).
+Upload a base64 file to `input/visuals/` (max 50 MB).
 - **Inputs:** `filename: string`, `base64Data: string`
 - **Example:** `{ "filename": "logo.png", "base64Data": "<base64>" }`
 ### `delete_asset`
-Delete a file from `input/input-assets/`. **Inputs:** `filename: string`.
+Delete a file from `input/visuals/`. **Inputs:** `filename: string`.
 
 ---
 
@@ -286,7 +286,7 @@ List files under `public/` (or a subdir; `..` rejected). **Inputs:** `subdir?: s
 ### `list_voices`
 List available TTS voices (8 built-in Neural voices). (No inputs.)
 ### `list_local_assets`
-List media files in `input/input-assets/`. (No inputs.)
+List media files in `input/visuals/`. (No inputs.)
 
 ---
 

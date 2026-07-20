@@ -38,13 +38,13 @@ rationale; at L0/L1 those same tools surface to a human for confirmation.
 - `src/agentic/plan.ts`: parse script → `plan.json` (scenes, per-scene visual intent
   image|video, `searchKeywords`, `musicQuery`, captions, voice, orientation).
 - Reuse `src/lib/script-parser.ts` for scene splitting.
-- **Tests:** plan from sample `input/input-scripts.json` → valid `plan.json`.
+- **Tests:** plan from sample `input/scripts/input-scripts.json` → valid `plan.json`.
 - **CI:** typecheck + `test:unit`.
 
 ### Phase 2 — Acquisition into per-type folders
 - `src/agentic/acquire.ts`: for each planned asset, download N candidates (default 2)
   into `assets/images/<scene>/`, `assets/videos/<scene>/`, `assets/music/`.
-- Reuse `free-image-search/`, `free-video-gen-lab/`, `video-downloader/`, `free-music.ts`.
+- Reuse `sub-modules/free-image-search/`, `sub-modules/free-video-gen-lab/`, `sub-modules/video-downloader/`, `free-music.ts`.
 - **Tests:** mock fetchers → correct folder layout, name scheme.
 - **CI:** typecheck + `test:unit`.
 

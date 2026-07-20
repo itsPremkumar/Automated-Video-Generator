@@ -504,7 +504,7 @@ lib/
 - `job-cancellation.ts`: Job cancellation support
 - `python-runtime.ts`: Python runtime integration
 - `audio-processor.ts`: Audio processing utilities
-- `video-downloader-service.ts`: Video download service
+- `sub-modules/video-downloader/`: Video download service
 - `api-tts-provider.ts`: API-based TTS provider
 
 ## `src/shared/`

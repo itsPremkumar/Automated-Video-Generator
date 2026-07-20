@@ -300,7 +300,7 @@ async function findLightLeakAsset(ctx: any): Promise<string | null> {
     // Search in assets/overlays/light-leaks/
     const fs = await import('fs');
     const path = await import('path');
-    const dirs = ['./assets/overlays/light-leaks', './input/input-assets/light-leaks'];
+    const dirs = ['./assets/overlays/light-leaks', './input/visuals/light-leaks'];
 
     for (const d of dirs) {
         const full = path.resolve(d);

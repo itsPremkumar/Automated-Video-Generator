@@ -63,7 +63,7 @@ src/agentic/plugins/
     "plugins": [
         { "name": "punch-in", "enabled": true, "config": { "autoEmphasis": true } },
         { "name": "lut-loader", "enabled": true, "config": { "defaultLUT": "fuji-400h.cube" } },
-        { "name": "watermark", "enabled": true, "config": { "image": "./assets/logo.png" } },
+        { "name": "watermark", "enabled": true, "config": { "image": "./assets/logos/logo.png" } },
         { "name": "genre-style", "enabled": true, "config": { "genre": "reels" } },
         { "name": "platform-export", "enabled": true, "config": { "platforms": ["tiktok", "reels", "shorts"] } }
     ]

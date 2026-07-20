@@ -30,7 +30,7 @@ One-shot: `agentic_run`. Granular: `agentic_plan`, `agentic_acquire`,
 ## Rules
 - NodeNext: relative imports MUST include `.js` (e.g. `from './plan.js'`).
 - Legacy `npm run generate` workflow (`src/video-generator.ts`,
-  `src/lib/script-parser.ts`, `input/input-scripts.json`) is UNCHANGED — keep
+  `src/lib/script-parser.ts`, `input/scripts/input-scripts.json`) is UNCHANGED — keep
   edits additive under `src/agentic/`.
 - `agentic-pipeline/workspaces/` is git-ignored (runtime artifacts only).
 - Verify changes with `npm run typecheck` and `npm run test:unit` before claiming done.

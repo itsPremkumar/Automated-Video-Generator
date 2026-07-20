@@ -267,7 +267,7 @@ export interface AgenticConfig {
     preferVisual?: 'image' | 'video';
     candidatesPerAsset?: number; // assets fetched per scene (default 4)
     videoType?: VideoType; // template selector (Phase: templates)
-    /** Use the user's OWN media from input/input-assets/ instead of (or in
+    /** Use the user's OWN media from input/visuals/ instead of (or in
      *  addition to) fetched stock. Files are distributed round-robin across
      *  scenes; any scene without a matching local file falls back to fetching. */
     localAssets?: string[];
@@ -275,7 +275,7 @@ export interface AgenticConfig {
     videoClips?: string[];
     /** C2: user-supplied voiceover audio (per-scene) used instead of TTS. */
     personalAudio?: string[];
-    /** A user-supplied default image/video (in input/input-assets/) used as a
+    /** A user-supplied default image/video (in input/visuals/) used as a
      *  last-resort visual when both fetch and the pool fail (legacy-style
      *  default.mp4 fallback). */
     defaultVisual?: string;

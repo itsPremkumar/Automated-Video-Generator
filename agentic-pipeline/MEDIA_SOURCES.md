@@ -35,9 +35,9 @@ Music is resolved via `resolveFreeBackgroundMusic` → these providers.
 
 ## Local assets (user's own media)
 
-- `input/input-assets/` — photos/videos bound per scene via `--local-assets`
+- `input/visuals/` — photos/videos bound per scene via `--local-assets`
   (P1a). Resolved with `inputAssetPath` from `src/lib/path-safety.ts`.
-- `input/input-assets/default.jpg` / `default.mp4` — last-resort fallback
+- `input/visuals/default.jpg` / `default.mp4` — last-resort fallback
   visual (P1b).
 
 ## Notes for a new agent

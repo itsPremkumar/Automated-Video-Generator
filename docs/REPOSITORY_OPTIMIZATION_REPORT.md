@@ -79,7 +79,7 @@ Created `AVS_ASSETS_GUIDE.md` with detailed specifications for all needed assets
 |-------|------|--------|
 | Hero banner (light) | `assets/hero-banner.png` | ❌ Needs creation (guide provided) |
 | Hero banner (dark) | `assets/hero-banner-dark.png` | ❌ Needs creation (guide provided) |
-| Architecture diagram | `assets/architecture.svg` | ❌ Needs creation (guide provided) |
+| Architecture diagram | `assets/diagrams/architecture.svg` | ❌ Needs creation (guide provided) |
 | Workflow GIF | `assets/workflow-demo.gif` | ❌ Needs creation (guide provided) |
 | Feature illustrations | `assets/features/*.svg` | ❌ Needs creation (guide provided) |
 
@@ -265,7 +265,7 @@ GitHub Pages site exists at `docs/index.html`. No dedicated showcase/demo page.
 
 | Asset | For | Status |
 |-------|-----|--------|
-| GitHub social preview | Repository social card | ✅ Existing `assets/github-social-preview.svg` |
+| GitHub social preview | Repository social card | ✅ Existing `assets/diagrams/github-social-preview.svg` |
 | Demo video | YouTube embed | ✅ Existing demo |
 | README screenshots | Documentation | ❌ Needs creation |
 | Architecture SVG | Diagram | ❌ Needs creation (guide provided) |
@@ -336,7 +336,7 @@ Includes:
 These cannot be auto-generated and require a human designer:
 
 1. **Hero banner** (`assets/hero-banner.png` + dark variant) — 1200×600
-2. **Architecture diagram** (`assets/architecture.svg`) — 800×600
+2. **Architecture diagram** (`assets/diagrams/architecture.svg`) — 800×600
 3. **Workflow GIF** (`assets/workflow-demo.gif`) — 800×600
 4. **Feature illustrations** (`assets/features/*.svg`) — 400×300 each
 

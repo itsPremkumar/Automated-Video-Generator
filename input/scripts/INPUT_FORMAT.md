@@ -1,6 +1,6 @@
 # Video Generator Input Format
 
-> **File Location**: `input/input-scripts.json`
+> **File Location**: `input/scripts/input-scripts.json`
 > **Format**: JSON Array of Objects
 
 This document provides a comprehensive guide to configuring batch video generation jobs. The system processes each object in the array sequentially.
@@ -36,7 +36,7 @@ The file must be a valid JSON array. Each item in the array is a "job" that prod
 | **`voice`** | `string` | No | The specific voice to use for this video's narration. <br>• **See below** for the full list of available voices. <br>• **Default**: Falls back to `VIDEO_VOICE` (.env) or `en-US-GuyNeural`. |
 | **`language`** | `string` | No | The language of the script. <br>• **Options**: `english`, `tamil`, `hindi`, `spanish`, `french`, `german`, and **100+ more**. <br>• **Usage**: Automatically selects a high-quality default voice for that language. |
 
-| **`backgroundMusic`** | `string` | No | The filename of an audio file to use as background music. <br>• **Source**: Must be located in `input/input-assets/`. <br>• **Format**: `.mp3`, `.wav`, or `.m4a`. <br>• **Behavior**: Loops automatically for the duration of the video. |
+| **`backgroundMusic`** | `string` | No | The filename of an audio file to use as background music. <br>• **Source**: Must be located in `input/visuals/`. <br>• **Format**: `.mp3`, `.wav`, or `.m4a`. <br>• **Behavior**: Loops automatically for the duration of the video. |
 | **`musicVolume`** | `number` | No | The volume level for the background music. <br>• **Range**: `0.0` (silent) to `1.0` (max). <br>• **Recommended**: `0.1` to `0.2` to keep the voiceover clear. <br>• **Default**: `0.15`. |
 
 
@@ -100,7 +100,7 @@ To get the best results from the AI generator:
     *   *Good*: "The **blue ocean** waves crashed against the **sandy beach**." (Easy to visualize)
 *   **Using [Visual: ...] Tags**: You can now manually specify the visual for any scene.
     *   **For Stock Footage**: Provide keywords like `[Visual: tech office blue]`.
-    *   **For Local Assets**: Provide the filename of an image or video in `input/input-assets/` like `[Visual: logo.png]`.
+    *   **For Local Assets**: Provide the filename of an image or video in `input/visuals/` like `[Visual: logo.png]`.
     *   **Clean Subtitles**: Everything inside the square brackets is automatically removed from the on-screen text and voiceover.
 
 ---
@@ -137,7 +137,7 @@ output/
 
 ## 📁 Local Assets
 You can include your own media by placing it in:
-`input/input-assets/`
+`input/visuals/`
 
 Refer to the filename in your script: `[Visual: your-file.jpg]`. The system will automatically handle the layout and duration.
 
@@ -148,7 +148,7 @@ Refer to the filename in your script: `[Visual: your-file.jpg]`. The system will
 The pipeline can fetch CC-licensed videos from **Wikimedia Commons** and **Internet Archive** without any API key. This happens automatically when Pexels and Pixabay return no results (or when no API keys are configured).
 
 **How it works in batch jobs:**
-1. Write your script normally (e.g., `input/input-scripts.json`)
+1. Write your script normally (e.g., `input/scripts/input-scripts.json`)
 2. Run `npm run generate`
 3. The pipeline tries Pexels → Pixabay → **Free Sources** → Openverse images
 4. If free sources find a matching video, it's used as the scene asset

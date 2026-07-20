@@ -127,10 +127,10 @@ export async function runAgenticPipeline(
                     plan.scenes.forEach((s, i) => {
                         s.localAsset = req.localAssets![i % req.localAssets!.length];
                     });
-                    emit({ stage: 'plan', percent: 100, message: `Auto-detected ${files.length} local asset(s) from input-assets/ → bound to ${plan.scenes.length} scenes` });
+                    emit({ stage: 'plan', percent: 100, message: `Auto-detected ${files.length} local asset(s) from input/visuals/ → bound to ${plan.scenes.length} scenes` });
                 }
             }
-        } catch { /* input-assets/ may not exist or be inaccessible; skip silently */ }
+        } catch { /* input/visuals/ may not exist or be inaccessible; skip silently */ }
     }
     if (req.videoClips && req.videoClips.length > 0) {
         plan.scenes.forEach((s, i) => {

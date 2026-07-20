@@ -8,7 +8,7 @@ This document explains how to use your own images and videos in the video genera
 
 ## 📁 Where to Put Your Files
 Place all your local images and videos in the following directory:
-`input/input-assets/`
+`input/visuals/`
 
 > [!NOTE]
 > All files in this folder are ignored by Git (configured in the root `.gitignore`) so they won't bloat your repository.
@@ -30,7 +30,7 @@ To use a local asset, include its **exact filename** inside a `[Visual: ...]` ta
 
 ## 🔄 Smart Fallback (Backward Compatibility)
 The system is designed to be intelligent. When it sees a `[Visual: ...]` tag:
-1.  **Step 1**: It checks if a file with that name exists in `input/input-assets/`.
+1.  **Step 1**: It checks if a file with that name exists in `input/visuals/`.
 2.  **Step 2**: If the file **exists**, it uses your local asset.
 3.  **Step 3**: If the file **does not exist**, it uses the text as keywords to search for high-quality stock videos/images (Pexels/Pixabay).
 
@@ -61,16 +61,16 @@ You can define a `defaultVideo` property inside your job config within `input-sc
 
 ### ⚙️ How it Works
 1.  **Hierarchy**: The system first tries the `[Visual: ...]` tag or searches Pexels/Pixabay for a match.
-2.  **Fallback Trigger**: If no visual is found and no API results are returned, the system looks for the file specified in `defaultVideo` inside `input/input-assets/`.
+2.  **Fallback Trigger**: If no visual is found and no API results are returned, the system looks for the file specified in `defaultVideo` inside `input/visuals/`.
 3.  **Default Behavior**: If you do not provide a `defaultVideo` config, the system will automatically look for a file named `default.mp4` in your assets folder as a last resort.
 
 ---
 
 ## 🎵 Background Music
-You can add background music to your videos by placing an audio file in `input/input-assets/` and referencing it in your job configuration.
+You can add background music to your videos by placing an audio file in `input/visuals/` and referencing it in your job configuration.
 
 ### 📝 How to Configure
-Add the `backgroundMusic` and `musicVolume` properties to your job in `input/input-scripts.json`.
+Add the `backgroundMusic` and `musicVolume` properties to your job in `input/scripts/input-scripts.json`.
 
 **Example:**
 ```json

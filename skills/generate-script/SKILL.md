@@ -10,7 +10,7 @@ This skill provides instructions on how to transform a user's storytelling promp
 
 ## 1. JSON Structure
 
-Every script must be an object within the main array in `input/input-scripts.json`.
+Every script must be an object within the main array in `input/scripts/input-scripts.json`.
 
 ```json
 {
@@ -59,7 +59,7 @@ You can choose from several high-quality neural voices. Specify these in the `vo
 | `orientation` | String | `landscape` (16:9) or `portrait` (9:16). |
 | `voice` | String | Use one of the Voice IDs from the table above. |
 | `showText` | Boolean | (Optional) Set to `false` to hide captions. |
-| `defaultVideo` | String | (Optional) Local filename for fallback (in `input-assets/`). |
+| `defaultVideo` | String | (Optional) Local filename for fallback (in `input/visuals/`). |
 | `script` | String | The content to be spoken, including `[Visual: ...]` tags. |
 
 ### 5. Script Writing Rules

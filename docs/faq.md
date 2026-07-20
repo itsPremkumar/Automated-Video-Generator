@@ -17,7 +17,7 @@ No watermark is added by this project.
 ## Usage
 
 ### Can I use my own images/videos?
-Yes. Place files in `input/input-assets/` and reference them with `[Visual: filename.mp4]` or `[Visual: filename.jpg]` in your script.
+Yes. Place files in `input/visuals/` and reference them with `[Visual: filename.mp4]` or `[Visual: filename.jpg]` in your script.
 
 ### Can I use this for YouTube Shorts / TikTok / Reels?
 Yes. Use `portrait` orientation for 9:16 vertical video.

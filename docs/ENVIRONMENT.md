@@ -66,9 +66,9 @@ and error responses.
 |---|---|---|
 | `OLLAMA_BASE_URL` | `http://127.0.0.1:11434` | Ollama server URL. |
 | `OLLAMA_URL` | — | Alternate Ollama URL used by the agentic brain (falls back to Ollama not configured when absent). |
-| `OLLAMA_HOST` | `http://127.0.0.1:11434` | Ollama host URL (used by the free-video-gen-lab sub-project). |
+| `OLLAMA_HOST` | `http://127.0.0.1:11434` | Ollama host URL (used by the sub-modules/free-video-gen-lab sub-project). |
 | `OLLAMA_MODEL` | `moondream:latest` | Ollama model for vision-based media verification. Agentic brain defaults to `llama3.1`. |
-| `OLLAMA_SCRIPT_MODEL` | `llama3.2:1b` (or falls back to `OLLAMA_MODEL` / `llama3`) | Ollama model used for script generation (free-video-gen-lab) and AI service calls. |
+| `OLLAMA_SCRIPT_MODEL` | `llama3.2:1b` (or falls back to `OLLAMA_MODEL` / `llama3`) | Ollama model used for script generation (sub-modules/free-video-gen-lab) and AI service calls. |
 | `OLLAMA_TIMEOUT_MS` | `120000` | Timeout for Ollama API calls (milliseconds). |
 | `OLLAMA_MAX_RETRIES` | `2` | Maximum retries for failed Ollama API calls. |
 | `OLLAMA_MAX_CONCURRENCY` | `2` | Maximum concurrent Ollama API calls. |

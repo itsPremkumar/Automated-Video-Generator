@@ -6,16 +6,16 @@ import { resolveProjectPath } from '../shared/runtime/paths';
 /**
  * The canonical asset directory name.
  */
-export const INPUT_ASSETS_DIR = 'input-assets';
+export const INPUT_ASSETS_DIR = 'visuals';
 
 /**
- * Root directory for user-uploaded assets (images/videos).
+ * Root directory for user-uploaded visuals (images/videos).
  */
 export const INPUT_ASSET_ROOT: string = resolveProjectPath('input', INPUT_ASSETS_DIR);
 
 /**
- * Resolve a relative path under the input-assets directory.
- * Use this instead of hardcoding resolveProjectPath('input', 'input-assets', ...).
+ * Resolve a relative path under the input/visuals directory.
+ * Use this instead of hardcoding resolveProjectPath('input', 'visuals', ...).
  */
 export function inputAssetPath(...segments: string[]): string {
     return resolveProjectPath('input', INPUT_ASSETS_DIR, ...segments);

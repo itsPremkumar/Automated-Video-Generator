@@ -34,8 +34,8 @@ Hexagonal architecture with layers:
 
 ## Important Directories
 
-- `input/input-assets/` — User's local images/videos
-- `input/input-scripts.json` — Job definitions for CLI batch mode
+- `input/visuals/` — User's local images/videos
+- `input/scripts/input-scripts.json` — Job definitions for CLI batch mode
 - `output/` — Generated videos
 - `public/` — Served by web portal
 - `remotion/` — React video compositions
@@ -93,7 +93,7 @@ approve/reject, and the final render gate).
 - `agentic-pipeline/workspaces/` (runtime artifacts) is git-ignored.
 
 **The legacy `npm run generate` workflow (`src/video-generator.ts`,
-`src/lib/script-parser.ts`, `input/input-scripts.json`) is UNCHANGED** — the
+`src/lib/script-parser.ts`, `input/scripts/input-scripts.json`) is UNCHANGED** — the
 agentic system is purely additive.
 
 ## Common Commands
@@ -109,7 +109,7 @@ agentic system is purely additive.
 
 ## Common Pitfalls
 
-1. The directory is `input/input-assets/` defined in `INPUT_ASSETS_DIR` constant in `src/lib/path-safety.ts`.
+1. The directory is `input/visuals/` defined in `INPUT_ASSETS_DIR` constant in `src/lib/path-safety.ts`.
 2. FFmpeg is bundled via `ffmpeg-static` but may fail on some architectures. A global FFmpeg install is the fallback.
 3. For Windows desktop builds, verify bundle integrity with `npm run electron:verify-bundle`.
 4. The agentic pipeline uses NodeNext module resolution — ALL relative imports
@@ -227,7 +227,7 @@ These three were ported from the mature legacy system (`video-generator.ts` +
 `scene-editor.ts`) into the agentic pipeline, all additive.
 
 **P1a — Local asset reuse.** A user (or agent) can supply their OWN photos/videos
-in `input/input-assets/` and bind them per scene. Files are distributed
+in `input/visuals/` and bind them per scene. Files are distributed
 round-robin across scenes; scenes beyond the file count fall back to stock fetch.
 - CLI: `--local-assets "my_photo.jpg,my_clip.mp4"`
 - Config: `localAssets: ["my_photo.jpg","my_clip.mp4"]`
@@ -236,7 +236,7 @@ round-robin across scenes; scenes beyond the file count fall back to stock fetch
   etc. — zero Pexels fetches for those scenes.
 
 **P1b — Default-visual fallback.** A user-supplied `default.jpg`/`default.mp4`
-in `input/input-assets/` is used as the LAST-RESORT visual when both the Pexels
+in `input/visuals/` is used as the LAST-RESORT visual when both the Pexels
 pool and the fetch ladder fail (legacy `default.mp4` behavior). Reuses
 `inputAssetPath()` + `makePlaceholder` machinery.
 - CLI: `--default-visual "default.jpg"`

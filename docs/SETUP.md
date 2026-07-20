@@ -139,7 +139,7 @@ http://localhost:3001/
 
 ### CLI generation
 
-Create or update `input/input-scripts.json`, then run:
+Create or update `input/scripts/input-scripts.json`, then run:
 
 ```bash
 npm run generate

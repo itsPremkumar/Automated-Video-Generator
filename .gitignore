@@ -37,7 +37,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Application Input
-input/input-assets/
+input/visuals/
 input/music/
 
 # OS and IDE files
@@ -65,9 +65,9 @@ temp/
 portable-python/
 
 # Regenerable build artifacts (recreated by scripts/create-icons.cjs)
-assets/tray-icon.png
-assets/icon-256.png
-assets/icon.ico
+assets/icons/tray-icon.png
+assets/icons/icon-256.png
+assets/icons/icon.ico
 
 # TypeScript
 *.tsbuildinfo
@@ -79,8 +79,8 @@ remotion/_study/
 .docker/
 
 # local backup copies (not source)
-input/input-scripts-backup.json
-input/input-scripts.json.bak-*
+input/scripts/input-scripts-backup.json
+input/scripts/input-scripts.json.bak-*
 
 # Agentic pipeline runtime job workspaces (generated at runtime, NOT source)
 # Each agentic job downloads candidates + writes verification/manifests here.
@@ -106,4 +106,8 @@ audio_*
 music_*
 .hermes-*
 .hermes-tmp*
+
+# Sub-modules
+sub-modules/*/node_modules/
+sub-modules/*/dist/
 

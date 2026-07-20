@@ -35,6 +35,6 @@ These are the highest-impact growth actions that still need to be done manually 
 
 ## Assets included in this repo
 
-- `assets/github-social-preview.svg` can be exported to PNG and uploaded as the GitHub social preview image
+- `assets/diagrams/github-social-preview.svg` can be exported to PNG and uploaded as the GitHub social preview image
 - `README.md` already contains improved star and search messaging
 - `.github/workflows/ci.yml` adds a visible CI badge opportunity

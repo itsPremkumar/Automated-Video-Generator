@@ -9,7 +9,7 @@ deciders: Project owner + agentic pipeline contributors
 
 ## Context
 
-The project began as a classic, script-driven CLI (`input/input-scripts.json` →
+The project began as a classic, script-driven CLI (`input/scripts/input-scripts.json` →
 `npm run generate` → Remotion render). As an AI agent (Hermes/OpenClaw) took over video
 production, two structural options emerged:
 

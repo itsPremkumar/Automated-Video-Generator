@@ -48,7 +48,7 @@ Generate a vertical 9:16 video optimized for YouTube Shorts, TikTok, and Instagr
 **Expected output:** A 30-60 second portrait-mode video with voiceover and stock visuals.
 
 #### [local-assets](./local-assets/)
-Use your own images and videos instead of stock media. Place files in `input/input-assets/` and reference them directly in your script.
+Use your own images and videos instead of stock media. Place files in `input/visuals/` and reference them directly in your script.
 
 **Expected output:** A video composed entirely of your own media files with AI-generated voiceover.
 

@@ -19,7 +19,7 @@ export function registerInputTools(server: McpServer) {
         'write_input_script',
         {
             title: 'Write Input Script',
-            description: 'Write or update a script in input/input-scripts.json',
+            description: 'Write or update a script in input/scripts/input-scripts.json',
             inputSchema: videoScriptSchema as any,
         },
         async (args: any) => {
@@ -33,7 +33,7 @@ export function registerInputTools(server: McpServer) {
         'read_input_script',
         {
             title: 'Read Input Scripts',
-            description: 'Read all scripts from input/input-scripts.json',
+            description: 'Read all scripts from input/scripts/input-scripts.json',
             inputSchema: z.object({}) as any,
         },
         async () => textResponse(JSON.stringify(await readInputScripts(), null, 2)),
@@ -43,7 +43,7 @@ export function registerInputTools(server: McpServer) {
         'delete_input_script',
         {
             title: 'Delete Input Script',
-            description: 'Delete a script from input/input-scripts.json by its ID',
+            description: 'Delete a script from input/scripts/input-scripts.json by its ID',
             inputSchema: z.object({ id: z.string() }) as any,
         },
         async ({ id }: any) => {

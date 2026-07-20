@@ -22,7 +22,7 @@ export interface ScenePlan {
     /** 'image' = prefer a still; 'video' = prefer motion. */
     visualPreference: 'image' | 'video';
     durationSec: number;
-    /** User-supplied local media file (from input/input-assets/) bound to this
+    /** User-supplied local media file (from input/visuals/) bound to this
      *  scene. When set, the acquire stage uses this file directly instead of
      *  fetching stock (legacy localAsset behaviour, ported to agentic). */
     localAsset?: string;

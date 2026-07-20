@@ -8,7 +8,7 @@ All commands are run via `npm run <script>` from the project root.
 
 | Script | Command | Description |
 |--------|---------|-------------|
-| `generate` | `tsx src/cli.ts` | Generate videos from `input/input-scripts.json` (legacy workflow) |
+| `generate` | `tsx src/cli.ts` | Generate videos from `input/scripts/input-scripts.json` (legacy workflow) |
 | `resume` | `tsx src/cli.ts --resume` | Resume an interrupted generation run from existing scene data |
 | `segment` | `tsx src/cli.ts --segment` | Rebuild video from existing scene data (segment-only mode) |
 | `batch` | `tsx src/cli.ts --batch` | Run batch generation from CLI (legacy batch mode) |
@@ -170,7 +170,7 @@ The project is configured through environment variables in a `.env` file at the 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `OUTPUT_DIR` | `output` | Directory for generated videos |
-| `INPUT_ASSETS_DIR` | `input/input-assets` | Directory for user-supplied local assets |
+| `INPUT_ASSETS_DIR` | `input/visuals` | Directory for user-supplied local assets |
 | `RENDER_TIMEOUT` | `300000` | Render timeout in milliseconds |
 
 See [configuration.md](./configuration.md) for the full environment variable reference.
@@ -194,7 +194,7 @@ See [configuration.md](./configuration.md) for the full environment variable ref
 
 ## Notes
 
-- **Legacy vs Agentic**: `npm run generate` uses the classic pipeline (`src/cli.ts` + `input/input-scripts.json`). `npm run agentic` uses the newer fully agent-controlled pipeline (`src/agentic/`) that requires no API keys.
+- **Legacy vs Agentic**: `npm run generate` uses the classic pipeline (`src/cli.ts` + `input/scripts/input-scripts.json`). `npm run agentic` uses the newer fully agent-controlled pipeline (`src/agentic/`) that requires no API keys.
 - **Watch mode**: The `dev` script uses `tsx watch` for automatic restart on file changes.
 - **Windows**: For Docker on Windows, use the appropriate PowerShell syntax for volume mounts instead of `$(pwd)`.
 - **Electron prerequisites**: Run `npm run electron:verify-bundle` before any build script to ensure bundle integrity.

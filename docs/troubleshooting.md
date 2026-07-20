@@ -13,7 +13,7 @@ Try `python` instead of `py`, or install Python from [python.org](https://python
 ### No visuals found for scenes
 - Check your `PEXELS_API_KEY` is set correctly in `.env`
 - Ensure `OPENVERSE_ENABLED=true` for CC image fallback (no key required)
-- Add local assets to `input/input-assets/` as a fallback
+- Add local assets to `input/visuals/` as a fallback
 
 ### Remotion rendering hangs or crashes
 - Ensure sufficient memory is available

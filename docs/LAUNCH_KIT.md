@@ -94,7 +94,7 @@ Link the repo at the top and bottom.
 
 ## Pre-launch checklist
 - [ ] Repo public, README sharp (done)
-- [ ] Demo visual in README (done — assets/demo-flow.svg)
+- [ ] Demo visual in README (done — assets/diagrams/demo-flow.svg)
 - [ ] Star History badge (done)
 - [ ] At least 1 released binary / tag (tag v5.1)
 - [ ] 3–5 good-first-issues open (see GOOD_FIRST_ISSUES.md)
