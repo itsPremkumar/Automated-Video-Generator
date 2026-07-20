@@ -111,11 +111,26 @@ export async function runAgenticPipeline(
         for (const s of plan.scenes) s.visualPreference = req.preferVisual;
     }
 
+    const LOCAL_MEDIA_RE = /\.(jpg|jpeg|png|webp|gif|mp4|mov|webm|m4v)$/i;
     if (req.localAssets && req.localAssets.length > 0) {
         plan.scenes.forEach((s, i) => {
             s.localAsset = req.localAssets![i % req.localAssets!.length];
         });
         emit({ stage: 'plan', percent: 100, message: `Bound ${req.localAssets.length} local asset(s) to ${plan.scenes.length} scenes` });
+    } else {
+        try {
+            const assetsDir = inputAssetPath();
+            if (fs.existsSync(assetsDir)) {
+                const files = fs.readdirSync(assetsDir).filter((f) => LOCAL_MEDIA_RE.test(f));
+                if (files.length > 0) {
+                    req.localAssets = files.sort();
+                    plan.scenes.forEach((s, i) => {
+                        s.localAsset = req.localAssets![i % req.localAssets!.length];
+                    });
+                    emit({ stage: 'plan', percent: 100, message: `Auto-detected ${files.length} local asset(s) from input-assets/ → bound to ${plan.scenes.length} scenes` });
+                }
+            }
+        } catch { /* input-assets/ may not exist or be inaccessible; skip silently */ }
     }
     if (req.videoClips && req.videoClips.length > 0) {
         plan.scenes.forEach((s, i) => {
