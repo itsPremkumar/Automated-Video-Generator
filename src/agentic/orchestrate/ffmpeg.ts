@@ -1,6 +1,8 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import { runFfmpeg as runFfmpegShared, FfmpegError } from '../../lib/ffmpeg.js';
 import { ffmpegDrawtextEscape } from '../../lib/ffmpeg-text.js';
+import { resolveProjectPath } from '../../shared/runtime/paths.js';
 
 /** Hard-timeout wrapper for network/IO promises. */
 export function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
@@ -74,8 +76,9 @@ export function runFfmpeg(args: string[], timeoutMs = 60000): Promise<number> {
 export function makePlaceholder(keywords: string[], kind: 'image' | 'video' | 'music'): string {
     const ffmpeg: string = require('ffmpeg-static');
     const { execFileSync } = require('child_process');
-    const os = require('os');
-    const base = `${os.tmpdir()}/agentic_ph_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const tmpDir = resolveProjectPath('workspace', 'tmp', 'placeholders');
+    fs.mkdirSync(tmpDir, { recursive: true });
+    const base = `${tmpDir}/ph_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const label = (keywords.join(' ') || 'video').slice(0, 40);
     if (kind === 'music') {
         const p = base + '.wav';
@@ -108,8 +111,9 @@ export function normalizeAudio(src: string): string {
     if (!src || !fs.existsSync(src)) return src;
     const ffmpeg: string = require('ffmpeg-static');
     const { execFileSync } = require('child_process');
-    const os = require('os');
-    const out = `${os.tmpdir()}/agentic_music_${Date.now()}_${Math.random().toString(36).slice(2)}.mp3`;
+    const tmpDir = resolveProjectPath('workspace', 'tmp', 'normalize');
+    fs.mkdirSync(tmpDir, { recursive: true });
+    const out = `${tmpDir}/music_${Date.now()}_${Math.random().toString(36).slice(2)}.mp3`;
     try {
         execFileSync(ffmpeg, ['-i', src, '-c:a', 'libmp3lame', '-b:a', '128k', '-y', out], {
             stdio: 'ignore',

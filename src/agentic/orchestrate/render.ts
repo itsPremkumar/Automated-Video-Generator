@@ -11,7 +11,7 @@ import { writeJson, readJson } from '../workspace.js';
 import { chunkCues, mergeWordsToLines, fmtSrt } from './captions.js';
 import { runFfmpeg, estimateAudioDurationSafe } from './ffmpeg.js';
 import type { PipelineResult } from './types.js';
-import { OUTPUT_ROOT } from '../../constants/config.js';
+import { AGENTIC_OUTPUT_DIR } from '../workspace.js';
 
 /** Wrap a caption into lines that fit the frame width (ffmpeg drawtext has no auto-wrap). */
 function wrapCaptionLines(text: string, frameW: number, fontsize: number): string[] {
@@ -227,7 +227,7 @@ async function writeOutputArtifacts(
         }
     } catch { /* plugin hooks are best-effort */ }
     try {
-        const outputDir = path.resolve(OUTPUT_ROOT, res.workspace.jobId);
+        const outputDir = path.resolve(AGENTIC_OUTPUT_DIR, res.workspace.jobId);
         fs.mkdirSync(outputDir, { recursive: true });
         const files = fs.readdirSync(outDir).filter((f) => f.startsWith(res.workspace.jobId));
         let copied = 0;
@@ -353,7 +353,7 @@ export async function renderAgenticSlideshow(
             });
         });
 
-    const srtRel = `agentic-pipeline/workspaces/${res.workspace.jobId}/render/_captions_${res.workspace.jobId}.srt`;
+    const srtRel = `${res.workspace.root}/render/_captions_${res.workspace.jobId}.srt`;
     const srtPath = path.resolve(process.cwd(), srtRel).replace(/\\/g, '/');
     let captionFile: string | null = null;
     if (burn) {

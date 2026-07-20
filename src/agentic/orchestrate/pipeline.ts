@@ -50,7 +50,7 @@ export async function runAgenticPipeline(
         } catch { /* defaults */ }
         const pctx = new PluginContext({
             jobId,
-            workspaceRoot: `./agentic-pipeline/workspaces/${jobId}`,
+            workspaceRoot: `./workspace/runs/${jobId}`,
             config: pluginCfg,
         });
         const preg = await createPluginRegistry(pctx);

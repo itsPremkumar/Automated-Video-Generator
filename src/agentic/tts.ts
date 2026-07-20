@@ -17,6 +17,7 @@ import * as path from 'path';
 import { Plan, ScenePlan } from './types.js';
 import { AgenticWorkspace } from './workspace.js';
 import { CaptionSegment, writeCaptionSidecars, syllableWordTimings } from '../lib/captions.js';
+import { resolveProjectPath } from '../shared/runtime/paths.js';
 
 const ffmpeg: string = require('ffmpeg-static');
 const { execFileSync } = require('child_process');
@@ -39,7 +40,9 @@ export interface VoiceoverResult {
 }
 
 function toneForScene(text: string, durationSec: number, idx: number): { audioPath: string; durationSec: number } {
-    const p = `${os.tmpdir()}/agentic_vo_${Date.now()}_${idx}_${Math.random().toString(36).slice(2)}.wav`;
+    const toneDir = resolveProjectPath('workspace', 'tmp', 'tone-fallback');
+    fs.mkdirSync(toneDir, { recursive: true });
+    const p = `${toneDir}/vo_${Date.now()}_${idx}_${Math.random().toString(36).slice(2)}.wav`;
     const dur = Math.max(1.5, durationSec);
     // A soft 220Hz tone, quiet, so the video has an audio track offline.
     execFileSync(

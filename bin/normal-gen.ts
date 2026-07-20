@@ -92,7 +92,7 @@ async function render(out: string, visuals: string[], musicPath: string | null, 
 
 async function main() {
     const script = 'A calm morning routine improves your whole day. [Visual: morning routine]\nDrink water and stretch before screens. [Visual: stretch]\nPlan your top three tasks. [Visual: planning]\nA small win builds momentum. [Visual: success]';
-    const ws = `agentic-pipeline/workspaces/normal_${Date.now()}`;
+    const ws = `workspace/runs/normal_${Date.now()}`;
     fs.mkdirSync(ws + '/images', { recursive: true });
 
     const visuals = await buildVisuals(script, ws);

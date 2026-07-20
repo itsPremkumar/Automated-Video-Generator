@@ -43,7 +43,7 @@ export interface AutoRunReport {
     postRender?: import('./gate.js').PostRenderCheck;
 }
 
-const VIDEO_CACHE = path.resolve(process.cwd(), 'agentic-pipeline/.video-cache.json');
+const VIDEO_CACHE = path.resolve(process.cwd(), 'workspace/cache/.video-cache.json');
 
 function now() {
     return Date.now();

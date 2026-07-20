@@ -104,8 +104,8 @@ async function main() {
         for (const c of res.postRender.checks) console.log(`   ${c.pass ? '✓' : '✗'} ${c.id} ${c.label}: ${c.detail}`);
     }
 
-    const cs = `agentic-pipeline/workspaces/${res.workspace.jobId}/contact-sheet.png`;
-    const dr = `agentic-pipeline/workspaces/${res.workspace.jobId}/decisions-report.txt`;
+    const cs = `workspace/runs/${res.workspace.jobId}/contact-sheet.png`;
+    const dr = `workspace/runs/${res.workspace.jobId}/decisions-report.txt`;
     console.log(`\n🎉 DONE → ${out}\n   backend=${res.backend} fullyAgentDriven=${res.fullyAgentDriven}`);
     console.log(`   🖼  See every approved asset: ${cs}`);
     console.log(`   📝 Decision report:         ${dr}`);

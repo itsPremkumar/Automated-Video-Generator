@@ -2,7 +2,7 @@
  * Per-job workspace helpers.
  *
  * Every agentic job gets an isolated, auditable folder under
- * agentic-pipeline/workspaces/<jobId>/ so an agent (or human) can inspect
+ * workspace/runs/<jobId>/ so an agent (or human) can inspect
  * every downloaded asset, every verification result, and every decision.
  */
 
@@ -20,7 +20,9 @@ export interface AgenticWorkspace {
     verificationDir: string;
 }
 
-const WORKSPACES_ROOT = resolveProjectPath('agentic-pipeline', 'workspaces');
+const WORKSPACES_ROOT = resolveProjectPath('workspace', 'runs');
+export const AGENTIC_OUTPUT_DIR = resolveProjectPath('workspace', 'output');
+export const AGENTIC_TMP_DIR = resolveProjectPath('workspace', 'tmp');
 
 export function workspaceRootFor(jobId: string): string {
     return path.join(WORKSPACES_ROOT, jobId);
@@ -113,7 +115,7 @@ export function readJson<T = any>(ws: AgenticWorkspace, relativePath: string): T
 }
 
 /**
- * Prune old workspaces so agentic-pipeline/workspaces never grows unbounded.
+ * Prune old workspaces so workspace/runs never grows unbounded.
  * Keeps the N most-recent jobs (default 25) and deletes the rest. Safe to call
  * at the start of every run. Returns the number of workspaces removed.
  */

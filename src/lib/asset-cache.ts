@@ -6,7 +6,7 @@
  * slows batches. This cache stores each asset once, keyed by a hash of its
  * source URL, under a shared directory:
  *
- *   agentic-pipeline/.asset-cache/<sha256(url)><ext>
+ *   workspace/cache/<sha256(url)><ext>
  *
  * Zero cost, offline-safe:
  *  - If the cached file exists and is non-trivial, return it without network.
@@ -22,7 +22,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const CACHE_DIR = path.join(process.cwd(), 'agentic-pipeline', '.asset-cache');
+const CACHE_DIR = path.join(process.cwd(), 'workspace', 'cache');
 
 function keyFor(url: string): string {
     return crypto.createHash('sha256').update(url).digest('hex');

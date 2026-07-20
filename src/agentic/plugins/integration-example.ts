@@ -24,7 +24,7 @@ export async function runWithPluginsAutopilot(
     // 1. Setup plugins
     const registry = await setupPluginsForAutopilot(
         `job_${Date.now()}`,
-        `./agentic-pipeline/workspaces/job_${Date.now()}`,
+        `./workspace/runs/job_${Date.now()}`,
         { topic, title, ...options },
     );
 
@@ -80,7 +80,7 @@ export async function runWithPluginsManual(topic: string, title: string, customP
     const jobId = `job_${Date.now()}`;
     const context = new PluginContext({
         jobId,
-        workspaceRoot: `./agentic-pipeline/workspaces/${jobId}`,
+        workspaceRoot: `./workspace/runs/${jobId}`,
         config: { topic, title },
     });
 
