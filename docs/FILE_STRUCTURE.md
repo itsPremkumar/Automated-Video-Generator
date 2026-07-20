@@ -16,11 +16,145 @@ src/        main backend and shared runtime code
 electron/   desktop runtime integration
 docs/       project and architecture documentation
 assets/     desktop and repository branding assets
-public/     static web assets
-input/      source scripts and user-provided media inputs
-output/     generated job output folders
+public/     STATIC shipped assets (git-tracked, served at `/`)
+input/      USER-CURATED content (scripts + media)
+workspace/  RUNTIME-GENERATED files (fully gitignored)
+output/     RENDERED video artifacts (gitignored)
 scripts/    developer and packaging scripts
 remotion/   video rendering composition files
+sub-modules/ external submodule repos
+```
+
+## Folder Architecture (public / workspace / input / output)
+
+These four folders form the core data layout. The diagram below shows their
+on-disk structure, Express serving mounts, and data flow between them.
+
+```
+Legend:
+  📁 directory    🗄️ file    🔗 symlink/service
+  🡺  data flow   📡 Express mount
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      EXPRESS SERVING PRIORITY                           │
+│                                                                         │
+│  1st:  [staging]   app.use(express.static(resolveRuntimePublicPath()))  │
+│                    → workspace/staging/<path>  at  /<path>              │
+│  2nd:  [public]    app.use(express.static(resolveProjectPath('public')))│
+│                    → public/<path>  at  /<path>                         │
+│  3rd:  [input]     app.use('/assets/input', static(resolveProjectPath('│
+│                    → input/<path>  at  /assets/input/<path>            │
+│  4th:  [routes]    /api/...  /jobs/...  /generate-video  /download/... │
+└─────────────────────────────────────────────────────────────────────────┘
+
+                              ┌──────────────────────┐
+                              │   public/             │  git-tracked
+                              │   ├── favicon.ico     │  served at /
+                              │   ├── logo.png        │  (only if staging miss)
+                              │   └── manifest.json   │
+                              └──────────────────────┘
+
+                              ┌──────────────────────┐
+                              │   input/              │  partially git-tracked
+                              │   ├── scripts/        │
+                              │   │   └── input-      │  served at /assets/input
+                              │   │       scripts.json│
+                              │   ├── visuals/        │  user images/videos
+                              │   └── music/          │  user audio
+                              └──────────────────────┘
+
+                              ┌──────────────────────┐
+                              │   workspace/          │  FULLY GITIGNORED
+                              │   ├── staging/        │  SERVED AT /  (1st priority)
+                              │   │   ├── <outputId>/ │  staged by render.ts
+                              │   │   │   ├── videos/ │
+                              │   │   │   ├── audio/  │
+                              │   │   │   └── visuals/│
+                              │   │   ├── social_*/   │  social downloads
+                              │   │   └── free-video/ │  free video downloads
+                              │   ├── jobs/           │  agentic pipeline workspaces
+                              │   │   └── <jobId>/    │
+                              │   │       ├── assets/ │
+                              │   │       │   ├── images/
+                              │   │       │   ├── videos/
+                              │   │       │   └── music/
+                              │   │       └── verification/
+                              │   ├── cache/          │
+                              │   │   └── sfx/        │  sound effect cache
+                              │   ├── tmp/            │  CLI temp files
+                              │   └── <outputId>/     │  pipeline workspace dir
+                              │       ├── videos/     │
+                              │       ├── audio/      │
+                              │       └── visuals/    │
+                              └──────────────────────┘
+                                     │
+                                     │ render.ts copies:
+                                     │ workspace/<id>/ → staging/<id>/
+                                     ▼
+                              ┌──────────────────────┐
+                              │   output/             │  FULLY GITIGNORED
+                              │   └── <outputId>/     │  per-job output
+                              │       ├── scene-     │  consumed by Remotion
+                              │       │   data.json   │
+                              │       └── *.mp4       │  final rendered video
+                              └──────────────────────┘
+
+### Path resolution functions (src/shared/runtime/paths.ts)
+
+resolveProjectPath(...)     → projectRoot/...
+resolveRuntimePublicPath()  → projectRoot/workspace/staging/  (Electron: dataRoot/staging/)
+resolveRuntimePublicPath(..)→ projectRoot/workspace/staging/...
+resolveWorkspacePath(...)   → projectRoot/workspace/...
+resolvePublicFilePath(p)    → workspace/staging/<p>  (if exists), else public/<p>
+resolveBundledProjectPath() → projectRoot/...  (raw, no runtime redirect)
+
+### Pipeline workspace lifecycle (src/pipeline-workspace.ts)
+
+createPipelineWorkspace(outputDir, id)
+  ↓
+  outputId = sanitizeOutputId(id)       # alphanumeric + _ -
+  workspaceDir = workspace/<outputId>/
+    videos/  audio/  visuals/
+  publicNamespace = <outputId>          # no "jobs/" prefix
+  publicRoot = workspace/staging/
+
+At render time (render.ts):
+  source: workspace/<outputId>/...
+  dest:   staging/<outputId>/...
+  → staticFile('<outputId>/visuals/x.jpg')  resolves to staging/<outputId>/visuals/x.jpg
+  → browser requests   /<outputId>/visuals/x.jpg
+  → Express serves     workspace/staging/<outputId>/visuals/x.jpg
+
+### Agentic workspace layout (src/agentic/workspace.ts)
+
+workspace/jobs/<jobId>/
+  assets/
+    images/
+    videos/
+    music/
+  verification/
+
+### Key serving rules
+
+| File location              | URL path             | Express mount              |
+|---------------------------|----------------------|----------------------------|
+| workspace/staging/foo     | /foo                 | static(workspace/staging/) |
+| public/bar                | /bar                 | static(public/)            |
+| input/visuals/baz.jpg     | /assets/input/visuals/baz.jpg | static(input/)     |
+| (none — route handler)    | /jobs/:jobId         | router.get('/jobs/:jobId') |
+| (none — route handler)    | /api/...             | router.use('/api')         |
+
+### Per-asset URL path generation (toPublicRelativePath)
+
+toPublicRelativePath(absolutePath)
+→ if under staging root:  relative-to-staging   (e.g. "video123/visuals/img.jpg")
+→ if under workspace:     <outputId>/<rest>      (e.g. "video123/visuals/img.jpg")
+→ otherwise:              throws (outside accessible dirs)
+
+Used as `localPath` in scene data JSON → consumed by:
+  - Remotion staticFile()   for rendering
+  - HTML <video src="...">  for browser playback
+  - /api/fs/view?path=...   for file previews
 ```
 
 ## `src/`
