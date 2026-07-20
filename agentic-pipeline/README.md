@@ -90,7 +90,7 @@ and the module folders. The *new* work is: (a) extend verification to images + m
 Every job gets an isolated, auditable workspace:
 
 ```
-agentic-pipeline/workspaces/<jobId>/
+workspace/jobs/<jobId>/
   plan.json                 # STAGE 1: director's shot list
   assets/
     images/<scene_01>/     candidate_1.jpg  candidate_2.jpg  approved.jpg

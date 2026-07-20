@@ -29,7 +29,7 @@ distinct media from **every working source**, not just Pexels.
 |---|---|---|---|---|
 | OpenLofi | music | ❌ | ✅ (404s offline) | `src/lib/free-music.ts` `OpenLofiProvider` |
 | Internet Archive | music | ❌ | ✅ (404s offline) | `InternetArchiveProvider` |
-| Local free folder | music | ❌ | ✅ | `LocalFreeProvider` (`input/free-music/`) |
+| Local bgm folder | music | ❌ | ✅ | `LocalFreeProvider` (`input/bgm/`) |
 
 Music is resolved via `resolveFreeBackgroundMusic` → these providers.
 
