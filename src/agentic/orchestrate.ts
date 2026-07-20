@@ -1008,7 +1008,13 @@ async function buildSfxLayer(
  * the input are preserved as separate paragraphs.
  */
 function wrapCaptionLines(text: string, frameW: number, fontsize: number): string[] {
-    const maxChars = Math.max(10, Math.floor((frameW * 0.82) / (fontsize * 0.62)));
+    // Empirically measured: Arial average glyph advance ~0.62 * fontsize at
+    // our render settings. Use 0.65 for headroom, and reserve side padding PLUS
+    // the drawtext box border (boxborderw=10) so centered lines never touch or
+    // cross the edge. (0.56 previously allowed ~10% too many chars/line, which
+    // overflowed and got cut off at the right edge — verified by render.)
+    const sidePad = 64 + 12; // 64px margin + 12px box border (boxborderw=10)
+    const maxChars = Math.max(8, Math.floor((frameW - 2 * sidePad) / (fontsize * 0.65)));
     const out: string[] = [];
     for (const para of String(text).split('\n')) {
         const words = para.split(/\s+/).filter(Boolean);
@@ -1370,7 +1376,7 @@ export async function renderAgenticSlideshow(
                     });
                 }
             }
-            tBase += Math.max(0, dur - xf);
+            tBase += Math.max(0, dur);
         }
         videoMap = ctag;
     }
@@ -1520,9 +1526,12 @@ export async function renderAgenticSlideshow(
                     });
                 }
             }
-            // Per-segment kinetic (relative t).
+            // Per-segment kinetic (relative t). Gated to captions==='none' so
+            // burned captions + kinetic hooks don't stack into a ghost (the
+            // main-path equivalent at ~1385 already does this; the segmented
+            // path previously did NOT, causing duplicate caption text).
             const kin: string[] = [];
-            if (clip.kind === 'scene' && stylePlan && opts.kinetic !== false) {
+            if (clip.kind === 'scene' && stylePlan && opts.kinetic !== false && opts.captions === 'none') {
                 for (const cue of stylePlan.scenes[clip.idx]?.kinetic ?? []) {
                     const start = cue.atSec.toFixed(2);
                     const end = (cue.atSec + (cue.kind === 'wordpop' ? 0.9 : 2.6)).toFixed(2);

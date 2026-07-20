@@ -15,7 +15,12 @@ export function ffmpegDrawtextEscape(t: string): string {
     return String(t)
         .replace(/\\/g, '/') // backslash first, so later escapes aren't re-escaped
         .replace(/:/g, '\\:')
-        .replace(/'/g, "'\\''")
+        // Apostrophe: ffmpeg's drawtext does NOT accept the '\'' filtergraph
+        // escape — it leaks the remainder of the filter string as visible on-
+        // screen text (verified by repro). A typographic ' (U+2019) avoids the
+        // bare single quote entirely and renders fine with Arial, matching the
+        // kinetic-overlay path which already uses this trick.
+        .replace(/'/g, '’')
         .replace(/"/g, '\\"')
         .replace(/,/g, '\\,');
 }
