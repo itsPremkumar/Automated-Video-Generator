@@ -26,6 +26,12 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Lint
+        # Fails CI on lint ERRORS only (warnings are non-blocking). Covers
+        # src/ and remotion/. The _study/ reference clones are gitignored +
+        # ignored here.
+        run: npx eslint src/ remotion/
+
       - name: Run test suite
         # Network-dependent image-provider tests (Wikimedia/MetMuseum) skip
         # automatically when their host is unreachable (see TESTING.md §6), so

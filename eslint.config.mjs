@@ -27,6 +27,7 @@ export default tseslint.config(
             'public/',
             '.tmp/',
             'tmp/',
+            'remotion/_study/',
         ],
     },
     {

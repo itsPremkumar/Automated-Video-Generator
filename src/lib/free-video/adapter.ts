@@ -80,6 +80,7 @@ export class FreeVideoAdapter {
         if (commercialTokens.test(t)) return false;
         // Non-Latin title for a Latin query => almost always a foreign brand /
         // media clip, not the requested English topic. Reject to avoid leakage.
+        // eslint-disable-next-line no-control-regex -- \x00-\x7F is the intended ASCII range check
         const isLatinQuery = /^[\x00-\x7F]+$/.test(k);
         const nonLatinRatio = (t.match(/[぀-ヿ一-鿿]/g) || []).length / Math.max(1, t.replace(/\s/g, '').length);
         if (isLatinQuery && nonLatinRatio > 0.3) return false;

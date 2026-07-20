@@ -38,11 +38,11 @@ export type RichTransitionKind = 'fade' | 'slide' | 'circleWipe' | 'flip';
 /* Custom presentations (each renders the incoming scene over progress) */
 /* ------------------------------------------------------------------ */
 
-const FadePresentation: React.FC<TransitionPresentationComponentProps<{}>> = ({ presentationProgress, children }) => (
+const FadePresentation: React.FC<TransitionPresentationComponentProps<Record<string, never>>> = ({ presentationProgress, children }) => (
     <AbsoluteFill style={{ opacity: presentationProgress }}>{children}</AbsoluteFill>
 );
 
-const SlidePresentation: React.FC<TransitionPresentationComponentProps<{}>> = ({ presentationProgress, children }) => {
+const SlidePresentation: React.FC<TransitionPresentationComponentProps<Record<string, never>>> = ({ presentationProgress, children }) => {
     const { width } = useVideoConfig();
     return (
         <AbsoluteFill style={{ transform: `translateX(${interpolate(presentationProgress, [0, 1], [width, 0])}px)` }}>
@@ -51,7 +51,7 @@ const SlidePresentation: React.FC<TransitionPresentationComponentProps<{}>> = ({
     );
 };
 
-const FlipPresentation: React.FC<TransitionPresentationComponentProps<{}>> = ({ presentationProgress, children }) => (
+const FlipPresentation: React.FC<TransitionPresentationComponentProps<Record<string, never>>> = ({ presentationProgress, children }) => (
     <AbsoluteFill
         style={{
             perspective: 1000,
@@ -64,7 +64,7 @@ const FlipPresentation: React.FC<TransitionPresentationComponentProps<{}>> = ({ 
     </AbsoluteFill>
 );
 
-const CircleWipePresentation: React.FC<TransitionPresentationComponentProps<{}>> = ({ presentationProgress, children }) => {
+const CircleWipePresentation: React.FC<TransitionPresentationComponentProps<Record<string, never>>> = ({ presentationProgress, children }) => {
     const pct = interpolate(presentationProgress, [0, 1], [0, 150], { extrapolateRight: 'clamp' });
     return (
         <AbsoluteFill style={{ clipPath: `circle(${pct}% at 50% 50%)`, WebkitClipPath: `circle(${pct}% at 50% 50%)` }}>
@@ -73,7 +73,7 @@ const CircleWipePresentation: React.FC<TransitionPresentationComponentProps<{}>>
     );
 };
 
-function compFor(kind: RichTransitionKind): React.FC<TransitionPresentationComponentProps<{}>> {
+function compFor(kind: RichTransitionKind): React.FC<TransitionPresentationComponentProps<Record<string, never>>> {
     switch (kind) {
         case 'slide':
             return SlidePresentation;
@@ -87,7 +87,7 @@ function compFor(kind: RichTransitionKind): React.FC<TransitionPresentationCompo
     }
 }
 
-export function presentationFor(kind: RichTransitionKind): TransitionPresentation<{}> {
+export function presentationFor(kind: RichTransitionKind): TransitionPresentation<Record<string, never>> {
     return { component: compFor(kind), props: {} };
 }
 

@@ -1237,7 +1237,7 @@ export async function renderAgenticSlideshow(
         // escaped as '\,' and NO single quotes (filtergraph isn't shell-parsed).
         // Honors opts.kenBurns (config surface): when false, no zoom on images.
         const doZoom = a.kind === 'image' && opts.kenBurns !== false;
-        const zoom = doZoom ? `,zoompan=z=min(zoom+0.0008\,1.04):d=1:s=${W}x${H}` : '';
+        const zoom = doZoom ? `,zoompan=z=min(zoom+0.0008,1.04):d=1:s=${W}x${H}` : '';
         // Editing engine v1: per-scene color grade (no LUT file needed).
         const grade = gradeFilter(stylePlan.scenes[i]?.grade ?? 'neutral');
         const tag = '[' + i + ':v]';
@@ -1348,7 +1348,7 @@ export async function renderAgenticSlideshow(
                     const out = `c${ci}`;
                     // current word highlighted yellow, rest of sentence dim white below
                     vfArgs.push(
-                        `${ctag}drawtext=${FONT_ARG}text='${safe}':fontcolor=yellow:fontsize=38:box=1:boxcolor=black@0.55:boxborderw=12:x=(w-text_w)/2:y=h-text_h-140:enable='between(t\\,${start}\,${end})'[${out}]`,
+                        `${ctag}drawtext=${FONT_ARG}text='${safe}':fontcolor=yellow:fontsize=38:box=1:boxcolor=black@0.55:boxborderw=12:x=(w-text_w)/2:y=h-text_h-140:enable='between(t\\,${start},${end})'[${out}]`,
                     );
                     ctag = `[${out}]`;
                     ci++;
@@ -1369,7 +1369,7 @@ export async function renderAgenticSlideshow(
                         const out = `c${ci}`;
                         const y = li === 0 ? yExpr : `(${yExpr})-${li * lineH}`;
                         vfArgs.push(
-                            `drawtext=${FONT_ARG}text='${safe}':fontcolor=${capColor}:fontsize=${baseSize}${boxArgs}:line_spacing=4:x=(w-text_w)/2:y=${y}:enable='between(t\\,${start}\\\,${end})'`,
+                            `drawtext=${FONT_ARG}text='${safe}':fontcolor=${capColor}:fontsize=${baseSize}${boxArgs}:line_spacing=4:x=(w-text_w)/2:y=${y}:enable='between(t\\,${start}\\,${end})'`,
                         );
                         ctag = `[${out}]`;
                         ci++;
@@ -1404,11 +1404,11 @@ export async function renderAgenticSlideshow(
                 const safe = cue.text.replace(/'/g, '’').replace(/:/g, '\\:');
                 if (cue.kind === 'lowerthird') {
                     vfArgs.push(
-                        `${ktag}drawtext=${FONT_ARG}text='${safe}':fontcolor=white:fontsize=34:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=h-text_h-90:enable='between(t\\,${start}\,${end})'[k${i}]`,
+                        `${ktag}drawtext=${FONT_ARG}text='${safe}':fontcolor=white:fontsize=34:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=h-text_h-90:enable='between(t\\,${start},${end})'[k${i}]`,
                     );
                 } else {
                     vfArgs.push(
-                        `${ktag}drawtext=${FONT_ARG}text='${safe}':fontcolor=yellow:fontsize=64:box=1:boxcolor=black@0.0:borderw=3:bordercolor=yellow:x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t\\,${start}\,${end})'[k${i}]`,
+                        `${ktag}drawtext=${FONT_ARG}text='${safe}':fontcolor=yellow:fontsize=64:box=1:boxcolor=black@0.0:borderw=3:bordercolor=yellow:x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t\\,${start},${end})'[k${i}]`,
                     );
                 }
                 ktag = `[k${i}]`;
@@ -1521,7 +1521,7 @@ export async function renderAgenticSlideshow(
                         const safe = ffmpegDrawtextEscape(ln).replace(/\n/g, ' ');
                         const y = li === 0 ? yExpr : `(${yExpr})-${li * lineH}`;
                         segCaptionArg.push(
-                            `drawtext=${FONT_ARG}text='${safe}':fontcolor=${capColor}:fontsize=${baseSize}${boxArgs}:line_spacing=4:x=(w-text_w)/2:y=${y}:enable='between(t\\,${start}\\\,${end})'`,
+                            `drawtext=${FONT_ARG}text='${safe}':fontcolor=${capColor}:fontsize=${baseSize}${boxArgs}:line_spacing=4:x=(w-text_w)/2:y=${y}:enable='between(t\\,${start}\\,${end})'`,
                         );
                     });
                 }
@@ -1537,7 +1537,7 @@ export async function renderAgenticSlideshow(
                     const end = (cue.atSec + (cue.kind === 'wordpop' ? 0.9 : 2.6)).toFixed(2);
                     const safe = cue.text.replace(/'/g, '’').replace(/:/g, '\\:');
                     kin.push(
-                        `drawtext=${FONT_ARG}text='${safe}':fontcolor=${cue.kind === 'wordpop' ? 'yellow' : 'white'}:fontsize=${cue.kind === 'wordpop' ? 64 : 34}:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=${cue.kind === 'wordpop' ? '(h-text_h)/2' : 'h-text_h-90'}:enable='between(t\\,${start}\,${end})'`,
+                        `drawtext=${FONT_ARG}text='${safe}':fontcolor=${cue.kind === 'wordpop' ? 'yellow' : 'white'}:fontsize=${cue.kind === 'wordpop' ? 64 : 34}:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=${cue.kind === 'wordpop' ? '(h-text_h)/2' : 'h-text_h-90'}:enable='between(t\\,${start},${end})'`,
                     );
                 }
             }
