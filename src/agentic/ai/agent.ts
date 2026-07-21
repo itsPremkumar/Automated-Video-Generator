@@ -109,13 +109,21 @@ export function writeScriptHeuristic(topic: string, title: string): string {
     // fetches a DIFFERENT on-topic image. Critical: the leading word must differ
     // across scenes (not all "coffee X"), because the fetcher joins ALL keywords
     // into one query and a shared leading noun collapses to the same top result.
+    // Generate topic-relevant angles from the topic words themselves.
+    const topicParts = topic
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]/g, ' ')
+        .split(/\s+/)
+        .filter((w) => w.length > 2)
+        .slice(0, 4);
+    const fallback = topicParts.length > 1 ? topicParts : [kw || 'nature'];
     const angles = [
-        `${kw} cup`,
-        `espresso machine`,
-        `barista cafe`,
-        `${kw} beans roast`,
-        `latte art`,
-        `${kw} pour over`,
+        fallback.join(' '),
+        `${fallback[0]} ${fallback[fallback.length - 1]}`,
+        `${fallback[0]} close up`,
+        `${fallback[fallback.length - 1]} nature`,
+        `${fallback[0]} cinematic`,
+        `beautiful ${fallback[0]}`,
     ];
     const visualFor = (i: number) => angles[i % angles.length];
 

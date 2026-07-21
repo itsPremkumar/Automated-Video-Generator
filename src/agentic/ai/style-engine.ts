@@ -146,14 +146,17 @@ export function xfadeName(kind: TransitionKind): string {
  */
 export function gradeFilter(kind: GradeKind): string {
     switch (kind) {
+        // IMPORTANT: ffmpeg eq filter brightness range is [-1.0, 1.0] where 0=original.
+        // Values outside this range are CLAMPED, so 1.0=full white, -1.0=full black.
+        // Use SMALL offsets (e.g. +0.05 for slightly brighter, -0.03 for slightly darker).
         case 'warm':
-            return 'eq=contrast=1.05:brightness=1.04:saturation=1.22:gamma=0.96';
+            return 'eq=contrast=1.05:brightness=0.05:saturation=1.22:gamma=0.96';
         case 'cool':
-            return 'eq=contrast=1.0:brightness=0.97:saturation=1.08:gamma=1.05';
+            return 'eq=contrast=1.0:brightness=-0.04:saturation=1.08:gamma=1.05';
         case 'cinematic':
-            return 'eq=contrast=1.12:brightness=0.97:saturation=1.1:gamma=0.95';
+            return 'eq=contrast=1.12:brightness=-0.03:saturation=1.1:gamma=0.95';
         case 'vivid':
-            return 'eq=contrast=1.08:saturation=1.35:brightness=1.0';
+            return 'eq=contrast=1.08:saturation=1.35';
         case 'neutral':
         default:
             return 'eq=contrast=1.02:saturation=1.05';
