@@ -1049,22 +1049,26 @@ export async function fetchVisualsForScene(
                     console.log(`🎨 [FETCH] 📐 Search Orientation: ${orient}`);
                     const videos = await searchVideos(q, 15, 2, orient);
                     if (videos.length > 0) {
+                        // Use resultIndex to ensure different scenes get different videos
+                        const pickIndex = Math.min(resultIndex, videos.length - 1);
                         console.log(
-                            `🎨 [FETCH] ✅ Found video on Pexels: ${videos[0].url} (${videos[0].width}x${videos[0].height}, ${videos[0].videoDuration}s)`,
+                            `🎨 [FETCH] ✅ Found video on Pexels: ${videos[pickIndex].url} (${videos[pickIndex].width}x${videos[pickIndex].height}, ${videos[pickIndex].videoDuration}s)`,
                         );
-                        cache[cacheKey] = videos[0];
+                        cache[cacheKey] = videos[pickIndex];
                         saveCache(cache);
-                        return videos[0];
+                        return videos[pickIndex];
                     }
 
                     const pixabayVideos = await searchPixabayVideos(q, 15, 2, orient);
                     if (pixabayVideos.length > 0) {
+                        // Use resultIndex to ensure different scenes get different videos
+                        const pickIndex = Math.min(resultIndex, pixabayVideos.length - 1);
                         console.log(
-                            `🎨 [FETCH] ✅ Found video on Pixabay: ${pixabayVideos[0].url} (${pixabayVideos[0].width}x${pixabayVideos[0].height}, ${pixabayVideos[0].videoDuration}s)`,
+                            `🎨 [FETCH] ✅ Found video on Pixabay: ${pixabayVideos[pickIndex].url} (${pixabayVideos[pickIndex].width}x${pixabayVideos[pickIndex].height}, ${pixabayVideos[pickIndex].videoDuration}s)`,
                         );
-                        cache[cacheKey] = pixabayVideos[0];
+                        cache[cacheKey] = pixabayVideos[pickIndex];
                         saveCache(cache);
-                        return pixabayVideos[0];
+                        return pixabayVideos[pickIndex];
                     }
                     console.log(`🎨 [FETCH] ⚠️ No video for "${q}" at orientation "${orient}"`);
                 }
@@ -1083,7 +1087,9 @@ export async function fetchVisualsForScene(
                     });
                     const freeResults = sources.flatMap((s) => s.results);
                     if (freeResults.length > 0) {
-                        const best = freeResults[0];
+                        // Use resultIndex to ensure different scenes get different videos
+                        const pickIndex = Math.min(resultIndex, freeResults.length - 1);
+                        const best = freeResults[pickIndex];
                         const videosDir = resolveRuntimePublicPath();
                         const dlResults = await freeVideoDownloader.downloadAll([best], videosDir);
                         if (dlResults.length > 0 && dlResults[0].success && dlResults[0].localPath) {
