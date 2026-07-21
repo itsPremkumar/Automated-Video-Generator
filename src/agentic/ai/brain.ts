@@ -223,7 +223,7 @@ export class AgentBrain {
         const r = await this.guarded(() =>
             completeJSON<{ keywords: string[] }>(
                 this.o,
-                `You are a stock-media search expert. Given a scene's narration, return ${n} diverse, specific, visually-descriptive search queries (e.g. "barista pouring latte art", not "coffee nature"). No repeats.`,
+                `You are a stock-media search expert. Given a scene's narration, return ${n} diverse, specific, visually-descriptive search queries (e.g. "sunset over mountain peaks", not "nature landscape"). No repeats.`,
                 `Title: ${title}\nScene narration: ${sceneText}`,
                 '{"keywords":["...","..."]}',
             ),

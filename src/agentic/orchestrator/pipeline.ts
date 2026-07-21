@@ -242,7 +242,7 @@ export async function runAgenticPipeline(
             const bySpecificity = [...keywords].sort((a, b) => b.length - a.length);
             const ladder = [bySpecificity, keywords];
             if (keywords.length > 1) ladder.push([keywords[0]]);
-            ladder.push([topicNoun || 'coffee', 'nature', 'city', 'technology'].slice(0, 1));
+            ladder.push([topicNoun || 'nature', 'city', 'technology'].slice(0, 1));
             const seen = new Set<string>();
             for (const raw of ladder) {
                 const q = raw.filter(Boolean);
