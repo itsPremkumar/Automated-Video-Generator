@@ -466,7 +466,7 @@ export async function downloadTopicMedia(
  * Pexels videos often have 0.5-1s fade-in from black.
  * Returns the trimmed path (or original if no trim needed).
  */
-function trimBlackFrames(videoPath: string): string {
+export function trimBlackFrames(videoPath: string): string {
     if (!fs.existsSync(videoPath)) return videoPath;
     const ffprobe = require('ffprobe-static')?.path || 'ffprobe';
     const ffmpeg = require('ffmpeg-static') || 'ffmpeg';

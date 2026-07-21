@@ -19,6 +19,7 @@ import { AssetCandidate, Plan, ScenePlan } from '../types.js';
 import { inputAssetPath } from '../../lib/path-safety.js';
 import { aiVerifyAsset } from '../ai/ai-verify.js';
 import { ModelBridge, NullBridge, type LlmBridge } from '../ai/bridge.js';
+import { trimBlackFrames } from '../../lib/media-downloader.js';
 
 /**
  * Run async producers with a bounded concurrency. `tasks` is an array of
@@ -252,6 +253,18 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                 } catch (e) {
                     console.warn(`⚠ asset materialise failed for scene ${i}: ${(e as Error)?.message ?? e}`);
                     return; // skip this candidate; never register a ghost (unwritten) path
+                }
+                // Trim black frames from video candidates (Pexels fade-in fix)
+                if (kind === 'video' && localPath && fs.existsSync(localPath)) {
+                    try {
+                        const trimmed = trimBlackFrames(localPath);
+                        if (trimmed !== localPath) {
+                            localPath = trimmed;
+                        }
+                    } catch (e) {
+                        // Non-fatal: if trim fails, use the original
+                        console.warn(`⚠ black frame trim failed for scene ${i}: ${(e as Error)?.message ?? e}`);
+                    }
                 }
                 const lic = normalizeLicense(f);
                 // OPT-IN AI verify (acquire stage): score the materialised
