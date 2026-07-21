@@ -473,8 +473,11 @@ export async function runAgenticPipeline(
                 a.audioPath = v.audioPath;
                 a.durationSec = v.durationSec;
                 a.captionSegments = v.captionSegments;
+                scene.durationSec = v.durationSec;
             }
         }
+        // Recalculate total plan duration from updated per-scene durations
+        plan.totalDurationSec = plan.scenes.reduce((acc, s) => acc + s.durationSec, 0);
         manifest.voiceoverDriven = voiceovers.voiceoverDriven;
         writeJson(workspace, 'render-manifest.json', manifest);
         writeJson(workspace, 'scene-data.json', {

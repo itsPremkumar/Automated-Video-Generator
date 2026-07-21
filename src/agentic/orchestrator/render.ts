@@ -587,7 +587,7 @@ export async function renderAgenticSlideshow(
                     kin.push(`drawtext=${FONT_ARG}text='${safe}':fontcolor=${cue.kind === 'wordpop' ? 'yellow' : 'white'}:fontsize=${cue.kind === 'wordpop' ? 64 : 34}:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=${cue.kind === 'wordpop' ? '(h-text_h)/2' : 'h-text_h-90'}:enable='between(t\\,${start},${end})'`);
                 }
             }
-            const vfChain = `[0:v]${!isVideo ? 'loop=loop=-1:size=1,' : ''}fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${grade ? ',' + grade : ''},format=yuv420p,vignette=PI/5${segCaptionArg.length ? ',' + segCaptionArg.join(',') : ''}${kin.length ? ',' + kin.join(',') : ''}[v]`;
+            const vfChain = `[0:v]tpad=stop_mode=clone:stop_duration=${dur},fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${grade ? ',' + grade : ''},format=yuv420p,vignette=PI/5${segCaptionArg.length ? ',' + segCaptionArg.join(',') : ''}${kin.length ? ',' + kin.join(',') : ''}[v]`;
             const voPath = clip.kind === 'scene' ? res.voiceovers?.scenes[clip.idx]?.audioPath : undefined;
             const hasVo = !!voPath && fs.existsSync(voPath);
             const inputs: string[] = ['-i', clip.file];
@@ -600,7 +600,7 @@ export async function renderAgenticSlideshow(
             const args: string[] = [
                 ...inputs, '-filter_complex', fc, '-map', '[v]', '-map', '[a]',
                 '-t', String(dur), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', '25',
-                '-c:a', 'aac', '-b:a', '192k', '-shortest', '-y', seg,
+                '-c:a', 'aac', '-b:a', '192k', '-y', seg,
             ];
             let lastErr: any;
             for (let attempt = 0; attempt < 3; attempt++) {
