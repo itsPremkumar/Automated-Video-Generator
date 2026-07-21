@@ -9,13 +9,7 @@
    open source, MIT license, programmatic video, no api key, cc images
 -->
 
-<div align="center">
-  <video src="assets/demo/demo-landscape.mp4" width="100%" controls preload="metadata" style="border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.25);">
-    Your browser does not support the video tag. <a href="assets/demo/demo-landscape.mp4">Download MP4</a>
-  </video>
-</div>
-
-<br/>
+<!-- hero video removed per user request -->
 
 <div align="center">
   <img src="assets/logos/logo.svg" alt="Automated Video Generator" width="180" style="border-radius: 16px;">
