@@ -600,7 +600,7 @@ export async function renderAgenticSlideshow(
             const args: string[] = [
                 ...inputs, '-filter_complex', fc, '-map', '[v]', '-map', '[a]',
                 '-t', String(dur), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', '25',
-                '-c:a', 'aac', '-shortest', '-y', seg,
+                '-c:a', 'aac', '-b:a', '192k', '-shortest', '-y', seg,
             ];
             let lastErr: any;
             for (let attempt = 0; attempt < 3; attempt++) {
@@ -631,7 +631,7 @@ export async function renderAgenticSlideshow(
             '-filter_complex', [...vfArgs, ...(audioFilter ? [audioFilter] : [])].join(';'),
             '-map', videoMap, ...(audioMap.length ? audioMap : []),
             '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', '25',
-            ...(audioMap.length ? ['-c:a', 'aac', '-b:a', '128k'] : ['-an']),
+            ...(audioMap.length ? ['-c:a', 'aac', '-b:a', '192k'] : ['-an']),
             '-t', totalSec.toFixed(2), '-y', silent,
         ];
         if (process.env.DEBUG_FF) {
@@ -664,7 +664,7 @@ export async function renderAgenticSlideshow(
         const pass2 = [
             ...inputs, '-filter_complex', fc,
             '-map', '0:v:0', '-map', '[aout]',
-            '-c:v', 'copy', '-c:a', 'aac', '-b:a', '128k', '-shortest', '-y', out,
+            '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-y', out,
         ];
         await runFfmpegSpawn(pass2);
         fs.rmSync(silent, { force: true });
