@@ -291,7 +291,7 @@ export class MusicEngine {
             track,
         });
 
-        const finalPath = path.join(this.config.cacheDir, 'processed', `${MusicCache.cacheKey(track)}_processed.wav`);
+        const finalPath = path.join(this.config.cacheDir, 'processed', `${MusicCache.cacheKey(track)}_processed.mp3`);
         const processing = await this.processingPipeline.run(localPath, finalPath, {
             role: query.role,
             targetDurationSec: query.targetDurationSec,

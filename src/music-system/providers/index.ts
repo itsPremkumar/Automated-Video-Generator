@@ -7,7 +7,6 @@ import { globalRegistry } from './registry';
 import { BundledProvider } from './bundled';
 import { LocalProvider } from './local';
 import { CcMixterProvider } from './ccmixter';
-import { OpenLofiProvider } from './open-lofi';
 import { InternetArchiveProvider } from './internet-archive';
 import { ProceduralProvider } from './procedural';
 
@@ -20,11 +19,10 @@ export function registerDefaultProviders(): void {
     // Tier 3 — Network (real music, no key required)
     globalRegistry.register(new CcMixterProvider());       // priority 4
 
-    // Tier 4–5 — Network fallback
-    globalRegistry.register(new OpenLofiProvider());       // priority 5
+    // Tier 4 — Network fallback
     globalRegistry.register(new InternetArchiveProvider());// priority 6
 
-    // Tier 6 — Procedural (never fails)
+    // Tier 5 — Procedural (never fails)
     globalRegistry.register(new ProceduralProvider());     // priority 99
 }
 
@@ -32,7 +30,9 @@ export { globalRegistry } from './registry';
 export { BundledProvider } from './bundled';
 export { LocalProvider } from './local';
 export { CcMixterProvider } from './ccmixter';
-export { OpenLofiProvider } from './open-lofi';
+// OpenLofi removed — the upstream repo removed all audio files (166 catalog entries, 0 MP3s)
+// See: https://github.com/btahir/open-lofi
+// export { OpenLofiProvider } from './open-lofi';
 export { InternetArchiveProvider } from './internet-archive';
 export { ProceduralProvider } from './procedural';
 export { BaseMusicProvider, probeDuration, runFfmpeg, withSignal } from './base';

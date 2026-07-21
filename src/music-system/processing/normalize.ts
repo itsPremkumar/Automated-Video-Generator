@@ -14,13 +14,16 @@ export async function normalizeLoudness(
     outputPath: string,
     targetLufs: number = -23,
 ): Promise<string> {
-    const args = [
+    const args: string[] = [
         '-i', inputPath,
         '-af', `loudnorm=I=${targetLufs}:LRA=7:TP=-2`,
-        '-c:a', 'pcm_s16le',
+        '-c:a', outputPath.endsWith('.mp3') ? 'libmp3lame' : 'pcm_s16le',
         '-y',
         outputPath,
     ];
+    if (outputPath.endsWith('.mp3')) {
+        args.splice(6, 0, '-b:a', '192k');
+    }
 
     const { code, stderr } = await runFfmpeg(args, 30_000);
     if (code !== 0) {

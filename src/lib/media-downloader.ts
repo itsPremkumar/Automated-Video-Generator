@@ -23,6 +23,7 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
+import { execSync } from 'child_process';
 import { FreeImageAdapter } from './free-image/adapter.js';
 import { FreeVideoAdapter } from './free-video/adapter.js';
 import { freeVideoDownloader } from './free-video/index.js';
@@ -198,6 +199,16 @@ export async function downloadOneAsset(
             );
             const dr = res[0];
             if (!dr?.success || !dr.localPath) throw new Error(dr?.error || 'video download failed');
+            // Trim any initial black frame (Pexels videos often have 0.5-1s fade-in)
+            try {
+                const trimmed = trimBlackFrames(dr.localPath);
+                if (trimmed !== dr.localPath) {
+                    console.log(`  🎬 Trimmed ${((dr.localPath.length - trimmed.length) / 1024).toFixed(0)}KB of black frames from video: ${path.basename(dr.localPath)}`);
+                    dr.localPath = trimmed;
+                }
+            } catch {
+                // non-critical — black frames are a quality issue, not a blocker
+            }
             return {
                 file: dr.localPath,
                 source: hit.source,
@@ -448,4 +459,38 @@ export async function downloadTopicMedia(
     }
 
     return { images, videos };
+}
+
+/**
+ * Trim initial black frames from a video file using ffmpeg.
+ * Pexels videos often have 0.5-1s fade-in from black.
+ * Returns the trimmed path (or original if no trim needed).
+ */
+function trimBlackFrames(videoPath: string): string {
+    if (!fs.existsSync(videoPath)) return videoPath;
+    const ffprobe = require('ffprobe-static')?.path || 'ffprobe';
+    const ffmpeg = require('ffmpeg-static') || 'ffmpeg';
+
+    try {
+        // Detect black frames in first 5 seconds
+        const detectCmd = `"${ffprobe}" -v quiet -f lavfi -i "movie=${videoPath},blackframe=0.1:30" -show_entries frame=pkt_pts_time -of csv=p=0 2>&1`;
+        const out = execSync(detectCmd, { encoding: 'utf8' as BufferEncoding, timeout: 15000 });
+        const times = out.trim().split('\n').map(Number).filter(n => !isNaN(n));
+        const firstNonBlack = times.length > 0 ? Math.min(...times) : 0;
+
+        if (firstNonBlack > 0.3) {
+            // Trim initial black frames
+            const trimmedPath = videoPath.replace(/(\.[^.]+)$/, '_trimmed$1');
+            const trimCmd = `"${ffmpeg}" -i "${videoPath}" -ss ${firstNonBlack.toFixed(2)} -c copy -avoid_negative_ts 1 -y "${trimmedPath}"`;
+            execSync(trimCmd, { encoding: 'utf8' as BufferEncoding, timeout: 30000 });
+            if (fs.existsSync(trimmedPath) && fs.statSync(trimmedPath).size > 1000) {
+                // Replace original with trimmed
+                fs.unlinkSync(videoPath);
+                fs.renameSync(trimmedPath, videoPath);
+            }
+        }
+    } catch {
+        // Non-critical; original file is used as-is
+    }
+    return videoPath;
 }

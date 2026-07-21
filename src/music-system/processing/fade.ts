@@ -19,13 +19,16 @@ export async function applyFade(
     const fadeOutStart = Math.max(0, opts.totalDurationSec - opts.fadeOutSec);
     const filter = `afade=t=in:st=0:d=${opts.fadeInSec},afade=t=out:st=${fadeOutStart}:d=${opts.fadeOutSec}`;
 
-    const args = [
+    const args: string[] = [
         '-i', inputPath,
         '-af', filter,
-        '-c:a', 'pcm_s16le', // re-encode to apply fade
+        '-c:a', outputPath.endsWith('.mp3') ? 'libmp3lame' : 'pcm_s16le',
         '-y',
         outputPath,
     ];
+    if (outputPath.endsWith('.mp3')) {
+        args.splice(6, 0, '-b:a', '192k');
+    }
 
     const { code, stderr } = await runFfmpeg(args, 30_000);
     if (code !== 0) {

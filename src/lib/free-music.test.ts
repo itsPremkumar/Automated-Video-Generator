@@ -14,9 +14,9 @@ test.after(() => {
     fs.rmSync(tempDir, { recursive: true, force: true });
 });
 
-test('listFreeMusicProviders includes the three free sources', () => {
+test('listFreeMusicProviders includes the music sources', () => {
     const names = listFreeMusicProviders();
-    assert.ok(names.includes('open-lofi'));
+    assert.ok(names.includes('ccmixter'));
     assert.ok(names.includes('internet-archive'));
     assert.ok(names.includes('local'));
 });
@@ -34,14 +34,17 @@ test('resolveFreeBackgroundMusic disabled does not touch network', async () => {
     }
 });
 
-test('resolveFreeBackgroundMusic returns null gracefully when all providers fail', async () => {
+test('resolveFreeBackgroundMusic returns bundled music when network fails', async () => {
     const original = (require('axios') as any).get;
     (require('axios') as any).get = (async () => {
         throw new Error('simulated network failure');
     }) as any;
     try {
-        const result = await resolveFreeBackgroundMusic({ preferProviders: ['open-lofi'], query: 'ambient' });
-        assert.equal(result, null);
+        // Network providers fail, but bundled (offline, no axios) should succeed
+        const result = await resolveFreeBackgroundMusic({ preferProviders: ['bundled'], query: 'ambient' });
+        assert.ok(result !== null, 'Bundled provider should return music without network');
+        assert.ok(typeof result.localPath === 'string', 'Result should have a localPath');
+        assert.ok(result.track?.provider === 'bundled', 'Provider should be bundled');
     } finally {
         (require('axios') as any).get = original;
     }
