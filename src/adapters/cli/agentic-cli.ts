@@ -14,15 +14,17 @@
  * Usage:  npx tsx src/adapters/cli/agentic-cli.ts
  *         npm run generate:agentic
  */
+import 'dotenv/config';
 import * as fs from 'fs';
 import * as path from 'path';
 import { runAgenticPipeline } from '../../agentic/orchestrator/pipeline.js';
 import { renderAgenticSlideshow } from '../../agentic/orchestrator/render.js';
-import type { PipelineRequest, PipelineResult } from '../../agentic/orchestrator/types.js';
+import type { PipelineRequest } from '../../agentic/orchestrator/types.js';
+import type { AgenticBackend } from '../../agentic/ai/agent.js';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-const INPUT_DIR = path.join(process.cwd(), 'input');
+const INPUT_DIR = path.join(process.cwd(), 'input', 'scripts');
 const SCRIPTS_FILE = path.join(INPUT_DIR, 'agentic-scripts.json');
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -48,8 +50,8 @@ interface AgenticCliJob {
     hookFirst?: boolean;
     /** Variable pacing (hook 3s, body 5s, breath 5/3s). (default: true). */
     variablePacing?: boolean;
-    /** Backend: 'agent' (default) or 'auto'. 'agent' uses free LLM. */
-    backend?: 'agent' | 'auto';
+    /** Backend: 'agent' (default) or 'vision'. Sets backend for the agentic pipeline. */
+    backend?: AgenticBackend;
     /** Number of stock candidates to fetch per scene (default: 2). */
     candidatesPerAsset?: number;
     /** Language code for voice fallback. */
@@ -79,8 +81,8 @@ async function main() {
             console.error('❌ agentic-scripts.json must be a non-empty array.');
             process.exit(1);
         }
-    } catch (e: any) {
-        console.error(`❌ JSON parse error in ${SCRIPTS_FILE}: ${e.message}`);
+    } catch {
+        console.error(`❌ JSON parse error in ${SCRIPTS_FILE}`);
         process.exit(1);
     }
 
@@ -94,8 +96,8 @@ async function main() {
         console.log(`  Job ${i + 1}/${jobs.length}: "${jobLabel}"`);
         console.log(`${'─'.repeat(55)}`);
 
-        const topic = job.topic || job.title || 'Untitled video';
-        const id = sanitizeId(job.id || job.title || `job_${Date.now()}`);
+        const topic = job.topic ?? job.title ?? 'Untitled video';
+        const id = sanitizeId(job.id ?? job.title ?? `job_${Date.now()}`);
 
         const req: PipelineRequest = {
             script: job.script,           // ← custom script or undefined → auto-generate
@@ -110,7 +112,7 @@ async function main() {
             personalAudio: job.personalAudio,
             hookFirst: job.hookFirst ?? true,
             variablePacing: job.variablePacing ?? true,
-            backend: (job.backend ?? 'agent') as any,
+            backend: job.backend ?? 'agent',
             candidatesPerAsset: job.candidatesPerAsset ?? 2,
         };
 
@@ -160,9 +162,9 @@ async function main() {
                 console.log(`\n  ❌ Gate FAIL — ${result.plan.scenes.length} scenes`);
                 if (failReasons) console.log(failReasons);
             }
-        } catch (e: any) {
+        } catch {
             failed++;
-            console.error(`\n  ❌ Job failed with error: ${e.message ?? e}`);
+            console.error(`\n  ❌ Job failed with error`);
         }
     }
 
