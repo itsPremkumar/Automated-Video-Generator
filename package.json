@@ -60,6 +60,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "npm run typecheck",
     "generate": "tsx src/cli.ts",
+    "generate:agentic": "tsx src/adapters/cli/agentic-cli.ts",
     "resume": "tsx src/cli.ts --resume",
     "batch": "tsx src/cli.ts --batch",
     "segment": "tsx src/cli.ts --segment",

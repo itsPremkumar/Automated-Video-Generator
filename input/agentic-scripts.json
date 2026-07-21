@@ -1,0 +1,13 @@
+[
+  {
+    "id": "avs-agentic-reel",
+    "title": "Automated Video Generator - Agentic Pipeline",
+    "script": "Meet the Automated Video Generator. [Visual: logo-automation.png]\nA completely free, open source text to video pipeline. [Visual: github-profile.png]\nIt turns any script into a professional short video. [Visual: ai coding code typing]\nWith over four hundred voices and one hundred languages. [Visual: language voice translation]\nPlus automatic stock footage and background music. [Visual: video editing timeline music]\nBuilt with TypeScript, Node.js, and Remotion. [Visual: software developer workspace]\nAnd it runs entirely on your own machine. [Visual: data center server rack]\nDeploy your own AI video pipeline today. [Visual: rocket launch innovation success]",
+    "orientation": "portrait",
+    "voice": "en-US-GuyNeural",
+    "hookFirst": true,
+    "variablePacing": true,
+    "backend": "agent",
+    "candidatesPerAsset": 2
+  }
+]

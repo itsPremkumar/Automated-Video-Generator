@@ -73,6 +73,7 @@ export async function runAgenticPipeline(
     const brain = new AgentBrain(brainOpts);
 
     const script =
+        req.script ??                                          // ← custom script with [Visual: ...] tags
         (cfg.writeScript ? await cfg.writeScript(req.topic, req.title) : null) ??
         (
             await bridge.completeJSON<{ script: string }>(
@@ -113,9 +114,14 @@ export async function runAgenticPipeline(
 
     const LOCAL_MEDIA_RE = /\.(jpg|jpeg|png|webp|gif|mp4|mov|webm|m4v)$/i;
     if (req.localAssets && req.localAssets.length > 0) {
-        plan.scenes.forEach((s, i) => {
-            s.localAsset = req.localAssets![i % req.localAssets!.length];
-        });
+        // Only bind to scenes WITHOUT an existing localAsset (set by parseScript from [Visual: ...] tags)
+        let li = 0;
+        for (const s of plan.scenes) {
+            if (!s.localAsset) {
+                s.localAsset = req.localAssets[li % req.localAssets.length];
+                li++;
+            }
+        }
         emit({ stage: 'plan', percent: 100, message: `Bound ${req.localAssets.length} local asset(s) to ${plan.scenes.length} scenes` });
     } else {
         try {
@@ -124,9 +130,14 @@ export async function runAgenticPipeline(
                 const files = fs.readdirSync(assetsDir).filter((f) => LOCAL_MEDIA_RE.test(f));
                 if (files.length > 0) {
                     req.localAssets = files.sort();
-                    plan.scenes.forEach((s, i) => {
-                        s.localAsset = req.localAssets![i % req.localAssets!.length];
-                    });
+                    // Only bind to scenes WITHOUT an existing localAsset
+                    let li = 0;
+                    for (const s of plan.scenes) {
+                        if (!s.localAsset) {
+                            s.localAsset = req.localAssets[li % req.localAssets.length];
+                            li++;
+                        }
+                    }
                     emit({ stage: 'plan', percent: 100, message: `Auto-detected ${files.length} local asset(s) from input/visuals/ → bound to ${plan.scenes.length} scenes` });
                 }
             }

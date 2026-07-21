@@ -1,12 +1,11 @@
 [
   {
-    "id": "pre7-productivity-tip",
-    "title": "One Simple Trick To Beat Procrastination",
-    "script": "Struggling to get started? [Visual: default.mp4]\nTry the two minute rule. [Visual: default.mp4]\nIf a task takes less than two minutes, do it right now. [Visual: default.mp4]\nFor bigger tasks, commit to just the first two minutes. [Visual: default.mp4]\nWant to work out? [Visual: default.mp4]\nJust put on your shoes. [Visual: default.mp4]\nStarting is the hardest part. [Visual: default.mp4]\nSmall actions build unstoppable habits. [Visual: default.mp4]\nFollow for more tips. [Visual: default.mp4]",
+    "id": "avs-promo-reel",
+    "title": "Automated Video Generator - Open Source AI Pipeline",
+    "script": "Meet the Automated Video Generator. [Visual: logo-automation.png]\nA completely free, open source text to video pipeline. [Visual: github-profile.png]\nIt turns any script into a professional short video. [Visual: coding ai code typing]\nWith over four hundred voices and one hundred languages. [Visual: language translation voice]\nPlus automatic stock footage and background music. [Visual: video editing timeline music]\nBuilt with TypeScript, Node.js, and Remotion. [Visual: software developer workspace]\nAnd it runs entirely on your own machine. [Visual: data center server rack]\nDeploy your own AI video pipeline today. [Visual: rocket launch innovation success]",
     "orientation": "portrait",
-    "language": "english",
-    "voice": "en-US-JennyNeural",
+    "voice": "en-US-GuyNeural",
     "showText": true,
-    "defaultVideo": "default.mp4"
+    "language": "english"
   }
 ]
