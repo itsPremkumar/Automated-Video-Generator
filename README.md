@@ -12,7 +12,7 @@
 <!-- hero video removed per user request -->
 
 <div align="center">
-  <img src="assets/logos/logo.svg" alt="Automated Video Generator" width="180" style="border-radius: 16px;">
+ 
   <h1>Automated Video Generator</h1>
   <p><strong>🆓 Free &bull; 🔓 Open Source &bull; 🏠 Self-Hosted &bull; 🤖 AI Text-to-Video</strong></p>
   <p><b>Turn any script into a narrated, stock-footage video in minutes.</b><br/>No API key. No watermark. Runs 100% on your machine.</p>
