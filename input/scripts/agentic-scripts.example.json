@@ -8,6 +8,9 @@
     "hookFirst": true,
     "variablePacing": true,
     "backend": "agent",
-    "candidatesPerAsset": 2
+    "candidatesPerAsset": 2,
+    "language": "english",
+    "backgroundMusic": "bgm.mp3",
+    "musicVolume": 0.15
   }
 ]

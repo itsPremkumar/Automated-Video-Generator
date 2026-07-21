@@ -6,6 +6,7 @@ import { downloadMedia } from '../../lib/visual-fetcher.js';
 import { verifyMedia } from '../../lib/media-verifier.js';
 import { resolveFreeBackgroundMusic } from '../../lib/free-music.js';
 import { inputAssetPath, inputBgmPath, inputVoiceoverPath } from '../../lib/path-safety.js';
+import { LANGUAGE_DEFAULTS } from '../../lib/voice-data.js';
 import { buildPlan, applyProEdits } from '../pipeline/plan.js';
 import { acquireAssets, AcquireDeps, FetchedVisual } from '../pipeline/acquire.js';
 import { verifyAll, VerifyDeps } from '../pipeline/verify.js';
@@ -84,17 +85,28 @@ export async function runAgenticPipeline(
         )?.script ??
         writeScriptHeuristic(req.topic, req.title);
 
+    // Language → voice resolution (same as legacy pipeline)
+    const resolvedVoice =
+        req.language && !req.voice
+            ? LANGUAGE_DEFAULTS[req.language.toLowerCase().trim()]
+            : req.voice;
+
     const plan = await buildPlan(
         script,
         {
             jobId,
             title: req.title,
             orientation: req.orientation ?? 'portrait',
-            voice: req.voice,
+            voice: resolvedVoice ?? 'en-US-JennyNeural',
             musicQuery: req.musicQuery,
         },
         parseScript,
     );
+
+    // Apply musicVolume to env for render step (osom will pick it up)
+    if (req.musicVolume != null) {
+        process.env.AUDIO_FULL_LEVEL = String(req.musicVolume);
+    }
 
     await applyProEdits(plan, {
         hookFirst: req.hookFirst ?? true,
@@ -372,6 +384,26 @@ export async function runAgenticPipeline(
             return def || local;
         },
         fetchMusic: async (query, count) => {
+            // backgroundMusic override: use local file instead of searching
+            if (req.backgroundMusic) {
+                const bgmPath = inputAssetPath(req.backgroundMusic);
+                if (fs.existsSync(bgmPath)) {
+                    console.log(`  🎵 Using custom background music: ${req.backgroundMusic}`);
+                    const normalized = normalizeAudio(bgmPath);
+                    const finalPath = normalized && fs.existsSync(normalized) ? normalized : bgmPath;
+                    if (finalPath) {
+                        return [{
+                            url: '',
+                            localPath: finalPath,
+                            source: 'local',
+                            license: 'CC-BY (user provided)',
+                            licenseUrl: '',
+                        }];
+                    }
+                } else {
+                    console.warn(`  ⚠ backgroundMusic file not found: ${req.backgroundMusic} (in input/visuals/) — falling back to stock music`);
+                }
+            }
             const tracks = [];
             for (let i = 0; i < count; i++) {
                 const m = await resolveFreeBackgroundMusic({ query, enabled: true });

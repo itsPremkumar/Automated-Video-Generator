@@ -8,6 +8,7 @@
     "hookFirst": true,
     "variablePacing": true,
     "backend": "agent",
-    "candidatesPerAsset": 2
+    "candidatesPerAsset": 2,
+    "language": "english"
   }
 ]

@@ -28,4 +28,10 @@ export interface PipelineRequest {
     hookFirst?: boolean;
     variablePacing?: boolean;
     driverLLM?: DriverLlmCallback;
+    /** Language code for auto-voice selection (e.g. 'tamil', 'hindi', 'spanish'). */
+    language?: string;
+    /** Filename of a local audio file in input/visuals/ for background music. */
+    backgroundMusic?: string;
+    /** Volume for background music (0.0–1.0, default ~0.15). */
+    musicVolume?: number;
 }

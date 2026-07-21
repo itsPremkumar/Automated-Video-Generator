@@ -125,22 +125,27 @@ export async function applyProEdits(
     }
 
     // 2. Variable pacing: brain B6 weights when available; else rule-based.
+    //    Also adjusts duration proportionally to text length (words / 2.5 wps speaking rate).
     if (opts.variablePacing) {
         const base = 4;
         let weights: number[] | null = null;
         if (opts.brain) weights = await opts.brain.paceScenes(scenes.map((s) => s.voiceoverText));
         scenes.forEach((s, i) => {
+            // Start with breathing/minimum duration
+            let minDur: number;
             if (weights) {
-                s.durationSec = Math.max(2, Math.round(base * (weights[i] ?? 1)));
+                minDur = Math.max(2, Math.round(base * (weights[i] ?? 1)));
             } else {
-                let d = base;
-                if (i === 0)
-                    d = 3; // punchy hook
-                else if (i === scenes.length - 1)
-                    d = 5; // lingering close
-                else d = base + (i % 2 === 1 ? 1 : -1); // breathe: 5/3/5/3...
-                s.durationSec = Math.max(2, d);
+                if (i === 0) minDur = 3;       // punchy hook
+                else if (i === scenes.length - 1) minDur = 5; // lingering close
+                else minDur = base + (i % 2 === 1 ? 1 : -1);  // breathe: 5/3/5/3...
+                minDur = Math.max(2, minDur);
             }
+            // Duration from text length (~2.5 words/sec speaking rate)
+            const words = (s.voiceoverText || '').split(/\s+/).filter(Boolean).length;
+            const wordDur = words / 2.5;
+            // Blend: at least the breathing minimum, at most 8 seconds
+            s.durationSec = Math.max(minDur, Math.min(Math.round(wordDur), 8));
         });
         plan.totalDurationSec = scenes.reduce((acc, s) => acc + s.durationSec, 0);
     }
