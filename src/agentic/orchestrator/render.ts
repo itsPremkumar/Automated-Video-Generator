@@ -327,6 +327,13 @@ export async function renderAgenticSlideshow(
     const { computeStylePlan, gradeFilter, xfadeName } = await import('../ai/style-engine.js');
     const stylePlan = computeStylePlan(res.plan, { preset: (opts.preset as any) ?? 'cinematic', kinetic: opts.kinetic });
 
+    // Apply per-scene overrides from the plan (user-supplied inline tags win over auto)
+    for (const sc of stylePlan.scenes) {
+        const scene = res.plan.scenes[sc.sceneIndex];
+        if (scene?.transition) sc.transitionIn = scene.transition as any;
+        if (scene?.grade) sc.grade = scene.grade as any;
+    }
+
     const xf = opts.crossfadeSec ?? 0.5;
     const burn = opts.burnCaptions ?? true;
 
@@ -384,8 +391,9 @@ export async function renderAgenticSlideshow(
     const W = opts.dimensions?.w ?? 720, H = opts.dimensions?.h ?? 1280;
     const sceneFilters = visuals.map((a, i) => {
         const dur = a.durationSec ?? 4;
-        const doZoom = a.kind === 'image' && opts.kenBurns !== false;
-        const zoom = doZoom ? `,zoompan=z=min(zoom+0.0008\\,1.04):d=1:s=${W}x${H}` : '';
+        const sceneKb = res.plan.scenes[i]?.kenBurns;
+        const doZoom = a.kind === 'image' && (sceneKb !== false ? opts.kenBurns !== false : false);
+        const zoom = doZoom ? `,zoompan=z=min(zoom+0.0008\\\\,1.04):d=1:s=${W}x${H}` : '';
         const grade = gradeFilter(stylePlan.scenes[i]?.grade ?? 'neutral');
         const tag = '[' + i + ':v]';
         return `${tag}scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=25,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom},${grade},format=yuv420p[v${i}]`;
@@ -554,7 +562,8 @@ export async function renderAgenticSlideshow(
             const seg = outDir + '/_seg_' + res.workspace.jobId + '_' + ci + '.mp4';
             const dur = clip.dur;
             const isVideo = /\.(mp4|webm|mov|m4v)$/i.test(clip.file);
-            const doZoom = clip.kind === 'scene' && !isVideo && opts.kenBurns !== false;
+            const sceneKb = clip.kind === 'scene' ? res.plan.scenes[clip.idx]?.kenBurns : undefined;
+            const doZoom = clip.kind === 'scene' && !isVideo && (sceneKb !== false ? opts.kenBurns !== false : false);
             const zoom = doZoom ? `,zoompan=z=zoom+0.0008:d=1:s=${W}x${H}` : '';
             const grade = clip.kind === 'scene' ? gradeFilter(stylePlan.scenes[clip.idx]?.grade ?? 'neutral') : '';
             const segCaptionArg: string[] = [];
@@ -671,6 +680,38 @@ export async function renderAgenticSlideshow(
         if (sfxLayer) fs.rmSync(sfxLayer, { force: true });
     } else {
         fs.renameSync(silent, out);
+    }
+
+    // Pass 3 — logo overlay (brand watermark)
+    const logoPath = (() => {
+        const candidates = [
+            'assets/logos/logo-automation.png',
+            'public/logo.png',
+            'input/visuals/logo-automation.png',
+        ];
+        for (const c of candidates) {
+            const abs = path.resolve(process.cwd(), c);
+            if (fs.existsSync(abs)) return abs;
+        }
+        return '';
+    })();
+    if (logoPath) {
+        const logoOut = outDir + '/_logo_' + res.workspace.jobId + '.mp4';
+        try {
+            await new Promise<void>((resolve, reject) => {
+                execFile(ffmpeg, [
+                    '-i', out, '-i', logoPath,
+                    '-filter_complex', 'overlay=W-w*0.12-20:H-h*0.12-20:format=auto',
+                    '-c:a', 'copy', '-y', logoOut,
+                ], (err: any) => err ? reject(err) : resolve());
+            });
+            fs.rmSync(out, { force: true });
+            fs.renameSync(logoOut, out);
+            console.log(`  🎨 Logo watermark applied`);
+        } catch {
+            console.warn(`  ⚠ Logo watermark skipped`);
+            if (fs.existsSync(logoOut)) fs.rmSync(logoOut, { force: true });
+        }
     }
 
     await writeOutputArtifacts(res, out, outDir, opts.aiVerify, opts.languages);

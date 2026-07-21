@@ -29,9 +29,22 @@ function toScenePlans(parsed: ParsedScript): ScenePlan[] {
         searchKeywords: s.searchKeywords,
         visualPreference: s.voiceoverText && s.voiceoverText.length > 0 ? 'video' : 'image',
         durationSec: s.duration,
+        localAsset: s.localAsset,
+        transition: s.transition,
+        grade: s.grade,
+        kenBurns: s.kenBurns === 'off' ? false : undefined,
+        trimStart: s.trimStart ? parseTimeToSeconds(s.trimStart) : undefined,
+        trimEnd: s.trimEnd ? parseTimeToSeconds(s.trimEnd) : undefined,
     }));
 }
 
+/** Convert "mm:ss" or "0:mm:ss" to seconds. */
+function parseTimeToSeconds(t: string): number {
+    const parts = t.trim().split(':').map(Number);
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    return 0;
+}
 export async function buildPlan(script: string, opts: PlanOptions, parser: Parser = parseScript): Promise<Plan> {
     const parsed = await parser(script);
     const scenes = toScenePlans(parsed);

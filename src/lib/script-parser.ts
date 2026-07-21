@@ -16,6 +16,16 @@ export interface Scene {
         rate?: number;
     };
     audioPath?: string;
+    /** Per-scene transition type override (e.g. 'fade', 'slide', 'zoomblur', 'cut'). */
+    transition?: string;
+    /** Per-scene color grade override (e.g. 'warm', 'cool', 'cinematic', 'vivid', 'neutral'). */
+    grade?: string;
+    /** Per-scene Ken Burns toggle. 'on' (default) or 'off'. */
+    kenBurns?: string;
+    /** Trim start time for local video clips (e.g. '00:05'). */
+    trimStart?: string;
+    /** Trim end time for local video clips (e.g. '00:10'). */
+    trimEnd?: string;
     /** Speech-timed caption cues (relative to scene start, ms) persisted from TTS. */
     captionSegments?: { text: string; startMs: number; endMs: number }[];
     visual?: {
@@ -146,14 +156,35 @@ function parseScriptLocally(script: string): ParsedScript {
 
     const scenes: Scene[] = [];
     let pendingVisualCue = '';
+    // Per-scene tag values (hoisted for trailing pending-visual scene at end of script)
+    let sceneTransition: string | undefined;
+    let sceneGrade: string | undefined;
+    let sceneKenBurns: string | undefined;
+    let sceneTrimStart: string | undefined;
+    let sceneTrimEnd: string | undefined;
 
     for (const line of lines) {
         const inlineTextMatch = line.match(/\[Text:?\s*(on|off)\]/is);
         const sceneShowText = inlineTextMatch ? inlineTextMatch[1].toLowerCase() === 'on' : undefined;
 
+        // Per-scene inline tags
+        const transitionMatch = line.match(/\[Transition:?\s*(fade|slide|zoomblur|cut)\]/is);
+        sceneTransition = transitionMatch ? transitionMatch[1].toLowerCase() : undefined;
+        const gradeMatch = line.match(/\[Grade:?\s*(neutral|warm|cool|cinematic|vivid)\]/is);
+        sceneGrade = gradeMatch ? gradeMatch[1].toLowerCase() : undefined;
+        const kenBurnsMatch = line.match(/\[KenBurns:?\s*(on|off|true|false)\]/is);
+        sceneKenBurns = kenBurnsMatch ? (['on', 'true'].includes(kenBurnsMatch[1].toLowerCase()) ? 'on' : 'off') : undefined;
+        const trimMatch = line.match(/\[Trim:?\s*(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\]/is);
+        sceneTrimStart = trimMatch?.[1] ?? undefined;
+        sceneTrimEnd = trimMatch?.[2] ?? undefined;
+
         const cleanText = line
             .replace(/\[Visual:?\s*.*?\]/gis, '')
             .replace(/\[Text:?\s*.*?\]/gis, '')
+            .replace(/\[Transition:?\s*.*?\]/gis, '')
+            .replace(/\[Grade:?\s*.*?\]/gis, '')
+            .replace(/\[KenBurns:?\s*.*?\]/gis, '')
+            .replace(/\[Trim:?\s*.*?\]/gis, '')
             .trim();
 
         // Find all visual matches in the line
@@ -172,6 +203,11 @@ function parseScriptLocally(script: string): ParsedScript {
                     searchKeywords: keywords,
                     localAsset: fs.existsSync(inputAssetPath(tag)) ? tag : undefined,
                     showText: false,
+                    transition: sceneTransition,
+                    grade: sceneGrade,
+                    kenBurns: sceneKenBurns,
+                    trimStart: sceneTrimStart,
+                    trimEnd: sceneTrimEnd,
                 });
             }
             pendingVisualCue = '';
@@ -192,6 +228,11 @@ function parseScriptLocally(script: string): ParsedScript {
                 searchKeywords: keywords,
                 localAsset: fs.existsSync(inputAssetPath(pendingVisualCue)) ? pendingVisualCue : undefined,
                 showText: false,
+                transition: sceneTransition,
+                grade: sceneGrade,
+                kenBurns: sceneKenBurns,
+                trimStart: sceneTrimStart,
+                trimEnd: sceneTrimEnd,
             });
             pendingVisualCue = visualCue;
             continue;
@@ -240,6 +281,11 @@ function parseScriptLocally(script: string): ParsedScript {
             searchKeywords: keywords,
             localAsset,
             showText: sceneShowText,
+            transition: sceneTransition,
+            grade: sceneGrade,
+            kenBurns: sceneKenBurns,
+            trimStart: sceneTrimStart,
+            trimEnd: sceneTrimEnd,
         });
     }
 
@@ -261,6 +307,11 @@ function parseScriptLocally(script: string): ParsedScript {
             searchKeywords: keywords,
             localAsset,
             showText: false,
+            transition: sceneTransition,
+            grade: sceneGrade,
+            kenBurns: sceneKenBurns,
+            trimStart: sceneTrimStart,
+            trimEnd: sceneTrimEnd,
         });
     }
 

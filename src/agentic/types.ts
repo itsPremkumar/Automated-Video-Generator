@@ -29,6 +29,16 @@ export interface ScenePlan {
     /** User-supplied voiceover audio file bound to this scene (C2). When set,
      *  the pipeline uses it directly instead of generating TTS for the scene. */
     personalAudio?: string;
+    /** Override transition type for this scene ('fade' | 'slide' | 'zoomblur' | 'cut'). */
+    transition?: string;
+    /** Override color grade for this scene ('neutral' | 'warm' | 'cool' | 'cinematic' | 'vivid'). */
+    grade?: string;
+    /** Disable Ken Burns for this specific scene (false = no zoompan). */
+    kenBurns?: boolean;
+    /** Trim start time for local video asset (seconds). */
+    trimStart?: number;
+    /** Trim end time for local video asset (seconds). */
+    trimEnd?: number;
 }
 
 export interface Plan {
