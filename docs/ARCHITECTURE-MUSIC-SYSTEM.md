@@ -279,10 +279,10 @@ Priority order (1 = highest):
 |----------|----------|----------|--------|
 | **1** | `bundled` | ✅ Yes | `input/bgm/__bundled__/` with metadata |
 | **2** | `local` | ✅ Yes | `input/bgm/*` user tracks |
-| **3** | `pixabay` | ❌ No | Pixabay Audio API (real music) |
+| **3** | `ccmixter` | ❌ No | ccMixter.org CC-licensed music (no key) |
 | **4** | `open-lofi` | ❌ No | GitHub CC0 lofi catalog |
 | **5** | `internet-archive` | ❌ No | Public domain archive.org |
-| **6** | `procedural` | ✅ Yes | ffmpeg-generated ambient (always works) |
+| **6** (fallback) | `procedural` | ✅ Yes | ffmpeg-generated ambient (always works) |
 
 Registration code:
 

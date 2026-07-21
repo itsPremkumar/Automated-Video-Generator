@@ -40,7 +40,8 @@ export { BaseMusicProvider, probeDuration, runFfmpeg, withSignal } from './provi
 // Individual providers (for custom registration)
 export { BundledProvider } from './providers/bundled';
 export { LocalProvider } from './providers/local';
-export { PixabayProvider } from './providers/pixabay';
+export { CcMixterProvider } from './providers/ccmixter';
+export { PixabayProvider } from './providers/pixabay'; // NOTE: requires API key, not in default chain
 export { OpenLofiProvider } from './providers/open-lofi';
 export { InternetArchiveProvider } from './providers/internet-archive';
 export { ProceduralProvider } from './providers/procedural';
