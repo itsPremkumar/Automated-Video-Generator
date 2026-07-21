@@ -1,28 +1,35 @@
 /**
- * Free, fully-offine-capable background music resolver.
+ * src/lib/free-music.ts
  *
- * Picks a royalty-free / public-domain track automatically when the user does
- * not supply one, so a "no-setup" generation still gets background music.
+ * ╔════════════════════════════════════════════════════════════╗
+ * ║  BACKWARD-COMPATIBLE SHIM                                 ║
+ * ║                                                            ║
+ * ║  This file is preserved for existing callers. All new      ║
+ * ║  code should import from the new architecture:             ║
+ * ║    import { MusicEngine } from '../music-system';          ║
+ * ║                                                            ║
+ * ║  Legacy callers continue working unchanged.                ║
+ * ╚════════════════════════════════════════════════════════════╝
  *
- * Providers (all free, no API key required):
- *  - open-lofi         → CC0 public-domain lo-fi (GitHub-hosted catalog)
- *  - internet-archive  → Public Domain / CC audio from archive.org
- *  - local             → user-dropped tracks already in input/bgm/
+ * Resolves background music from free/offline sources.
+ * Uses the new music-system architecture internally.
  *
- * Designed to be additive and non-breaking: returns null on any failure so the
- * caller simply proceeds without music.
+ * *From the plan:* "Designed to be additive and non-breaking:
+ * returns null on any failure so the caller simply proceeds
+ * without music."
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-import axios from 'axios';
+import { MusicEngine } from '../music-system/engine';
+import { registerDefaultProviders } from '../music-system/providers/index';
+import type { MusicTrack as NewMusicTrack } from '../music-system/types';
 import { logInfo, logWarn, resolveProjectPath } from '../runtime';
-import { getCached as assetGetCached, storeCached as assetStoreCached } from './asset-cache.js';
 
 const console = {
     log: (...args: unknown[]) => logInfo('[FREE-MUSIC]', ...args),
     warn: (...args: unknown[]) => logWarn('[FREE-MUSIC]', ...args),
 };
+
+// ─── Backward-Compatible Types ────────────────────────────────────
 
 export interface FreeMusicTrack {
     id: string;
@@ -42,248 +49,6 @@ export interface FreeMusicProvider {
     search(query: string, count?: number): Promise<FreeMusicTrack[]>;
 }
 
-const AUDIO_EXT = new Set(['mp3', 'ogg', 'wav', 'm4a', 'flac', 'aac']);
-
-function sanitizeId(id: string): string {
-    return id.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
-}
-
-/** Hard fail-fast wrapper: rejects if `p` doesn't settle within `ms`.
- * Prevents a stalled/failing endpoint (GitHub/archive.org on a flaky
- * box) from hanging the whole pipeline — callers fall back to the
- * cached/local track instead. */
-function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), ms);
-    const onAbort = () => ctrl.signal.removeEventListener('abort', onAbort);
-    ctrl.signal.addEventListener('abort', onAbort);
-    return Promise.race([
-        p,
-        new Promise<T>((_, rej) => {
-            const t = setTimeout(() => rej(new Error(`${label} timed out after ${ms}ms`)), ms);
-            ctrl.signal.addEventListener('abort', () => {
-                clearTimeout(t);
-                rej(new Error(`${label} aborted`));
-            });
-        }),
-    ]).finally(() => {
-        clearTimeout(timer);
-        onAbort();
-    });
-}
-
-// ─── Open Lofi (CC0) ───────────────────────────────────────────────────────
-class OpenLofiProvider implements FreeMusicProvider {
-    readonly name = 'open-lofi';
-    private catalog: any[] | null = null;
-    private categoryLabel: Record<string, string> = {};
-
-    private async loadCatalog(): Promise<any[]> {
-        if (this.catalog) return this.catalog;
-        const CATALOG_URL = 'https://raw.githubusercontent.com/btahir/open-lofi/main/catalog.json';
-        const res = await withTimeout(axios.get(CATALOG_URL, { timeout: 6000 }), 6000, 'open-lofi catalog');
-        const data = res.data as any;
-        const cats: Record<string, any> = data.categories || {};
-        this.categoryLabel = {};
-        for (const key of Object.keys(cats)) this.categoryLabel[cats[key].slug] = cats[key].label;
-        const loaded = (data.tracks || []).map((t: any) => ({
-            ...t,
-            category: cats[t.category]?.slug || t.category,
-        }));
-        this.catalog = loaded;
-        return loaded;
-    }
-
-    async search(query: string, count = 5): Promise<FreeMusicTrack[]> {
-        const tracks = await this.loadCatalog();
-        const q = query.toLowerCase();
-        const filtered = tracks.filter((t: any) => {
-            const label = this.categoryLabel[t.category] || '';
-            return t.title.toLowerCase().includes(q) || t.category.includes(q) || label.toLowerCase().includes(q);
-        });
-        const results = (filtered.length > 0 ? filtered : tracks).slice(0, count);
-        const RAW_BASE = 'https://raw.githubusercontent.com/btahir/open-lofi/main/tracks';
-        return results.map((t: any) => {
-            const catLabel = this.categoryLabel[t.category] || 'lo-fi';
-            return {
-                id: `lofi_${t.filename.replace(/\.mp3$/i, '')}`,
-                title: t.title,
-                creator: 'Open Lo-Fi (CC0)',
-                license: 'CC0 1.0 Universal (Public Domain)',
-                licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
-                provider: this.name,
-                downloadUrl: `${RAW_BASE}/${t.category}/${t.filename}`,
-                genre: catLabel.toLowerCase(),
-                format: 'mp3',
-                tags: ['lo-fi', 'cc0', 'public-domain', t.category],
-            };
-        });
-    }
-}
-
-// ─── Internet Archive (Public Domain / CC) ─────────────────────────────────
-class InternetArchiveProvider implements FreeMusicProvider {
-    readonly name = 'internet-archive';
-
-    async search(query: string, count = 5): Promise<FreeMusicTrack[]> {
-        const q = encodeURIComponent(`(${query}) AND mediatype:audio AND (licenseurl:*)`).replace(/ /g, '+');
-        const searchUrl = `https://archive.org/advancedsearch.php?q=${q}&fl[]=identifier&fl[]=title&fl[]=creator&fl[]=licenseurl&rows=${count}&output=json`;
-        const res = await withTimeout(axios.get(searchUrl, { timeout: 6000 }), 6000, 'internet-archive search');
-        const docs = (res.data as any)?.response?.docs || [];
-        return docs.map((d: any) => {
-            const identifier = d.identifier as string;
-            return {
-                id: `ia_${identifier}`,
-                title: (d.title as string) || identifier,
-                creator: (d.creator as string) || 'Internet Archive',
-                license: (d.licenseurl as string) || 'Public Domain / CC',
-                licenseUrl: (d.licenseurl as string) || 'https://archive.org',
-                provider: this.name,
-                downloadUrl: `https://archive.org/download/${identifier}/${identifier}.mp3`,
-                genre: 'archive',
-                format: 'mp3',
-                tags: ['archive.org', 'public-domain', query],
-            } as FreeMusicTrack;
-        });
-    }
-}
-
-// ─── Local user tracks (offline, no network) ─────────────────────────────────
-class LocalFreeProvider implements FreeMusicProvider {
-    readonly name = 'local';
-
-    async search(_query: string, count = 5): Promise<FreeMusicTrack[]> {
-        const musicDir = resolveProjectPath('input', 'bgm');
-        if (!fs.existsSync(musicDir)) return [];
-        const out: FreeMusicTrack[] = [];
-        for (const entry of fs.readdirSync(musicDir, { withFileTypes: true })) {
-            if (entry.isDirectory()) continue;
-            const ext = entry.name.split('.').pop()?.toLowerCase() || '';
-            if (!AUDIO_EXT.has(ext)) continue;
-            if (entry.name.startsWith('__auto__')) continue;
-            out.push({
-                id: `local_${entry.name}`,
-                title: entry.name.replace(/\.[^.]+$/, ''),
-                creator: 'Local asset',
-                license: 'User-provided (assumed royalty-free)',
-                licenseUrl: '',
-                provider: this.name,
-                downloadUrl: '',
-                genre: 'local',
-                format: ext,
-                tags: ['local', 'user'],
-            });
-            if (out.length >= count) break;
-        }
-        return out;
-    }
-
-    resolveLocalPath(track: FreeMusicTrack): string | null {
-        const musicDir = resolveProjectPath('input', 'bgm');
-        const fileName = track.id.replace(/^local_/, '');
-        const full = path.join(musicDir, fileName);
-        return fs.existsSync(full) ? full : null;
-    }
-}
-
-// ─── Fallback tone generator (zero-network, always works) ────────────────────
-// Generates a gentle 256 Hz ambient drone using ffmpeg.  Acts as the last
-// resort after all network providers have failed, so the video always has
-// some background ambiance.
-class FallbackToneProvider implements FreeMusicProvider {
-    readonly name = 'fallback-ambient';
-
-    async search(_query: string, _count = 1): Promise<FreeMusicTrack[]> {
-        return [{
-            id: 'fallback_ambient_drone',
-            title: 'Ambient Drone (Fallback)',
-            creator: 'Generated (CC0)',
-            license: 'CC0 1.0 Universal (Public Domain)',
-            licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
-            provider: this.name,
-            downloadUrl: '__ffmpeg_generated__',  // special marker
-            genre: 'ambient',
-            format: 'wav',
-            tags: ['ambient', 'drone', 'fallback', 'generated'],
-        }];
-    }
-
-    /** Generate a gentle ambient drone tone via ffmpeg. Returns the output path. */
-    generate(destPath: string, durationSeconds: number = 30): Promise<string> {
-        return new Promise((resolve, reject) => {
-            // Gentle pink noise at low volume — natural ambient background
-            const ffmpegPath = require('ffmpeg-static') as string;
-            const args = [
-                '-f', 'lavfi',
-                '-i', `anoisesrc=color=pink:duration=${durationSeconds}`,
-                '-af', 'volume=0.08,lowpass=f=800',
-                '-ac', '1',
-                '-ar', '44100',
-                '-y',
-                destPath,
-            ];
-            const cp = require('child_process').spawn(ffmpegPath, args);
-            let stderr = '';
-            cp.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
-            cp.on('error', (e: Error) => reject(e));
-            cp.on('close', (code: number | null) => {
-                if (code === 0) {
-                    console.log(`  ♪ Generated fallback ambient audio (pink noise) → ${destPath}`);
-                    resolve(destPath);
-                } else {
-                    reject(new Error(`ffmpeg exit code ${code}: ${stderr.slice(0, 200)}`));
-                }
-            });
-        });
-    }
-}
-
-const localProvider = new LocalFreeProvider();
-const fallbackToneProvider = new FallbackToneProvider();
-
-function defaultProviders(): FreeMusicProvider[] {
-    // Local first: a cached/__auto__ or user-dropped track resolves
-    // instantly offline; only fall through to network providers if none.
-    // The zero-network fallback-tone generator is always last.
-    return [localProvider, new OpenLofiProvider(), new InternetArchiveProvider(), fallbackToneProvider];
-}
-
-export function listFreeMusicProviders(): string[] {
-    return defaultProviders().map((p) => p.name);
-}
-
-async function downloadTrack(track: FreeMusicTrack, destPath: string): Promise<void> {
-    if (track.provider === 'local') {
-        const local = localProvider.resolveLocalPath(track);
-        if (!local) throw new Error(`Local track not found: ${track.id}`);
-        fs.mkdirSync(path.dirname(destPath), { recursive: true });
-        fs.copyFileSync(local, destPath);
-        assetStoreCached(track.downloadUrl, destPath);
-        return;
-    }
-    // GLOBAL CACHE HIT: reuse a previously-downloaded copy of this exact track.
-    const cached = assetGetCached(track.downloadUrl, 0);
-    if (cached && cached !== destPath) {
-        try {
-            fs.mkdirSync(path.dirname(destPath), { recursive: true });
-            fs.copyFileSync(cached, destPath);
-            return;
-        } catch {
-            /* fall through to live download */
-        }
-    }
-    const res = await withTimeout(
-        axios.get(track.downloadUrl, { responseType: 'arraybuffer', timeout: 15000 }),
-        15000,
-        `download ${track.title}`,
-    );
-    const buf = Buffer.from(res.data as ArrayBuffer);
-    if (!buf || buf.length < 1024) throw new Error(`Downloaded file too small for ${track.title}`);
-    fs.mkdirSync(path.dirname(destPath), { recursive: true });
-    fs.writeFileSync(destPath, buf);
-    assetStoreCached(track.downloadUrl, destPath);
-}
-
 export interface ResolveFreeMusicOptions {
     query?: string;
     cacheDir?: string;
@@ -296,6 +61,135 @@ export interface ResolvedFreeMusic {
     track: FreeMusicTrack;
 }
 
+// ─── Backward-Compatible Classes ──────────────────────────────────
+
+export class LocalFreeProvider implements FreeMusicProvider {
+    readonly name = 'local';
+    async search(query: string, count = 5): Promise<FreeMusicTrack[]> {
+        // Delegate to new LocalProvider
+        const { LocalProvider } = require('../music-system/providers/local');
+        const provider = new LocalProvider();
+        const newTracks = await provider.search({ mood: 'any', targetDurationSec: 30, minDurationSec: 1, role: 'background' }, count);
+        return newTracks.map(mapToLegacy);
+    }
+}
+
+export class OpenLofiProvider implements FreeMusicProvider {
+    readonly name = 'open-lofi';
+    async search(query: string, count = 5): Promise<FreeMusicTrack[]> {
+        const { OpenLofiProvider: NewProvider } = require('../music-system/providers/open-lofi');
+        const provider = new NewProvider();
+        const newTracks = await provider.search({ mood: 'any', topic: query, targetDurationSec: 30, minDurationSec: 1, role: 'background' }, count);
+        return newTracks.map(mapToLegacy);
+    }
+}
+
+export class InternetArchiveProvider implements FreeMusicProvider {
+    readonly name = 'internet-archive';
+    async search(query: string, count = 5): Promise<FreeMusicTrack[]> {
+        const { InternetArchiveProvider: NewProvider } = require('../music-system/providers/internet-archive');
+        const provider = new NewProvider();
+        const newTracks = await provider.search({ mood: 'any', topic: query, targetDurationSec: 30, minDurationSec: 1, role: 'background' }, count);
+        return newTracks.map(mapToLegacy);
+    }
+}
+
+export class FallbackToneProvider implements FreeMusicProvider {
+    readonly name = 'fallback-ambient';
+    async search(_query: string, _count = 1): Promise<FreeMusicTrack[]> {
+        return [{
+            id: 'fallback_ambient_drone',
+            title: 'Ambient Drone (Fallback)',
+            creator: 'Generated (CC0)',
+            license: 'CC0 1.0 Universal (Public Domain)',
+            licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+            provider: this.name,
+            downloadUrl: '__ffmpeg_generated__',
+            genre: 'ambient',
+            format: 'wav',
+            tags: ['ambient', 'drone', 'fallback', 'generated'],
+        }];
+    }
+
+    /** Generate a gentle ambient drone tone via ffmpeg. Returns the output path. */
+    generate(destPath: string, durationSeconds: number = 30): Promise<string> {
+        const { ProceduralProvider } = require('../music-system/providers/procedural');
+        const provider = new ProceduralProvider();
+        return provider.generate(destPath, {
+            mood: 'calm',
+            targetDurationSec: durationSeconds,
+            minDurationSec: 1,
+            role: 'background',
+        });
+    }
+}
+
+// ─── Internal Engine (initialized once) ───────────────────────────
+
+let _engine: MusicEngine | null = null;
+
+function ensureEngine(): MusicEngine {
+    if (!_engine) {
+        _engine = new MusicEngine({ enabled: true });
+        // Don't call init() — the module-level singleton should be
+        // lightweight. Providers get registered on first resolve.
+        registerDefaultProviders();
+    }
+    return _engine;
+}
+
+// ─── Legacy Helpers ───────────────────────────────────────────────
+
+function defaultProviders(): FreeMusicProvider[] {
+    return [
+        new LocalFreeProvider(),
+        new OpenLofiProvider(),
+        new InternetArchiveProvider(),
+        new FallbackToneProvider(),
+    ];
+}
+
+function mapToNew(track: FreeMusicTrack): NewMusicTrack {
+    return {
+        id: track.id,
+        title: track.title,
+        creator: track.creator,
+        license: track.license,
+        licenseUrl: track.licenseUrl,
+        provider: track.provider,
+        downloadUrl: track.downloadUrl,
+        genre: track.genre,
+        format: track.format,
+        tags: track.tags,
+        durationSec: 0,
+    };
+}
+
+function mapToLegacy(track: NewMusicTrack): FreeMusicTrack {
+    return {
+        id: track.id,
+        title: track.title,
+        creator: track.creator,
+        license: track.license,
+        licenseUrl: track.licenseUrl,
+        provider: track.provider,
+        downloadUrl: track.downloadUrl,
+        genre: track.genre,
+        format: track.format,
+        tags: track.tags,
+    };
+}
+
+function sanitizeId(id: string): string {
+    return id.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 80);
+}
+
+// ─── Public API (Backward-Compatible) ─────────────────────────────
+
+export function listFreeMusicProviders(): string[] {
+    return defaultProviders().map((p) => p.name);
+}
+
 export async function resolveFreeBackgroundMusic(
     opts: ResolveFreeMusicOptions = {},
 ): Promise<ResolvedFreeMusic | null> {
@@ -306,6 +200,27 @@ export async function resolveFreeBackgroundMusic(
     }
 
     const query = opts.query?.trim() || 'ambient lofi chill';
+
+    // Try the new engine first
+    try {
+        await ensureEngine().init();
+        const result = await ensureEngine().resolveBackground({
+            topic: query,
+            targetDurationSec: 60,
+        });
+
+        if (result) {
+            console.log(`  ♪ Auto-selected free music: ${result.track.title} (${result.track.provider})`);
+            return {
+                localPath: result.localPath,
+                track: mapToLegacy(result.track),
+            };
+        }
+    } catch (err: any) {
+        console.warn(`Music engine failed, falling back to legacy providers: ${err.message}`);
+    }
+
+    // Legacy fallback path (iterates providers sequentially)
     const cacheDir = opts.cacheDir || resolveProjectPath('workspace', 'cache', 'free-music');
     const providers = opts.preferProviders
         ? defaultProviders().filter((p) => opts.preferProviders!.includes(p.name))
@@ -317,25 +232,38 @@ export async function resolveFreeBackgroundMusic(
             const tracks = await provider.search(query, 5);
             if (tracks.length === 0) continue;
             const track = tracks[0];
+
             // Special fallback: ffmpeg-generated ambient tone
             if (track.downloadUrl === '__ffmpeg_generated__') {
                 console.warn('  ↳ No external music sources available, generating ambient audio tone…');
-                const cacheFile = path.join(cacheDir, 'fallback_ambient.wav');
+                const cacheFile = require('path').join(cacheDir, 'fallback_ambient.wav');
+                const fs = require('fs');
                 if (fs.existsSync(cacheFile) && fs.statSync(cacheFile).size > 1024) {
                     console.log(`Reusing cached fallback ambient: ${cacheFile}`);
                     return { localPath: cacheFile, track };
                 }
                 fs.mkdirSync(cacheDir, { recursive: true });
-                await fallbackToneProvider.generate(cacheFile);
+                const ft = new FallbackToneProvider();
+                await ft.generate(cacheFile);
                 return { localPath: cacheFile, track };
             }
+
             const ext = track.format || 'mp3';
-            const cacheFile = path.join(cacheDir, `${sanitizeId(track.id)}.${ext}`);
+            const cacheFile = require('path').join(cacheDir, `${sanitizeId(track.id)}.${ext}`);
+            const fs = require('fs');
             if (fs.existsSync(cacheFile) && fs.statSync(cacheFile).size > 1024) {
                 console.log(`Reusing cached free music: ${track.title} (${track.provider})`);
                 return { localPath: cacheFile, track };
             }
-            await downloadTrack(track, cacheFile);
+
+            // Download track (copied from old logic)
+            const axios = require('axios');
+            const res = await axios.get(track.downloadUrl, { responseType: 'arraybuffer', timeout: 15000 });
+            const buf = Buffer.from(res.data);
+            if (!buf || buf.length < 1024) throw new Error(`Downloaded file too small for ${track.title}`);
+            fs.mkdirSync(require('path').dirname(cacheFile), { recursive: true });
+            fs.writeFileSync(cacheFile, buf);
+
             console.log(`Auto-selected free music: ${track.title} (${track.provider}, ${track.license})`);
             return { localPath: cacheFile, track };
         } catch (err: any) {
