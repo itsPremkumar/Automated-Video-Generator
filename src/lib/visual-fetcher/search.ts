@@ -121,8 +121,26 @@ export async function optimizeKeywordsWithGemini(
 }
 
 // ========================================================================
-// Pexels search — videos
+// Pexels search — videos (★ RECOMMENDED PROVIDER)
 // ========================================================================
+
+const PEXELS_VIDEO_URL = 'https://api.pexels.com/videos/search';
+const PEXELS_PHOTO_URL = 'https://api.pexels.com/v1/search';
+
+/** Log a prominent recommendation message once. */
+let _pexelsRecommendedLogged = false;
+function logPexelsRecommended(): void {
+    if (_pexelsRecommendedLogged) return;
+    _pexelsRecommendedLogged = true;
+    console.log('');
+    console.log('★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★');
+    console.log('★  PEXELS is the RECOMMENDED primary media provider.');
+    console.log('★  Stable, high-quality images & videos with API key.');
+    console.log('★  Free sources (Openverse, Wikimedia) are fallback only.');
+    console.log('★  Get a free API key: https://www.pexels.com/api/');
+    console.log('★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★  ★');
+    console.log('');
+}
 
 export async function searchVideos(
     query: string,
@@ -132,9 +150,11 @@ export async function searchVideos(
 ): Promise<MediaAsset[]> {
     const apiKey = getPexelsApiKey();
     if (!apiKey) {
-        console.log('⚠ [PEXELS] No API key set, skipping Pexels video search');
+        console.log('⚠ [PEXELS] No API key set — skipping Pexels video search. Free sources will be used as fallback.');
+        console.log('  💡 Get a free Pexels API key at https://www.pexels.com/api/ for better results.');
         return [];
     }
+    logPexelsRecommended();
 
     try {
         const params: Record<string, string | number> = {
@@ -144,7 +164,7 @@ export async function searchVideos(
         };
         if (orientation) params.orientation = orientation;
 
-        const response = await axios.get(`${BASE_URL}/videos/search`, {
+        const response = await axios.get(PEXELS_VIDEO_URL, {
             headers: { Authorization: apiKey },
             params,
             timeout: 15000,
@@ -174,17 +194,17 @@ export async function searchVideos(
         return videos.filter((v) => v.url && v.width >= MIN_WIDTH);
     } catch (error: any) {
         if (error?.response?.status === 429) {
-            console.log('⚠ [PEXELS] Rate limited (429), waiting 5s…');
+            console.log('⚠ [PEXELS] Rate limited (429), retrying after 5s…');
             await sleep(5000);
             return searchVideos(query, count, page, orientation);
         }
-        console.log(`⚠ [PEXELS] Search error: ${error?.message || error}`);
+        console.log(`⚠ [PEXELS] Video search error: ${error?.message || error}`);
         return [];
     }
 }
 
 // ========================================================================
-// Pexels search — images
+// Pexels search — images (★ RECOMMENDED PROVIDER)
 // ========================================================================
 
 export async function searchImages(
@@ -195,7 +215,11 @@ export async function searchImages(
     minWidth?: number,
 ): Promise<MediaAsset[]> {
     const apiKey = getPexelsApiKey();
-    if (!apiKey) return [];
+    if (!apiKey) {
+        console.log('⚠ [PEXELS] No API key set — skipping Pexels image search. Free sources will be used as fallback.');
+        return [];
+    }
+    logPexelsRecommended();
 
     try {
         const params: Record<string, string | number> = {
@@ -205,7 +229,7 @@ export async function searchImages(
         };
         if (orientation) params.orientation = orientation;
 
-        const response = await axios.get(`${BASE_URL}/search`, {
+        const response = await axios.get(PEXELS_PHOTO_URL, {
             headers: { Authorization: apiKey },
             params,
             timeout: 15000,
@@ -234,7 +258,7 @@ export async function searchImages(
 }
 
 // ========================================================================
-// Free image search (Openverse, Wikimedia, etc.)
+// Free image search (Openverse, Wikimedia, etc.) — FALLBACK only
 // ========================================================================
 
 export async function searchFreeImages(
@@ -279,11 +303,15 @@ export async function searchFreeImages(
         console.log(`⚠ [FREE-IMAGE] Search error: ${(e as Error).message}`);
     }
 
+    if (results.length > 0) {
+        console.log(`  ⚡ FALLBACK: Got ${results.length} image(s) from free sources (Openverse/Wikimedia).`);
+    }
+
     return results;
 }
 
 // ========================================================================
-// Pixabay video search
+// Pixabay video search — SECONDARY fallback
 // ========================================================================
 
 export async function searchPixabayVideos(
@@ -345,7 +373,7 @@ export async function searchPixabayVideos(
 }
 
 // ========================================================================
-// fetchVisualsForScene — the main orchestrator with resultIndex support
+// fetchVisualsForScene — Pexels primary, free sources as fallback
 // ========================================================================
 
 export async function fetchVisualsForScene(
@@ -371,51 +399,74 @@ export async function fetchVisualsForScene(
     }
 
     if (cache[cacheKey]) {
-        // console.log(`🎨 [CACHE] HIT for "${query}" (r=${resultIndex})`);
         return cache[cacheKey];
     }
 
-    // Deduplicate individual queries so the same keyword isn't sent twice
+    // Deduplicate individual queries
     const individualQueries = [...new Set(
         keywords.map((k) => k.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim()).filter(Boolean),
     )];
 
     const queriesToTry = individualQueries.length > 0 ? individualQueries : [query];
+    const hasPexelsKey = !!getPexelsApiKey();
+
+    if (hasPexelsKey) {
+        logPexelsRecommended();
+    }
 
     for (const q of queriesToTry) {
         try {
+            // ── PEXELS (★ RECOMMENDED PRIMARY) ──────────────────────────
+            if (hasPexelsKey) {
+                if (preferVideo) {
+                    const videos = await searchVideos(q, 15, 1, orientation === 'none' ? '' : orientation);
+                    if (videos.length > 0) {
+                        const pickIndex = Math.min(resultIndex, videos.length - 1);
+                        const pick = videos[pickIndex];
+                        if (pick && pick.url) {
+                            console.log(`  ★ [PEXELS] Selected video candidate #${pickIndex + 1} for "${q}"`);
+                            cache[cacheKey] = pick;
+                            saveCache(cache);
+                            return pick;
+                        }
+                    }
+                    console.log(`  ⚠ [PEXELS] No video results for "${q}" — trying fallback sources…`);
+                } else {
+                    const images = await searchImages(q, 15, 1, orientation === 'none' ? '' : orientation);
+                    if (images.length > 0) {
+                        const pickIndex = Math.min(resultIndex, images.length - 1);
+                        const pick = images[pickIndex];
+                        if (pick && pick.url) {
+                            console.log(`  ★ [PEXELS] Selected image candidate #${pickIndex + 1} for "${q}"`);
+                            cache[cacheKey] = pick;
+                            saveCache(cache);
+                            return pick;
+                        }
+                    }
+                    console.log(`  ⚠ [PEXELS] No image results for "${q}" — trying fallback sources…`);
+                }
+            }
+
+            // ── PIXABAY (secondary fallback) ────────────────────────────
             if (preferVideo) {
-                // Try Pexels videos first
-                let videos = await searchVideos(q, 15, 1, orientation === 'none' ? '' : orientation);
-                if (videos.length > 0) {
-                    const pickIndex = Math.min(resultIndex, videos.length - 1);
-                    const pick = videos[pickIndex];
+                const pixabayVideos = await searchPixabayVideos(q, 15, orientation === 'none' ? 'all' : orientation as any);
+                if (pixabayVideos.length > 0) {
+                    const pickIndex = Math.min(resultIndex, pixabayVideos.length - 1);
+                    const pick = pixabayVideos[pickIndex];
                     if (pick && pick.url) {
+                        console.log(`  ⚡ FALLBACK [Pixabay] Selected video candidate #${pickIndex + 1} for "${q}"`);
                         cache[cacheKey] = pick;
                         saveCache(cache);
                         return pick;
                     }
                 }
+            }
 
-                // Try Pixabay videos
-                videos = await searchPixabayVideos(q, 15, orientation === 'none' ? 'all' : orientation);
-                if (videos.length > 0) {
-                    const pickIndex = Math.min(resultIndex, videos.length - 1);
-                    const pick = videos[pickIndex];
-                    if (pick && pick.url) {
-                        cache[cacheKey] = pick;
-                        saveCache(cache);
-                        return pick;
-                    }
-                }
-
-                // Try free video sources
+            // ── FREE VIDEO SOURCES (last resort fallback) ────────────────
+            if (preferVideo) {
                 try {
-                    const sourceResults = await freeVideoAdapter.searchAll(q, {
-                        count: 5,
-                        maxDuration: 30,
-                    });
-                    const allVideos: import('./types').MediaAsset[] = [];
+                    const sourceResults = await freeVideoAdapter.searchAll(q, { count: 5, maxDuration: 30 });
+                    const allVideos: MediaAsset[] = [];
                     for (const sr of sourceResults) {
                         for (const v of sr.results) {
                             const wh = v.resolution?.split('x').map(Number) || [0, 0];
@@ -426,13 +477,14 @@ export async function fetchVisualsForScene(
                                 height: wh[1] || 0,
                                 photographer: v.creator || undefined,
                                 videoDuration: v.durationSeconds || TARGET_VIDEO_DURATION_SECONDS,
-                            } as import('./types').MediaAsset);
+                            } as MediaAsset);
                         }
                     }
                     if (allVideos.length > 0) {
                         const pickIndex = Math.min(resultIndex, allVideos.length - 1);
                         const pick = allVideos[pickIndex];
                         if (pick && pick.url) {
+                            console.log(`  ⚡ FALLBACK [Free Video] Selected candidate #${pickIndex + 1} for "${q}"`);
                             cache[cacheKey] = pick;
                             saveCache(cache);
                             return pick;
@@ -440,24 +492,13 @@ export async function fetchVisualsForScene(
                     }
                 } catch { /* next source */ }
             } else {
-                // Try Pexels images
-                let images = await searchImages(q, 15, 1, orientation === 'none' ? '' : orientation);
-                if (images.length > 0) {
-                    const pickIndex = Math.min(resultIndex, images.length - 1);
-                    const pick = images[pickIndex];
-                    if (pick && pick.url) {
-                        cache[cacheKey] = pick;
-                        saveCache(cache);
-                        return pick;
-                    }
-                }
-
-                // Try free images
+                // ── FREE IMAGE SOURCES (last resort fallback) ──────────────
                 const freeImages = await searchFreeImages(q, 5);
                 if (freeImages.length > 0) {
                     const pickIndex = Math.min(resultIndex, freeImages.length - 1);
                     const pick = freeImages[pickIndex];
                     if (pick && pick.url) {
+                        console.log(`  ⚡ FALLBACK [Free Image] Selected candidate #${pickIndex + 1} for "${q}"`);
                         cache[cacheKey] = pick;
                         saveCache(cache);
                         return pick;
@@ -489,33 +530,6 @@ export async function fetchVisualsForScene(
         }
     } catch { /* give up */ }
 
-    // Absolute last resort: any free source regardless of type
-    try {
-        const sourceResults = await freeVideoAdapter.searchAll(query, { count: 5, maxDuration: 30 });
-        const allVideos: MediaAsset[] = [];
-        for (const sr of sourceResults) {
-            for (const v of sr.results) {
-                const wh = v.resolution?.split('x').map(Number) || [0, 0];
-                allVideos.push({
-                    type: 'video',
-                    url: v.downloadUrl,
-                    width: wh[0] || 0,
-                    height: wh[1] || 0,
-                    photographer: v.creator || undefined,
-                    videoDuration: v.durationSeconds || TARGET_VIDEO_DURATION_SECONDS,
-                });
-            }
-        }
-        if (allVideos.length > 0) {
-            const pickIndex = Math.min(resultIndex, allVideos.length - 1);
-            const pick = allVideos[pickIndex];
-            if (pick && pick.url) {
-                cache[cacheKey] = pick;
-                saveCache(cache);
-                return pick;
-            }
-        }
-    } catch { /* give up */ }
-
+    console.log(`  ✗ No visual assets found for "${query}" from any source.`);
     return null;
 }

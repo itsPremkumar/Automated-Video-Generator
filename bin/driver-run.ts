@@ -5,6 +5,9 @@
  * the driver supplies the creative content via req.agent.writeScript, and the
  * agentic pipeline acquires (offline placeholder) visuals, gates, and renders.
  */
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { runAgenticPipeline, renderAgenticSlideshow } from '../src/agentic/orchestrate.js';
 import type { PipelineProgress } from '../src/agentic/orchestrate.js';
 

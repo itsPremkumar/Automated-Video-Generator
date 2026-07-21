@@ -3,14 +3,12 @@
  * bin/agentic-run.ts — generate a video purely with the agentic system.
  *
  *   npx tsx bin/agentic-run.ts --topic "5 home workouts" --title "Home Workout"
- *
- * With the default backend='agent' this uses NO external AI model:
- *   Hermes writes the script, expands keywords, acquires real assets, verifies
- *   (signal checks), DECIDES approve/reject, gates, and renders an MP4 via
- *   ffmpeg-static (default) or Remotion (--renderer remotion). Zero AI keys.
- *
- * The classic workflow is untouched.
  */
+import dotenv from 'dotenv';
+
+// Load .env from project root before anything else
+dotenv.config();
+
 import { runAgenticPipeline, renderAgenticSlideshow, renderAgenticWithRemotion, PipelineProgress } from '../src/agentic/orchestrate.js';
 
 function arg(name: string, fallback: string): string {

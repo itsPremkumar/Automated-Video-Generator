@@ -54,6 +54,10 @@ export async function downloadMedia(
             responseType: 'stream',
             timeout: DOWNLOAD_STALL_TIMEOUT_MS,
             maxContentLength: MAX_DOWNLOAD_BYTES,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+                'Referer': 'https://www.google.com/',
+            },
         });
 
         const writer = fs.createWriteStream(outputPath);

@@ -10,6 +10,10 @@
  * watches the logs, diagnoses any failure, applies a known fix, and retries —
  * until a valid MP4 comes out or the attempt budget is exhausted.
  */
+import dotenv from 'dotenv';
+// Load .env from project root before anything else
+dotenv.config();
+
 import { autoRunVideo, AutoRunEvent } from '../src/agentic/autopilot.js';
 import { loadConfig, AgenticConfig } from '../src/agentic/config.js';
 

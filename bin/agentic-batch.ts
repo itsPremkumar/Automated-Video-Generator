@@ -8,6 +8,10 @@
  * topics, renders a real MP4 for each, then verifies every output with the
  * bundled ffmpeg (video/audio streams, duration, codec, dimensions, size).
  */
+import dotenv from 'dotenv';
+// Load .env from project root before anything else
+dotenv.config();
+
 import { execFileSync } from 'child_process';
 import * as fs from 'fs';
 import { runAgenticPipeline, renderAgenticSlideshow } from '../src/agentic/orchestrate.js';

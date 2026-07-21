@@ -186,12 +186,66 @@ class LocalFreeProvider implements FreeMusicProvider {
     }
 }
 
+// ─── Fallback tone generator (zero-network, always works) ────────────────────
+// Generates a gentle 256 Hz ambient drone using ffmpeg.  Acts as the last
+// resort after all network providers have failed, so the video always has
+// some background ambiance.
+class FallbackToneProvider implements FreeMusicProvider {
+    readonly name = 'fallback-ambient';
+
+    async search(_query: string, _count = 1): Promise<FreeMusicTrack[]> {
+        return [{
+            id: 'fallback_ambient_drone',
+            title: 'Ambient Drone (Fallback)',
+            creator: 'Generated (CC0)',
+            license: 'CC0 1.0 Universal (Public Domain)',
+            licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+            provider: this.name,
+            downloadUrl: '__ffmpeg_generated__',  // special marker
+            genre: 'ambient',
+            format: 'wav',
+            tags: ['ambient', 'drone', 'fallback', 'generated'],
+        }];
+    }
+
+    /** Generate a gentle ambient drone tone via ffmpeg. Returns the output path. */
+    generate(destPath: string, durationSeconds: number = 30): Promise<string> {
+        return new Promise((resolve, reject) => {
+            // Gentle pink noise at low volume — natural ambient background
+            const ffmpegPath = require('ffmpeg-static') as string;
+            const args = [
+                '-f', 'lavfi',
+                '-i', `anoisesrc=color=pink:duration=${durationSeconds}`,
+                '-af', 'volume=0.08,lowpass=f=800',
+                '-ac', '1',
+                '-ar', '44100',
+                '-y',
+                destPath,
+            ];
+            const cp = require('child_process').spawn(ffmpegPath, args);
+            let stderr = '';
+            cp.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
+            cp.on('error', (e: Error) => reject(e));
+            cp.on('close', (code: number | null) => {
+                if (code === 0) {
+                    console.log(`  ♪ Generated fallback ambient audio (pink noise) → ${destPath}`);
+                    resolve(destPath);
+                } else {
+                    reject(new Error(`ffmpeg exit code ${code}: ${stderr.slice(0, 200)}`));
+                }
+            });
+        });
+    }
+}
+
 const localProvider = new LocalFreeProvider();
+const fallbackToneProvider = new FallbackToneProvider();
 
 function defaultProviders(): FreeMusicProvider[] {
     // Local first: a cached/__auto__ or user-dropped track resolves
     // instantly offline; only fall through to network providers if none.
-    return [localProvider, new OpenLofiProvider(), new InternetArchiveProvider()];
+    // The zero-network fallback-tone generator is always last.
+    return [localProvider, new OpenLofiProvider(), new InternetArchiveProvider(), fallbackToneProvider];
 }
 
 export function listFreeMusicProviders(): string[] {
@@ -263,6 +317,18 @@ export async function resolveFreeBackgroundMusic(
             const tracks = await provider.search(query, 5);
             if (tracks.length === 0) continue;
             const track = tracks[0];
+            // Special fallback: ffmpeg-generated ambient tone
+            if (track.downloadUrl === '__ffmpeg_generated__') {
+                console.warn('  ↳ No external music sources available, generating ambient audio tone…');
+                const cacheFile = path.join(cacheDir, 'fallback_ambient.wav');
+                if (fs.existsSync(cacheFile) && fs.statSync(cacheFile).size > 1024) {
+                    console.log(`Reusing cached fallback ambient: ${cacheFile}`);
+                    return { localPath: cacheFile, track };
+                }
+                fs.mkdirSync(cacheDir, { recursive: true });
+                await fallbackToneProvider.generate(cacheFile);
+                return { localPath: cacheFile, track };
+            }
             const ext = track.format || 'mp3';
             const cacheFile = path.join(cacheDir, `${sanitizeId(track.id)}.${ext}`);
             if (fs.existsSync(cacheFile) && fs.statSync(cacheFile).size > 1024) {

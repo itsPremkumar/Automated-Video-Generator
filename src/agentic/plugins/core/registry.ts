@@ -29,11 +29,10 @@ export class PluginRegistry {
         this.context = context;
     }
 
-    /** Register a plugin instance */
+    /** Register a plugin instance — no-op if already registered to avoid double-warn spam. */
     register(plugin: AgenticPlugin, config: Record<string, unknown> = {}, enabled = true): void {
-        const existing = this.entries.get(plugin.metadata.name);
-        if (existing) {
-            console.warn(`[PluginRegistry] Plugin "${plugin.metadata.name}" already registered, overwriting`);
+        if (this.entries.has(plugin.metadata.name)) {
+            return; // already registered — skip silently
         }
 
         const entry: PluginRegistryEntry = {
