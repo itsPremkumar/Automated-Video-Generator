@@ -291,7 +291,10 @@ export async function generateVideo(
                         orientation,
                         scene.voiceoverText,
                     );
-                    visual = imageFallback && imageFallback.type === 'image' ? imageFallback : null;
+                    const imageFallbackSingle = Array.isArray(imageFallback)
+                        ? imageFallback[0]
+                        : imageFallback;
+                    visual = imageFallbackSingle?.type === 'image' ? imageFallbackSingle : null;
                 }
 
                 if (visual?.type === 'video' && !visual.localPath) {

@@ -101,18 +101,18 @@ const makeVideo = (quality: string, width: number, height: number): any => ({
 
 test('selectBestVideoFile prefers preferred quality among valid (>= MIN_WIDTH) files', () => {
     const files = [makeVideo('sd', 1280, 720), makeVideo('hd', 1920, 1080), makeVideo('uhd', 3840, 2160)];
-    assert.equal(selectBestVideoFile(files).quality, 'hd'); // hd ranks first
+    assert.equal(selectBestVideoFile(files)!.quality, 'hd'); // hd ranks first
 });
 
 test('selectBestVideoFile ignores sub-MIN_WIDTH files, then falls back to widest', () => {
     const files = [makeVideo('hd', 480, 270), makeVideo('sd', 1280, 720), makeVideo('uhd', 640, 360)];
     // All preferred qualities are < MIN_WIDTH(720) except sd(1280); hd/uhd too small.
-    assert.equal(selectBestVideoFile(files).quality, 'sd');
+    assert.equal(selectBestVideoFile(files)!.quality, 'sd');
 });
 
 test('selectBestVideoFile returns the first file when none meet MIN_WIDTH', () => {
     const files = [makeVideo('hd', 200, 100), makeVideo('sd', 100, 50)];
-    assert.equal(selectBestVideoFile(files).width, 200);
+    assert.equal(selectBestVideoFile(files)!.width, 200);
 });
 
 test('selectBestVideoFile handles empty input defensively', () => {
