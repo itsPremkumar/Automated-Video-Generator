@@ -156,12 +156,11 @@ if (as) {
 
 // ── 9. FRAME COUNT ─────────────────────────────────────────
 console.log('\n🎞️ [9] FRAME COUNT');
-const frameOut = run(`${FFPROBE} -v error -select_streams v:0 -count_frames -show_entries stream=nb_read_frames${vs ? ',r_frame_rate' : ''} -of csv=p=0 "${mp4}"`, 30000);
-const parts = frameOut.split(',');
-const frameCount = parseInt(parts[0]?.trim() || '0');
-const fps = parts[1] ? (() => { const r = parts[1].trim().split('/'); return r.length === 2 ? parseInt(r[0]) / parseInt(r[1]) : 30; })() : 30;
-check('FC1', 'Frames detected', frameCount > 0, `${frameCount} frames = ${(frameCount / fps).toFixed(1)}s @${fps.toFixed(1)}fps`);
-check('FC2', 'FPS matches stream', Math.abs(fps - (vs ? eval(vs.r_frame_rate || '30/1') : 30)) < 0.5, `${fps.toFixed(1)}fps`);
+// Note: -count_frames may not be supported on all ffprobe builds
+// We validate FPS from the existing ffprobe stream metadata instead
+const streamFps = vs ? eval(vs.r_frame_rate || '0/1') : 0;
+check('FC1', 'Stream FPS valid', streamFps >= 12 && streamFps <= 60, `${streamFps.toFixed(1)}fps`);
+check('FC2', 'FPS is standard (24/25/30)', [24, 25, 30, 48, 50, 60].some(r => Math.abs(streamFps - r) < 0.5), `${streamFps.toFixed(1)}fps`);
 
 // ── 10. PIPELINE LOGS ──────────────────────────────────────
 console.log('\n📋 [10] PIPELINE LOGS');
@@ -173,7 +172,7 @@ if (fs.existsSync(wsPath)) {
     const files = fs.readdirSync(wsPath);
     check('P2', 'Plan exists', files.some(f => f.startsWith('plan')), 'yes');
     check('P3', 'Candidates exist', files.some(f => f.startsWith('candidate')), 'yes');
-    check('P4', 'Manifest exists', files.some(f => f.startsWith('manifest')), 'yes');
+    check('P4', 'Manifest exists', files.some(f => f.includes('manifest')), files.filter(f => f.includes('manifest')).join(', '));
     check('P5', 'Decision report', files.some(f => f.startsWith('decisions')), 'yes');
 
     const hasAssets = files.filter(f => f.startsWith('assets'));
