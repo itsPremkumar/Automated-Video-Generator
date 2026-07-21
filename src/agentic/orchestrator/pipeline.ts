@@ -238,25 +238,7 @@ export async function runAgenticPipeline(
 
     const acquireDeps: AcquireDeps = {
         fetchVisual: async (keywords, kind, orientation, sceneIndex = 0) => {
-            const pool = await getImagePool();
-            if (pool.length > 0) {
-                const pick = pool[sceneIndex % pool.length];
-                const DEAD_HOSTS = /flickr\.com|staticflickr\.com|live\.staticflickr/i;
-                if (pick && pick.url && !DEAD_HOSTS.test(pick.url)) {
-                    const source = sourceFromUrl(pick.url);
-                    return [
-                        {
-                            url: pick.url,
-                            localPath: '',
-                            source,
-                            license: undefined,
-                            licenseUrl: undefined,
-                            width: 0,
-                            height: 0,
-                        },
-                    ];
-                }
-            }
+            // Phase 1: targeted Pexels search with per-scene resultIndex
             const bySpecificity = [...keywords].sort((a, b) => b.length - a.length);
             const ladder = [bySpecificity, keywords];
             if (keywords.length > 1) ladder.push([keywords[0]]);
@@ -293,6 +275,27 @@ export async function runAgenticPipeline(
                     }
                 } catch (e) {
                     console.warn(`⚠ fetchVisual failed for "${q.join(' ')}": ${(e as Error).message}`);
+                }
+            }
+
+            // Phase 2: fall back to the image pool (built earlier from topic search)
+            const pool = await getImagePool();
+            if (pool.length > 0) {
+                const pick = pool[sceneIndex % pool.length];
+                const DEAD_HOSTS = /flickr\.com|staticflickr\.com|live\.staticflickr/i;
+                if (pick && pick.url && !DEAD_HOSTS.test(pick.url)) {
+                    const source = sourceFromUrl(pick.url);
+                    return [
+                        {
+                            url: pick.url,
+                            localPath: '',
+                            source,
+                            license: undefined,
+                            licenseUrl: undefined,
+                            width: 0,
+                            height: 0,
+                        },
+                    ];
                 }
             }
             const ph = makePlaceholder(keywords, kind);

@@ -998,7 +998,8 @@ export async function fetchVisualsForScene(
     const preferredType: CachedMediaType = preferVideo ? 'video' : 'image';
     const preferredCacheKey = buildCacheKey(query, orientation, preferredType);
     const legacyCacheKey = buildLegacyCacheKey(query, orientation);
-    const cacheKey = preferredCacheKey;
+    // Include resultIndex in cache key so different scenes get different cached videos
+    const cacheKey = `${preferredCacheKey}_r${resultIndex}`;
 
     if (!query) {
         return null;
