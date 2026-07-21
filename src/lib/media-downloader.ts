@@ -472,19 +472,30 @@ export function trimBlackFrames(videoPath: string): string {
     const ffmpeg = require('ffmpeg-static') || 'ffmpeg';
 
     try {
-        // Detect black frames in first 5 seconds
-        const detectCmd = `"${ffprobe}" -v quiet -f lavfi -i "movie=${videoPath},blackframe=0.1:30" -show_entries frame=pkt_pts_time -of csv=p=0 2>&1`;
-        const out = execSync(detectCmd, { encoding: 'utf8' as BufferEncoding, timeout: 15000 });
-        const times = out.trim().split('\n').map(Number).filter(n => !isNaN(n));
-        const firstNonBlack = times.length > 0 ? Math.min(...times) : 0;
-
-        if (firstNonBlack > 0.3) {
-            // Trim initial black frames
+        // Detect black segments at the START of the video using blackdetect
+        // blackdetect correctly finds contiguous black segments, unlike blackframe
+        // pix_th=0.15 = pixel luminance ≤ 15% of max is considered "dark"
+        // d=0.3 = minimum duration 0.3s to report
+        const detectCmd = `"${ffmpeg}" -i "${videoPath}" -filter:v "blackdetect=d=0.3:pix_th=0.15" -f null - 2>&1`;
+        const out = execSync(detectCmd, { encoding: 'utf8' as BufferEncoding, timeout: 30000 });
+        // Parse black_start/black_end/black_duration
+        const re = /black_start:([\d.]+)\s+black_end:([\d.]+)\s+black_duration:([\d.]+)/g;
+        let match: RegExpExecArray | null;
+        let trimTo = 0; // timestamp to trim to (skip everything before this)
+        while ((match = re.exec(out)) !== null) {
+            const start = parseFloat(match[1]);
+            const end = parseFloat(match[2]);
+            const dur = parseFloat(match[3]);
+            // Only trim black at the VERY START of the video (within first 0.1s)
+            if (start < 0.1 && dur >= 0.3) {
+                trimTo = end;
+            }
+        }
+        if (trimTo > 0.3) {
             const trimmedPath = videoPath.replace(/(\.[^.]+)$/, '_trimmed$1');
-            const trimCmd = `"${ffmpeg}" -i "${videoPath}" -ss ${firstNonBlack.toFixed(2)} -c copy -avoid_negative_ts 1 -y "${trimmedPath}"`;
+            const trimCmd = `"${ffmpeg}" -i "${videoPath}" -ss ${trimTo.toFixed(2)} -c copy -avoid_negative_ts 1 -y "${trimmedPath}"`;
             execSync(trimCmd, { encoding: 'utf8' as BufferEncoding, timeout: 30000 });
             if (fs.existsSync(trimmedPath) && fs.statSync(trimmedPath).size > 1000) {
-                // Replace original with trimmed
                 fs.unlinkSync(videoPath);
                 fs.renameSync(trimmedPath, videoPath);
             }
