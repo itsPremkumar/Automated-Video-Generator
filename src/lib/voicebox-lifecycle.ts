@@ -89,10 +89,11 @@ export async function ensureBackend(): Promise<boolean> {
     const port = process.env.VOICEBOX_PORT || String(VOICEBOX_DEFAULT_PORT);
     console.log(`spawning voicebox backend: ${py} -m backend.main --port ${port}`);
     backendProc = spawn(py, ['-m', 'backend.main', '--host', '127.0.0.1', '--port', port], {
-        cwd: path.join(dir, 'backend'),
-        detached: false,
+        cwd: dir,
+        detached: true,
         stdio: ['ignore', 'pipe', 'pipe'],
-        env: { ...process.env },
+        windowsHide: true,
+        env: { ...process.env, PYTHONPATH: '' },
     });
     backendProc.stdout?.on('data', (d) => console.log(String(d).trim()));
     backendProc.stderr?.on('data', (d) => console.warn(String(d).trim()));
