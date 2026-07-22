@@ -95,11 +95,24 @@ interface ReviqueChangeHint {
  * @param hints optional structured hints (scope + detail) — applied to the plan
  * @param planOverride optional fully-replaced plan fields (e.g. from critique)
  */
+export interface ReviseOpts {
+    baseReq?: Partial<PipelineRequest>;
+    brain?: AgentBrain | null;
+    planOverride?: any;
+    /** Scope-aware revise: limit how much of the pipeline re-runs.
+     *  - 'full'    : re-run acquire + voice + render (default, most thorough)
+     *  - 'music'   : reuse cached plan/visuals/voice, only re-compose with new music query
+     *  - 'captions': reuse everything, only re-burn captions (style/color/size)
+     *  - 'visuals' : reuse cached voice, re-acquire visuals + re-render
+     */
+    scope?: 'full' | 'music' | 'captions' | 'visuals';
+}
+
 export async function reviseJob(
     originalJobId: string,
     notes: string,
     hints: ReviqueChangeHint[] = [],
-    opts: { baseReq?: Partial<PipelineRequest>; brain?: AgentBrain | null; planOverride?: any } = {},
+    opts: ReviseOpts = {},
 ): Promise<ReviseResult> {
     const wsRoot = workspaceRootFor(originalJobId);
     const ws: AgenticWorkspace = {
@@ -131,34 +144,103 @@ export async function reviseJob(
 
     // New jobId/workspace for the revision (non-destructive).
     const revisionJobId = `${originalJobId}_r${round}`;
-    const req: PipelineRequest = {
-        jobId: revisionJobId,
-        topic: revisedPlan.title || originalJobId,
-        title: revisedPlan.title || originalJobId,
-        backend: opts.baseReq?.backend ?? 'agent',
-        orientation: revisedPlan.orientation ?? 'portrait',
-        voice: revisedPlan.voice,
-        musicQuery: revisedPlan.musicQuery,
-        candidatesPerAsset: opts.baseReq?.candidatesPerAsset ?? 2,
-        ...(opts.baseReq ?? {}),
-    } as PipelineRequest;
 
     try {
-        const res = await runAgenticPipeline(req, undefined);
-        if (!res.gate.pass) {
-            return { ok: false, originalJobId, revisionJobId, outputPath: null, round, detail: `revision gate blocked: ${res.gate.checks.filter((c: any) => !c.pass).map((c: any) => c.id).join(',')}` };
+        let out: string | null = null;
+
+        const scope = opts.scope ?? (hints.length ? (hints[0].scope as any) : 'full');
+        if (scope === 'music' || scope === 'captions' || scope === 'visuals') {
+            // SCOPE-AWARE FAST PATH: reuse cached workspace assets + voice,
+            // re-render only what changed. No network acquire, no re-voice
+            // (except 'visuals' which re-acquires imagery but keeps voice).
+            out = await renderRevisionFromCache(ws, revisionJobId, revisedPlan, scope);
+        } else {
+            const req: PipelineRequest = {
+                jobId: revisionJobId,
+                topic: revisedPlan.title || originalJobId,
+                title: revisedPlan.title || originalJobId,
+                backend: opts.baseReq?.backend ?? 'agent',
+                orientation: revisedPlan.orientation ?? 'portrait',
+                voice: revisedPlan.voice,
+                musicQuery: revisedPlan.musicQuery,
+                candidatesPerAsset: opts.baseReq?.candidatesPerAsset ?? 2,
+                ...(opts.baseReq ?? {}),
+            } as PipelineRequest;
+            const res = await runAgenticPipeline(req, undefined);
+            if (!res.gate.pass) {
+                return { ok: false, originalJobId, revisionJobId, outputPath: null, round, detail: `revision gate blocked: ${res.gate.checks.filter((c: any) => !c.pass).map((c: any) => c.id).join(',')}` };
+            }
+            out = await renderAgenticSlideshow(res, {
+                outPath: path.join(process.cwd(), 'output', revisionJobId, `${revisedPlan.title || 'revision'}.mp4`),
+                burnCaptions: revisedPlan.captions !== 'none',
+            });
         }
-        const out = await renderAgenticSlideshow(res, {
-            outPath: path.join(process.cwd(), 'output', revisionJobId, `${revisedPlan.title || 'revision'}.mp4`),
-            burnCaptions: revisedPlan.captions !== 'none',
-        });
+
         // Bind the new jobId back onto the review thread.
         const revWs: AgenticWorkspace = { ...ws, jobId: originalJobId, root: wsRoot } as AgenticWorkspace;
         resolveRound(revWs, revisionJobId);
-        return { ok: !!out, originalJobId, revisionJobId, outputPath: out ?? null, round, detail: out ? `revision rendered: ${out}` : 'render produced no output' };
+        return { ok: !!out, originalJobId, revisionJobId, outputPath: out ?? null, round, detail: out ? `revision (${scope}) rendered: ${out}` : 'render produced no output' };
     } catch (e: any) {
         return { ok: false, originalJobId, revisionJobId, outputPath: null, round, detail: `revision threw: ${e?.message ?? e}` };
     }
+}
+
+/**
+ * Re-render a revision from the ORIGINAL job's cached workspace (plan.json +
+ * render-manifest + voiceover-meta). Used by scope-aware revise so "change the
+ * music" doesn't re-fetch imagery or re-synthesize voice. Mirrors the
+ * reconstruction that `agentic-modular runRender` already does.
+ */
+async function renderRevisionFromCache(
+    ws: AgenticWorkspace,
+    revisionJobId: string,
+    revisedPlan: any,
+    scope: 'music' | 'captions' | 'visuals',
+): Promise<string | null> {
+    const manifest = readJson<any>(ws, 'render-manifest.json') || readJson<any>(ws, 'scene-data.json');
+    if (!manifest) throw new Error('no cached render-manifest.json to revise from (run a full render first)');
+    const voiceMeta = readJson<any>(ws, 'voiceover-meta.json');
+
+    const result: any = {
+        backend: 'agent',
+        plan: revisedPlan,
+        workspace: { root: ws.root, assetsDir: ws.assetsDir },
+        manifest: manifest.assets ? manifest : {
+            assets: revisedPlan.scenes.map((s: any, i: number) => ({
+                sceneIndex: i,
+                kind: s.visualPreference === 'video' ? 'video' : 'image',
+                localPath: s.localAsset ? path.join(ws.assetsDir, s.localAsset) : undefined,
+                durationSec: s.durationSec,
+            })),
+            voiceoverDriven: voiceMeta?.voiceoverDriven ?? false,
+        },
+        voiceovers: voiceMeta,
+        gate: { pass: true, checks: [] },
+        fullyAgentDriven: true,
+    };
+
+    // Reconstruct voice scene paths from disk (cached, not re-synthesized).
+    const audioDir = ws.audioDir;
+    if (fs.existsSync(audioDir)) {
+        const voiceScenes: any[] = [];
+        for (const s of revisedPlan.scenes) {
+            const wav = path.join(audioDir, `scene_${s.sceneNumber}_voice.wav`);
+            const mp3 = path.join(audioDir, `scene_${s.sceneNumber}_voice.mp3`);
+            const found = [wav, mp3].find((f) => fs.existsSync(f));
+            if (found) voiceScenes.push({ sceneIndex: s.sceneNumber - 1, audioPath: found, durationSec: s.durationSec, captionSegments: s.captionSegments || [] });
+        }
+        if (voiceScenes.length) result.voiceovers = { scenes: voiceScenes, voiceoverDriven: true, fallbackUsed: false };
+    }
+
+    const outDir = path.join(process.cwd(), 'output', revisionJobId);
+    fs.mkdirSync(outDir, { recursive: true });
+    const { renderAgenticSlideshow } = await import('../orchestrator/render.js');
+    return renderAgenticSlideshow(result, {
+        outPath: path.join(outDir, `${revisedPlan.title || 'revision'}.mp4`),
+        crossfadeSec: 0.3,
+        burnCaptions: revisedPlan.captions !== 'none',
+        vignette: revisedPlan.vignette !== false,
+    });
 }
 
 /**

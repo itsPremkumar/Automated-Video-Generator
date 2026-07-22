@@ -100,6 +100,9 @@ test('api-routes registers all expected routes', async () => {
     mock.module('./free-video-controller', {
         namedExports: { sources: () => {}, search: () => {}, download: () => {} },
     });
+    mock.module('./editor-controller', {
+        namedExports: { critiqueJob: () => {}, reviseJobCtrl: () => {}, editorOp: () => {}, restitchJob: () => {} },
+    });
 
     // Schemas
     const schemaExports: Record<string, unknown> = {};
@@ -169,6 +172,10 @@ test('api-routes registers all expected routes', async () => {
         { method: 'GET', path: '/fs/assets' },
         { method: 'DELETE', path: '/fs/assets/:filename' },
         { method: 'GET', path: '/fs/view' },
+        { method: 'POST', path: '/jobs/:jobId/critique' },
+        { method: 'POST', path: '/jobs/:jobId/revise' },
+        { method: 'POST', path: '/jobs/:jobId/restitch' },
+        { method: 'POST', path: '/editor/:kind' },
     ];
 
     // Spot-check essential endpoints

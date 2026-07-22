@@ -54,7 +54,10 @@ export async function estimateAudioDurationSafe(p: string): Promise<number> {
             });
         });
         const d = parseFloat(out.trim());
-        if (!isNaN(d) && d > 0) return Math.ceil(d);
+        // NOTE: do NOT Math.ceil here — ceiling turns a 4.04s clip into 5s and
+        // breaks downstream duration comparisons (e.g. restitch asserting the
+        // output length). Return the precise float; round only at display.
+        if (!isNaN(d) && d > 0) return d;
     } catch { /* fall through */ }
     return 4;
 }

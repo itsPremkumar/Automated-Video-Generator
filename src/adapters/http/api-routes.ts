@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS } from '../../constants/config';
 import { asyncHandler, validateRequest } from '../../lib/validation';
 import { requireLocalAccess } from '../../middleware/local-only';
@@ -12,14 +13,19 @@ import * as VideosController from './videos-controller';
 import * as VideoDownloadController from './video-download-controller';
 import * as SocialDownloadController from './social-download-controller';
 import * as FreeVideoController from './free-video-controller';
+import * as EditorController from './editor-controller';
 import {
     assetFilenameParamsSchema,
+    critiqueBodySchema,
+    editorOpBodySchema,
     generateScriptBodySchema,
     jobIdParamsSchema,
     listFilesQuerySchema,
     pickFileBodySchema,
     refineSceneBodySchema,
     reorderScenesBodySchema,
+    restitchBodySchema,
+    reviseBodySchema,
     sceneParamsSchema,
     startJobBodySchema,
     updateEnvBodySchema,
@@ -82,6 +88,27 @@ router.post(
     '/jobs/:jobId/scenes/:sceneIndex/refine',
     validateRequest({ params: sceneParamsSchema, body: refineSceneBodySchema }),
     asyncHandler(ScenesController.refineSceneWithAI),
+);
+router.post(
+    '/jobs/:jobId/critique',
+    validateRequest({ params: jobIdParamsSchema, body: critiqueBodySchema }),
+    asyncHandler(EditorController.critiqueJob),
+);
+router.post(
+    '/jobs/:jobId/revise',
+    validateRequest({ params: jobIdParamsSchema, body: reviseBodySchema }),
+    asyncHandler(EditorController.reviseJobCtrl),
+);
+router.post(
+    '/jobs/:jobId/restitch',
+    validateRequest({ params: jobIdParamsSchema, body: restitchBodySchema }),
+    asyncHandler(EditorController.restitchJob),
+);
+router.post(
+    '/editor/:kind',
+    requireLocalAccess,
+    validateRequest({ params: z.object({ kind: z.string() }).passthrough(), body: editorOpBodySchema }),
+    asyncHandler(EditorController.editorOp),
 );
 router.post(
     '/jobs/:jobId/confirm',

@@ -737,6 +737,34 @@ async function runEdit(cliArgs: CliArgs) {
                             console.log(`  🖼 contact-sheet: ${sheet}`);
                         }
                     } catch { /* contact-sheet is best-effort */ }
+
+                    // Gap C fix: swap the regenerated scene INTO the existing
+                    // master in-place (editing, not full re-render). Prefer the
+                    // job's title-based master; fall back to any full render.
+                    const masterName = `${job.title || 'output'}.mp4`;
+                    const masterPath = path.join(outputDir, masterName);
+                    const masterAlt = fs.existsSync(masterPath)
+                        ? masterPath
+                        : (fs.readdirSync(outputDir).find((f) => f.endsWith('.mp4') && !f.includes('scene_')) || '');
+                    if (masterAlt && fs.existsSync(masterAlt)) {
+                        try {
+                            const { restitchMaster } = await import('../../agentic/operations/restitch.js');
+                            const stitched = await restitchMaster(
+                                masterAlt, mp4, path.join(ws.root, 'plan.json'), sceneNum,
+                                path.join(outputDir, `${job.title || 'output'}_r${sceneNum}.mp4`),
+                            );
+                            if (stitched.ok) {
+                                console.log(`  🎬 Re-stitched master → ${stitched.output}`);
+                            } else {
+                                console.log(`  ⚠ re-stitch skipped: ${stitched.detail} (full re-render still available)`);
+                            }
+                        } catch (re: any) {
+                            console.log(`  ⚠ re-stitch failed: ${re?.message ?? re} (full re-render still available)`);
+                        }
+                    } else {
+                        console.log(`\n  ℹ No master render found to splice into. To regenerate the full video, run:`);
+                        console.log(`     npm run agentic:modular render`);
+                    }
                 }
             } catch (e: any) {
                 console.error(`  ✖ Scene render failed: ${e.message}`);

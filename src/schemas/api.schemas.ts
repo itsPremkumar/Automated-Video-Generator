@@ -121,6 +121,53 @@ export const generateScriptBodySchema = z
     })
     .strict();
 
+// ─── Editor operations (Gap I: drive the assistant from HTTP/UI) ───
+
+export const critiqueBodySchema = z
+    .object({
+        mp4Path: z.string().trim().max(2048).optional(),
+    })
+    .strict();
+
+export const reviseBodySchema = z
+    .object({
+        notes: z.string().trim().min(3).max(2000),
+        scope: z.enum(['full', 'music', 'captions', 'visuals']).optional(),
+        hints: z
+            .array(
+                z.object({
+                    scope: z.enum(['script', 'music', 'visuals', 'captions', 'color', 'other']),
+                    scene: z.number().int().min(1).max(50).optional(),
+                    detail: z.string().trim().min(1).max(1000),
+                }),
+            )
+            .max(20)
+            .optional(),
+        autoCritique: z.boolean().optional(),
+    })
+    .strict();
+
+export const editorOpBodySchema = z
+    .object({
+        input: z.string().trim().min(1).max(2048),
+        target: z.string().trim().max(16).optional(),
+        fps: z.number().int().min(1).max(60).optional(),
+        width: z.number().int().min(16).max(7680).optional(),
+        mode: z.enum(['both', 'video', 'audio']).optional(),
+        url: z.string().trim().max(2048).optional(),
+        topic: z.string().trim().min(1).max(500).optional(),
+        voice: z.string().trim().max(120).optional(),
+    })
+    .strict();
+
+export const restitchBodySchema = z
+    .object({
+        sceneNumber: z.number().int().min(1).max(50),
+        sceneClip: z.string().trim().min(1).max(2048),
+        masterMp4: z.string().trim().min(1).max(2048).optional(),
+    })
+    .strict();
+
 export const listFilesQuerySchema = z
     .object({
         path: z.string().trim().max(2048).optional(),
