@@ -14,6 +14,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { execFileSync } from 'node:child_process';
 import { AgenticWorkspace, createAgenticWorkspace, sceneImageDir, sceneVideoDir, writeJson } from '../management/workspace.js';
 import { AssetCandidate, Plan, ScenePlan } from '../types.js';
 import { inputAssetPath } from '../../lib/path-safety.js';
@@ -117,29 +118,63 @@ export function generateFallbackVisual(
     index: number,
 ): FetchedVisual | null {
     try {
-        // asset-creator is CommonJS; require lazily so the agentic pipeline
-        // never depends on it unless actually needed.
-        const creator: any = require('../../tools/asset-creator/src/index.js');
-        const label = (scene.voiceoverText || scene.searchKeywords?.join(' ') || 'Visual').slice(0, 40);
-        const out = path.join(dir, `candidate_${index + 1}${kind === 'video' ? '.mp4' : '.jpg'}`);
         fs.mkdirSync(dir, { recursive: true });
-        let localPath: string;
+        const out = path.join(dir, `candidate_${index + 1}${kind === 'video' ? '.mp4' : '.jpg'}`);
+
+        // Offline asset generation — ZERO network, ZERO API keys.
+        // A real asset is produced entirely by ffmpeg (ffmpeg-static, already a
+        // production dependency) so no new packages or network calls are
+        // introduced:
+        //   image: a 720x1280 branded gradient via the `gradients` lavfi source.
+        //   video: the same gradient animated with a zoompan "Ken Burns" pan
+        //           over a silent audio track (libx264/aac in an mp4).
+        // ffmpeg-static is a production dependency; load it lazily so the
+        // agentic pipeline never touches ffmpeg unless a fallback is needed.
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const ffmpegPath: string = require('ffmpeg-static');
+
+        if (fs.existsSync(out)) fs.rmSync(out, { force: true });
+
         if (kind === 'video') {
-            // KenBurns needs a source image; generate one first, then animate it.
-            const imgPath = creator.createBackgroundImage({
-                out: out.replace(/\.mp4$/, '_src.jpg'),
-                text: label,
-                w: 720,
-                h: 1280,
-            });
-            localPath = creator.createKenBurnsClip({ src: imgPath, out, duration: 4, zoom: 1.15 });
+            const filter =
+                '[0:v]scale=1440:2560,zoompan=z=1.15:d=100:s=720x1280:fps=25,format=yuv420p[v]';
+            execFileSync(
+                ffmpegPath,
+                [
+                    '-y',
+                    '-f', 'lavfi',
+                    '-i', 'gradients=s=720x1280:c0=0x1e3a8a:c1=0x0f172a:x0=0:y0=0:x1=0:y1=720:nb_colors=2',
+                    '-f', 'lavfi',
+                    '-i', 'anullsrc=r=44100:cl=stereo',
+                    '-filter_complex', filter,
+                    '-map', '[v]',
+                    '-map', '1:a',
+                    '-c:v', 'libx264',
+                    '-c:a', 'aac',
+                    '-t', '4',
+                    '-shortest',
+                    out,
+                ],
+                { stdio: 'pipe' },
+            );
         } else {
-            localPath = creator.createBackgroundImage({ out, text: label, w: 720, h: 1280 });
+            execFileSync(
+                ffmpegPath,
+                [
+                    '-y',
+                    '-f', 'lavfi',
+                    '-i', 'gradients=s=720x1280:c0=0x1e3a8a:c1=0x0f172a:x0=0:y0=0:x1=0:y1=720:nb_colors=2',
+                    '-frames:v', '1',
+                    out,
+                ],
+                { stdio: 'pipe' },
+            );
         }
-        if (!localPath || !fs.existsSync(localPath)) return null;
+
+        if (!fs.existsSync(out) || fs.statSync(out).size === 0) return null;
         return {
-            url: `asset-creator://${path.basename(localPath)}`,
-            localPath,
+            url: `asset-creator://${path.basename(out)}`,
+            localPath: out,
             source: 'asset-creator',
             license: 'CC0 (offline ffmpeg-generated fallback)',
             licenseUrl: '',
