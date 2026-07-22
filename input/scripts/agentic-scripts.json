@@ -1,8 +1,8 @@
 [
   {
-    "id": "avs-agentic-reel",
-    "title": "Agentic Pipeline - All Features Test",
-    "script": "Meet the Automated Video Generator. [Visual: logo-automation.png] [Transition: slide] [Grade: warm] [FadeIn: 0.3]\nA completely free, open source text to video pipeline. [Visual: github-profile.png] [Grade: cinematic] [Style: top] [Color: yellow] [Volume: 0.8]\nIt turns any script into a professional short video. [Visual: ai coding code typing] [KenBurns: off] [Color: cyan]\nWith over four hundred voices and one hundred languages. [Visual: language voice translation] [FadeOut: 0.5] [Grade: vivid]\nPlus automatic stock footage and background music. [Visual: video editing timeline music] [Style: center]\nBuilt with TypeScript, Node.js, and Remotion. [Visual: software developer workspace] [Transition: cut] [Volume: 1.2]\nAnd it runs entirely on your own machine. [Visual: data center server rack]\nDeploy your own AI video pipeline today. [Visual: rocket launch innovation success] [Transition: zoomblur]",
+    "id": "avs_test_modular",
+    "title": "Modular Pipeline Test",
+    "script": "This is a test of the modular pipeline. [Visual: technology abstract] [Transition: fade] [Grade: warm]\nEach stage runs independently. [Visual: computer circuit board] [KenBurns: off]\nYou can edit single scenes. [Visual: code programming] [Style: top] [Color: yellow]\nVoice, visuals, and render are separate. [Visual: digital transformation] [FadeIn: 0.3]\nModular pipeline complete. [Visual: success rocket launch] [Transition: zoomblur]",
     "orientation": "portrait",
     "voice": "en-US-GuyNeural",
     "hookFirst": true,
@@ -11,22 +11,9 @@
     "candidatesPerAsset": 2,
     "language": "english",
     "musicVolume": 0.15,
-    "sfx": false,
     "vignette": true,
-    "kineticText": true,
-    "captionTheme": "minimal",
     "captions": "burned",
-    "preset": "cinematic",
-    "intro": {
-      "title": "AVS - Agentic",
-      "subtitle": "All Features Test",
-      "durationSec": 3
-    },
-    "outro": {
-      "ctaText": "Star on GitHub",
-      "showSubscribe": true,
-      "hashtags": ["#opensource", "#video", "#ai"],
-      "durationSec": 3
-    }
+    "intro": { "title": "Modular Test", "durationSec": 2 },
+    "outro": { "ctaText": "Done", "durationSec": 2 }
   }
 ]

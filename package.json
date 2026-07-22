@@ -93,7 +93,15 @@
     "postversion": "npm run version:sync",
     "docker:build": "docker build -t automated-video-generator .",
     "docker:run": "docker run -p 3001:3001 -v \"$(pwd)/input:/app/input\" -v \"$(pwd)/output:/app/output\" automated-video-generator",
-    "batch:hardening": "tsx bin/batch-10.ts"
+    "batch:hardening": "tsx bin/batch-10.ts",
+    "agentic:plan": "tsx src/adapters/cli/agentic-modular.ts plan",
+    "agentic:visuals": "tsx src/adapters/cli/agentic-modular.ts visuals",
+    "agentic:voice": "tsx src/adapters/cli/agentic-modular.ts voice",
+    "agentic:render": "tsx src/adapters/cli/agentic-modular.ts render",
+    "agentic:edit": "tsx src/adapters/cli/agentic-modular.ts edit",
+    "agentic:list": "tsx src/adapters/cli/agentic-modular.ts list",
+    "agentic:modular": "tsx src/adapters/cli/agentic-modular.ts",
+    "agentic:editor": "tsx src/adapters/cli/agentic-editor.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.28.0",
