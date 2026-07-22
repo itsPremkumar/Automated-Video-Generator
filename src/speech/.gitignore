@@ -1,0 +1,28 @@
+# Runtime artifacts for the vendored speech backend — never commit these.
+# Source code (*.py) and config (LICENSE, pyproject.toml, requirements*.txt,
+# VENDORED.md, README.md) ARE tracked.
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local data / databases / generated cache
+*.db
+*.sqlite
+*.sqlite3
+/data/
+/voicebox-data/
+
+# Virtual environments
+venv/
+.venv/
+
+# Downloaded model weights (fetched at runtime, not source)
+*.pt
+*.onnx
+*.bin
+*.safetensors
+*.gguf
+models/
