@@ -39,18 +39,25 @@ export class BundledProvider extends BaseMusicProvider {
         this.loadMetadata();
     }
 
-    /** Scan the bundle dir and load sidecar JSON files */
+    /**
+     * Scan the bundle dir for metadata. Two sources are supported:
+     *   1. Per-track sidecar JSON: `<base>.json` describes `<base>.<ext>`
+     *      (these take precedence when present).
+     *   2. Aggregated `metadata.json`: an array of
+     *      `{ filename, title, mood, ... }` entries keyed by filename.
+     */
     private loadMetadata(): void {
         if (!fs.existsSync(this.bundleDir)) {
             fs.mkdirSync(this.bundleDir, { recursive: true });
             return;
         }
         const entries = fs.readdirSync(this.bundleDir, { withFileTypes: true });
+
+        // 1. Per-track sidecar JSON files (excluding the aggregated one)
         for (const entry of entries) {
             if (!entry.isFile()) continue;
             const name = entry.name;
-            // Sidecar JSON: filename.json describes filename.mp3
-            if (name.endsWith('.json')) {
+            if (name.endsWith('.json') && name !== 'metadata.json') {
                 try {
                     const meta: BundledMetadata = JSON.parse(
                         fs.readFileSync(path.join(this.bundleDir, name), 'utf-8'),
@@ -60,6 +67,27 @@ export class BundledProvider extends BaseMusicProvider {
                 } catch {
                     // invalid JSON — skip silently
                 }
+            }
+        }
+
+        // 2. Aggregated metadata.json: array of { filename, ... }
+        const aggPath = path.join(this.bundleDir, 'metadata.json');
+        if (fs.existsSync(aggPath)) {
+            try {
+                const arr = JSON.parse(
+                    fs.readFileSync(aggPath, 'utf-8'),
+                ) as Array<BundledMetadata & { filename?: string }>;
+                if (Array.isArray(arr)) {
+                    for (const item of arr) {
+                        const baseName = (item.filename || '').replace(/\.[^.]+$/, '');
+                        if (!baseName) continue;
+                        // Don't clobber a more specific sidecar if present
+                        if (this.metadata.has(baseName)) continue;
+                        this.metadata.set(baseName, item);
+                    }
+                }
+            } catch {
+                // invalid JSON — skip silently
             }
         }
     }
@@ -79,8 +107,12 @@ export class BundledProvider extends BaseMusicProvider {
             const baseName = entry.name.replace(/\.[^.]+$/, '');
             const meta = this.metadata.get(baseName);
 
-            // Mood match (if query has mood and metadata has mood tags)
-            if (query.mood !== 'any' && meta?.mood?.length) {
+            // Mood match: when the query asks for a specific mood, a track must
+            // declare a matching mood. Tracks with no mood metadata cannot
+            // satisfy a specific mood request, so they are excluded (this is
+            // what makes an unknown mood like 'metal' yield zero results).
+            if (query.mood !== 'any') {
+                if (!meta?.mood?.length) continue;
                 if (!meta.mood.some(m => m.toLowerCase() === query.mood)) continue;
             }
 

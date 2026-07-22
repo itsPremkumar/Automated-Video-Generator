@@ -94,6 +94,16 @@ export class InternetArchiveProvider implements FreeMusicProvider {
     }
 }
 
+export class CcMixterFreeProvider implements FreeMusicProvider {
+    readonly name = 'ccmixter';
+    async search(query: string, count = 5): Promise<FreeMusicTrack[]> {
+        const { CcMixterProvider } = require('../music-system/providers/ccmixter');
+        const provider = new CcMixterProvider();
+        const newTracks = await provider.search({ mood: 'any', topic: query, targetDurationSec: 30, minDurationSec: 1, role: 'background' }, count);
+        return newTracks.map(mapToLegacy);
+    }
+}
+
 export class FallbackToneProvider implements FreeMusicProvider {
     readonly name = 'fallback-ambient';
     async search(_query: string, _count = 1): Promise<FreeMusicTrack[]> {
@@ -143,7 +153,7 @@ function ensureEngine(): MusicEngine {
 function defaultProviders(): FreeMusicProvider[] {
     return [
         new LocalFreeProvider(),
-        new OpenLofiProvider(),
+        new CcMixterFreeProvider(),
         new InternetArchiveProvider(),
         new FallbackToneProvider(),
     ];
