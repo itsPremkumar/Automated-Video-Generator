@@ -7,28 +7,59 @@ export const ollamaWaitQueue: Array<() => void> = [];
 
 export function normalizeKeywordList(value: unknown): string[] {
     if (!value) return [];
+    let raw: unknown[];
     if (typeof value === 'string') {
         try {
             const parsed = JSON.parse(value);
-            if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
+            if (Array.isArray(parsed)) {
+                raw = parsed;
+            } else {
+                // Not an array — treat as a non-keyword string.
+                return [];
+            }
         } catch {
-            // not JSON — split by common delimiters
+            // not valid JSON — treat as a non-keyword string.
+            return [];
         }
-        return value
-            .split(/[,;|]+/)
-            .map((s) => s.trim())
-            .filter((s) => s.length > 0);
+    } else if (Array.isArray(value)) {
+        raw = value;
+    } else {
+        return [];
     }
-    if (Array.isArray(value)) {
-        return value.map(String).filter((s) => s.trim().length > 0);
+    // Keep only actual string values, trim, dedupe case-insensitively, cap at 3.
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const item of raw) {
+        if (typeof item !== 'string') continue;
+        const trimmed = item.trim();
+        if (trimmed.length === 0) continue;
+        const key = trimmed.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        result.push(trimmed);
+        if (result.length >= 3) break;
     }
-    return [];
+    return result;
 }
 
 export function parseGeminiKeywordResponse(responseText: string): string[] {
     if (!responseText) return [];
     const trimmed = responseText.trim();
-    // Try JSON parse first
+
+    // Extract a JSON array from anywhere in the text (prose, or fenced block).
+    const extractArray = (text: string): string[] | null => {
+        const match = text.match(/\[[\s\S]*?\]/);
+        if (!match) return null;
+        try {
+            const parsed = JSON.parse(match[0]);
+            if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
+        } catch {
+            // not valid JSON — ignore
+        }
+        return null;
+    };
+
+    // 1) Direct JSON parse (bare array or {keywords:[...]} object).
     if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
         try {
             const parsed = JSON.parse(trimmed);
@@ -38,22 +69,17 @@ export function parseGeminiKeywordResponse(responseText: string): string[] {
             // fall through
         }
     }
-    // Try extracting from markdown code blocks
+    // 2) Fenced ```json blocks.
     const jsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (jsonMatch) {
-        try {
-            const parsed = JSON.parse(jsonMatch[1].trim());
-            if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
-            if (parsed.keywords && Array.isArray(parsed.keywords)) return parsed.keywords.map(String).filter(Boolean);
-        } catch {
-            // fall through
-        }
+        const fromFence = extractArray(jsonMatch[1].trim());
+        if (fromFence) return fromFence;
     }
-    // Fallback: split by newlines or commas
-    return trimmed
-        .split(/[\n,]+/)
-        .map((s) => s.replace(/^\d+[. )-]*/, '').trim())
-        .filter((s) => s.length > 0 && !s.startsWith('{') && !s.startsWith('['));
+    // 3) Array embedded in surrounding prose.
+    const fromProse = extractArray(trimmed);
+    if (fromProse) return fromProse;
+    // 4) Unparseable prose — no keywords.
+    return [];
 }
 
 export function shouldRetryGeminiRequest(error: unknown): boolean {

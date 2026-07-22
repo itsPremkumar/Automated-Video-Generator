@@ -152,23 +152,38 @@ export async function getVideoDuration(filePath: string): Promise<number> {
 export function getQualityRank(quality: unknown): number {
     const q = String(quality ?? '').toLowerCase().replace(/\s/g, '');
     const idx = PREFERRED_QUALITIES.indexOf(q);
-    return idx >= 0 ? idx : PREFERRED_QUALITIES.length; // worst rank if unknown
+    // Unknown (or empty/undefined) qualities rank worst, behind every preferred one.
+    return idx >= 0 ? idx : Number.MAX_SAFE_INTEGER;
 }
 
 export function selectBestVideoFile(
     assets: MediaAsset[] | undefined | null,
-): MediaAsset | null {
-    if (!assets || assets.length === 0) return null;
-    const sorted = sortVideoAssets(assets);
-    return sorted[0] ?? null;
+): MediaAsset | null | undefined {
+    if (!assets || assets.length === 0) return undefined;
+    // Only consider files that meet the minimum width requirement.
+    const valid = assets.filter((a) => (a.width ?? 0) >= MIN_WIDTH);
+    const pool = valid.length > 0 ? valid : assets;
+    // Prefer the best quality rank; break ties by larger width.
+    const sorted = [...pool].sort((a, b) => {
+        const aq = getQualityRank(a.quality);
+        const bq = getQualityRank(b.quality);
+        if (aq !== bq) return aq - bq;
+        return (b.width ?? 0) - (a.width ?? 0);
+    });
+    return sorted[0] ?? undefined;
 }
 
 export function sortVideoAssets(assets: MediaAsset[]): MediaAsset[] {
     return [...assets].sort((a, b) => {
-        // Highest resolution first
+        // Closest duration to the target first.
+        const aDur = a.videoDuration ?? Number.MAX_SAFE_INTEGER;
+        const bDur = b.videoDuration ?? Number.MAX_SAFE_INTEGER;
+        const aDiff = Math.abs(aDur - TARGET_VIDEO_DURATION_SECONDS);
+        const bDiff = Math.abs(bDur - TARGET_VIDEO_DURATION_SECONDS);
+        if (aDiff !== bDiff) return aDiff - bDiff;
+        // Then larger pixel area.
         const aRes = (a.width ?? 0) * (a.height ?? 0);
         const bRes = (b.width ?? 0) * (b.height ?? 0);
-        if (aRes !== bRes) return bRes - aRes;
-        return 0;
+        return bRes - aRes;
     });
 }
