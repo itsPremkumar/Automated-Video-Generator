@@ -47,6 +47,12 @@ export interface ScenePlan {
     fadeIn?: number;
     /** Audio fade-out duration in seconds. */
     fadeOut?: number;
+    /** Per-scene voice override (e.g. 'en-US-GuyNeural'). */
+    voiceOverride?: string;
+    /** Per-scene background music file name (in input/visuals/). */
+    musicOverride?: string;
+    /** Per-scene audio volume (0.0–1.0). */
+    volumeOverride?: number;
 }
 
 export interface Plan {

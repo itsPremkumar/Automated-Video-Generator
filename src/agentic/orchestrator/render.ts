@@ -265,6 +265,7 @@ export async function renderAgenticSlideshow(
         jCutSec?: number;
         aiVerify?: import('../config.js').AgenticConfig['aiVerify'];
         languages?: string[];
+        vignette?: boolean;
     } = {},
 ): Promise<string> {
     const ffmpeg: string = require('ffmpeg-static');
@@ -518,7 +519,8 @@ export async function renderAgenticSlideshow(
         }
         if (ktag !== videoMap) { videoMap = ktag; }
     }
-    vfArgs.push(`${videoMap}vignette=PI/5[vig]`);
+    if (opts.vignette !== false) vfArgs.push(`${videoMap}vignette=PI/5[vig]`);
+else vfArgs.push(`${videoMap}null[vig]`);
     videoMap = '[vig]';
 
     const voScenes = visuals.filter((a) => a.audioPath && fs.existsSync(a.audioPath));
@@ -606,7 +608,8 @@ export async function renderAgenticSlideshow(
                     kin.push(`drawtext=${FONT_ARG}text='${safe}':fontcolor=${cue.kind === 'wordpop' ? 'yellow' : 'white'}:fontsize=${cue.kind === 'wordpop' ? 64 : 34}:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=${cue.kind === 'wordpop' ? '(h-text_h)/2' : 'h-text_h-90'}:enable='between(t\\,${start},${end})'`);
                 }
             }
-            const vfChain = `[0:v]tpad=stop_mode=clone:stop_duration=${dur},fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${grade ? ',' + grade : ''},format=yuv420p,vignette=PI/5${segCaptionArg.length ? ',' + segCaptionArg.join(',') : ''}${kin.length ? ',' + kin.join(',') : ''}[v]`;
+            const doVignette = opts.vignette !== false;
+const vfChain = `[0:v]tpad=stop_mode=clone:stop_duration=${dur},fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${grade ? ',' + grade : ''},format=yuv420p${doVignette ? ',vignette=PI/5' : ''}${segCaptionArg.length ? ',' + segCaptionArg.join(',') : ''}${kin.length ? ',' + kin.join(',') : ''}[v]`;
             const voPath = clip.kind === 'scene' ? res.voiceovers?.scenes[clip.idx]?.audioPath : undefined;
             const hasVo = !!voPath && fs.existsSync(voPath);
             const inputs: string[] = ['-i', clip.file];
@@ -621,7 +624,9 @@ export async function renderAgenticSlideshow(
             let fadeFilter = '';
             if (fadeInDur && fadeInDur > 0) fadeFilter += `,afade=t=in:st=0:d=${fadeInDur}`;
             if (fadeOutDur && fadeOutDur > 0) fadeFilter += `,afade=t=out:st=${Math.max(0, dur - fadeOutDur)}:d=${fadeOutDur}`;
-            const af = `[1:a]${afBase}${fadeFilter}[a]`;
+            const volOverride = clip.kind === 'scene' ? res.plan.scenes[clip.idx]?.volumeOverride : undefined;
+const volFilter = volOverride && volOverride > 0 && volOverride !== 1 ? `,volume=${volOverride}` : '';
+const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             const fc = vfChain + ';' + af;
             const args: string[] = [
                 ...inputs, '-filter_complex', fc, '-map', '[v]', '-map', '[a]',

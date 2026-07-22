@@ -54,13 +54,7 @@ function toneForScene(text: string, durationSec: number, idx: number): { audioPa
 }
 
 /** Build the Scene[] shape generateVoiceovers expects from our plan. */
-function toEngineScenes(plan: Plan): { sceneNumber: number; voiceoverText: string; duration?: number }[] {
-    return plan.scenes.map((s) => ({
-        sceneNumber: s.sceneNumber,
-        voiceoverText: s.voiceoverText,
-        duration: s.durationSec,
-    })) as any;
-}
+// (toEngineScenes removed — per-scene voice batching is done inline)
 
 export async function generateAgenticVoiceovers(
     plan: Plan,
@@ -69,24 +63,44 @@ export async function generateAgenticVoiceovers(
 ): Promise<VoiceoverResult> {
     const audioDir = path.join(ws.root, 'audio');
     fs.mkdirSync(audioDir, { recursive: true });
+    const defaultVoice = voice ?? plan.voice;
 
     // ── Try the real Edge-TTS engine (or Kokoro/etc. fallback chain). ──
-    // Hard wall-clock timeout: node-edge-tts has no internal timeout, so an
-    // unreachable network would hang the whole render forever. Bound it and
-    // fall back to tones if voice generation can't finish in time.
     try {
         const { generateVoiceovers } = await import('../../lib/voice-generator.js');
-        const map = await withTimeout(
-            generateVoiceovers(toEngineScenes(plan) as any, audioDir, {
-                voice: voice ?? plan.voice,
-            } as any),
-            25_000,
-            'voice generation timed out (network/Edge-TTS unreachable)',
-        );
+        const allResults = new Map<number, any>();
+
+        // Group scenes by voice for batching
+        const voiceGroups = new Map<string, typeof plan.scenes>();
+        for (const s of plan.scenes) {
+            const v = s.voiceOverride || defaultVoice;
+            if (!voiceGroups.has(v)) voiceGroups.set(v, []);
+            voiceGroups.get(v)!.push(s);
+        }
+
+        const errors: string[] = [];
+        for (const [v, scenes] of voiceGroups) {
+            const engineScenes = scenes.map((s) => ({
+                sceneNumber: s.sceneNumber,
+                voiceoverText: s.voiceoverText,
+                duration: s.durationSec,
+            }));
+            try {
+                const map = await withTimeout(
+                    generateVoiceovers(engineScenes as any, audioDir, { voice: v } as any),
+                    25_000,
+                    `voice generation timed out for "${v}"`,
+                );
+                for (const [k, val] of map) allResults.set(k, val);
+            } catch (e: any) {
+                errors.push(`${v}: ${e?.message}`);
+            }
+        }
+
         const scenes: SceneVoiceover[] = [];
         let ok = 0;
         for (const s of plan.scenes) {
-            const r: any = map.get(s.sceneNumber);
+            const r: any = allResults.get(s.sceneNumber);
             if (r?.path && fs.existsSync(r.path)) {
                 scenes.push({
                     sceneIndex: s.sceneNumber - 1,
@@ -99,14 +113,13 @@ export async function generateAgenticVoiceovers(
                 ok++;
             }
         }
+        if (errors.length > 0) console.warn(`⚠ voice group errors: ${errors.join('; ')}`);
         if (ok === plan.scenes.length) {
             const sidecars = writeCaptionSidecars(audioDir, toCaptionScenes(plan, scenes), { baseName: 'subtitles' });
             return { scenes, voiceoverDriven: true, sidecars, fallbackUsed: false };
         }
-        // Partial success: fill missing scenes with tones (don't fail the job).
         return fillMissing(plan, scenes, audioDir, /*driven*/ ok > 0);
     } catch (e: any) {
-        // Engine not available / threw / timed out -> agent fallback to tones (still a real video).
         console.warn(`⚠ voice engine unavailable ("${e?.message}"); using agent tone fallback.`);
         return fillMissing(plan, [], audioDir, false);
     }

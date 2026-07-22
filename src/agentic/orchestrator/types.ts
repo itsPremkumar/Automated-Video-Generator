@@ -38,4 +38,45 @@ export interface PipelineRequest {
     intro?: { title: string; subtitle?: string; durationSec?: number };
     /** Branded CTA card at the end. */
     outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number };
+    // ═══════════════════════════════════════════════
+    //  PHASE 1 — Extended customization fields
+    // ═══════════════════════════════════════════════
+    /** Named caption theme preset (e.g. 'minimal', 'cinematic', 'neon', 'retro'). */
+    captionTheme?: string;
+    /** Caption rendering mode. */
+    captions?: 'burned' | 'karaoke' | 'none';
+    /** Enable transition sound effects. */
+    sfx?: boolean;
+    /** J-cut: next scene's voiceover leads picture by N seconds. */
+    jCutSec?: number;
+    /** Named format preset ('shorts' | 'reels' | 'tiktok' | 'square' | 'landscape' | 'explainer' | 'promo'). */
+    format?: string;
+    /** Named visual preset ('cinematic' | 'reels' | 'documentary' | ...). */
+    preset?: string;
+    /** Override default aspect ratio. */
+    aspect?: '9:16' | '1:1' | '16:9';
+    /** Enable/disable cinematic vignette edge darkening (default on). */
+    vignette?: boolean;
+    /** Enable animated kinetic lower-third text pops (default on). */
+    kineticText?: boolean;
+    /** Background music ducking depth. */
+    musicIntensity?: 'calm' | 'mid' | 'energetic';
+    /** Target platform for auto-tailoring. */
+    platform?: 'tiktok' | 'youtube' | 'instagram' | 'reels';
+    /** Video content type for template selection. */
+    videoType?: 'facts' | 'tutorial' | 'news' | 'story' | 'product' | 'motivational' | 'nature';
+    /** Branding config. */
+    brand?: { watermark?: string; accent?: string };
+    /** Render engine ('ffmpeg'=default, 'remotion'=alternative). */
+    renderer?: 'ffmpeg' | 'remotion';
+    /** Retry budget for autopilot. */
+    maxAttempts?: number;
+    /** Extra languages for subtitle sidecars. */
+    languages?: string[];
+    /** Global Ken Burns toggle (default on). */
+    kenBurns?: boolean;
+    /** Global transition override. */
+    transition?: string;
+    /** Global grade override. */
+    grade?: string;
 }

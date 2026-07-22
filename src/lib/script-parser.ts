@@ -34,6 +34,12 @@ export interface Scene {
     fadeIn?: string;
     /** Audio fade-out duration in seconds (e.g. '0.5'). */
     fadeOut?: string;
+    /** Per-scene voice override (e.g. 'en-US-GuyNeural'). */
+    voiceOverride?: string;
+    /** Per-scene background music file (e.g. 'bgm.mp3', in input/visuals/). */
+    musicOverride?: string;
+    /** Per-scene audio volume (0.0–1.0). */
+    volumeOverride?: string;
     /** Speech-timed caption cues (relative to scene start, ms) persisted from TTS. */
     captionSegments?: { text: string; startMs: number; endMs: number }[];
     visual?: {
@@ -174,6 +180,9 @@ function parseScriptLocally(script: string): ParsedScript {
     let captionColor: string | undefined;
     let fadeIn: string | undefined;
     let fadeOut: string | undefined;
+    let voiceOverride: string | undefined;
+    let musicOverride: string | undefined;
+    let volumeOverride: string | undefined;
 
     for (const line of lines) {
         const inlineTextMatch = line.match(/\[Text:?\s*(on|off)\]/is);
@@ -197,6 +206,12 @@ function parseScriptLocally(script: string): ParsedScript {
         fadeIn = fadeInMatch ? fadeInMatch[1] : undefined;
         const fadeOutMatch = line.match(/\[FadeOut:?\s*([\d.]+)\]/is);
         fadeOut = fadeOutMatch ? fadeOutMatch[1] : undefined;
+        const voiceMatch = line.match(/\[Voice:?\s*([^\]]+)\]/i);
+        voiceOverride = voiceMatch ? voiceMatch[1].trim() : undefined;
+        const musicMatch = line.match(/\[Music:?\s*([^\]]+)\]/i);
+        musicOverride = musicMatch ? musicMatch[1].trim() : undefined;
+        const volumeMatch = line.match(/\[Volume:?\s*([\d.]+)\]/is);
+        volumeOverride = volumeMatch ? volumeMatch[1] : undefined;
 
         const cleanText = line
             .replace(/\[Visual:?\s*.*?\]/gis, '')
@@ -209,6 +224,9 @@ function parseScriptLocally(script: string): ParsedScript {
             .replace(/\[Color:?\s*.*?\]/gis, '')
             .replace(/\[FadeIn:?\s*.*?\]/gis, '')
             .replace(/\[FadeOut:?\s*.*?\]/gis, '')
+            .replace(/\[Voice:?\s*.*?\]/gis, '')
+            .replace(/\[Music:?\s*.*?\]/gis, '')
+            .replace(/\[Volume:?\s*.*?\]/gis, '')
             .trim();
 
         // Find all visual matches in the line

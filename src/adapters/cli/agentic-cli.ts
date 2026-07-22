@@ -64,6 +64,47 @@ interface AgenticCliJob {
     intro?: { title: string; subtitle?: string; durationSec?: number };
     /** Branded CTA card at the end. */
     outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number };
+    // ═══════════════════════════════════════════════
+    //  Extended customization — Phase 1
+    // ═══════════════════════════════════════════════
+    /** Named caption theme preset. */
+    captionTheme?: string;
+    /** Caption rendering mode. */
+    captions?: 'burned' | 'karaoke' | 'none';
+    /** Enable transition sound effects. */
+    sfx?: boolean;
+    /** J-cut: next voiceover leads picture by N seconds. */
+    jCutSec?: number;
+    /** Named format preset. */
+    format?: string;
+    /** Named visual preset. */
+    preset?: string;
+    /** Override aspect ratio. */
+    aspect?: '9:16' | '1:1' | '16:9';
+    /** Enable/disable vignette (default on). */
+    vignette?: boolean;
+    /** Enable kinetic lower-third text (default on). */
+    kineticText?: boolean;
+    /** Music ducking depth. */
+    musicIntensity?: 'calm' | 'mid' | 'energetic';
+    /** Target platform for auto-tailoring. */
+    platform?: 'tiktok' | 'youtube' | 'instagram' | 'reels';
+    /** Video content type. */
+    videoType?: 'facts' | 'tutorial' | 'news' | 'story' | 'product' | 'motivational' | 'nature';
+    /** Branding config. */
+    brand?: { watermark?: string; accent?: string };
+    /** Render engine. */
+    renderer?: 'ffmpeg' | 'remotion';
+    /** Retry budget. */
+    maxAttempts?: number;
+    /** Extra subtitle languages. */
+    languages?: string[];
+    /** Global Ken Burns toggle. */
+    kenBurns?: boolean;
+    /** Global transition override. */
+    transition?: string;
+    /** Global grade override. */
+    grade?: string;
 }
 
 // ─── CLI Entry ──────────────────────────────────────────────────────────────
@@ -125,6 +166,28 @@ async function main() {
             language: job.language,
             backgroundMusic: job.backgroundMusic,
             musicVolume: job.musicVolume,
+            intro: job.intro,
+            outro: job.outro,
+            // Phase 1 — extended
+            captionTheme: job.captionTheme,
+            captions: job.captions,
+            sfx: job.sfx,
+            jCutSec: job.jCutSec,
+            format: job.format,
+            preset: job.preset,
+            aspect: job.aspect,
+            vignette: job.vignette,
+            kineticText: job.kineticText,
+            musicIntensity: job.musicIntensity,
+            platform: job.platform,
+            videoType: job.videoType,
+            brand: job.brand,
+            renderer: job.renderer,
+            maxAttempts: job.maxAttempts,
+            languages: job.languages,
+            kenBurns: job.kenBurns,
+            transition: job.transition,
+            grade: job.grade,
         };
 
         try {
@@ -155,9 +218,17 @@ async function main() {
                 const finalMp4 = await renderAgenticSlideshow(result, {
                     outPath: path.join(outPath, `${job.title || 'output'}.mp4`),
                     crossfadeSec: 0.3,
-                    burnCaptions: true,
+                    burnCaptions: job.captions !== 'none',
                     intro: job.intro,
                     outro: job.outro,
+                    // Phase 1 — extended render opts
+                    sfx: job.sfx,
+                    captions: job.captions,
+                    captionTheme: job.captionTheme,
+                    kinetic: job.kineticText,
+                    kenBurns: job.kenBurns,
+                    preset: job.preset,
+                    jCutSec: job.jCutSec,
                 });
 
                 if (fs.existsSync(finalMp4)) {

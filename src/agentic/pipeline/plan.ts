@@ -39,6 +39,9 @@ function toScenePlans(parsed: ParsedScript): ScenePlan[] {
         captionColor: s.captionColor,
         fadeIn: s.fadeIn ? parseFloat(s.fadeIn) : undefined,
         fadeOut: s.fadeOut ? parseFloat(s.fadeOut) : undefined,
+        voiceOverride: s.voiceOverride,
+        musicOverride: s.musicOverride,
+        volumeOverride: s.volumeOverride ? parseFloat(s.volumeOverride) : undefined,
     }));
 }
 
