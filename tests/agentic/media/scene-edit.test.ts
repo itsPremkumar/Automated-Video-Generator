@@ -23,6 +23,7 @@ function mkWs(dir: string): AgenticWorkspace {
         videosDir: dir,
         musicDir: dir,
         verificationDir: dir,
+        audioDir: dir,
     };
 }
 

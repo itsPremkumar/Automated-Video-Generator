@@ -82,7 +82,7 @@ export async function generateVoiceoverWithVoicebox(
     // Wake the backend (spawns it if not already up). Non-fatal if the helper
     // is unavailable — we still probe the URL below.
     try {
-        const { ensureBackend } = await import('./voicebox-lifecycle.js');
+        const { ensureBackend } = await import('./speech-backend.js');
         await ensureBackend();
     } catch {
         /* lifecycle helper optional; a manually-started backend still works */

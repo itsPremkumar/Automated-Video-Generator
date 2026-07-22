@@ -485,12 +485,41 @@ export async function runAgenticPipeline(
 
     let voiceovers: import('../media/tts.js').VoiceoverResult | null = null;
     if (gate.pass && manifest) {
-        voiceovers = await generateAgenticVoiceovers(plan, workspace, req.voice);
-        emit({
-            stage: 'voiceover',
-            percent: 100,
-            message: `Voiceover ${voiceovers.voiceoverDriven ? 'generated' : 'fallback tones'}`,
-        });
+        // PRIMARY: native self-driving voice stage (src/speech backend).
+        // It auto-provisions a Kokoro preset profile, preloads the engine,
+        // generates every scene, then tears the backend down (RAM-aware).
+        try {
+            const { runVoiceStage } = await import('../media/voice-controller.js');
+            const res = await runVoiceStage(plan, workspace, req.voice, (percent, message) => {
+                emit({ stage: 'voiceover', percent, message });
+            });
+            // Normalize into the shape the manifest mapping expects.
+            voiceovers = {
+                scenes: res.voices.map((v) => ({
+                    sceneIndex: v.sceneIndex,
+                    audioPath: v.audioPath,
+                    durationSec: v.durationSec,
+                    captionSegments: [],
+                })),
+                voiceoverDriven: res.voiceoverDriven,
+                sidecars: [],
+                fallbackUsed: res.fallbackUsed,
+            };
+            emit({
+                stage: 'voiceover',
+                percent: 100,
+                message: `Voiceover ${res.voiceoverDriven ? 'generated (speech backend)' : 'partial via speech backend'}`,
+            });
+        } catch (e: any) {
+            // FALLBACK: Edge-TTS / tone path (never blocks the pipeline).
+            console.warn(`⚠ speech backend voice stage failed ("${e?.message}"); falling back to Edge-TTS`);
+            voiceovers = await generateAgenticVoiceovers(plan, workspace, req.voice);
+            emit({
+                stage: 'voiceover',
+                percent: 100,
+                message: `Voiceover ${voiceovers.voiceoverDriven ? 'generated (Edge-TTS fallback)' : 'fallback tones'}`,
+            });
+        }
         const voByScene = new Map(voiceovers.scenes.map((s) => [s.sceneIndex, s]));
         for (const a of manifest.assets) {
             if (a.kind === 'music') continue;

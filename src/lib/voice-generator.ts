@@ -282,7 +282,7 @@ async function generateSceneVoiceoverWithVoiceboxWrapper(
     try {
         const language = config.language || 'en';
         const profileId = process.env.VOICEBOX_PROFILE_ID;
-        const engine = process.env.VOICEBOX_ENGINE || 'chatterbox_turbo';
+        const engine = process.env.VOICEBOX_ENGINE || 'kokoro';
         await generateVoiceoverWithVoicebox(cleanText, outputPath, language, {
             engine,
             profileId,

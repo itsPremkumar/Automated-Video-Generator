@@ -20,6 +20,7 @@ function ws(root: string, jobId = 'job_rev'): AgenticWorkspace {
         videosDir: path.join(root, 'assets', 'videos'),
         musicDir: path.join(root, 'assets', 'music'),
         verificationDir: path.join(root, 'verification'),
+        audioDir: path.join(root, 'audio'),
     };
 }
 

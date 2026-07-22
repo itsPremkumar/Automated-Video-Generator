@@ -18,6 +18,7 @@ export interface AgenticWorkspace {
     videosDir: string;
     musicDir: string;
     verificationDir: string;
+    audioDir: string;
 }
 
 const WORKSPACES_ROOT = resolveProjectPath('workspace', 'jobs');
@@ -35,7 +36,8 @@ function buildWorkspacePaths(jobId: string): AgenticWorkspace {
     const videosDir = path.join(assetsDir, 'videos');
     const musicDir = path.join(assetsDir, 'music');
     const verificationDir = path.join(root, 'verification');
-    return { jobId, root, assetsDir, imagesDir, videosDir, musicDir, verificationDir };
+    const audioDir = path.join(root, 'audio');
+    return { jobId, root, assetsDir, imagesDir, videosDir, musicDir, verificationDir, audioDir };
 }
 
 /**

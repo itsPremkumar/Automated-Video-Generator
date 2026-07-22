@@ -22,6 +22,7 @@ function fakeWorkspace(root: string): AgenticWorkspace {
         videosDir: path.join(root, 'assets', 'videos'),
         musicDir: path.join(root, 'assets', 'music'),
         verificationDir: path.join(root, 'verification'),
+        audioDir: path.join(root, 'audio'),
     };
     return ws;
 }
@@ -94,6 +95,7 @@ test('archiveJob returns null when archive dir cannot be created', () => {
         videosDir: badFile,
         musicDir: badFile,
         verificationDir: badFile,
+        audioDir: badFile,
     };
     let threw = false;
     let m = null as ArchiveManifest | null;
