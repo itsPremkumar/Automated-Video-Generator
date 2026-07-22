@@ -1,0 +1,19 @@
+# OPTIONAL voice-CLONING engines (Chatterbox / Zipvoice-LuxTTS / Hume TADA).
+# Heavy + fragile (git-only sources / custom PyPI index). NOT needed for the
+# default Kokoro voice path. These are SEPARATE from requirements.txt so the
+# base install stays clean + reproducible on a fresh clone.
+#
+# Install only when you need voice-CLONING profiles:
+#   cd src && python -m venv ../venv && cd ..
+#   uv pip install --python venv/Scripts/python.exe -r src/speech/requirements.txt
+#   uv pip install --python venv/Scripts/python.exe -r src/speech/requirements-clone.txt
+#
+# (chatterbox-tts itself is normally installed --no-deps because it pins
+#  numpy<1.26 / torch==2.6, incompatible with Python 3.12+)
+
+# piper-phonemize needs a custom index (no PyPI wheels)
+--find-links https://k2-fsa.github.io/icefall/piper_phonemize.html
+
+# Zipvoice / LuxTTS (git-only; pip cannot resolve linacodec otherwise)
+linacodec @ git+https://github.com/ysharma3501/LinaCodec.git
+Zipvoice @ git+https://github.com/ysharma3501/LuxTTS.git

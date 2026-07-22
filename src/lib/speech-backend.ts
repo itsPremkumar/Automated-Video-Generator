@@ -22,8 +22,9 @@ function backendDir(): string {
 
 function pythonExe(): string {
     if (process.env.VOICEBOX_PYTHON) return process.env.VOICEBOX_PYTHON;
-    // Default to the shared voicebox venv (the one that has torch/kokoro).
-    return 'C:/one/voicebox/.venv/Scripts/python.exe';
+    // Default to the in-repo venv (self-contained: code + interpreter both live
+    // under this project, so the system runs with NO outside dependency).
+    return path.resolve(process.cwd(), 'venv', 'Scripts', 'python.exe');
 }
 
 function baseUrl(): string {
