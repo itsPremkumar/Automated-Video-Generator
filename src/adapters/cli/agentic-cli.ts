@@ -60,6 +60,10 @@ interface AgenticCliJob {
     backgroundMusic?: string;
     /** Volume for background music (0.0–1.0, default ~0.15). */
     musicVolume?: number;
+    /** Branded title card at the start. */
+    intro?: { title: string; subtitle?: string; durationSec?: number };
+    /** Branded CTA card at the end. */
+    outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number };
 }
 
 // ─── CLI Entry ──────────────────────────────────────────────────────────────
@@ -152,6 +156,8 @@ async function main() {
                     outPath: path.join(outPath, `${job.title || 'output'}.mp4`),
                     crossfadeSec: 0.3,
                     burnCaptions: true,
+                    intro: job.intro,
+                    outro: job.outro,
                 });
 
                 if (fs.existsSync(finalMp4)) {

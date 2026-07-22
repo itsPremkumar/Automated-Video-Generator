@@ -35,6 +35,10 @@ function toScenePlans(parsed: ParsedScript): ScenePlan[] {
         kenBurns: s.kenBurns === 'off' ? false : undefined,
         trimStart: s.trimStart ? parseTimeToSeconds(s.trimStart) : undefined,
         trimEnd: s.trimEnd ? parseTimeToSeconds(s.trimEnd) : undefined,
+        captionStyle: s.captionStyle,
+        captionColor: s.captionColor,
+        fadeIn: s.fadeIn ? parseFloat(s.fadeIn) : undefined,
+        fadeOut: s.fadeOut ? parseFloat(s.fadeOut) : undefined,
     }));
 }
 

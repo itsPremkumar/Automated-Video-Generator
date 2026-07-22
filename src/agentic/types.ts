@@ -39,6 +39,14 @@ export interface ScenePlan {
     trimStart?: number;
     /** Trim end time for local video asset (seconds). */
     trimEnd?: number;
+    /** Caption position style ('top' | 'bottom' | 'center'). */
+    captionStyle?: string;
+    /** Caption text color (e.g. 'white', 'yellow'). */
+    captionColor?: string;
+    /** Audio fade-in duration in seconds. */
+    fadeIn?: number;
+    /** Audio fade-out duration in seconds. */
+    fadeOut?: number;
 }
 
 export interface Plan {

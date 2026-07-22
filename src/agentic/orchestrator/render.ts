@@ -13,6 +13,11 @@ import { runFfmpeg, estimateAudioDurationSafe } from './ffmpeg.js';
 import type { PipelineResult } from './types.js';
 import { AGENTIC_OUTPUT_DIR } from '../management/workspace.js';
 
+/** Title card at the start of the video. */
+export interface IntroCard { title: string; subtitle?: string; durationSec?: number; }
+/** CTA card at the end of the video. */
+export interface OutroCard { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number; }
+
 /** Wrap a caption into lines that fit the frame width (ffmpeg drawtext has no auto-wrap). */
 function wrapCaptionLines(text: string, frameW: number, fontsize: number): string[] {
     const sidePad = 64 + 12;
@@ -574,7 +579,12 @@ export async function renderAgenticSlideshow(
                     : [{ text: res.plan.scenes[a.sceneIndex]?.voiceoverText ?? '', startMs: 0, endMs: Math.round(dur * 1000) }];
                 const lines = mergeWordsToLines(raw);
                 const theme = resolveCaptionTheme(opts.captionTheme);
-                const { fontcolor: capColor, fontsize: baseSize, boxArgs, yExpr } = captionThemeToDrawtext(theme);
+                const { fontcolor: capColor, fontsize: baseSize, boxArgs, yExpr: defaultY } = captionThemeToDrawtext(theme);
+                // Per-scene caption style/color overrides from inline tags
+                const sceneStyle = clip.kind === 'scene' ? res.plan.scenes[clip.idx]?.captionStyle : undefined;
+                const sceneColor = clip.kind === 'scene' ? res.plan.scenes[clip.idx]?.captionColor : undefined;
+                const yExpr = sceneStyle === 'top' ? 'h/10' : sceneStyle === 'center' ? '(h-text_h)/2' : defaultY;
+                const fontColor = sceneColor ?? capColor;
                 for (const s of lines) {
                     const start = (s.startMs / 1000).toFixed(2);
                     const end = (s.endMs / 1000).toFixed(2);
@@ -583,7 +593,7 @@ export async function renderAgenticSlideshow(
                     wrapped.forEach((ln, li) => {
                         const safe = ffmpegDrawtextEscape(ln).replace(/\n/g, ' ');
                         const y = li === 0 ? yExpr : `(${yExpr})-${li * lineH}`;
-                        segCaptionArg.push(`drawtext=${FONT_ARG}text='${safe}':fontcolor=${capColor}:fontsize=${baseSize}${boxArgs}:line_spacing=4:x=(w-text_w)/2:y=${y}:enable='between(t\\,${start}\\,${end})'`);
+                        segCaptionArg.push(`drawtext=${FONT_ARG}text='${safe}':fontcolor=${fontColor}:fontsize=${baseSize}${boxArgs}:line_spacing=4:x=(w-text_w)/2:y=${y}:enable='between(t\\,${start}\\,${end})'`);
                     });
                 }
             }
@@ -602,9 +612,16 @@ export async function renderAgenticSlideshow(
             const inputs: string[] = ['-i', clip.file];
             if (hasVo) inputs.push('-i', voPath);
             else inputs.push('-f', 'lavfi', '-i', `anullsrc=channel_layout=mono:sample_rate=44100`);
-            const af = hasVo
-                ? `[1:a]aresample=44100,atrim=0:${dur},asetpts=PTS-STARTPTS,alimiter=limit=0.7:asc=1:level=disabled[a]`
-                : `[1:a]atrim=0:${dur},asetpts=PTS-STARTPTS[a]`;
+            const afBase = hasVo
+                ? `aresample=44100,atrim=0:${dur},asetpts=PTS-STARTPTS,alimiter=limit=0.7:asc=1:level=disabled`
+                : `atrim=0:${dur},asetpts=PTS-STARTPTS`;
+            // Per-scene audio fade from inline tags
+            const fadeInDur = clip.kind === 'scene' ? res.plan.scenes[clip.idx]?.fadeIn : undefined;
+            const fadeOutDur = clip.kind === 'scene' ? res.plan.scenes[clip.idx]?.fadeOut : undefined;
+            let fadeFilter = '';
+            if (fadeInDur && fadeInDur > 0) fadeFilter += `,afade=t=in:st=0:d=${fadeInDur}`;
+            if (fadeOutDur && fadeOutDur > 0) fadeFilter += `,afade=t=out:st=${Math.max(0, dur - fadeOutDur)}:d=${fadeOutDur}`;
+            const af = `[1:a]${afBase}${fadeFilter}[a]`;
             const fc = vfChain + ';' + af;
             const args: string[] = [
                 ...inputs, '-filter_complex', fc, '-map', '[v]', '-map', '[a]',

@@ -2,13 +2,24 @@
   {
     "id": "avs-agentic-reel",
     "title": "Automated Video Generator - Agentic Pipeline",
-    "script": "Meet the Automated Video Generator. [Visual: logo-automation.png] [Transition: slide] [Grade: warm]\nA completely free, open source text to video pipeline. [Visual: github-profile.png] [Transition: zoomblur] [Grade: cinematic]\nIt turns any script into a professional short video. [Visual: ai coding code typing] [KenBurns: off]\nWith over four hundred voices and one hundred languages. [Visual: language voice translation] [Grade: vivid]\nPlus automatic stock footage and background music. [Visual: video editing timeline music]\nBuilt with TypeScript, Node.js, and Remotion. [Visual: software developer workspace] [Transition: cut]\nAnd it runs entirely on your own machine. [Visual: data center server rack]\nDeploy your own AI video pipeline today. [Visual: rocket launch innovation success]",
+    "script": "Meet the Automated Video Generator. [Visual: logo-automation.png] [Transition: slide] [Grade: warm] [FadeIn: 0.3]\nA completely free, open source text to video pipeline. [Visual: github-profile.png] [Transition: zoomblur] [Grade: cinematic] [Style: top]\nIt turns any script into a professional short video. [Visual: ai coding code typing] [KenBurns: off] [Color: yellow]\nWith over four hundred voices and one hundred languages. [Visual: language voice translation] [Grade: vivid] [FadeOut: 0.3]\nPlus automatic stock footage and background music. [Visual: video editing timeline music] [Style: center]\nBuilt with TypeScript, Node.js, and Remotion. [Visual: software developer workspace] [Transition: cut] [Color: cyan]\nAnd it runs entirely on your own machine. [Visual: data center server rack]\nDeploy your own AI video pipeline today. [Visual: rocket launch innovation success]",
     "orientation": "portrait",
     "voice": "en-US-GuyNeural",
     "hookFirst": true,
     "variablePacing": true,
     "backend": "agent",
     "candidatesPerAsset": 2,
-    "language": "english"
+    "language": "english",
+    "intro": {
+      "title": "Automated Video Generator",
+      "subtitle": "Open Source • Free • Agentic",
+      "durationSec": 3
+    },
+    "outro": {
+      "ctaText": "Star on GitHub",
+      "showSubscribe": true,
+      "hashtags": ["#opensource", "#video", "#ai"],
+      "durationSec": 3
+    }
   }
 ]

@@ -26,6 +26,14 @@ export interface Scene {
     trimStart?: string;
     /** Trim end time for local video clips (e.g. '00:10'). */
     trimEnd?: string;
+    /** Caption position style ('top' | 'bottom' | 'center'). */
+    captionStyle?: string;
+    /** Caption text color override (e.g. 'white', 'yellow', 'blue'). */
+    captionColor?: string;
+    /** Audio fade-in duration in seconds (e.g. '0.5'). */
+    fadeIn?: string;
+    /** Audio fade-out duration in seconds (e.g. '0.5'). */
+    fadeOut?: string;
     /** Speech-timed caption cues (relative to scene start, ms) persisted from TTS. */
     captionSegments?: { text: string; startMs: number; endMs: number }[];
     visual?: {
@@ -162,6 +170,10 @@ function parseScriptLocally(script: string): ParsedScript {
     let sceneKenBurns: string | undefined;
     let sceneTrimStart: string | undefined;
     let sceneTrimEnd: string | undefined;
+    let captionStyle: string | undefined;
+    let captionColor: string | undefined;
+    let fadeIn: string | undefined;
+    let fadeOut: string | undefined;
 
     for (const line of lines) {
         const inlineTextMatch = line.match(/\[Text:?\s*(on|off)\]/is);
@@ -177,6 +189,14 @@ function parseScriptLocally(script: string): ParsedScript {
         const trimMatch = line.match(/\[Trim:?\s*(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\]/is);
         sceneTrimStart = trimMatch?.[1] ?? undefined;
         sceneTrimEnd = trimMatch?.[2] ?? undefined;
+        const styleMatch = line.match(/\[Style:?\s*(top|bottom|center)\]/is);
+        captionStyle = styleMatch ? styleMatch[1].toLowerCase() : undefined;
+        const colorMatch = line.match(/\[Color:?\s*(white|yellow|blue|red|green|cyan|magenta|black|pink|orange)\]/is);
+        captionColor = colorMatch ? colorMatch[1].toLowerCase() : undefined;
+        const fadeInMatch = line.match(/\[FadeIn:?\s*([\d.]+)\]/is);
+        fadeIn = fadeInMatch ? fadeInMatch[1] : undefined;
+        const fadeOutMatch = line.match(/\[FadeOut:?\s*([\d.]+)\]/is);
+        fadeOut = fadeOutMatch ? fadeOutMatch[1] : undefined;
 
         const cleanText = line
             .replace(/\[Visual:?\s*.*?\]/gis, '')
@@ -185,6 +205,10 @@ function parseScriptLocally(script: string): ParsedScript {
             .replace(/\[Grade:?\s*.*?\]/gis, '')
             .replace(/\[KenBurns:?\s*.*?\]/gis, '')
             .replace(/\[Trim:?\s*.*?\]/gis, '')
+            .replace(/\[Style:?\s*.*?\]/gis, '')
+            .replace(/\[Color:?\s*.*?\]/gis, '')
+            .replace(/\[FadeIn:?\s*.*?\]/gis, '')
+            .replace(/\[FadeOut:?\s*.*?\]/gis, '')
             .trim();
 
         // Find all visual matches in the line
@@ -286,6 +310,10 @@ function parseScriptLocally(script: string): ParsedScript {
             kenBurns: sceneKenBurns,
             trimStart: sceneTrimStart,
             trimEnd: sceneTrimEnd,
+            captionStyle,
+            captionColor,
+            fadeIn,
+            fadeOut,
         });
     }
 
@@ -312,6 +340,10 @@ function parseScriptLocally(script: string): ParsedScript {
             kenBurns: sceneKenBurns,
             trimStart: sceneTrimStart,
             trimEnd: sceneTrimEnd,
+            captionStyle,
+            captionColor,
+            fadeIn,
+            fadeOut,
         });
     }
 

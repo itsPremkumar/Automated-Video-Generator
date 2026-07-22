@@ -34,4 +34,8 @@ export interface PipelineRequest {
     backgroundMusic?: string;
     /** Volume for background music (0.0–1.0, default ~0.15). */
     musicVolume?: number;
+    /** Branded title card at the start. */
+    intro?: { title: string; subtitle?: string; durationSec?: number };
+    /** Branded CTA card at the end. */
+    outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number };
 }
