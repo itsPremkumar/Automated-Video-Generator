@@ -26,6 +26,7 @@ import type { PipelineRequest } from '../orchestrator/types.js';
 import { loadRevision, requestChanges, resolveRound, RevisionRound } from '../delivery/revision.js';
 import { AgentBrain } from '../ai/brain.js';
 import { critiqueVideo, CritiqueReport, CritiqueSuggestion } from './critique.js';
+import { withTimeout } from '../orchestrator/ffmpeg.js';
 
 export interface ReviseHints {
     scope: 'script' | 'music' | 'visuals' | 'captions' | 'color' | 'other';
@@ -166,13 +167,23 @@ export async function reviseJob(
                 candidatesPerAsset: opts.baseReq?.candidatesPerAsset ?? 2,
                 ...(opts.baseReq ?? {}),
             } as PipelineRequest;
-            const res = await runAgenticPipeline(req, undefined);
-            if (!res.gate.pass) {
-                return { ok: false, originalJobId, revisionJobId, outputPath: null, round, detail: `revision gate blocked: ${res.gate.checks.filter((c: any) => !c.pass).map((c: any) => c.id).join(',')}` };
+            // Bound the full-pipeline run so an unreachable asset host can't hang
+            // the revise command forever. Fail safe (graceful message) instead.
+            const res = await withTimeout(
+                runAgenticPipeline(req, undefined),
+                Number(process.env.AGENTIC_REVISE_TIMEOUT_MS || 240_000),
+                'revise full-pipeline',
+            ).catch((e: any) => ({ timedOut: true, error: e?.message ?? String(e) }));
+            if ((res as any).timedOut) {
+                return { ok: false, originalJobId, revisionJobId, outputPath: null, round, detail: `revision timed out acquiring assets (network unreachable?): ${(res as any).error}` };
+            }
+            const pipelineRes = res as any;
+            if (!pipelineRes.gate?.pass) {
+                return { ok: false, originalJobId, revisionJobId, outputPath: null, round, detail: `revision gate blocked: ${(pipelineRes.gate?.checks || []).filter((c: any) => !c.pass).map((c: any) => c.id).join(',')}` };
             }
             const outDir = path.join(process.cwd(), 'output', revisionJobId);
             fs.mkdirSync(outDir, { recursive: true });
-            out = await renderAgenticSlideshow(res, {
+            out = await renderAgenticSlideshow(pipelineRes, {
                 outPath: path.join(outDir, `${revisedPlan.title || 'revision'}.mp4`),
                 burnCaptions: revisedPlan.captions !== 'none',
             });
@@ -277,5 +288,17 @@ export async function critiqueAndRevise(
 ): Promise<ReviseResult> {
     const report = await critiqueVideo(mp4Path, { planPath });
     const override = critiqueToPlanOverride(planPath, report);
+    // Auto-critique fixes are almost always caption-style / color / ken-burns
+    // tweaks — NONE of which need to re-fetch imagery or re-synthesize voice.
+    // Use the cached-workspace fast path (scope: 'captions') so the assistant
+    // self-heals WITHOUT touching the network. Only if there is no cached
+    // render-manifest (e.g. a job that was never fully rendered) do we fall
+    // back to a full pipeline run.
+    const wsRoot = workspaceRootFor(originalJobId);
+    const hasCache = readJson<any>({ root: wsRoot } as any, 'render-manifest.json') || readJson<any>({ root: wsRoot } as any, 'scene-data.json');
+    if (hasCache) {
+        const fast = await reviseJob(originalJobId, notes, [], { planOverride: override, scope: 'captions' });
+        if (fast.ok) return fast;
+    }
     return reviseJob(originalJobId, notes, [], { planOverride: override });
 }

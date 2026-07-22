@@ -103,10 +103,10 @@ export function computeStylePlan(
         if (style.kinetic !== false) {
             const dur = s.durationSec ?? 4;
             // Lower-third reveal at scene start (the scene's spoken hook).
-            kinetic.push({ atSec: 0.15, text: s.voiceoverText.split(/[.!?]/)[0].slice(0, 60), kind: 'lowerthird' });
+            kinetic.push({ atSec: 0.15, text: String(s.voiceoverText ?? '').split(/[.!?]/)[0].slice(0, 60), kind: 'lowerthird' });
             // Word-pop on an emphasis word if present.
             const emph = ['secret', 'amazing', 'important', 'never', 'always', 'real', 'truth', 'best', 'worst'].find(
-                (w) => s.voiceoverText.toLowerCase().includes(w),
+                (w) => String(s.voiceoverText ?? '').toLowerCase().includes(w),
             );
             if (emph) kinetic.push({ atSec: Math.max(0.4, dur * 0.45), text: emph.toUpperCase(), kind: 'wordpop' });
         }
