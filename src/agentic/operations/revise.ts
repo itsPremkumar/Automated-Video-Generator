@@ -170,8 +170,10 @@ export async function reviseJob(
             if (!res.gate.pass) {
                 return { ok: false, originalJobId, revisionJobId, outputPath: null, round, detail: `revision gate blocked: ${res.gate.checks.filter((c: any) => !c.pass).map((c: any) => c.id).join(',')}` };
             }
+            const outDir = path.join(process.cwd(), 'output', revisionJobId);
+            fs.mkdirSync(outDir, { recursive: true });
             out = await renderAgenticSlideshow(res, {
-                outPath: path.join(process.cwd(), 'output', revisionJobId, `${revisedPlan.title || 'revision'}.mp4`),
+                outPath: path.join(outDir, `${revisedPlan.title || 'revision'}.mp4`),
                 burnCaptions: revisedPlan.captions !== 'none',
             });
         }

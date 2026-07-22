@@ -12,7 +12,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { estimateAudioDurationSafe } from '../orchestrator/ffmpeg.js';
+import { estimateAudioDurationSafe, probeVideo } from '../orchestrator/ffmpeg.js';
 
 export interface RestitchResult {
     ok: boolean;
@@ -72,19 +72,26 @@ export async function restitchMaster(
     const partB = path.join(tmp, `_restitch_b_${sceneNumber}.mp4`);
     const out = outPath || path.join(tmp, `${path.basename(masterMp4, '.mp4')}_r${sceneNumber}.mp4`);
 
+    // Resolve the master's native resolution so we scale BOTH spliced parts to
+    // it. Hard-coding 720:1280 only worked for portrait and made the concat
+    // filter fail (dimension mismatch) on landscape / square / 1080p masters.
+    const masterInfo = await probeVideo(masterMp4).catch(() => ({ width: 720, height: 1280, fps: 25, hasAudio: true } as any));
+    const W = masterInfo.width, H = masterInfo.height, FPS = masterInfo.fps || 25;
+    const scaleVf = `scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,format=yuv420p`;
+
     try {
         // Re-encode splits (cheap, accurate) so the splice lands on the exact
         // cut point regardless of master keyframe placement. partA MUST use the
-        // SAME fps / sample-rate / duration as `norm` below — otherwise the
-        // concat filter pads one stream to align the other and the output
-        // duration balloons (e.g. 2s+2s -> 5s).
-        await run(['-y', '-i', masterMp4, '-t', cutAt.toFixed(3), '-r', '25', '-ar', '44100', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-y', partA]);
-        // Normalise the new scene clip to the project frame size / rate so
-        // xfade/concat never chokes on a dimension or fps mismatch.
+        // SAME resolution / fps / sample-rate / duration as `norm` below —
+        // otherwise the concat filter fails (dimension mismatch) or pads one
+        // stream to align the other and the output duration balloons.
+        await run(['-y', '-i', masterMp4, '-t', cutAt.toFixed(3), '-r', String(FPS), '-vf', scaleVf, '-ar', '44100', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-y', partA]);
+        // Normalise the new scene clip to the master's frame size / rate so
+        // concat never chokes on a dimension or fps mismatch.
         const norm = path.join(tmp, `_restitch_norm_${sceneNumber}.mp4`);
         await run([
             '-y', '-i', newSceneClip,
-            '-vf', 'scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=25,format=yuv420p',
+            '-vf', `${scaleVf},fps=${FPS}`,
             '-ar', '44100', '-c:a', 'aac', '-b:a', '192k', '-t', sceneDur.toFixed(3), norm,
         ]);
 
@@ -97,21 +104,29 @@ export async function restitchMaster(
         // keyframe padding) would produce a degenerate audio-only clip that
         // breaks the concat filter. Treat it as the last scene in that case.
         if (partBDur > 0.1) {
-            await run(['-y', '-ss', (cutAt + sceneDur).toFixed(3), '-i', masterMp4, '-t', partBDur.toFixed(3), '-r', '25', '-ar', '44100', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-y', partB]);
+            await run(['-y', '-ss', (cutAt + sceneDur).toFixed(3), '-i', masterMp4, '-t', partBDur.toFixed(3), '-r', String(FPS), '-vf', scaleVf, '-ar', '44100', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-y', partB]);
             parts.push(partB);
         }
         const n = parts.length;
         // Concat via the concat FILTER (no list file, no -c copy pitfalls):
         // bulletproof across re-encoded clips with differing params.
+        // When the master has NO audio stream (silent render), the concat
+        // filter's [i:a] specifiers match nothing and ffmpeg aborts. We keep a
+        // uniform a=1 concat by feeding each part a silent audio track — the
+        // output stays silent but the splice succeeds (correct for a silent
+        // source), instead of crashing.
+        const inputs = masterInfo.hasAudio
+            ? parts.flatMap((p) => ['-i', p])
+            : parts.flatMap((p) => ['-i', p, '-f', 'lavfi', '-i', `anullsrc=channel_layout=mono:sample_rate=44100:duration=${sceneDur.toFixed(3)}`]);
         const filter =
-            parts.map((_, i) => `[${i}:v][${i}:a]`).join('') +
+            parts.map((_, i) => masterInfo.hasAudio ? `[${i}:v][${i}:a]` : `[${2 * i}:v][${2 * i + 1}:a]`).join('') +
             `concat=n=${n}:v=1:a=1[v][a]`;
         const concatArgs = [
             '-y',
-            ...parts.flatMap((p) => ['-i', p]),
+            ...inputs,
             '-filter_complex', filter,
             '-map', '[v]', '-map', '[a]',
-            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', out,
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-shortest', out,
         ];
         await run(concatArgs);
         if (!fs.existsSync(out)) return { ok: false, output: '', detail: 'restitch produced no output' };

@@ -62,6 +62,48 @@ export async function estimateAudioDurationSafe(p: string): Promise<number> {
     return 4;
 }
 
+/** Probe a video file's width/height/codec/fps via ffprobe (JSON, key-based). */
+export async function probeVideo(p: string): Promise<{ width: number; height: number; codec: string; fps: number; hasAudio: boolean }> {
+    try {
+        const { spawn } = require('child_process');
+        const out = await new Promise<string>((resolve, reject) => {
+            const child = spawn(
+                ffprobe,
+                ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height,codec_name,r_frame_rate', '-of', 'json', p],
+                { encoding: 'utf8' as const, stdio: ['pipe', 'pipe', 'pipe'] } as any,
+            );
+            let buf = '';
+            const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } reject(new Error('ffprobe timed out')); }, 15000);
+            child.stdout?.on('data', (d: Buffer) => { buf += d.toString(); });
+            child.on('error', (e: Error) => { clearTimeout(t); reject(e); });
+            child.on('close', (code: number) => { clearTimeout(t); code === 0 ? resolve(buf) : reject(new Error('ffprobe failed')); });
+        });
+        const parsed = JSON.parse(out);
+        const s = parsed?.streams?.[0] || {};
+        const [nf, df] = String(s.r_frame_rate || '25/1').split('/').map(Number);
+        let hasAudio = false;
+        try {
+            const aout = await new Promise<string>((resolve) => {
+                const c = spawn(ffprobe, ['-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=index', '-of', 'default=nw=1:nk=1', p], { encoding: 'utf8' as const, stdio: ['pipe', 'pipe', 'pipe'] } as any);
+                let b = '';
+                const t = setTimeout(() => { try { c.kill('SIGKILL'); } catch { /* ignore */ } resolve(''); }, 15000);
+                c.stdout?.on('data', (d: Buffer) => { b += d.toString(); });
+                c.on('close', () => { clearTimeout(t); resolve(b); });
+            });
+            hasAudio = aout.trim().length > 0;
+        } catch { hasAudio = false; }
+        return {
+            width: Number(s.width) || 720,
+            height: Number(s.height) || 1280,
+            codec: s.codec_name || 'h264',
+            fps: (nf && df ? nf / df : 25) || 25,
+            hasAudio,
+        };
+    } catch {
+        return { width: 720, height: 1280, codec: 'h264', fps: 25, hasAudio: true };
+    }
+}
+
 /** Run an ffmpeg command, returning its exit code */
 export function runFfmpeg(args: string[], timeoutMs = 60000): Promise<number> {
     return runFfmpegShared(args, { timeoutMs })
