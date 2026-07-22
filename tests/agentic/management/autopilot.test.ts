@@ -36,6 +36,60 @@ describe('autopilot diagnose', () => {
         const { fixes } = diagnose(ev(['some totally unrelated crash xyz']));
         assert.equal(fixes.length, 0);
     });
+    test('P1: speech backend unavailable -> voice-backend-fallback', () => {
+        const { fixes } = diagnose(
+            ev(['speech backend unavailable — caller should fall back to Edge-TTS', 'scene 3 voice failed']),
+        );
+        assert.ok(fixes.some((f) => f.name === 'voice-backend-fallback'));
+    });
+    test('P1: voiceover generation did not complete -> voice-backend-fallback', () => {
+        const { fixes } = diagnose(ev(['generation abc did not complete (status=error)']));
+        assert.ok(fixes.some((f) => f.name === 'voice-backend-fallback'));
+    });
+});
+
+describe('autopilot P3 disk guard', () => {
+    test('freeDiskGB returns a finite-ish number (probe tolerant)', () => {
+        const { freeDiskGB } = require('../../../src/agentic/management/autopilot.js');
+        const g = freeDiskGB();
+        assert.equal(typeof g, 'number');
+        assert.ok(Number.isFinite(g) || g === Infinity);
+    });
+    test('autoRunVideo bails early (no pipeline run) when disk < MIN_FREE_GB', async () => {
+        const ap = require('../../../src/agentic/management/autopilot.js');
+        const prev = ap.diskProbe;
+        ap.setDiskProbe(() => 0.1); // simulate a nearly-full drive
+        let pipelineCalled = false;
+        const report = await ap.autoRunVideo(
+            { topic: 't', title: 'x', backend: 'agent' },
+            {
+                maxAttempts: 3,
+                runner: async () => {
+                    pipelineCalled = true;
+                    return { out: 'good.mp4', post: check(true, ['X7', 'X8', 'X9']), gatePass: true };
+                },
+                onEvent: () => {},
+            },
+        );
+        ap.setDiskProbe(prev); // restore
+        assert.equal(pipelineCalled, false, 'pipeline must not run when disk is low');
+        assert.equal(report.success, false);
+        assert.equal(report.attempts, 1);
+    });
+    test('P1 voice-backend-fallback fix sets AGENTIC_VOICE_FALLBACK=1 and runVoiceStage uses fallback', async () => {
+        // The diagnose() output is what the autopilot applies; verify the applied
+        // fix flips the env that runVoiceStage reads. (runVoiceStage fallback path
+        // is unit-tested in voice-controller separately.)
+        const { diagnose } = require('../../../src/agentic/management/autopilot.js');
+        const before = process.env.AGENTIC_VOICE_FALLBACK;
+        const { fixes } = diagnose(ev(['speech backend unavailable — caller should fall back to Edge-TTS']));
+        const fb = fixes.find((f: any) => f.name === 'voice-backend-fallback');
+        assert.ok(fb, 'voice-backend-fallback fix present');
+        fb.apply();
+        assert.equal(process.env.AGENTIC_VOICE_FALLBACK, '1');
+        if (before === undefined) delete process.env.AGENTIC_VOICE_FALLBACK;
+        else process.env.AGENTIC_VOICE_FALLBACK = before;
+    });
 });
 
 describe('autopilot retry loop (offline, injected runner)', () => {

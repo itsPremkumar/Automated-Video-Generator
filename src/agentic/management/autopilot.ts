@@ -21,6 +21,8 @@ import { runAgenticPipeline, renderAgenticSlideshow, renderAgenticWithRemotion }
 import type { PipelineRequest } from '../orchestrator/types.js';
 import type { PipelineProgress, PipelineResult } from '../types.js';
 import { AgentBrain } from '../ai/brain.js';
+import { resolveWorkspacePath } from '../../shared/runtime/paths.js';
+import { pruneWorkspaces } from './workspace.js';
 
 export interface AutoRunEvent {
     t: number;
@@ -39,6 +41,53 @@ export interface AutoRunReport {
 }
 
 const VIDEO_CACHE = path.resolve(process.cwd(), 'workspace/cache/.video-cache.json');
+
+/**
+ * P3 — Disk-space preflight for the autonomous loop.
+ *
+ * The autopilot can drive long batches (autoRunBatch) that refill workspace/tmp
+ * and output/. Before each attempt we ensure there is headroom; otherwise a
+ * render can fail late (or, worse, the OS can wedge) with no actionable signal.
+ * Returns the free GB on the project's drive, or Infinity if it can't be read.
+ */
+export function freeDiskGB(): number {
+    try {
+        const target = resolveProjectPathSafe();
+        const out = require('child_process')
+            .execSync(`powershell.exe -NoProfile -Command "(Get-PSDrive -Name ${driveLetter(target)}).Free / 1GB" 2>$null`, {
+                encoding: 'utf8',
+                timeout: 5000,
+            })
+            .trim();
+        const n = parseFloat(out);
+        return Number.isFinite(n) ? n : Infinity;
+    } catch {
+        return Infinity; // unknown — don't block the run on a probe failure
+    }
+}
+
+function driveLetter(p: string): string {
+    const m = /^([A-Za-z]):/.exec(p);
+    return m ? m[1] : 'C';
+}
+
+function resolveProjectPathSafe(): string {
+    try {
+        return resolveWorkspacePath();
+    } catch {
+        return process.cwd();
+    }
+}
+
+/** Minimum free GB required before a render attempt (P3 guard). */
+export const MIN_FREE_GB = 2;
+
+// Overridable disk probe (default: real powershell probe). Tests swap this to
+// exercise the low-disk guard deterministically without shelling out.
+export let diskProbe: () => number = freeDiskGB;
+export function setDiskProbe(fn: () => number): void {
+    diskProbe = fn;
+}
 
 function now() {
     return Date.now();
@@ -96,6 +145,20 @@ export function diagnose(events: AutoRunEvent[]): { fixes: { name: string; apply
             },
         });
     }
+    // 4. P1 — Speech/voice backend unavailable. The voice stage self-starts the
+    // backend but if provisioning fails (e.g. Python deps missing) it throws
+    // "speech backend unavailable — caller should fall back to Edge-TTS" and the
+    // scene loop warns "voice failed". Without this fix the autopilot retries
+    // blindly and never produces audio. Force the built-in Edge-TTS/Kokoro
+    // fallback so the run can still complete with a real voiceover.
+    if (/speech backend unavailable|voice failed|voiceover.*fail|speak returned no id|generation .* did not complete/i.test(log)) {
+        fixes.push({
+            name: 'voice-backend-fallback',
+            apply: () => {
+                process.env.AGENTIC_VOICE_FALLBACK = '1';
+            },
+        });
+    }
     return { fixes };
 }
 
@@ -141,6 +204,29 @@ export async function autoRunVideo(req: PipelineRequest, opts: AutoRunOptions = 
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         emit('info', `attempt ${attempt}/${maxAttempts} — pipeline start`);
+
+        // P3 — Disk-space preflight + scratch prune. Long batches refill
+        // workspace/tmp and output/; if the drive is too full a render fails late
+        // (or the OS wedges) with no actionable signal. Prune old workspaces and
+        // bail early with a clear event if headroom is below the guard.
+        try {
+            pruneWorkspaces(cfg.pruneWorkspaces ?? 25);
+        } catch {
+            /* best-effort */
+        }
+        const freeGb = diskProbe();
+        if (freeGb < MIN_FREE_GB) {
+            emit('error', `disk low: ${freeGb.toFixed(1)} GB free (< ${MIN_FREE_GB} GB) — cannot safely render`);
+            return {
+                topic: req.topic,
+                success: false,
+                outputPath: lastOut,
+                attempts: attempt,
+                events,
+                fixesApplied,
+                postRender: post,
+            };
+        }
         try {
             // Injectable runner (tests / deterministic harness) — replaces the
             // real network+ffmpeg pipeline so the self-heal loop can be proven

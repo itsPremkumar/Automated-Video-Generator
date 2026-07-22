@@ -75,3 +75,35 @@ test('runVoiceStage generates real WAVs via live speech backend (auto-provisione
     // cleanup
     fs.rmSync(ws.root, { recursive: true, force: true });
 });
+
+// P1 — offline fallback path. When AGENTIC_VOICE_FALLBACK=1 the stage must skip
+// the Python backend entirely and route through the built-in engine
+// (Edge-TTS / Kokoro / tones). This test proves the branch is taken WITHOUT
+// spawning the dead backend. (Actual audible output depends on the built-in
+// engine being provisioned in the environment; we assert the routing, not the
+// network, so the test is deterministic anywhere.)
+test('runVoiceStage fallback (AGENTIC_VOICE_FALLBACK=1) skips backend and routes to built-in engine', { timeout: 240_000 }, async () => {
+    const prev = process.env.AGENTIC_VOICE_FALLBACK;
+    process.env.AGENTIC_VOICE_FALLBACK = '1';
+    const ws = makeWorkspace();
+    const plan = makePlan();
+    let reachedFallback = false;
+    try {
+        await runVoiceStage(plan, ws, undefined, (p, m) => {
+            if (m.includes('fallback mode')) reachedFallback = true;
+            console.log(`  [fallback ${p}%] ${m}`);
+        });
+    } catch (e: any) {
+        // The built-in engine may fail in a network-less sandbox; that is fine —
+        // we only need to prove we took the fallback branch (no backend spawn).
+        assert.ok(
+            /voice fallback failed/.test(e?.message ?? ''),
+            `expected fallback error, got: ${e?.message ?? e}`,
+        );
+    } finally {
+        if (prev === undefined) delete process.env.AGENTIC_VOICE_FALLBACK;
+        else process.env.AGENTIC_VOICE_FALLBACK = prev;
+        fs.rmSync(ws.root, { recursive: true, force: true });
+    }
+    assert.equal(reachedFallback, true, 'fallback branch must be taken when AGENTIC_VOICE_FALLBACK=1');
+});
