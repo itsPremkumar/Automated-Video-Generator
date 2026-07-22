@@ -61,11 +61,48 @@ export async function generateAgenticVoiceovers(
     ws: AgenticWorkspace,
     voice?: string,
 ): Promise<VoiceoverResult> {
-    const audioDir = path.join(ws.root, 'audio');
+    const root = ws.root;
+    const audioDir = path.join(root, 'audio');
     fs.mkdirSync(audioDir, { recursive: true });
     const defaultVoice = voice ?? plan.voice;
 
-    // ── Try the real Edge-TTS engine (or Kokoro/etc. fallback chain). ──
+    // PRIMARY: self-contained voicebox backend (in-repo kokoro/chatterbox).
+    // Zero-config default; if it cannot come up we fall back below.
+    // Build a full AgenticWorkspace so VoiceController's audioDir resolves.
+    const backendWs: AgenticWorkspace = {
+        ...ws,
+        root,
+        audioDir,
+        assetsDir: ws.assetsDir ?? path.join(root, 'assets'),
+        imagesDir: ws.imagesDir ?? path.join(root, 'assets', 'images'),
+        verificationDir: ws.verificationDir ?? path.join(root, 'verification'),
+    };
+    try {
+        const { runVoiceStageSafe } = await import('../media/voice-controller.js');
+        const res = await runVoiceStageSafe(plan, backendWs, voice);
+        if (res.voiceoverDriven || res.voices.length > 0) {
+            const scenes: SceneVoiceover[] = res.voices.map((v) => ({
+                sceneIndex: v.sceneIndex,
+                audioPath: v.audioPath,
+                durationSec: v.durationSec,
+                captionSegments: syllableWordTimings(
+                    plan.scenes[v.sceneIndex]?.voiceoverText ?? '',
+                    Math.round((v.durationSec || 2) * 1000),
+                ),
+            }));
+            const sidecars = writeCaptionSidecars(
+                audioDir,
+                toCaptionScenes(plan, scenes),
+                { baseName: 'subtitles' },
+            );
+            return { scenes, voiceoverDriven: res.voiceoverDriven, sidecars, fallbackUsed: res.fallbackUsed };
+        }
+        console.warn('⚠ voicebox backend returned no voices; using Edge-TTS fallback');
+    } catch (e: any) {
+        console.warn(`⚠ voicebox backend unavailable ("${e?.message}"); using Edge-TTS fallback`);
+    }
+
+    // FALLBACK: Edge-TTS engine (or tones) — never blocks the render.
     try {
         const { generateVoiceovers } = await import('../../lib/voice-generator.js');
         const allResults = new Map<number, any>();

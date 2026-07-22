@@ -54,12 +54,12 @@ export async function isBackendUp(): Promise<boolean> {
  * usable backend is up (either pre-existing or freshly spawned).
  */
 export async function ensureBackend(): Promise<boolean> {
-    // Startup is gated on the TTS provider, NOT on a profile id. Profile
-    // provisioning happens later (VoiceController.resolveProfileId), so the
-    // backend must come up even when no profile is configured yet. We only
-    // refuse to spawn when the provider isn't voicebox (no point burning RAM).
-    const provider = (process.env.TTS_PROVIDER || '').toLowerCase().trim();
-    if (provider && provider !== 'voicebox') {
+    // Default to the self-contained voicebox backend when no provider is
+    // explicitly set. This makes the in-repo kokoro/chatterbox backend the
+    // zero-config default. If it cannot come up (e.g. venv missing),
+    // callers fall back to Edge-TTS / tones — never a hard failure.
+    const provider = (process.env.TTS_PROVIDER || 'voicebox').toLowerCase().trim();
+    if (provider !== 'voicebox') {
         console.warn(`TTS_PROVIDER=${provider} — not voicebox; backend not started`);
         return false;
     }

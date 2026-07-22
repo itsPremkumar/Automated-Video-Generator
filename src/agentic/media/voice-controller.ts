@@ -187,7 +187,7 @@ async function generateScene(
     outputPath: string,
     profileId: string,
     engine: string,
-): Promise<void> {
+): Promise<number> {
     const clean = text.replace(/\s+/g, ' ').trim();
     if (!clean) throw new Error('empty text');
 
@@ -200,21 +200,29 @@ async function generateScene(
     const genId = start.data?.id;
     if (!genId) throw new Error(`/speak returned no id: ${JSON.stringify(start.data)}`);
 
-    // poll status (SSE stream — grab first data frame)
+    // poll status (SSE stream — grab the data frame, fall back to plain JSON)
     const deadline = Date.now() + 300000;
     let status = 'generating';
+    let durationSec = 0;
     while (Date.now() < deadline) {
         await new Promise((r) => setTimeout(r, 2000));
         try {
             const res = await axios.get(`${base}/generate/${genId}/status`, {
                 timeout: 10000,
                 responseType: 'text',
-                headers: { Accept: 'text/event-stream' },
             });
-            const raw = String(res.data).split('\n').find((l) => l.startsWith('data:')) || String(res.data);
-            const json = JSON.parse(raw.replace(/^data:\s*/, ''));
-            status = json.status;
-            if (status === 'completed' || status === 'complete' || status === 'done') break;
+            const raw = String(res.data);
+            // SSE: find the first "data:" line. Plain JSON has no "data:" prefix.
+            const dataLine = raw.split('\n').find((l) => l.startsWith('data:')) ?? raw;
+            const json = JSON.parse(dataLine.replace(/^data:\s*/, '').trim() || '{}');
+            status = json.status ?? status;
+            if (typeof json.duration === 'number' && json.duration > 0) durationSec = json.duration;
+            if (status === 'completed' || status === 'complete' || status === 'done') {
+                // duration comes from the server's generation status (reliable).
+                // If the server omitted it, the render falls back to the WAV
+                // file length via ffprobe — no local probe needed here.
+                break;
+            }
             if (status === 'error' || status === 'failed') throw new Error(json.error ?? 'generation error');
         } catch (e: any) {
             if (e?.message && (e.message.includes('error') || e.message.includes('failed'))) throw e;
@@ -235,8 +243,10 @@ async function generateScene(
     if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size < 1000) {
         throw new Error(`audio not written or too small: ${outputPath}`);
     }
+    return durationSec;
 }
 
+/**
 /**
  * Run the full voice stage for a plan.
  * @param plan        agentic plan (scene.voiceoverText + voiceOverride)
@@ -295,8 +305,8 @@ export async function runVoiceStage(
             continue;
         }
         try {
-            await generateScene(scene.voiceoverText, outPath, profileId, engine);
-            voices.push({ sceneIndex: scene.sceneNumber - 1, audioPath: outPath, durationSec: 0 });
+            const dur = await generateScene(scene.voiceoverText, outPath, profileId, engine);
+            voices.push({ sceneIndex: scene.sceneNumber - 1, audioPath: outPath, durationSec: dur });
             ok++;
         } catch (e: any) {
             console.warn(`scene ${scene.sceneNumber} voice failed: ${e?.message}`);
@@ -310,8 +320,20 @@ export async function runVoiceStage(
     const voiceoverDriven = ok === total;
     report(100, voiceoverDriven ? 'voiceover generated via speech backend' : `partial (${ok}/${total})`);
 
-    // Teardown — zero RAM footprint until next run.
-    killBackend();
-
     return { voices, voiceoverDriven, profileId, fallbackUsed: !voiceoverDriven };
+}
+
+/** Run the full voice stage, guaranteeing the backend is torn down
+ *  (zero RAM footprint) even if generation throws partway. */
+export async function runVoiceStageSafe(
+    plan: Plan,
+    ws: AgenticWorkspace,
+    _voice?: string,
+    onProgress?: (percent: number, message: string) => void,
+): Promise<VoiceRunResult> {
+    try {
+        return await runVoiceStage(plan, ws, _voice, onProgress);
+    } finally {
+        killBackend();
+    }
 }
