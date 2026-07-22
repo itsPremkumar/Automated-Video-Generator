@@ -1,3 +1,4 @@
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../src/shared/runtime/paths.js';
 /**
  * contact-sheet.test.ts — VISIBILITY artefacts (every approved asset is shown).
  * Builds a synthetic PipelineResult with real placeholder images and asserts the
@@ -7,7 +8,6 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import { makeContactSheet, writeDecisionsReport } from '../../../src/agentic/orchestrate.js';
 import { AssetCandidate, AssetDecision, Plan, RenderManifest } from '../../../src/agentic/types.js';
@@ -26,7 +26,7 @@ describe('agentic/visibility (contact sheet + decisions report)', () => {
     let res: PipelineResult;
     let dir: string;
     before(() => {
-        dir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentic-vis-'));
+        dir = makeWorkspaceTempDir('agentic-vis-');
         const i0 = path.join(dir, 's0.png');
         mkImg(i0, 'navy');
         const i1 = path.join(dir, 's1.png');

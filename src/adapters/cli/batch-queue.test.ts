@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { runBatch, readManifestSafe, summarize, type BatchJobInput, type BatchJobResult } from './batch-queue';
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../shared/runtime/paths.js';
 
 function makeInputs(count: number): BatchJobInput[] {
     return Array.from({ length: count }, (_, index) => ({
@@ -14,7 +15,7 @@ function makeInputs(count: number): BatchJobInput[] {
 }
 
 function tmpManifestPath(): string {
-    return path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'avg-batch-')), 'batch-manifest.json');
+    return path.join(makeWorkspaceTempDir('avg-batch-'), 'batch-manifest.json');
 }
 
 test('caps active jobs at N (concurrency)', async () => {

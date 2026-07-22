@@ -1,7 +1,6 @@
 import { test, describe } from 'node:test';
 import * as assert from 'node:assert/strict';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 
 import { buildPlan, deriveMusicQuery, Parser } from '../../src/agentic/pipeline/plan.js';
@@ -11,10 +10,12 @@ import { runFinalGate } from '../../src/agentic/pipeline/gate.js';
 import { runGateway, GatewayDeps } from '../../src/agentic/pipeline/gateway.js';
 import { Plan, AssetCandidate, AssetDecision } from '../../src/agentic/types.js';
 import { writeScriptHeuristic, expandKeywordsHeuristic, agentDecide } from '../../src/agentic/ai/agent.js';
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../src/shared/runtime/paths.js';
+const __WS_TEST_TMP__ = resolveWorkspaceTempPath('tests');
 
 // ── helpers ──────────────────────────────────────────────
 function tmpFile(ext: string): string {
-    return path.join(os.tmpdir(), `avg_test_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`);
+    return path.join(__WS_TEST_TMP__, `avg_test_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`);
 }
 
 function makeCandidate(kind: 'image' | 'video' | 'music', sceneIndex: number, c: number, p: string): AssetCandidate {
@@ -184,7 +185,7 @@ describe('verify.ts', () => {
         const bad = tmpFile('.jpg');
         fs.writeFileSync(good, 'imgdata');
         const cands: AssetCandidate[] = [makeCandidate('image', 0, 1, good), makeCandidate('image', 0, 2, bad)];
-        const wsStub: any = { root: os.tmpdir(), verificationDir: os.tmpdir() };
+        const wsStub: any = { root: __WS_TEST_TMP__, verificationDir: __WS_TEST_TMP__ };
         const results = await verifyAll(cands, wsStub, {
             verifyImage: async (p: string) =>
                 fs.existsSync(p)
@@ -201,7 +202,7 @@ describe('verify.ts', () => {
         const m = tmpFile('.mp3');
         fs.writeFileSync(m, Buffer.alloc(20 * 1024));
         const cands: AssetCandidate[] = [makeCandidate('music', -1, 1, m)];
-        const results = await verifyAll(cands, { root: os.tmpdir(), verificationDir: os.tmpdir() } as any, {
+        const results = await verifyAll(cands, { root: __WS_TEST_TMP__, verificationDir: __WS_TEST_TMP__ } as any, {
             verifyImage: async () => ({ passes: true, confidence: 9, reason: '' }),
             verifyVideo: async () => ({ passes: true, confidence: 9, reason: '' }),
             ffprobe: () => null,

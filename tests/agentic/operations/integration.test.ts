@@ -1,3 +1,4 @@
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../src/shared/runtime/paths.js';
 /**
  * integration.test.ts — real-clip integration for the new single-task ops.
  *
@@ -10,7 +11,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 
 let ffmpeg: string;
@@ -49,7 +49,7 @@ describe('integration: real-clip op chain', () => {
 
     // Generate the source clip once for the suite.
     if (canRun) {
-        tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'avg-integration-'));
+        tmp = makeWorkspaceTempDir('avg-integration-');
         src = path.join(tmp, 'src.mp4');
         makeClip(src, 2, 'teal');
     }

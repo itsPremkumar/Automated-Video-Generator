@@ -1,9 +1,9 @@
 import { test, describe } from 'node:test';
 import * as assert from 'node:assert/strict';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import { execFileSync } from 'child_process';
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../src/shared/runtime/paths.js';
 
 const ffmpeg: string = require('ffmpeg-static');
 
@@ -26,7 +26,7 @@ function makeClip(out: string, dur: number, color: string, withAudio = true): bo
 
 describe('restitch.ts — in-place master edit (Gap C)', () => {
     test('swaps a single scene into a 2-scene master', async () => {
-        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'restitch-'));
+        const dir = makeWorkspaceTempDir('restitch-');
         const master = path.join(dir, 'master.mp4');
         const sceneA = path.join(dir, 's1.mp4');
         const sceneB = path.join(dir, 's2.mp4');
@@ -63,7 +63,7 @@ describe('restitch.ts — in-place master edit (Gap C)', () => {
     });
 
     test('fails safe on out-of-range scene', async () => {
-        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'restitch2-'));
+        const dir = makeWorkspaceTempDir('restitch2-');
         const master = path.join(dir, 'm.mp4');
         const clip = path.join(dir, 'c.mp4');
         makeClip(master, 2, 'red'); makeClip(clip, 2, 'blue');

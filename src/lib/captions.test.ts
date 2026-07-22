@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../shared/runtime/paths.js';
+const __WS_TEST_TMP__ = resolveWorkspaceTempPath('tests');
 import {
     activeSegmentAt,
     buildFallbackSegments,
@@ -31,7 +32,7 @@ This is a test
 `;
 
 test('parseEdgeTtsSubtitles parses Edge-TTS SRT into scene-relative segments', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cap-'));
+    const dir = makeWorkspaceTempDir('cap-');
     const file = path.join(dir, 'scene_1_voice.srt');
     fs.writeFileSync(file, sampleSrt, 'utf8');
 
@@ -50,10 +51,10 @@ test('parseEdgeTtsSubtitles parses Edge-TTS SRT into scene-relative segments', (
 
 test('parseEdgeTtsSubtitles returns null for missing / empty / unparseable file (offline fallback)', () => {
     // Missing file
-    assert.equal(parseEdgeTtsSubtitles(path.join(os.tmpdir(), 'does-not-exist.srt')), null);
+    assert.equal(parseEdgeTtsSubtitles(path.join(__WS_TEST_TMP__, 'does-not-exist.srt')), null);
 
     // Empty file
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cap-'));
+    const dir = makeWorkspaceTempDir('cap-');
     const empty = path.join(dir, 'empty.srt');
     fs.writeFileSync(empty, '   \n  ', 'utf8');
     assert.equal(parseEdgeTtsSubtitles(empty), null);
@@ -185,7 +186,7 @@ test('deriveGlobalCaptions accumulates scene start offsets across scenes', () =>
 });
 
 test('writeCaptionSidecars writes srt + vtt next to the MP4 and returns paths', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'capside-'));
+    const dir = makeWorkspaceTempDir('capside-');
     const written = writeCaptionSidecars(
         dir,
         [
@@ -204,7 +205,7 @@ test('writeCaptionSidecars writes srt + vtt next to the MP4 and returns paths', 
 });
 
 test('writeCaptionSidecars writes nothing when no scene has text', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'capside-'));
+    const dir = makeWorkspaceTempDir('capside-');
     const written = writeCaptionSidecars(dir, [{ text: '', durationSeconds: 2 }]);
     assert.deepEqual(written, []);
     assert.equal(fs.existsSync(path.join(dir, 'subtitles.srt')), false);

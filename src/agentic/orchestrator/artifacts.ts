@@ -2,14 +2,16 @@ import * as fs from 'fs';
 import { assetId } from '../types.js';
 import { runFfmpeg } from './ffmpeg.js';
 import type { PipelineResult } from './types.js';
+import { resolveWorkspaceTempPath } from '../../shared/runtime/paths.js';
 
 /**
  * makeContactSheet — tiles EVERY downloaded image (and one frame of every video)
  * into a single grid image for audit visibility.
  */
 export async function makeContactSheet(res: PipelineResult): Promise<string | null> {
-    const os = require('os');
     const wsRoot = res.workspace.root;
+    const tmpDir = resolveWorkspaceTempPath('contact-sheet');
+    fs.mkdirSync(tmpDir, { recursive: true });
     const imgs: string[] = [];
     for (const d of res.decisions) {
         if (d.kind === 'music') continue;
@@ -17,7 +19,7 @@ export async function makeContactSheet(res: PipelineResult): Promise<string | nu
         if (!c?.localPath || !fs.existsSync(c.localPath)) continue;
         if (c.kind === 'image') imgs.push(c.localPath);
         else if (c.kind === 'video') {
-            const frame = `${os.tmpdir()}/cs_frame_${res.workspace.jobId}_${d.sceneIndex}.png`;
+            const frame = `${tmpDir}/cs_frame_${res.workspace.jobId}_${d.sceneIndex}.png`;
             try {
                 await runFfmpeg(['-y', '-ss', '00:00:00.1', '-i', c.localPath, '-frames:v', '1', frame]);
                 if (fs.existsSync(frame)) imgs.push(frame);

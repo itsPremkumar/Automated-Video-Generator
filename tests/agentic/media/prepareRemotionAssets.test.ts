@@ -1,3 +1,4 @@
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../src/shared/runtime/paths.js';
 /**
  * prepareRemotionAssets.test.ts — proves A10 render robustness:
  * a missing/broken image|video asset is replaced with a branded placeholder
@@ -7,7 +8,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import ffmpegPath from 'ffmpeg-static';
 
@@ -41,7 +41,7 @@ const makeAsset = (over: any) => ({
 });
 
 test('A10: missing image asset -> branded placeholder PNG is created and kept', async () => {
-    const jobDir = fs.mkdtempSync(path.join(os.tmpdir(), 'av-remotion-'));
+    const jobDir = makeWorkspaceTempDir('av-remotion-');
     try {
         const res = makeRes([makeAsset({ localPath: '/no/such/image.png' })]);
         const out = await import('../../../src/agentic/orchestrate.js').then((m) =>
@@ -63,7 +63,7 @@ test('A10: missing image asset -> branded placeholder PNG is created and kept', 
 });
 
 test('A10: present image asset -> copied as-is (no placeholder)', async () => {
-    const jobDir = fs.mkdtempSync(path.join(os.tmpdir(), 'av-remotion-'));
+    const jobDir = makeWorkspaceTempDir('av-remotion-');
     const src = path.join(jobDir, 'real.png');
     fs.writeFileSync(src, Buffer.from(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
@@ -85,7 +85,7 @@ test('A10: present image asset -> copied as-is (no placeholder)', async () => {
 });
 
 test('A10: missing MUSIC asset -> dropped silently (no placeholder, no crash)', async () => {
-    const jobDir = fs.mkdtempSync(path.join(os.tmpdir(), 'av-remotion-'));
+    const jobDir = makeWorkspaceTempDir('av-remotion-');
     try {
         const res = makeRes([makeAsset({ kind: 'music', localPath: '/no/music.mp3' })]);
         const out = await import('../../../src/agentic/orchestrate.js').then((m) =>

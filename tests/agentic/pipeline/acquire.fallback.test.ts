@@ -1,3 +1,4 @@
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../src/shared/runtime/paths.js';
 /**
  * acquire.fallback.test.ts — verify the offline asset-creator fallback
  * (Integration #1). When a scene has no stock candidates, generateFallbackVisual
@@ -7,12 +8,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import { generateFallbackVisual } from '../../../src/agentic/pipeline/acquire.js';
 
 test('generateFallbackVisual produces a real offline image fallback', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'acq-fb-img-'));
+    const dir = makeWorkspaceTempDir('acq-fb-img-');
     try {
         const fb = generateFallbackVisual(
             { voiceoverText: 'Morning coffee ritual', searchKeywords: ['coffee'] },
@@ -31,7 +31,7 @@ test('generateFallbackVisual produces a real offline image fallback', () => {
 });
 
 test('generateFallbackVisual produces a real offline video fallback', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'acq-fb-vid-'));
+    const dir = makeWorkspaceTempDir('acq-fb-vid-');
     try {
         const fb = generateFallbackVisual(
             { voiceoverText: 'Workout montage', searchKeywords: ['gym'] },

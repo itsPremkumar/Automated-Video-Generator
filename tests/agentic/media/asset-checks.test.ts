@@ -1,3 +1,4 @@
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../src/shared/runtime/paths.js';
 /**
  * asset-checks.test.ts — verifies the STAGE-3 source-asset checks
  * (I4/I5/V4/V5/V6 + I7 duplicate detection) using ffmpeg-generated fixtures.
@@ -21,7 +22,7 @@ describe('asset-checks', () => {
     let dup: string;
 
     test('setup: generate fixtures', () => {
-        dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ac-'));
+        dir = makeWorkspaceTempDir('ac-');
         img = path.join(dir, 'img.png');
         vid = path.join(dir, 'vid.mp4');
         dup = path.join(dir, 'img-dup.png');

@@ -98,6 +98,30 @@ export function resolveWorkspacePath(...segments: string[]): string {
     return resolveProjectPath('workspace', ...normalizeRelativeSegments(segments));
 }
 
+
+export function resolveWorkspaceTempPath(...segments: string[]): string {
+    return resolveWorkspacePath('tmp', ...normalizeRelativeSegments(segments));
+}
+
+/**
+ * makeWorkspaceTempDir — `fs.mkdtempSync` that lands under `workspace/tmp/<sub>`
+ * instead of the system TEMP directory.
+ *
+ * Backward-compatible helper: callers pass a `prefix` (the unique prefix they
+ * used to pass to `fs.mkdtempSync(path.join(os.tmpdir(), prefix))`). The returned
+ * path is created on disk and guaranteed to live under `workspace/tmp`.
+ *
+ * NOTE: `fs.mkdtempSync(prefix)` interprets `prefix` as the *full* template path
+ * and creates the directory there (appending 6 random chars). So we pass
+ * `path.join(base, prefix)` — NOT a separate root arg — to anchor it under the
+ * workspace temp dir.
+ */
+export function makeWorkspaceTempDir(prefix: string, sub = 'tests'): string {
+    const base = resolveWorkspaceTempPath(sub);
+    fs.mkdirSync(base, { recursive: true });
+    return fs.mkdtempSync(path.join(base, prefix));
+}
+
 export function resolveResourcePath(...segments: string[]): string {
     if (resourcesPath) {
         return path.join(resourcesPath, ...segments);

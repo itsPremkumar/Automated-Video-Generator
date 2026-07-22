@@ -1,11 +1,12 @@
 import assert from 'node:assert';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import { test } from 'node:test';
 import { getCached, storeCached, clearCache } from './asset-cache.js';
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../shared/runtime/paths.js';
+const __WS_TEST_TMP__ = resolveWorkspaceTempPath('tests');
 
-const tmp = path.join(os.tmpdir(), `ac-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+const tmp = path.join(__WS_TEST_TMP__, `ac-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 fs.mkdirSync(tmp, { recursive: true });
 
 function writeTmp(name: string, body: string): string {

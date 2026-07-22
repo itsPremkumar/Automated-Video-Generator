@@ -1,3 +1,5 @@
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../src/shared/runtime/paths.js';
+const __WS_TEST_TMP__ = resolveWorkspaceTempPath('tests');
 /**
  * new-features.test.ts — unit tests for the 5 new free single-task operations.
  * Uses Node's built-in test runner (node:test) — no jest globals.
@@ -9,7 +11,6 @@
 import { test, describe } from 'node:test';
 import * as assert from 'node:assert/strict';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import { parseSilenceLog, spokenSpans, buildKeepFilter } from '../../../src/agentic/operations/silence.js';
 import { parseSceneCuts, buildChapters, longestScene } from '../../../src/agentic/operations/scene.js';
@@ -96,7 +97,7 @@ const fakeProbe = async (_file: string): Promise<{ duration: number; width: numb
 });
 
 describe('real-duration probe wiring', () => {
-    const tmp = path.join(os.tmpdir(), `avt_probe_test_${Date.now()}.mp4`);
+    const tmp = path.join(__WS_TEST_TMP__, `avt_probe_test_${Date.now()}.mp4`);
     test.before(() => {
         fs.writeFileSync(tmp, Buffer.from([0]));
     });
@@ -113,7 +114,7 @@ describe('real-duration probe wiring', () => {
         // Mock runner emits a real silencedetect log with a cut; mock probe
         // returns a real 12.5s duration. If duration fell back to 1e9 (old bug)
         // spokenSpans would be a single giant span and "removed 0".
-        const r = await removeSilence(tmp, path.join(os.tmpdir(), `avt_out_${Date.now()}.mp4`), {
+        const r = await removeSilence(tmp, path.join(__WS_TEST_TMP__, `avt_out_${Date.now()}.mp4`), {
             runner: async () => ({ code: 0, out: 'silence_start: 5.0\nsilence_end: 6.0' }),
             probe: fakeProbe as any,
         });

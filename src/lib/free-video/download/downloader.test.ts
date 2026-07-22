@@ -7,6 +7,7 @@ import * as path from 'node:path';
 import { FreeDownloadManager } from './downloader.js';
 import type { AxiosInstance } from 'axios';
 import type { VideoResult } from '../models.js';
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../shared/runtime/paths.js';
 
 function makeVideo(url: string): VideoResult {
     return {
@@ -35,7 +36,7 @@ function makeStubClient(data: stream.Readable, status = 200): AxiosInstance {
 }
 
 test('stall guard: a stream that never sends data fails fast (does not hang)', async () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'avg-stall-'));
+    const tmp = makeWorkspaceTempDir('avg-stall-');
     try {
         // PassThrough that is opened but never receives a single chunk -> stalls.
         const stalled = new stream.PassThrough();
@@ -60,7 +61,7 @@ test('stall guard: a stream that never sends data fails fast (does not hang)', a
 });
 
 test('healthy stream completes and writes a file', async () => {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'avg-ok-'));
+    const tmp = makeWorkspaceTempDir('avg-ok-');
     try {
         const src = stream.Readable.from([Buffer.from('hello-world-bytes')]);
         const manager = new FreeDownloadManager({

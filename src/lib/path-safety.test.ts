@@ -4,6 +4,7 @@ import { ensureAllowedExtension, buildUniqueFilePath } from './path-safety';
 import * as path from 'path';
 import * as fs from 'fs';
 import os from 'os';
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../shared/runtime/paths.js';
 
 test('ensureAllowedExtension passes for allowed extensions', () => {
     ensureAllowedExtension('video.mp4', ['.mp4', '.mov']);
@@ -18,14 +19,14 @@ test('ensureAllowedExtension throws for disallowed extensions', () => {
 });
 
 test('buildUniqueFilePath returns original path when no collision', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'test-'));
+    const dir = makeWorkspaceTempDir('test-');
     const result = buildUniqueFilePath(dir, 'test.mp4');
     assert.equal(result, path.join(dir, 'test.mp4'));
     fs.rmSync(dir, { recursive: true, force: true });
 });
 
 test('buildUniqueFilePath adds counter on collision', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'test-'));
+    const dir = makeWorkspaceTempDir('test-');
     const file1 = path.join(dir, 'test.mp4');
     fs.writeFileSync(file1, '');
     const result = buildUniqueFilePath(dir, 'test.mp4');

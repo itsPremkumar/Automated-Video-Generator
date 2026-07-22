@@ -1,3 +1,4 @@
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../src/shared/runtime/paths.js';
 /**
  * enhancement.test.ts — Phase 9.1 / 4.1 / 7.2 / 8.4 pure-logic coverage.
  * No external AI, no ffmpeg binary needed for the scoring/chunking tests; the
@@ -9,6 +10,8 @@ import { scoreCandidate } from '../../../src/agentic/ai/agent.js';
 import { AssetCandidate, AssetVerification } from '../../../src/agentic/types.js';
 import { buildDuckExpression, chunkCues } from '../../../src/agentic/orchestrate.js';
 import { verifyRenderedVideo } from '../../../src/agentic/pipeline/gate.js';
+
+const __WS_TEST_TMP__ = resolveWorkspaceTempPath('tests');
 
 function mkCandidate(kind: 'image' | 'music', sceneIndex: number, localPath = '/tmp/x_720x1280.jpg'): AssetCandidate {
     return {
@@ -98,7 +101,7 @@ test('verifyRenderedVideo: detects a valid tiny MP4 and confirms audio/video', a
     const { execFileSync } = require('child_process');
     const fs = require('fs');
     const os = require('os');
-    const p = `${os.tmpdir()}/enh_${Date.now()}.mp4`;
+    const p = `${__WS_TEST_TMP__}/enh_${Date.now()}.mp4`;
     // 4s of real color + sine audio so the file exceeds the 100KB sanity floor.
     execFileSync(
         ffmpeg,

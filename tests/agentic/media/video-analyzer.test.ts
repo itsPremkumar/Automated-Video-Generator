@@ -1,3 +1,5 @@
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../src/shared/runtime/paths.js';
+const __WS_TEST_TMP__ = resolveWorkspaceTempPath('tests');
 /**
  * video-analyzer.test.ts — verifies the final-output quality analyzers using
  * ffmpeg-generated clips (no network, deterministic).
@@ -24,7 +26,7 @@ function ffmpeg(): string {
     return require('ffmpeg-static');
 }
 function makeTestsrc(): string {
-    const p = path.join(os.tmpdir(), `va-ts-${Date.now()}.mp4`);
+    const p = path.join(__WS_TEST_TMP__, `va-ts-${Date.now()}.mp4`);
     execFileSync(
         ffmpeg(),
         [
@@ -49,7 +51,7 @@ function makeTestsrc(): string {
     return p;
 }
 function makeBlack(): string {
-    const p = path.join(os.tmpdir(), `va-blk-${Date.now()}.mp4`);
+    const p = path.join(__WS_TEST_TMP__, `va-blk-${Date.now()}.mp4`);
     execFileSync(
         ffmpeg(),
         ['-y', '-f', 'lavfi', '-i', 'color=c=black:size=720x1280:rate=25:duration=2', '-t', '2', '-c:v', 'libx264', p],

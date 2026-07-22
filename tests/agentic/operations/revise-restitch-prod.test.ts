@@ -4,6 +4,7 @@ import os from 'os';
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { execFileSync } from 'child_process';
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../src/shared/runtime/paths.js';
 
 const ROOT = 'C:/one/Automated-Video-Generator';
 const FF = path.join(ROOT, 'node_modules', 'ffmpeg-static', 'ffmpeg.exe');
@@ -85,7 +86,7 @@ describe('revise.ts — production scenarios', () => {
       { name: 'rt_silent', w: 720, h: 1280, dur: 3, audio: false },
       { name: 'rt_10s', w: 1920, h: 1080, dur: 9, audio: true },
     ] as const) {
-      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rt_'));
+      const dir = makeWorkspaceTempDir('rt_');
       const sceneDur = 1;
       const nScenes = Math.max(1, Math.floor(v.dur / sceneDur));
       // Build a real N-scene master via concat so plan total matches master.

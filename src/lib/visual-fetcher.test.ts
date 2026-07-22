@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../shared/runtime/paths.js';
+const __WS_TEST_TMP__ = resolveWorkspaceTempPath('tests');
 import {
     calculateSafeTrimAfterFrames,
     estimateVideoDurationFromSize,
@@ -67,7 +69,7 @@ test('calculateSafeTrimAfterFrames trims the end buffer', () => {
 });
 
 test('estimateVideoDurationFromSize derives a bounded estimate from file size', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vf-est-'));
+    const dir = makeWorkspaceTempDir('vf-est-');
     const file = path.join(dir, 'clip.mp4');
     // 20 MB => 20 * 0.5 = 10s, clamped to [3, 30].
     fs.writeFileSync(file, Buffer.alloc(20 * 1024 * 1024));
@@ -77,7 +79,7 @@ test('estimateVideoDurationFromSize derives a bounded estimate from file size', 
 });
 
 test('estimateVideoDurationFromSize returns undefined for missing file', () => {
-    assert.equal(estimateVideoDurationFromSize(path.join(os.tmpdir(), 'does-not-exist-xyz.mp4')), undefined);
+    assert.equal(estimateVideoDurationFromSize(path.join(__WS_TEST_TMP__, 'does-not-exist-xyz.mp4')), undefined);
 });
 
 // ---------------------------------------------------------------------------

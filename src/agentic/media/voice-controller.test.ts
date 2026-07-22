@@ -7,6 +7,7 @@ import * as path from 'path';
 import { runVoiceStage } from './voice-controller.js';
 import { AgenticWorkspace } from '../management/workspace.js';
 import { killBackend } from '../../lib/speech-backend.js';
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../shared/runtime/paths.js';
 
 // Ensure the controller targets the voicebox provider + real python.
 process.env.TTS_PROVIDER = 'voicebox';
@@ -27,7 +28,7 @@ function makePlan() {
 }
 
 function makeWorkspace(): AgenticWorkspace {
-    const root = fs.mkdtempSync(path.join(process.env.TMP || 'C:/tmp', 'voice-test-'));
+    const root = makeWorkspaceTempDir('voice-test-');
     return {
         jobId: 'voice-test',
         root,

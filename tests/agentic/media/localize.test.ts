@@ -1,12 +1,13 @@
 import assert from 'node:assert';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import { test } from 'node:test';
 import { localizeSrtSidecars } from '../../../src/agentic/media/localize.js';
 import { AgentBrain } from '../../../src/agentic/ai/brain.js';
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../src/shared/runtime/paths.js';
+const __WS_TEST_TMP__ = resolveWorkspaceTempPath('tests');
 
-const tmp = path.join(os.tmpdir(), `loc-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+const tmp = path.join(__WS_TEST_TMP__, `loc-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 fs.mkdirSync(tmp, { recursive: true });
 
 const NATIVE = `1

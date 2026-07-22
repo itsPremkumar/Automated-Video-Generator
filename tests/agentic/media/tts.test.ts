@@ -1,3 +1,5 @@
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../src/shared/runtime/paths.js';
+const __WS_TEST_TMP__ = resolveWorkspaceTempPath('tests');
 /**
  * tts.test.ts — Phase 2/4.2: voiceover generation + caption sidecars.
  * Verifies the offline fallback (agent tone) path and the sidecar writer,
@@ -7,14 +9,13 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import { generateAgenticVoiceovers } from '../../../src/agentic/media/tts.js';
 import { buildPlan } from '../../../src/agentic/pipeline/plan.js';
 import { Plan } from '../../../src/agentic/types.js';
 
 function tmpWs(jobId: string) {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agentic-tts-' + jobId + '-'));
+    const root = fs.mkdtempSync(path.join(__WS_TEST_TMP__, 'agentic-tts-' + jobId + '-'));
     return { root, jobId };
 }
 

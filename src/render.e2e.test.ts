@@ -1,3 +1,4 @@
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from './shared/runtime/paths.js';
 /**
  * End-to-end render test for the video pipeline.
  *
@@ -16,13 +17,12 @@
 import { test, describe, before, after } from 'node:test';
 import * as assert from 'node:assert';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import { execSync } from 'node:child_process';
 
 // Minimal valid scene-data.json fixture (1 short scene, no external assets).
 function makeFixture(): { dir: string; sceneDataPath: string } {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'avg-render-e2e-'));
+    const dir = makeWorkspaceTempDir('avg-render-e2e-');
     const sceneData = {
         title: 'E2E Render Probe',
         orientation: 'portrait',
@@ -84,7 +84,7 @@ describe('render pipeline E2E', () => {
 
     test('renderVideo throws a clear error when scene-data.json is missing', async () => {
         const { renderVideo } = await import('./render.js');
-        const emptyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'avg-missing-'));
+        const emptyDir = makeWorkspaceTempDir('avg-missing-');
         try {
             await renderVideo(emptyDir);
             assert.fail('expected renderVideo to throw on missing scene-data.json');
@@ -98,7 +98,7 @@ describe('render pipeline E2E', () => {
     // The real render (Chromium + ffmpeg) only runs in a capable environment.
     (RUN_REAL ? test : test.skip)('renders a real video from the fixture', async () => {
         const { renderVideo } = await import('./render.js');
-        const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'avg-render-out-'));
+        const outDir = makeWorkspaceTempDir('avg-render-out-');
         try {
             await renderVideo(outDir);
             const files = fs.readdirSync(outDir);

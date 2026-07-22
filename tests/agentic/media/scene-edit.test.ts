@@ -1,3 +1,4 @@
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../src/shared/runtime/paths.js';
 /**
  * scene-edit.test.ts — verify the P1c agent-editable scene-plan API and the
  * local-asset binding logic (P1a) work deterministically and offline.
@@ -7,7 +8,6 @@
 import { test, describe } from 'node:test';
 import * as assert from 'node:assert/strict';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import { reorderScenes, deleteScene, updateScene, insertScene, readPlan } from '../../../src/agentic/media/scene-edit.js';
 import { AgenticWorkspace } from '../../../src/agentic/management/workspace.js';
@@ -45,7 +45,7 @@ function mkPlan(): Plan {
 
 let tmp: string;
 const beforeEach = () => {
-    tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'scene-edit-'));
+    tmp = makeWorkspaceTempDir('scene-edit-');
 };
 const afterEach = () => {
     fs.rmSync(tmp, { recursive: true, force: true });

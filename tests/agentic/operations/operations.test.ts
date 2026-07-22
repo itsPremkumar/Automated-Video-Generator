@@ -1,3 +1,5 @@
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../src/shared/runtime/paths.js';
+const __WS_TEST_TMP__ = resolveWorkspaceTempPath('tests');
 /**
  * operations.test.ts — verify the single-task operations layer.
  *
@@ -12,7 +14,6 @@
 import { test, describe } from 'node:test';
 import * as assert from 'node:assert/strict';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import { execFileSync } from 'child_process';
 import { mergeVideos, trimVideo, cropVideo, resizeVideo, rotateVideo, extractAudio } from '../../../src/agentic/operations/edit.js';
@@ -48,7 +49,7 @@ const ffprobe: string = (() => {
 function ffmpegCanRun(vf: string): boolean {
     try {
         const { execFileSync } = require('child_process');
-        const tmpOut = path.join(os.tmpdir(), `ffprobe-smoke-${Date.now()}.mp4`);
+        const tmpOut = path.join(__WS_TEST_TMP__, `ffprobe-smoke-${Date.now()}.mp4`);
         execFileSync(
             ffmpeg,
             ['-f', 'lavfi', '-i', 'color=c=blue:s=64x64:d=0.1', '-vf', vf, '-frames:v', '1', '-y', tmpOut],
@@ -67,7 +68,7 @@ function ffmpegCanRun(vf: string): boolean {
 
 // Use the OS temp dir (works for ffmpeg.exe on Windows AND system ffmpeg on
 // Linux/macOS — avoids a hardcoded Windows path that breaks CI on Linux).
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), '_ops-test-'));
+const tmp = makeWorkspaceTempDir('_ops-test-');
 
 /** Build a clip WITH an audio track (sine) so copy-trim/extract-audio are real. */
 function makeClip(name: string, durSec = 2, color = 'blue'): string {

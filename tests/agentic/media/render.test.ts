@@ -1,3 +1,5 @@
+import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../src/shared/runtime/paths.js';
+const __WS_TEST_TMP__ = resolveWorkspaceTempPath('tests');
 /**
  * render.test.ts — Phase 12.3 E2E: the watchable render produces a real MP4
  * with video + audio streams, using synthetic assets (no network / no TTS).
@@ -5,7 +7,6 @@
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import { renderAgenticSlideshow } from '../../../src/agentic/orchestrate.js';
 import { PipelineResult } from '../../../src/agentic/orchestrate.js';
@@ -21,7 +22,7 @@ const { execFileSync } = require('child_process');
 // runs on full builds).
 function ffmpegCanRun(vf: string): boolean {
     try {
-        const tmpOut = path.join(os.tmpdir(), `ffmpeg-smoke-${Date.now()}.mp4`);
+        const tmpOut = path.join(__WS_TEST_TMP__, `ffmpeg-smoke-${Date.now()}.mp4`);
         execFileSync(
             ffmpeg,
             ['-f', 'lavfi', '-i', 'color=c=blue:s=64x64:d=0.1', '-vf', vf, '-frames:v', '1', '-y', tmpOut],
@@ -53,7 +54,7 @@ describe('agentic/render (Phase 7 watchable)', () => {
     let res: PipelineResult;
     let outDir: string;
     before(() => {
-        outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'agentic-render-'));
+        outDir = makeWorkspaceTempDir('agentic-render-');
         const imgA = path.join(outDir, 'a.png');
         makeImg(imgA, 'navy');
         const imgB = path.join(outDir, 'b.png');
