@@ -56,33 +56,97 @@ function profileCachePath(ws: AgenticWorkspace): string {
 }
 
 /**
- * Resolve a usable profile id.
+ * Resolve a usable profile id + the engine to drive it.
  * Priority:
  *   1. VOICEBOX_PROFILE_ID env (explicit, backward-compat)
- *   2. cached id from a previous run in this workspace
- *   3. auto-create a Kokoro preset profile via POST /profiles
+ *   2. a reference clip in input/voices/*.wav → auto-clone a real voice profile
+ *   3. cached id from a previous run in this workspace
+ *   4. auto-create a Kokoro preset profile via POST /profiles
  */
-async function resolveProfileId(ws: AgenticWorkspace): Promise<string> {
+interface ResolvedProfile {
+    id: string;
+    engine: string;
+}
+
+const CLONE_ENGINE = 'chatterbox_turbo';
+
+/** Scan input/voices/ for a reference .wav (your cloned voice). Returns its path or null. */
+function findReferenceVoice(): string | null {
+    const dir = path.resolve(process.cwd(), 'input', 'voices');
+    if (!fs.existsSync(dir)) return null;
+    const clips = fs.readdirSync(dir).filter((f) => /\.(wav|mp3|flac|m4a)$/i.test(f));
+    if (clips.length === 0) return null;
+    // Use the first clip (alphabetical); ignore non-audio files.
+    return path.join(dir, clips.sort()[0]);
+}
+
+/** Auto-clone a real voice profile from a reference clip in input/voices/. */
+async function cloneFromVoicesDir(
+    clip: string,
+    cacheFile: string,
+): Promise<ResolvedProfile> {
+    const clipName = path.basename(clip);
+    // Idempotent: skip if a cloned profile for THIS clip already exists.
+    if (fs.existsSync(cacheFile)) {
+        try {
+            const c = JSON.parse(fs.readFileSync(cacheFile, 'utf-8'));
+            if (c?.sourceClip === clipName && c?.id) {
+                console.log(`reusing cloned profile for ${clipName}: ${c.id}`);
+                return { id: c.id, engine: c.engine || CLONE_ENGINE };
+            }
+        } catch { /* ignore */ }
+    }
+    console.log(`cloning real voice from ${clipName} (engine=${CLONE_ENGINE})`);
+    const create = await axios.post(
+        `${baseUrl()}/profiles`,
+        { name: `agentic-clone-${clipName}-${Date.now()}`, voice_type: 'cloned', default_engine: CLONE_ENGINE },
+        { headers: { 'Content-Type': 'application/json' }, timeout: 30000 },
+    );
+    const id = create.data?.id || create.data?.profile_id;
+    if (!id) throw new Error(`clone profile create returned no id: ${JSON.stringify(create.data)}`);
+    const form = new FormData();
+    form.append('file', new Blob([fs.readFileSync(clip)], { type: 'audio/*' }), clipName);
+    // Backend requires a non-empty reference_text (422 if empty/missing). The
+    // transcript only affects clone fidelity; for a hands-off flow we pass a
+    // placeholder. TODO: transcribe the clip (whisper) for best clone quality.
+    form.append('reference_text', 'voice reference sample');
+    await axios.post(`${baseUrl()}/profiles/${id}/samples`, form, { timeout: 60000 });
+    fs.writeFileSync(cacheFile, JSON.stringify({ id, engine: CLONE_ENGINE, sourceClip: clipName }, null, 2));
+    console.log(`cloned voice profile ${id}`);
+    return { id, engine: CLONE_ENGINE };
+}
+
+async function resolveProfileId(ws: AgenticWorkspace): Promise<ResolvedProfile> {
     const explicit = process.env.VOICEBOX_PROFILE_ID;
     if (explicit && !explicit.includes('your-voicebox-profile-id')) {
-        return explicit;
+        return { id: explicit, engine: engineName() };
     }
 
-    // 2. cached
+    // 2. reference clip in input/voices/ → auto-clone real voice
+    const clip = findReferenceVoice();
+    if (clip) {
+        try {
+            return await cloneFromVoicesDir(clip, profileCachePath(ws));
+        } catch (e: any) {
+            console.warn(`voice clone from ${clip} failed ("${e?.message}"); falling back to preset`);
+        }
+    }
+
+    // 3. cached
     const cacheFile = profileCachePath(ws);
     if (fs.existsSync(cacheFile)) {
         try {
             const cached = JSON.parse(fs.readFileSync(cacheFile, 'utf-8'));
             if (cached?.id) {
                 console.log(`reusing cached profile ${cached.id}`);
-                return cached.id;
+                return { id: cached.id, engine: cached.engine || engineName() };
             }
         } catch {
             /* ignore corrupt cache */
         }
     }
 
-    // 3. auto-provision (idempotent: reuse existing matching profile first)
+    // 4. auto-provision (idempotent: reuse existing matching profile first)
     const engine = engineName();
     const voice = presetVoice();
     try {
@@ -93,7 +157,7 @@ async function resolveProfileId(ws: AgenticWorkspace): Promise<string> {
         if (existing?.id) {
             console.log(`reusing existing ${engine}/${voice} profile ${existing.id}`);
             fs.writeFileSync(cacheFile, JSON.stringify({ id: existing.id, engine, voice }, null, 2));
-            return existing.id;
+            return { id: existing.id, engine };
         }
     } catch {
         /* listing failed — fall through to create */
@@ -114,7 +178,7 @@ async function resolveProfileId(ws: AgenticWorkspace): Promise<string> {
     if (!id) throw new Error(`profile create returned no id: ${JSON.stringify(res.data)}`);
     fs.writeFileSync(cacheFile, JSON.stringify({ id, engine, voice }, null, 2));
     console.log(`auto-provisioned profile ${id}`);
-    return id;
+    return { id, engine };
 }
 
 /** Generate one scene's audio via the live backend. Throws on failure. */
@@ -199,12 +263,12 @@ export async function runVoiceStage(
     if (!up) throw new Error('speech backend unavailable — caller should fall back to Edge-TTS');
 
     report(15, 'resolving voice profile');
-    const profileId = await resolveProfileId(ws);
+    const { id: profileId, engine } = await resolveProfileId(ws);
 
-    const engine = engineName();
     // Preload only for engines backed by the default model loader (chatterbox/qwen).
     // Kokoro loads lazily inside /speak and does NOT support /models/load
     // (that endpoint drives the default Qwen/Chatterbox loader and 500s on "kokoro").
+    // A cloned real voice uses chatterbox_turbo → preload it for a warm first scene.
     const preloadable = engine !== 'kokoro';
     if (preloadable) {
         report(30, `preloading engine: ${engine}`);
