@@ -34,7 +34,11 @@ const GEMINI_MAX_CONCURRENCY = Math.max(1, Number.parseInt(process.env.GEMINI_MA
 const OLLAMA_MAX_CONCURRENCY = Math.max(1, Number.parseInt(process.env.OLLAMA_MAX_CONCURRENCY || '2', 10) || 2);
 const RAW_AI_PROVIDER = process.env.AI_PROVIDER;
 const AI_PROVIDER = RAW_AI_PROVIDER !== undefined ? RAW_AI_PROVIDER.trim().toLowerCase() || '' : 'ollama';
-const OPENVERSE_ENABLED = process.env.OPENVERSE_ENABLED !== 'false';
+// Live check (not a captured const) so tests can disable Openverse at runtime
+// via OPENVERSE_ENABLED=false without re-importing the module.
+function openverseEnabled(): boolean {
+    return process.env.OPENVERSE_ENABLED !== 'false';
+}
 const MEDIA_VERIFICATION_ENABLED = process.env.MEDIA_VERIFICATION_ENABLED !== 'false';
 
 const BASE_URL = 'https://api.pexels.com/v1';
@@ -268,7 +272,7 @@ export async function searchFreeImages(
     const results: MediaAsset[] = [];
 
     // Openverse via our fetcher
-    if (OPENVERSE_ENABLED) {
+    if (openverseEnabled()) {
         try {
             const openverse = await searchOpenverseImages(query, count);
             for (const img of openverse) {

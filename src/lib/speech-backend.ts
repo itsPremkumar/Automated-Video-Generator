@@ -36,10 +36,15 @@ let spawnedUrl = '';
 /** True if the backend HTTP server answers /health or /models/status. */
 export async function isBackendUp(): Promise<boolean> {
     try {
-        await axios.get(`${baseUrl()}/models/status`, { timeout: 2500 });
+        await axios.get(`${baseUrl()}/health`, { timeout: 2500 });
         return true;
     } catch {
-        return false;
+        try {
+            await axios.get(`${baseUrl()}/models/status`, { timeout: 2500 });
+            return true;
+        } catch {
+            return false;
+        }
     }
 }
 
@@ -85,8 +90,12 @@ export async function ensureBackend(): Promise<boolean> {
     backendProc.stderr?.on('data', (d) => console.warn(String(d).trim()));
     backendProc.on('exit', (code) => console.log(`backend exited (code ${code})`));
 
-    // poll until /models/status answers (or timeout after 40s)
-    const deadline = Date.now() + 40_000;
+    // Poll until /health (or /models/status) answers. Cold-starting the
+    // PyTorch/CUDA backend can take >40s when the machine is RAM-pressured
+    // (e.g. inside the full `npm test` suite after other heavy tests). Use a
+    // generous, configurable deadline so the voice stage doesn't flake under load.
+    const startupTimeoutMs = Number(process.env.VOICEBOX_STARTUP_TIMEOUT_MS) || 120_000;
+    const deadline = Date.now() + startupTimeoutMs;
     while (Date.now() < deadline) {
         await new Promise((r) => setTimeout(r, 1000));
         if (await isBackendUp()) {

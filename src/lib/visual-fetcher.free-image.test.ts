@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import * as proxy from './visual-fetcher.js';
 
 test('searchFreeImages maps ImageResult -> MediaAsset and is network-safe', async () => {
+    process.env.OPENVERSE_ENABLED = 'false'; // isolate from live Openverse in this unit test
     const adapter = (proxy as any).freeImageAdapter;
     const orig = adapter.searchAll.bind(adapter);
     adapter.searchAll = async () => [
@@ -40,10 +41,12 @@ test('searchFreeImages maps ImageResult -> MediaAsset and is network-safe', asyn
         assert.equal(out[1].width, 0); // null dims coerced to 0
     } finally {
         adapter.searchAll = orig;
+        delete process.env.OPENVERSE_ENABLED;
     }
 });
 
 test('searchFreeImages returns [] on adapter failure (safe, no throw)', async () => {
+    process.env.OPENVERSE_ENABLED = 'false'; // isolate from live Openverse in this unit test
     const adapter = (proxy as any).freeImageAdapter;
     const orig = adapter.searchAll.bind(adapter);
     adapter.searchAll = async () => {
@@ -54,5 +57,6 @@ test('searchFreeImages returns [] on adapter failure (safe, no throw)', async ()
         assert.deepEqual(out, []);
     } finally {
         adapter.searchAll = orig;
+        delete process.env.OPENVERSE_ENABLED;
     }
 });

@@ -74,6 +74,7 @@
     "test": "npm run typecheck && npm run test:unit",
     "test:unit": "node --import tsx --test --test-timeout=120000 --experimental-test-module-mocks \"src/**/*.test.ts\" \"remotion/**/*.test.ts\" \"tests/**/*.test.ts\"",
     "test:render": "tsx --test \"src/render.e2e.test.ts\"",
+    "qa:smoke": "tsx src/adapters/cli/agentic-modular.ts plan --file input/scripts/qa-smoke-sample.json && tsx src/adapters/cli/agentic-modular.ts visuals --file input/scripts/qa-smoke-sample.json && tsx src/adapters/cli/agentic-modular.ts voice --file input/scripts/qa-smoke-sample.json && tsx src/adapters/cli/agentic-modular.ts render --file input/scripts/qa-smoke-sample.json",
     "test:coverage": "node --import tsx --experimental-test-coverage --test --experimental-test-module-mocks \"src/**/*.test.ts\" \"remotion/**/*.test.ts\" \"tests/**/*.test.ts\"",
     "mcp": "tsx src/mcp-server.ts",
     "agentic": "tsx bin/agentic-run.ts",
