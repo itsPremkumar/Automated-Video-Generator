@@ -102,7 +102,10 @@
     "agentic:edit": "tsx src/adapters/cli/agentic-modular.ts edit",
     "agentic:list": "tsx src/adapters/cli/agentic-modular.ts list",
     "agentic:modular": "tsx src/adapters/cli/agentic-modular.ts",
-    "agentic:editor": "tsx src/adapters/cli/agentic-editor.ts"
+    "agentic:editor": "tsx src/adapters/cli/agentic-editor.ts",
+    "agentic:revise": "tsx src/adapters/cli/agentic-modular.ts revise",
+    "agentic:critique": "tsx src/adapters/cli/agentic-modular.ts critique",
+    "agentic:reorder": "tsx src/adapters/cli/agentic-modular.ts reorder"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.28.0",

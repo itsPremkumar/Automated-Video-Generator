@@ -28,6 +28,11 @@ import { detectScenes } from './scene.js';
 import { autoReframe } from './reframe.js';
 import { reduceNoise } from './noise.js';
 import { applyBrandKit } from './brand.js';
+import { convertFormat, toGif, convertAudio, ConvertResult } from './convert.js';
+import { imagesToVideo, videoToImages } from './image-video.js';
+import { separateAudio, separateVideo, muteVideo } from './demux.js';
+import { downloadSocial } from './social-dl.js';
+import { writeScript } from './script.js';
 import * as path from 'path';
 import { RouteResult, RoutedTask, RoutedChain, isChain, routeTask } from './route.js';
 import { runAgenticPipeline } from '../orchestrate.js';
@@ -466,6 +471,70 @@ async function runOne(task: RoutedTask, input: RunInput): Promise<DispatchResult
                     detail: r.detail,
                     gate: await gate(r.output),
                 };
+            }
+            case 'convert': {
+                if (!f)
+                    return { kind: task.kind, summary: task.summary, ok: false, detail: 'convert needs an input file' };
+                const r: ConvertResult = await convertFormat(f, a.target || 'mp4', input.out);
+                return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
+            }
+            case 'to_gif': {
+                if (!f)
+                    return { kind: task.kind, summary: task.summary, ok: false, detail: 'to_gif needs an input file' };
+                const r: ConvertResult = await toGif(f, input.out, a.fps ?? 15, a.width ?? 480);
+                return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
+            }
+            case 'convert_audio': {
+                if (!f)
+                    return { kind: task.kind, summary: task.summary, ok: false, detail: 'convert_audio needs an input file' };
+                const r: ConvertResult = await convertAudio(f, a.target || 'mp3', input.out);
+                return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
+            }
+            case 'images_to_video': {
+                const folder = f ?? a.folder ?? (input.files && input.files[0]);
+                if (!folder)
+                    return { kind: task.kind, summary: task.summary, ok: false, detail: 'images_to_video needs a folder/files' };
+                const r = await imagesToVideo(folder, input.out, {
+                    durationPerImage: a.durationPerImage,
+                });
+                return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
+            }
+            case 'video_to_images': {
+                if (!f)
+                    return { kind: task.kind, summary: task.summary, ok: false, detail: 'video_to_images needs an input file' };
+                const r = await videoToImages(f, input.out ? path.dirname(input.out) : undefined, a.everyNthFrame ?? a.fps ? Math.round(25 / (a.fps || 1)) : 30);
+                return { kind: task.kind, summary: task.summary, ok: r.ok, outputs: r.outputs, detail: r.detail };
+            }
+            case 'separate_audio': {
+                if (!f)
+                    return { kind: task.kind, summary: task.summary, ok: false, detail: 'separate_audio needs an input file' };
+                const r = await separateAudio(f, input.out);
+                return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
+            }
+            case 'separate_video': {
+                if (!f)
+                    return { kind: task.kind, summary: task.summary, ok: false, detail: 'separate_video needs an input file' };
+                const r = await separateVideo(f, input.out);
+                return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
+            }
+            case 'mute_video': {
+                if (!f)
+                    return { kind: task.kind, summary: task.summary, ok: false, detail: 'mute_video needs an input file' };
+                const r = await muteVideo(f, input.out);
+                return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
+            }
+            case 'social_download': {
+                const url = a.url;
+                if (!url)
+                    return { kind: task.kind, summary: task.summary, ok: false, detail: 'social_download needs a URL' };
+                const r = await downloadSocial(url, a.mode ?? 'both', input.out);
+                return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
+            }
+            case 'write_script': {
+                const topic = a.topic || extra.text || '';
+                if (!topic) return { kind: task.kind, summary: task.summary, ok: false, detail: 'write_script needs a topic' };
+                const r = await writeScript(topic, input.voice);
+                return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.script, detail: r.detail };
             }
             case 'full_video': {
                 const res = await runAgenticPipeline({

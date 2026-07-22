@@ -1,12 +1,6 @@
 /**
- * demux.ts — SEPARATE audio and video streams (single task). Zero-cost ffmpeg.
- *
- *  - extractAudioStream: pull the audio track out as a standalone file
- *    (re-encode to a chosen format). Distinct from extractAudio in edit.ts
- *    which is the canonical single-task; this covers "give me just the audio
- *    file in .wav/.m4a".
- *  - extractVideoStream: produce a SILENT video (no audio track).
- *  - muteVideo: keep the video but remove/zero the audio track.
+ * demux.ts — separate / mute audio+video streams (single-task ops).
+ * ZERO-COST: ffmpeg-static only. New standalone module.
  */
 
 import * as fs from 'fs';
@@ -19,57 +13,36 @@ export interface DemuxResult {
     detail: string;
 }
 
-export async function extractAudioStream(
-    file: string,
-    out?: string,
-    fmt: 'mp3' | 'wav' | 'm4a' = 'mp3',
-): Promise<DemuxResult> {
-    if (!fs.existsSync(file)) return { ok: false, detail: `input not found: ${file}` };
-    const output = out ?? path.join(process.cwd(), 'output', `audio_${Date.now()}.${fmt}`);
+function ensureFile(file: string): string | null {
+    if (!fs.existsSync(file)) return `input not found: ${file}`;
+    return null;
+}
+
+/** Pull the audio stream out as a standalone file (mp3). */
+export async function separateAudio(file: string, out?: string): Promise<DemuxResult> {
+    const err = ensureFile(file);
+    if (err) return { ok: false, detail: err };
+    const output = out ?? path.join(process.cwd(), 'output', `audio_${Date.now()}.mp3`);
     fs.mkdirSync(path.dirname(output), { recursive: true });
-    const acodec = fmt === 'mp3' ? 'libmp3lame' : fmt === 'm4a' ? 'aac' : 'pcm_s16le';
-    const { code, out: log } = await runFfmpeg(['-i', file, '-vn', '-c:a', acodec, '-y', output]);
-    if (code !== 0) return { ok: false, detail: `audio extract failed:\n${log.slice(-600)}` };
-    if (!fs.existsSync(output)) return { ok: false, detail: 'audio not produced' };
+    const { code, out: log } = await runFfmpeg(['-i', file, '-vn', '-c:a', 'libmp3lame', '-q:a', '2', '-y', output]);
+    if (code !== 0) return { ok: false, detail: `separate audio failed:\n${log.slice(-600)}` };
+    if (!fs.existsSync(output)) return { ok: false, detail: 'no audio output' };
     return { ok: true, output, detail: `extracted audio -> ${output}` };
 }
 
-export async function extractVideoStream(file: string, out?: string): Promise<DemuxResult> {
-    if (!fs.existsSync(file)) return { ok: false, detail: `input not found: ${file}` };
+/** Pull the silent video stream (drop audio). */
+export async function separateVideo(file: string, out?: string): Promise<DemuxResult> {
+    const err = ensureFile(file);
+    if (err) return { ok: false, detail: err };
     const output = out ?? path.join(process.cwd(), 'output', `silent_${Date.now()}.mp4`);
     fs.mkdirSync(path.dirname(output), { recursive: true });
-    const { code, out: log } = await runFfmpeg([
-        '-i',
-        file,
-        '-an',
-        '-c:v',
-        'libx264',
-        '-pix_fmt',
-        'yuv420p',
-        '-y',
-        output,
-    ]);
-    if (code !== 0) return { ok: false, detail: `video extract failed:\n${log.slice(-600)}` };
-    if (!fs.existsSync(output)) return { ok: false, detail: 'video not produced' };
-    return { ok: true, output, detail: `extracted silent video -> ${output}` };
+    const { code, out: log } = await runFfmpeg(['-i', file, '-an', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-y', output]);
+    if (code !== 0) return { ok: false, detail: `separate video failed:\n${log.slice(-600)}` };
+    if (!fs.existsSync(output)) return { ok: false, detail: 'no video output' };
+    return { ok: true, output, detail: `silent video -> ${output}` };
 }
 
+/** Remove the audio track entirely (alias of separate_video convenience). */
 export async function muteVideo(file: string, out?: string): Promise<DemuxResult> {
-    if (!fs.existsSync(file)) return { ok: false, detail: `input not found: ${file}` };
-    const output = out ?? path.join(process.cwd(), 'output', `muted_${Date.now()}.mp4`);
-    fs.mkdirSync(path.dirname(output), { recursive: true });
-    const { code, out: log } = await runFfmpeg([
-        '-i',
-        file,
-        '-c:v',
-        'libx264',
-        '-pix_fmt',
-        'yuv420p',
-        '-an',
-        '-y',
-        output,
-    ]);
-    if (code !== 0) return { ok: false, detail: `mute failed:\n${log.slice(-600)}` };
-    if (!fs.existsSync(output)) return { ok: false, detail: 'video not produced' };
-    return { ok: true, output, detail: `muted -> ${output}` };
+    return separateVideo(file, out ?? path.join(process.cwd(), 'output', `muted_${Date.now()}.mp4`));
 }

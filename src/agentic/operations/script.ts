@@ -1,54 +1,44 @@
 /**
- * script.ts - WRITE A SCRIPT from a topic (single task). 100% FREE.
- * Uses writeScriptHeuristic (no API key, no network). No OpenAI/Gemini required.
+ * script.ts — write_script single-task op. Generates a short-form video script
+ * from a topic. ZERO-COST: uses AgentBrain when a free model is configured,
+ * else a deterministic heuristic. New standalone module.
  */
-import * as fs from 'fs';
-import * as path from 'path';
-import { writeScriptHeuristic } from '../ai/agent.js';
+
+import { AgentBrain } from '../ai/brain.js';
+import { envOpts, hasModel } from '../ai/brain.js';
 
 export interface ScriptResult {
     ok: boolean;
     script?: string;
-    path?: string;
     detail: string;
 }
 
-const HOOKS = [
-    'Did you know that',
-    'Here is something most people miss:',
-    'Let me show you why this matters.',
-    'The secret is simpler than you think.',
-];
-const OUTROS = [
-    'If this helped, save it for later.',
-    'Follow for more like this.',
-    'Try it today and see the difference.',
-];
+/**
+ * Write a tight, hook→build→payoff script for `topic`.
+ * Falls back to a rule-based template when no model is configured / offline.
+ */
+export async function writeScript(topic: string, voice?: string): Promise<ScriptResult> {
+    const clean = (topic || '').trim();
+    if (!clean) return { ok: false, detail: 'write_script needs a topic' };
 
-export async function writeScript(topic: string, out?: string): Promise<ScriptResult> {
-    const t = (topic || '').trim();
-    if (!t) return { ok: false, detail: 'A topic is required to write a script.' };
-
-    const body = writeScriptHeuristic(t, t);
-    const hook = HOOKS[Math.floor(Math.random() * HOOKS.length)];
-    const outro = OUTROS[Math.floor(Math.random() * OUTROS.length)];
-    const script = [
-        `# ${t.charAt(0).toUpperCase() + t.slice(1)}`,
-        '',
-        `[HOOK] ${hook} ${body.split('\n')[0] ?? ''}`,
-        '',
-        '[BODY]',
-        body,
-        '',
-        `[OUTRO] ${outro}`,
-        '',
-        '[CTA] Like, comment, and subscribe.',
-    ].join('\n');
-
-    if (out) {
-        fs.mkdirSync(path.dirname(out), { recursive: true });
-        fs.writeFileSync(out, script);
-        return { ok: true, script, path: out, detail: `Script written to ${out}` };
+    const brain = new AgentBrain(envOpts());
+    if (hasModel(envOpts())) {
+        try {
+            const r = await brain.writeScript?.(clean, clean);
+            if (r && r.length > 10) {
+                return { ok: true, script: r, detail: `script generated (model) for "${clean}"` };
+            }
+        } catch {
+            /* fall to heuristic */
+        }
     }
-    return { ok: true, script, detail: 'Script generated (heuristic, no API key).' };
+
+    const t = clean.replace(/\.$/, '');
+    const script = [
+        `Did you know ${t} is changing faster than you think?`,
+        `Here's the part most people miss about ${t}.`,
+        `The truth is, ${t} rewards the ones who start early.`,
+        `So if you're curious about ${t}, this is your sign to dig deeper.`,
+    ].join(' ');
+    return { ok: true, script, detail: `script generated (heuristic) for "${clean}"` };
 }

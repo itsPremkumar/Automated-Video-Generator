@@ -49,6 +49,7 @@
 import 'dotenv/config';
 import * as fs from 'fs';
 import * as path from 'path';
+import { estimateAudioDurationSafe } from '../../agentic/orchestrator/ffmpeg.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -351,8 +352,26 @@ async function runVoice(cliArgs: CliArgs) {
         console.log(`  [VOICE] ${job.title || id}${targetScene ? ` scene ${targetScene}` : ''}`);
         console.log(`═══════════════════════════════════════════`);
 
+        // ZERO-CONFIG parity with the orchestrator path: prefer the
+        // self-driving kokoro/chatterbox backend (runVoiceStage), fall back to
+        // the Edge-TTS dispatcher only if the backend cannot come up. This
+        // removes the QA_REPORT integration gap (modular voice != orchestrator voice).
+        const { runVoiceStageSafe } = await import('../../agentic/media/voice-controller.js');
         const { generateAgenticVoiceovers } = await import('../../agentic/media/tts.js');
-        const voiceovers = await generateAgenticVoiceovers(plan, { root: ws.root } as any, job.voice);
+        const { estimateAudioDurationSafe } = await import('../../agentic/orchestrator/ffmpeg.js');
+        const rootWs = { root: ws.root } as any;
+        let voiceovers;
+        try {
+            const vres = await runVoiceStageSafe(plan, rootWs, job.voice);
+            voiceovers = {
+                voiceoverDriven: vres.voiceoverDriven,
+                scenes: vres.voices.map((v: any) => ({ sceneIndex: v.sceneIndex, audioPath: v.audioPath, durationSec: v.durationSec, captionSegments: [] })),
+                fallbackUsed: vres.fallbackUsed,
+            };
+        } catch (e: any) {
+            console.warn(`  ⚠ kokoro voice stage unavailable ("${e?.message}"); falling back to Edge-TTS dispatcher`);
+            voiceovers = await generateAgenticVoiceovers(plan, { root: ws.root } as any, job.voice);
+        }
 
         if (!targetScene) {
             writeJson(ws.root, 'voiceover-meta.json', {
@@ -591,16 +610,37 @@ async function runEdit(cliArgs: CliArgs) {
         writeJson(ws.root, 'plan.json', plan);
         console.log(`  ✅ Plan updated`);
 
-        // If voice changed, regenerate TTS for this scene
+        // If voice changed, regenerate TTS for this scene AND re-extract
+        // word-timed captions so the burned text stays in sync with the new
+        // audio (fixes the caption-desync gap when editing voice).
         if (cliArgs.voice) {
             console.log(`  🔄 Regenerating voiceover for scene ${sceneNum} with "${cliArgs.voice}"...`);
+            const { runVoiceStageSafe } = await import('../../agentic/media/voice-controller.js');
             const { generateAgenticVoiceovers } = await import('../../agentic/media/tts.js');
-            const singleScenePlan = {
-                ...plan,
-                scenes: [scene],
-            };
-            await generateAgenticVoiceovers(singleScenePlan, { root: ws.root } as any, job.voice);
-            console.log(`  ✅ Scene ${sceneNum} voiceover regenerated`);
+            const { syllableWordTimings, writeCaptionSidecars } = await import('../../lib/captions.js');
+            const audioDir = ws.audioDir;
+            const outWav = path.join(audioDir, `scene_${sceneNum}_voice.wav`);
+            const outMp3 = path.join(audioDir, `scene_${sceneNum}_voice.mp3`);
+            try {
+                await runVoiceStageSafe({ ...plan, scenes: [scene] } as any, { root: ws.root } as any, String(cliArgs.voice));
+            } catch {
+                await generateAgenticVoiceovers({ ...plan, scenes: [scene] } as any, { root: ws.root } as any, String(cliArgs.voice));
+            }
+            // Re-extract caption timings from the regenerated audio so captions match.
+            const audioFile = [outWav, outMp3].find((f) => fs.existsSync(f));
+            if (audioFile) {
+                try {
+                    const dur = await estimateAudioDurationSafe(audioFile);
+                    const segs = syllableWordTimings(scene.voiceoverText || '', dur || scene.durationSec);
+                    scene.captionSegments = segs;
+                    writeJson(ws.root, 'plan.json', plan);
+                    console.log(`  ✅ Scene ${sceneNum} voiceover + captions regenerated`);
+                } catch {
+                    console.log(`  ✅ Scene ${sceneNum} voiceover regenerated (caption timings kept)`);
+                }
+            } else {
+                console.log(`  ✅ Scene ${sceneNum} voiceover regenerated`);
+            }
         }
 
         // If visual changed, re-download
@@ -683,6 +723,20 @@ async function runEdit(cliArgs: CliArgs) {
                 if (mp4 && fs.existsSync(mp4)) {
                     const size = fs.statSync(mp4).size;
                     console.log(`  ✅ Edited scene ${sceneNum} rendered: ${mp4} (${(size / 1024).toFixed(0)} KB)`);
+                    // Contact-sheet: extract a few frames so the user can SEE
+                    // the edit without scrubbing the full video.
+                    try {
+                        const ffmpeg: string = require('ffmpeg-static');
+                        const sheetDir = path.join(ws.root, 'verification', `scene_${sceneNum}_sheet`);
+                        fs.mkdirSync(sheetDir, { recursive: true });
+                        const sheet = path.join(sheetDir, 'contact-sheet.png');
+                        const probe = require('child_process').spawnSync(ffmpeg, [
+                            '-i', mp4, '-vf', 'thumbnail,scale=720:-1,tile=4x1', '-frames:v', '1', sheet,
+                        ], { stdio: 'ignore' });
+                        if (probe.status === 0 && fs.existsSync(sheet)) {
+                            console.log(`  🖼 contact-sheet: ${sheet}`);
+                        }
+                    } catch { /* contact-sheet is best-effort */ }
                 }
             } catch (e: any) {
                 console.error(`  ✖ Scene render failed: ${e.message}`);
@@ -860,6 +914,110 @@ async function runDoctor() {
     console.log(`\n  Doctor check complete.\n`);
 }
 
+// ─── Scene Reorder ──────────────────────────────────────────────────────
+
+async function runReorder(cliArgs: CliArgs) {
+    const jobs = readJobJson();
+    const orderRaw = cliArgs.order as string | undefined;
+    if (!orderRaw) {
+        console.error('✖ Usage: reorder --order 4,1,2,3');
+        process.exit(1);
+    }
+    const order = orderRaw.split(',').map((s) => parseInt(s.trim(), 10)).filter((n) => n >= 1);
+
+    for (const job of jobs) {
+        const id = job.id || `job_${Date.now()}`;
+        const ws = workspaceFor(id);
+        const plan = readJson(ws.root, 'plan.json');
+        if (!plan) {
+            console.error(`✖ No plan found for job "${id}". Run "plan" first.`);
+            continue;
+        }
+        const n = plan.scenes.length;
+        if (order.length !== n || new Set(order).size !== n) {
+            console.error(`✖ --order must list all ${n} scene numbers exactly once (got ${orderRaw})`);
+            continue;
+        }
+        // Reorder scenes by the requested 1-based order, renumber sceneNumber.
+        const byNum = new Map<any, any>(plan.scenes.map((s: any) => [s.sceneNumber, s]));
+        plan.scenes = order.map((num, i) => {
+            const sc: any = byNum.get(num);
+            sc.sceneNumber = i + 1;
+            return sc;
+        });
+        plan.totalDurationSec = plan.scenes.reduce((acc: number, s: any) => acc + (s.durationSec || 0), 0);
+        writeJson(ws.root, 'plan.json', plan);
+        console.log(`  ✅ Reordered ${n} scenes → [${order.join(', ')}]. Re-render to apply:`);
+        console.log(`     npm run agentic:modular render`);
+    }
+}
+
+// ─── Critique (Director's Critique) ───────────────────────────────────
+
+async function runCritique(cliArgs: CliArgs) {
+    const jobs = readJobJson();
+    for (const job of jobs) {
+        const id = job.id || `job_${Date.now()}`;
+        const ws = workspaceFor(id);
+        const planPath = path.join(ws.root, 'plan.json');
+        const outDir = outputFor(id);
+        if (!fs.existsSync(outDir)) {
+            console.error(`✖ No output for job "${id}". Render first.`);
+            continue;
+        }
+        const mp4s = fs.readdirSync(outDir).filter((f) => f.endsWith('.mp4') && !f.includes('scene_'));
+        if (mp4s.length === 0) {
+            console.error(`✖ No rendered MP4 in ${outDir}`);
+            continue;
+        }
+        const mp4 = path.join(outDir, mp4s[0]);
+        const { critiqueVideo } = await import('../../agentic/operations/critique.js');
+        const rep = await critiqueVideo(mp4, { planPath });
+        console.log(`\n═══════════════════════════════════════════`);
+        console.log(`  [CRITIQUE] ${job.title || id} — ${rep.ok ? 'PASS' : 'NEEDS WORK'}`);
+        console.log(`═══════════════════════════════════════════`);
+        console.log(`  dims ${rep.raw.width}x${rep.raw.height} ${rep.raw.codec}, peak ${rep.raw.peakDb}dB, longestBlack ${rep.raw.longestBlack}s`);
+        if (rep.suggestions.length === 0) {
+            console.log('  ✅ No issues found.');
+        } else {
+            for (const s of rep.suggestions) {
+                const where = s.scope === 'global' ? 'GLOBAL' : `scene ${s.scope + 1}`;
+                console.log(`  [${s.severity}] ${where}: ${s.issue}`);
+            }
+            console.log(`\n  💡 Auto-fix: npm run agentic:modular revise --job ${id} --auto`);
+        }
+    }
+}
+
+// ─── Revise (close feedback loop) ─────────────────────────────────────
+
+async function runRevise(cliArgs: CliArgs) {
+    const jobs = readJobJson();
+    for (const job of jobs) {
+        const id = job.id || `job_${Date.now()}`;
+        const notes = (cliArgs.notes as string) || (cliArgs.auto ? 'auto-critique fixes' : 'manual revision');
+        const { reviseJob, critiqueAndRevise } = await import('../../agentic/operations/revise.js');
+        let report;
+        if (cliArgs.auto) {
+            const outDir = outputFor(id);
+            const mp4s = fs.existsSync(outDir) ? fs.readdirSync(outDir).filter((f) => f.endsWith('.mp4') && !f.includes('scene_')) : [];
+            if (mp4s.length === 0) {
+                console.error(`✖ No rendered MP4 to auto-critique for ${id}`);
+                continue;
+            }
+            const mp4 = path.join(outDir, mp4s[0]);
+            report = await critiqueAndRevise(id, mp4, path.join(workspaceFor(id).root, 'plan.json'), notes);
+        } else {
+            report = await reviseJob(id, notes);
+        }
+        console.log(`\n═══════════════════════════════════════════`);
+        console.log(`  [REVISE] ${job.title || id} — round ${report.round} ${report.ok ? 'OK' : 'FAILED'}`);
+        console.log(`═══════════════════════════════════════════`);
+        console.log(`  ${report.detail}`);
+        if (report.outputPath) console.log(`  📹 ${report.outputPath}`);
+    }
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -875,6 +1033,9 @@ async function main() {
         console.log(`    voice             Generate voiceovers`);
         console.log(`    render            Render video from workspace`);
         console.log(`    edit              Edit specific scenes (--scene N --visual kw --voice name)`);
+        console.log(`    reorder           Reorder scenes (--order 4,1,2,3) then re-render`);
+        console.log(`    critique          Director's Critique of the rendered MP4 (black/clip/aspect)`);
+        console.log(`    revise            Re-edit a delivered job from change notes (--auto to self-heal)`);
         console.log(`    list              Show workspace state`);
         console.log(`    doctor            Check system health`);
         console.log(`    pipeline          Run all stages (default)`);
@@ -912,6 +1073,15 @@ async function main() {
             break;
         case 'edit':
             await runEdit(args);
+            break;
+        case 'reorder':
+            await runReorder(args);
+            break;
+        case 'critique':
+            await runCritique(args);
+            break;
+        case 'revise':
+            await runRevise(args);
             break;
         case 'list':
             await runList();

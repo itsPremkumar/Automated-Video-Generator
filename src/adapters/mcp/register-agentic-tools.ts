@@ -285,6 +285,77 @@ export function registerAgenticTools(server: McpServer) {
         },
     );
 
+    server.registerTool(
+        'agentic_revise',
+        {
+            title: 'Agentic Revise (close the feedback loop)',
+            description:
+                'Re-edit a delivered job from a change request. Opens a revision round on the review thread, re-renders a NEW jobId (non-destructive), and binds it back. Use after agentic_run / agentic_render.',
+            inputSchema: z.object({
+                jobId: z.string(),
+                notes: z.string().min(3),
+                hints: z
+                    .array(
+                        z.object({
+                            scope: z.enum(['script', 'music', 'visuals', 'captions', 'color', 'other']),
+                            scene: z.number().optional(),
+                            detail: z.string(),
+                        }),
+                    )
+                    .optional(),
+                autoCritique: z.boolean().optional().describe('If true, critique the rendered MP4 first and auto-apply fixes'),
+            }) as any,
+        },
+        async (args: any) => {
+            const { reviseJob, critiqueAndRevise } = await import('../../agentic/operations/revise.js');
+            const wsRoot = workspaceRootFor(args.jobId);
+            const planPath = path.join(wsRoot, 'plan.json');
+            let report;
+            if (args.autoCritique) {
+                const candidates = fs.existsSync(path.join(process.cwd(), 'output', args.jobId))
+                    ? fs.readdirSync(path.join(process.cwd(), 'output', args.jobId)).filter((f: string) => f.endsWith('.mp4'))
+                    : [];
+                const mp4 = candidates[0] ? path.join(process.cwd(), 'output', args.jobId, candidates[0]) : '';
+                if (!mp4) return errorResponse('No rendered MP4 found to critique for ' + args.jobId);
+                report = await critiqueAndRevise(args.jobId, mp4, planPath, args.notes);
+            } else {
+                report = await reviseJob(args.jobId, args.notes, args.hints ?? []);
+            }
+            if (!report.ok) return errorResponse(`Revise failed: ${report.detail}`);
+            return textResponse(
+                `REVISED (round ${report.round}). New job: ${report.revisionJobId}\nOutput: ${report.outputPath}\n${report.detail}`,
+            );
+        },
+    );
+
+    server.registerTool(
+        'agentic_critique',
+        {
+            title: 'Agentic Critique (Director’s Critique)',
+            description:
+                'Watch the rendered MP4 and return structured edit suggestions (black frames, clipping, aspect, caption overlaps). Offline; opt-in vision model when configured.',
+            inputSchema: z.object({ jobId: z.string(), mp4Path: z.string().optional() }) as any,
+        },
+        async (args: any) => {
+            const { critiqueVideo } = await import('../../agentic/operations/critique.js');
+            const wsRoot = workspaceRootFor(args.jobId);
+            const planPath = path.join(wsRoot, 'plan.json');
+            let mp4 = args.mp4Path;
+            if (!mp4 && fs.existsSync(path.join(process.cwd(), 'output', args.jobId))) {
+                const cands = fs
+                    .readdirSync(path.join(process.cwd(), 'output', args.jobId))
+                    .filter((f: string) => f.endsWith('.mp4'));
+                mp4 = cands[0] ? path.join(process.cwd(), 'output', args.jobId, cands[0]) : '';
+            }
+            if (!mp4 || !fs.existsSync(mp4)) return errorResponse('No rendered MP4 found for ' + args.jobId);
+            const rep = await critiqueVideo(mp4, { planPath });
+            const lines = rep.suggestions.length
+                ? rep.suggestions.map((s: any) => `- [${s.severity}] ${s.scope === 'global' ? 'GLOBAL' : 'scene ' + (s.scope + 1)}: ${s.issue}`).join('\n')
+                : 'No issues found — video looks clean.';
+            return textResponse(`Critique (${rep.ok ? 'PASS' : 'NEEDS WORK'}):\n${lines}`);
+        },
+    );
+
     async function recordDecision(args: any, decision: 'approved' | 'rejected') {
         const s = state.get(args.jobId);
         if (!s) return errorResponse('No job state.');

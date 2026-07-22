@@ -351,6 +351,11 @@ function classifyOne(t: string): RoutedTask {
         };
     }
 
+    // ── TO GIF (standalone, before generic convert) ──
+    if (/\b(gif|make a gif|create a gif|turn .* into a gif|export as gif)\b/.test(low)) {
+        return { kind: 'to_gif', summary: 'Export as GIF', args: {}, confidence: 0.9 };
+    }
+
     // ── CONVERT (format/container) ──
     if (
         /\b(convert|transcode|change (format|to)|re-?encode|export)\b/.test(low) &&

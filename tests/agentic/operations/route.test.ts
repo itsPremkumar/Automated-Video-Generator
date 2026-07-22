@@ -141,3 +141,45 @@ describe('route.ts intent classification (heuristic, no model)', () => {
         assert.equal(t.chain.length, 2);
     });
 });
+
+describe('route.ts — formerly-dead intents (P0 fix)', () => {
+    test('classifies to_gif standalone', () => {
+        const t = single('make a gif from scene_1.mp4');
+        assert.equal(t.kind, 'to_gif');
+    });
+    test('classifies convert to webm', () => {
+        const t = single('convert this clip to webm');
+        assert.equal(t.kind, 'convert');
+        assert.equal(t.args.target, 'webm');
+    });
+    test('classifies convert_audio', () => {
+        const t = single('convert this to mp3');
+        assert.equal(t.kind, 'convert_audio');
+        assert.equal(t.args.target, 'mp3');
+    });
+    test('classifies images_to_video', () => {
+        const t = single('make a slideshow from my photos');
+        assert.equal(t.kind, 'images_to_video');
+    });
+    test('classifies video_to_images', () => {
+        const t = single('extract frames from the video');
+        assert.equal(t.kind, 'video_to_images');
+    });
+    test('classifies separate_audio', () => {
+        const t = single('extract audio from movie.mp4');
+        assert.equal(t.kind, 'separate_audio');
+    });
+    test('classifies separate_video', () => {
+        const t = single('separate video from clip.mp4');
+        assert.equal(t.kind, 'separate_video');
+    });
+    test('classifies mute_video', () => {
+        const t = single('mute the audio in x.mp4');
+        assert.equal(t.kind, 'mute_video');
+    });
+    test('classifies social_download', () => {
+        const t = single('download this youtube https://youtu.be/abc');
+        assert.equal(t.kind, 'social_download');
+        assert.equal(t.args.url, 'https://youtu.be/abc');
+    });
+});

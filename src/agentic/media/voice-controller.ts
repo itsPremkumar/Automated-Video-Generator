@@ -80,7 +80,27 @@ function findReferenceVoice(): string | null {
     return path.join(dir, clips.sort()[0]);
 }
 
-/** Auto-clone a real voice profile from a reference clip in input/voices/. */
+/** Look for a sidecar transcript (.txt) next to a reference clip so the
+ *  clone gets real reference_text instead of a placeholder (better fidelity).
+ *  Returns the transcript text, or '' if none exists. */
+function findReferenceTranscript(clipPath: string): string {
+    const base = clipPath.replace(/\.[^.]+$/, '');
+    for (const ext of ['.txt', '.transcript.txt', '.srt']) {
+        const p = base + ext;
+        if (fs.existsSync(p)) {
+            try {
+                return fs.readFileSync(p, 'utf-8').trim();
+            } catch {
+                /* ignore */
+            }
+        }
+    }
+    return '';
+}
+
+/** Auto-clone a real voice profile from a reference clip in input/voices/.
+ *  If a sidecar transcript (.txt/.srt) sits next to the clip, it is used as the
+ *  reference_text for maximum clone fidelity (otherwise a short placeholder). */
 async function cloneFromVoicesDir(
     clip: string,
     cacheFile: string,
@@ -96,7 +116,8 @@ async function cloneFromVoicesDir(
             }
         } catch { /* ignore */ }
     }
-    console.log(`cloning real voice from ${clipName} (engine=${CLONE_ENGINE})`);
+    const transcript = findReferenceTranscript(clip);
+    console.log(`cloning real voice from ${clipName} (engine=${CLONE_ENGINE})${transcript ? ' using sidecar transcript' : ''}`);
     const create = await axios.post(
         `${baseUrl()}/profiles`,
         { name: `agentic-clone-${clipName}-${Date.now()}`, voice_type: 'cloned', default_engine: CLONE_ENGINE },
@@ -106,10 +127,9 @@ async function cloneFromVoicesDir(
     if (!id) throw new Error(`clone profile create returned no id: ${JSON.stringify(create.data)}`);
     const form = new FormData();
     form.append('file', new Blob([fs.readFileSync(clip)], { type: 'audio/*' }), clipName);
-    // Backend requires a non-empty reference_text (422 if empty/missing). The
-    // transcript only affects clone fidelity; for a hands-off flow we pass a
-    // placeholder. TODO: transcribe the clip (whisper) for best clone quality.
-    form.append('reference_text', 'voice reference sample');
+    // Use a real (or placeholder) transcript. A sidecar .txt next to the clip
+    // gives the best clone; the backend only rejects an EMPTY/missing value.
+    form.append('reference_text', transcript || 'voice reference sample');
     await axios.post(`${baseUrl()}/profiles/${id}/samples`, form, { timeout: 60000 });
     fs.writeFileSync(cacheFile, JSON.stringify({ id, engine: CLONE_ENGINE, sourceClip: clipName }, null, 2));
     console.log(`cloned voice profile ${id}`);
