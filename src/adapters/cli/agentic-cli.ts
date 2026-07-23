@@ -102,8 +102,19 @@ async function main() {
                 const outPath = path.resolve(process.cwd(), 'output', id);
                 fs.mkdirSync(outPath, { recursive: true });
 
+                // Orientation -> render dimensions. Without this the renderer
+                // falls back to its hardcoded 720x1280 (portrait) default and
+                // every orientation renders as portrait (verified visually).
+                const ORIENT_DIMS: Record<string, { w: number; h: number }> = {
+                    portrait: { w: 720, h: 1280 },
+                    landscape: { w: 1280, h: 720 },
+                    square: { w: 1080, h: 1080 },
+                };
+                const orient = (job.orientation || 'portrait').toLowerCase();
+                const dims = ORIENT_DIMS[orient] ?? ORIENT_DIMS.portrait;
                 const finalMp4 = await renderAgenticSlideshow(result, {
                     outPath: path.join(outPath, `${job.title || 'output'}.mp4`),
+                    dimensions: dims,
                     crossfadeSec: 0.3,
                     burnCaptions: job.captions !== 'none',
                     intro: job.intro,
@@ -116,6 +127,7 @@ async function main() {
                     kenBurns: job.kenBurns,
                     preset: job.preset,
                     jCutSec: job.jCutSec,
+                    brand: job.brand,
                 });
 
                 if (fs.existsSync(finalMp4)) {

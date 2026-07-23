@@ -284,6 +284,7 @@ export async function renderAgenticSlideshow(
         aiVerify?: import('../config.js').AgenticConfig['aiVerify'];
         languages?: string[];
         vignette?: boolean;
+        brand?: { watermark?: string; accent?: string };
     } = {},
 ): Promise<string> {
     const ffmpeg: string = require('ffmpeg-static');
@@ -772,7 +773,20 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
         }
         return '';
     })();
-    if (logoPath) {
+    if (logoPath && opts.brand) {
+        // Only apply a watermark if the logo actually has an alpha channel.
+        // Opaque logos (e.g. rgb24 with a solid/dark background) can't be
+        // composited without stamping a black box, so skip them cleanly.
+        let hasAlpha = false;
+        try {
+            const { execFileSync } = require('child_process');
+            const ffprobe = require('ffprobe-static').path;
+            const pix = execFileSync(ffprobe, ['-v', 'error', '-show_entries', 'stream=pix_fmt', '-of', 'csv=p=0', logoPath], { encoding: 'utf8' }).trim();
+            hasAlpha = /rgba|argb|ya8|ya16|graya|ga|:a$|a@/.test(pix);
+        } catch { /* ignore */ }
+        if (!hasAlpha) {
+            console.warn('  ⚠ Logo watermark skipped (logo has no alpha channel; would stamp a black box)');
+        } else {
         const logoOut = outDir + '/_logo_' + res.workspace.jobId + '.mp4';
         try {
             await new Promise<void>((resolve, reject) => {
@@ -788,6 +802,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
         } catch {
             console.warn(`  ⚠ Logo watermark skipped`);
             if (fs.existsSync(logoOut)) fs.rmSync(logoOut, { force: true });
+        }
         }
     }
 
