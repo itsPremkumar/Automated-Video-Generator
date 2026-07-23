@@ -41,7 +41,8 @@ function run(input: string, output: string, filters: string[]): string {
     const p = ff();
     try {
         execFileSync(p, ['-y', '-i', input, '-vf', filters.join(','), '-an', '-c:v', 'libx264', '-preset', 'veryfast', output], { stdio: 'ignore', timeout: 90000 });
-    } catch (e) {
+    } catch (e: any) {
+        console.warn(`  ⚠ visual-fx run failed: ${String(e?.stderr ?? e?.message).slice(0, 200)}`);
         return input;
     }
     return fs.existsSync(output) && fs.statSync(output).size > 0 ? output : input;
@@ -65,7 +66,9 @@ export function applySceneFx(clipPath: string, sceneIndex: number, fx: FxJob, wo
         const trf = path.join(workDir, `fx_${sceneIndex}_stab.trf`);
         try {
             execFileSync(ff(), ['-y', '-i', clipPath, '-vf', `vidstabdetect=shakiness=5:accuracy=15:result=${trf}`, '-an', '-f', 'null', '-'], { stdio: 'ignore', timeout: 60000 });
-        } catch { /* ignore */ }
+        } catch (e: any) {
+            console.warn(`  ⚠ vidstabdetect failed (scene ${sceneIndex}): ${String(e?.stderr ?? e?.message).slice(0, 200)}`);
+        }
         if (fs.existsSync(trf)) {
             filters.push(`vidstabtransform=smoothing=30:input=${trf}`);
             tag.push('stab');
