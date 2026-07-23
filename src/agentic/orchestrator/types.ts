@@ -85,4 +85,46 @@ export interface PipelineRequest {
     pruneWorkspaces?: number;
     /** Model circuit-breaker budget for the agent brain. */
     brain?: { maxCalls?: number; maxFails?: number };
+    // ═══════════════════════════════════════════════
+    //  Advanced Feature Block — forwarded from agentic-scripts.json so the
+    //  Remotion render path can also consume every optional editor signal.
+    // ═══════════════════════════════════════════════
+    sfxByScene?: Record<number, string>;
+    sfxOnCut?: boolean;
+    normalizeLufs?: number;
+    loopMusic?: boolean;
+    ttsStyle?: string;
+    voicesByScene?: Record<number, string>;
+    voiceSpeed?: number;
+    voicePitchSemitones?: number;
+    voiceAging?: 'younger' | 'older';
+    dubLanguage?: string;
+    useClonedVoiceId?: string;
+    dialogueVoices?: [string, string];
+    lowerThird?: string;
+    titleCard?: { title: string; subtitle?: string; durationSec?: number };
+    endCta?: string;
+    watermark?: string;
+    fontFamily?: string;
+    fontColor?: string;
+    fontWeight?: number;
+    emojiByScene?: Record<number, string>;
+    progressBar?: boolean;
+    clipSpeedByScene?: Record<number, number>;
+    stabilizeScenes?: number[];
+    chromaKeyScenes?: number[];
+    filterByScene?: Record<number, 'bw' | 'vintage' | 'sepia'>;
+    blurScenes?: number[];
+    sceneOrder?: number[];
+    deleteScenes?: number[];
+    loopVideo?: number;
+    beatSync?: boolean;
+    exportFormat?: 'mp4' | 'webm' | 'gif';
+    posterScene?: number;
+    contactSheet?: boolean;
+    licenseFilter?: string;
+    paletteFilter?: string;
+    downloadUrl?: string;
+    downloadUrlKind?: 'image' | 'video' | 'music' | 'sfx';
+    rerender?: boolean;
 }

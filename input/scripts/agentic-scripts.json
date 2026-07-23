@@ -8,12 +8,410 @@
     "hookFirst": true,
     "variablePacing": true,
     "backend": "agent",
-    "candidatesPerAsset": 2,
+    "candidatesPerAsset": 4,
     "language": "english",
     "musicVolume": 0.15,
     "vignette": true,
     "captions": "burned",
-    "intro": { "title": "Modular Test", "durationSec": 2 },
-    "outro": { "ctaText": "Done", "durationSec": 2 }
+    "intro": {
+      "title": "Modular Test",
+      "durationSec": 2
+    },
+    "outro": {
+      "ctaText": "Done",
+      "durationSec": 2
+    }
+  },
+  {
+    "id": "gen_3scene_hookfirst",
+    "title": "3-Scene Hook First",
+    "topic": "AI coding tools",
+    "script": "Did you know AI coding assistants can write 1000 lines per minute? [Visual: AI coding] [Grade: warm] [Transition: fade]\nThe key detail about AI coding tools is what separates beginners from pros. [Visual: code programming] [KenBurns: on] [CaptionTheme: neon]\nApply this one idea about AI coding and you'll see the difference immediately. [Visual: developer workspace] [Grade: cinematic] [Transition: slide]",
+    "orientation": "portrait",
+    "voice": "en-US-GuyNeural",
+    "hookFirst": true,
+    "variablePacing": true,
+    "backend": "agent",
+    "candidatesPerAsset": 4,
+    "captions": "burned",
+    "captionTheme": "neon",
+    "kineticText": true,
+    "vignette": true,
+    "jCutSec": 0.4,
+    "musicIntensity": "mid",
+    "preset": "cinematic",
+    "videoType": "facts",
+    "platform": "tiktok"
+  },
+  {
+    "id": "gen_3scene_no_hook",
+    "title": "3-Scene No Hook",
+    "topic": "video editing tips",
+    "script": "Most video editors waste hours on manual tasks. [Visual: video editing] [Grade: cool] [Transition: cut]\nHere's how to automate your editing workflow. [Visual: editing software] [KenBurns: off] [CaptionTheme: bold]\nThese shortcuts will save you 10 hours per week. [Visual: productivity] [Grade: vivid] [Transition: zoomblur]",
+    "orientation": "portrait",
+    "voice": "en-GB-RyanNeural",
+    "hookFirst": false,
+    "variablePacing": true,
+    "backend": "agent",
+    "candidatesPerAsset": 4,
+    "captions": "karaoke",
+    "captionTheme": "bold",
+    "kineticText": false,
+    "vignette": false,
+    "jCutSec": 0.3,
+    "musicIntensity": "energetic",
+    "preset": "reels",
+    "videoType": "tutorial",
+    "platform": "reels"
+  },
+  {
+    "id": "gen_5scene_story",
+    "title": "5-Scene Story Arc",
+    "topic": "startup journey",
+    "script": "Every startup begins with a single idea. [Visual: idea lightbulb] [Grade: warm] [Transition: fade]\nThe first prototype is always rough. [Visual: prototype sketch] [Grade: neutral] [Transition: slide]\nThen comes the moment of truth — the first customer. [Visual: first customer] [Grade: cinematic] [Transition: zoomblur]\nGrowth accelerates, but challenges multiply. [Visual: growth chart] [Grade: vivid] [Transition: cut]\nThe key insight: persistence beats talent when talent doesn't work hard. [Visual: success] [Grade: warm] [Transition: fade]",
+    "orientation": "portrait",
+    "voice": "en-IN-NeerjaNeural",
+    "hookFirst": true,
+    "variablePacing": true,
+    "backend": "agent",
+    "candidatesPerAsset": 4,
+    "captions": "burned",
+    "captionTheme": "softCard",
+    "kineticText": true,
+    "vignette": true,
+    "jCutSec": 0.5,
+    "musicIntensity": "calm",
+    "preset": "cinematic",
+    "videoType": "story",
+    "platform": "instagram",
+    "backgroundMusic": "lofi_chill.mp3",
+    "musicVolume": 0.15
+  },
+  {
+    "id": "gen_4scene_product",
+    "title": "4-Scene Product Promo",
+    "topic": "AI photo editor",
+    "script": "Tired of complex photo editing? [Visual: frustrated user] [Grade: cool] [Transition: slide]\nMeet the AI photo editor that does it all. [Visual: AI photo editor] [Grade: vivid] [Transition: zoomblur]\nOne click transforms your photos. [Visual: before after] [Grade: warm] [Transition: cut]\nReady to revolutionize your workflow? [Visual: call to action] [Grade: cinematic] [Transition: fade]",
+    "orientation": "portrait",
+    "voice": "en-US-GuyNeural",
+    "hookFirst": true,
+    "variablePacing": true,
+    "backend": "agent",
+    "candidatesPerAsset": 4,
+    "captions": "burned",
+    "captionTheme": "highContrast",
+    "kineticText": true,
+    "vignette": false,
+    "jCutSec": 0.3,
+    "musicIntensity": "energetic",
+    "preset": "reels",
+    "videoType": "product",
+    "platform": "tiktok",
+    "backgroundMusic": "upbeat_electronic.mp3",
+    "musicVolume": 0.15
+  },
+  {
+    "id": "gen_3scene_motivational",
+    "title": "3-Scene Motivational",
+    "topic": "overcoming failure",
+    "script": "Failure is not the opposite of success — it IS success. [Visual: failure success] [Grade: cinematic] [Transition: fade] [CaptionTheme: neon]\nEvery setback is a setup for a comeback. [Visual: comeback] [Grade: warm] [Transition: zoomblur] [Kinetic: on]\nYour breakthrough is closer than you think. [Visual: breakthrough] [Grade: vivid] [Transition: slide] [CaptionTheme: bold]",
+    "orientation": "portrait",
+    "voice": "en-US-GuyNeural",
+    "hookFirst": true,
+    "variablePacing": true,
+    "backend": "agent",
+    "candidatesPerAsset": 4,
+    "captions": "karaoke",
+    "captionTheme": "neon",
+    "kineticText": true,
+    "vignette": true,
+    "jCutSec": 0.6,
+    "musicIntensity": "energetic",
+    "preset": "cinematic",
+    "videoType": "motivational",
+    "platform": "reels",
+    "backgroundMusic": "cinematic_drone.mp3",
+    "musicVolume": 0.15
+  },
+  {
+    "id": "gen_3scene_nature",
+    "title": "3-Scene Nature",
+    "topic": "forest wildlife",
+    "script": "Deep in the forest, nature reveals its secrets. [Visual: forest wildlife] [Grade: cinematic] [Transition: fade]\nEvery creature plays its part in the ecosystem. [Visual: ecosystem] [Grade: cool] [Transition: slide]\nThe most beautiful moments happen in silence. [Visual: peaceful nature] [Grade: neutral] [Transition: fade]",
+    "orientation": "landscape",
+    "voice": "en-US-GuyNeural",
+    "hookFirst": false,
+    "variablePacing": true,
+    "backend": "agent",
+    "candidatesPerAsset": 4,
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "kineticText": false,
+    "vignette": true,
+    "jCutSec": 0.8,
+    "musicIntensity": "calm",
+    "preset": "documentary",
+    "videoType": "nature",
+    "platform": "youtube",
+    "backgroundMusic": "ambient_nature.mp3",
+    "musicVolume": 0.15
+  },
+  {
+    "id": "sf_images_only",
+    "title": "SF: Download Images Only",
+    "topic": "space exploration",
+    "script": "Space is vast and mysterious. [Visual: galaxy nebula]\nBlack holes bend light. [Visual: black hole]\nWe explore with telescopes. [Visual: space telescope]",
+    "orientation": "portrait",
+    "candidatesPerAsset": 4,
+    "mode": "download-images"
+  },
+  {
+    "id": "sf_videos_only",
+    "title": "SF: Download Videos Only",
+    "topic": "ocean waves",
+    "script": "The ocean moves in endless rhythm. [Visual: ocean waves]\nWaves crash on cliffs. [Visual: cliff waves]\nCalm seas soothe the mind. [Visual: calm sea]",
+    "orientation": "landscape",
+    "candidatesPerAsset": 3,
+    "mode": "download-videos"
+  },
+  {
+    "id": "sf_music_only",
+    "title": "SF: Download Music Only",
+    "topic": "lofi study beats",
+    "musicQuery": "lofi chill study beats",
+    "candidatesPerAsset": 3,
+    "mode": "download-music"
+  },
+  {
+    "id": "sf_voice_edgetts",
+    "title": "SF: Voice Only (Edge-TTS)",
+    "topic": "daily motivation",
+    "script": "Start your day with intention. [Visual: sunrise]\nSmall steps build momentum. [Visual: steps]\nYou are capable of more. [Visual: mountain]",
+    "voice": "en-US-GuyNeural",
+    "candidatesPerAsset": 4,
+    "mode": "generate-voice-edgetts"
+  },
+  {
+    "id": "sf_voice_voicebox",
+    "title": "SF: Voice Only (Voicebox/Kokoro)",
+    "topic": "tech news",
+    "script": "A new model broke benchmarks today. [Visual: AI chip]\nOpen source is winning. [Visual: open source]\nThe future is local. [Visual: local server]",
+    "voice": "en-US-GuyNeural",
+    "kokoroVoice": "af_heart",
+    "candidatesPerAsset": 4,
+    "mode": "generate-voice-voicebox"
+  },
+  {
+    "id": "sf_clone_voice",
+    "title": "SF: Clone a Person's Voice",
+    "topic": "voice clone demo",
+    "cloneVoiceFrom": "reference_voice.wav",
+    "candidatesPerAsset": 1,
+    "mode": "clone-voice"
+  },
+  {
+    "id": "sf_bulk_eagle",
+    "title": "Bulk: 10 Eagle Images",
+    "topic": "eagle reference pack",
+    "mode": "download-images",
+    "searchQuery": "eagle",
+    "downloadCount": 10,
+    "orientation": "landscape"
+  },
+  {
+    "id": "sf_bulk_ocean",
+    "title": "Bulk: 5 Ocean Wave Videos",
+    "topic": "ocean broll pack",
+    "mode": "download-videos",
+    "searchQuery": "ocean waves",
+    "downloadCount": 5
+  },
+  {
+    "id": "adv_full_demo",
+    "title": "ADV: Full Advanced Config Demo",
+    "topic": "space facts",
+    "script": "Did you know the sun is 93 million miles away? [Visual: sun flare] [Caption: mind blown] Space is completely silent. [Visual: nebula] Black holes bend light itself. [Visual: black hole]",
+    "mode": "apply-advanced",
+    "sfxByScene": {
+      "0": "whoosh",
+      "2": "boom"
+    },
+    "sfxOnCut": true,
+    "normalizeLufs": -14,
+    "loopMusic": true,
+    "ttsStyle": "excited",
+    "voicesByScene": {
+      "0": "en-US-AriaNeural",
+      "1": "en-US-GuyNeural"
+    },
+    "voiceSpeed": 1.05,
+    "dialogueVoices": [
+      "en-US-AriaNeural",
+      "en-US-GuyNeural"
+    ],
+    "dubLanguage": "hi",
+    "lowerThird": "Prem — Space Explorer",
+    "titleCard": {
+      "title": "Space Facts",
+      "subtitle": "Episode 1"
+    },
+    "endCta": "Subscribe for more!",
+    "fontFamily": "Inter",
+    "fontColor": "cyan",
+    "fontWeight": 800,
+    "emojiByScene": {
+      "0": "🔥",
+      "2": "🕳️"
+    },
+    "clipSpeedByScene": {
+      "2": 0.5
+    },
+    "stabilizeScenes": [],
+    "chromaKeyScenes": [],
+    "filterByScene": {
+      "1": "bw"
+    },
+    "blurScenes": [],
+    "sceneOrder": [
+      1,
+      0,
+      2
+    ],
+    "loopVideo": 1,
+    "exportFormat": "gif",
+    "posterScene": 0,
+    "contactSheet": true,
+    "licenseFilter": "cc0",
+    "paletteFilter": "blue"
+  },
+  {
+    "id": "sf_sfx_demo",
+    "title": "SF: Sound Effects Pack",
+    "topic": "ui sfx",
+    "mode": "download-sfx",
+    "sfxByScene": {
+      "0": "click",
+      "1": "pop",
+      "2": "swoosh"
+    }
+  },
+  {
+    "id": "sf_url_demo",
+    "title": "SF: Direct URL Download",
+    "topic": "direct asset",
+    "mode": "download-url",
+    "downloadUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3f/JPEG_example_flower.jpg",
+    "downloadUrlKind": "image"
+  },
+  {
+    "id": "adv_compose_demo",
+    "title": "ADV: Compose Real Video (all signals)",
+    "topic": "mountain adventure",
+    "script": "Did you know mountains shape our climate? [Visual: mountain peak]\n\nSnow caps store fresh water. [Visual: glacier]\n\nRivers begin in the hills. [Visual: river valley]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "musicQuery": "cinematic ambient",
+    "sfxOnCut": true,
+    "sfxByScene": {
+      "0": "whoosh",
+      "2": "water"
+    },
+    "normalizeLufs": -14,
+    "loopMusic": true,
+    "ttsStyle": "cheerful",
+    "lowerThird": "Geo Facts",
+    "titleCard": {
+      "title": "Mountain Facts",
+      "subtitle": "Ep 1"
+    },
+    "endCta": "Follow for more!",
+    "fontColor": "white",
+    "emojiByScene": {
+      "0": "🏔️",
+      "2": "💧"
+    },
+    "clipSpeedByScene": {
+      "2": 0.8
+    },
+    "filterByScene": {
+      "1": "bw"
+    },
+    "sceneOrder": [
+      0,
+      2,
+      1
+    ],
+    "voiceSpeed": 0.9,
+    "voicePitchSemitones": 3,
+    "dialogueVoices": [
+      "en-US-GuyNeural",
+      "en-US-JennyNeural"
+    ],
+    "exportFormat": "gif",
+    "posterScene": 0,
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "adv_rerender_demo",
+    "title": "ADV: Re-render from cache (new grade)",
+    "topic": "mountain adventure",
+    "mode": "rerender",
+    "orientation": "portrait",
+    "musicQuery": "cinematic ambient",
+    "filterByScene": {
+      "0": "sepia"
+    },
+    "clipSpeedByScene": {
+      "1": 1.2
+    },
+    "exportFormat": "gif",
+    "contactSheet": true
+  },
+  {
+    "id": "adv_fx_demo",
+    "title": "ADV: Full FX bake (kenBurns+stabilize+chroma+blur+watermark+font)",
+    "topic": "nature montage",
+    "script": "A calm lake at dawn. [Visual: lake]\n\nForests breathe with the wind. [Visual: forest]\n\nStars wheel across the night. [Visual: night sky]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "musicQuery": "ambient piano",
+    "kenBurns": true,
+    "stabilizeScenes": [
+      0
+    ],
+    "chromaKeyScenes": [
+      1
+    ],
+    "blurScenes": [
+      2
+    ],
+    "watermark": "logo.png",
+    "fontFamily": "Georgia, serif",
+    "fontWeight": 700,
+    "titleCard": {
+      "title": "Nature",
+      "subtitle": "Montage"
+    },
+    "lowerThird": "Shot on AVG",
+    "endCta": "Subscribe!",
+    "exportFormat": "gif",
+    "posterScene": 0,
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "adv_progress_demo",
+    "title": "ADV: Progress bar + palette filter bake",
+    "topic": "blue ocean",
+    "script": "The ocean stretches to the horizon. [Visual: ocean]\n\nWaves carry the light. [Visual: waves]\n\nA quiet blue world. [Visual: blue]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "musicQuery": "ambient",
+    "progressBar": true,
+    "paletteFilter": "blue",
+    "watermark": "logo.png",
+    "lowerThird": "Blue World",
+    "exportFormat": "gif"
   }
 ]

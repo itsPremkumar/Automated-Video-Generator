@@ -102,7 +102,7 @@ function findReferenceTranscript(clipPath: string): string {
 /** Auto-clone a real voice profile from a reference clip in input/voices/.
  *  If a sidecar transcript (.txt/.srt) sits next to the clip, it is used as the
  *  reference_text for maximum clone fidelity (otherwise a short placeholder). */
-async function cloneFromVoicesDir(
+export async function cloneFromVoicesDir(
     clip: string,
     cacheFile: string,
 ): Promise<ResolvedProfile> {
@@ -137,7 +137,12 @@ async function cloneFromVoicesDir(
     return { id, engine: CLONE_ENGINE };
 }
 
-async function resolveProfileId(ws: AgenticWorkspace): Promise<ResolvedProfile> {
+export async function resolveProfileId(ws: AgenticWorkspace, explicitId?: string): Promise<ResolvedProfile> {
+    // 0. Explicit cloned-profile id from the job (highest priority — lets a
+    //    user go "clone my voice" → "render in my voice" in one spec.
+    if (explicitId && explicitId.trim().length > 0) {
+        return { id: explicitId.trim(), engine: engineName() };
+    }
     const explicit = process.env.VOICEBOX_PROFILE_ID;
     if (explicit && !explicit.includes('your-voicebox-profile-id')) {
         return { id: explicit, engine: engineName() };
@@ -268,7 +273,6 @@ async function generateScene(
 }
 
 /**
-/**
  * Run the full voice stage for a plan.
  * @param plan        agentic plan (scene.voiceoverText + voiceOverride)
  * @param ws          agentic workspace (audio -> ws.audioDir)
@@ -283,6 +287,7 @@ export async function runVoiceStage(
     ws: AgenticWorkspace,
     _voice?: string,
     onProgress?: (percent: number, message: string) => void,
+    useClonedVoiceId?: string,
 ): Promise<VoiceRunResult> {
     const report = (p: number, m: string) => {
         onProgress?.(p, m);
@@ -327,7 +332,7 @@ export async function runVoiceStage(
     if (!up) throw new Error('speech backend unavailable — caller should fall back to Edge-TTS');
 
     report(15, 'resolving voice profile');
-    const { id: profileId, engine } = await resolveProfileId(ws);
+    const { id: profileId, engine } = await resolveProfileId(ws, useClonedVoiceId);
 
     // Preload only for engines backed by the default model loader (chatterbox/qwen).
     // Kokoro loads lazily inside /speak and does NOT support /models/load
@@ -384,9 +389,10 @@ export async function runVoiceStageSafe(
     ws: AgenticWorkspace,
     _voice?: string,
     onProgress?: (percent: number, message: string) => void,
+    useClonedVoiceId?: string,
 ): Promise<VoiceRunResult> {
     try {
-        return await runVoiceStage(plan, ws, _voice, onProgress);
+        return await runVoiceStage(plan, ws, _voice, onProgress, useClonedVoiceId);
     } finally {
         killBackend();
     }

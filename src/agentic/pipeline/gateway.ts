@@ -17,10 +17,11 @@ import { AgenticWorkspace, getAgenticWorkspace, writeJson, readJson } from '../m
 import { acquireAssets, AcquireDeps, FetchedVisual } from './acquire.js';
 import { verifyAll, VerifyDeps, VERIFY_PASS_CONFIDENCE } from './verify.js';
 import { AssetCandidate, AssetDecision, Plan, RenderManifest } from '../types.js';
+import { computeApprovedHashes } from '../ai/agent.js';
 
 export type Decider = (
     candidate: AssetCandidate,
-    verification: { passes: boolean; confidence: number; reason: string },
+    verification: { passes: boolean; confidence: number; reason: string; approvedHashes?: Set<string> },
 ) => Promise<{ decision: 'approved' | 'rejected' | 'replace'; rationale: string; newKeywords?: string[] }>;
 
 export interface GatewayDeps extends AcquireDeps, VerifyDeps {
@@ -84,7 +85,9 @@ export async function runGateway(
     for (const c of candidates) {
         const id = `${c.kind}_s${c.sceneIndex}_c${c.candidateIndex}`;
         const v = verifyById.get(id) ?? { passes: false, confidence: 0, reason: 'not verified' };
-        const decided = await deps.decide(c, { passes: v.passes, confidence: v.confidence, reason: v.reason });
+        // Compute approved hashes for diversity penalty (P3)
+        const approvedHashes = computeApprovedHashes(candidates, decisions);
+        const decided = await deps.decide(c, { passes: v.passes, confidence: v.confidence, reason: v.reason, approvedHashes });
 
         if (decided.decision === 'approved') {
             decisions.push(mkDecision(c, 'approved', decided.rationale, 'agent', false));

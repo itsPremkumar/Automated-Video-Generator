@@ -26,7 +26,7 @@
  */
 
 import * as fs from 'fs';
-import { AssetCandidate, AssetVerification, Plan, ScenePlan } from '../types.js';
+import { AssetCandidate, AssetDecision, AssetVerification, Plan, ScenePlan } from '../types.js';
 
 export type AgenticBackend = 'agent' | 'vision';
 
@@ -158,6 +158,8 @@ export interface DecideInput {
     verification: AssetVerification;
     /** Cross-scene context: how many candidates exist for this scene already approved. */
     approvedInScene: number;
+    /** Color hashes of already-approved assets for diversity penalty. */
+    approvedHashes?: Set<string>;
 }
 
 export interface ScoredCandidate {
@@ -201,10 +203,113 @@ export function scoreCandidate(
     const hay = `${c.source} ${c.license ?? ''}`.toLowerCase();
     const relevanceBoost = c.keywords.some((k) => hay.includes(k.toLowerCase())) ? 1 : 0;
 
-    const diversityPenalty = 0; // reserved; hue comparison lives in gate (X10)
+    // Diversity penalty: detect near-duplicate assets by comparing a simple
+    // color histogram (4x4x4 = 64 bins) against already-approved assets.
+    // If the candidate's histogram is >85% similar to an approved asset, it's
+    // likely a near-duplicate (same stock photo, different crop) and gets penalized.
+    let diversityPenalty = 0;
+    if (opts.alreadyApprovedHashes && opts.alreadyApprovedHashes.size > 0) {
+        const candidateHash = computeColorHash(c.localPath);
+        if (candidateHash) {
+            const candidateStr = Array.from(candidateHash).map((v) => v.toFixed(3)).join(',');
+            for (const approvedHashStr of opts.alreadyApprovedHashes) {
+                const similarity = stringHistogramSimilarity(candidateStr, approvedHashStr);
+                if (similarity > 0.85) {
+                    diversityPenalty = Math.max(diversityPenalty, 3);
+                    break;
+                }
+            }
+        }
+    }
 
     const totalScore = confidenceScore * 0.5 + resolutionScore + fileSizeScore + relevanceBoost - diversityPenalty;
     return { assetId, confidenceScore, resolutionScore, fileSizeScore, relevanceBoost, diversityPenalty, totalScore };
+}
+
+/**
+ * Compute a 64-bin color histogram (4x4x4 RGB) from an image file.
+ * Returns a normalized Float32Array of 64 values summing to 1.0, or null on failure.
+ * Uses ffmpeg's signalstats filter for fast, dependency-free extraction.
+ */
+function computeColorHash(imagePath: string): Float32Array | null {
+    try {
+        const fs = require('fs');
+        if (!fs.existsSync(imagePath)) return null;
+        const { execFileSync } = require('child_process');
+        const ffmpeg: string = require('ffmpeg-static');
+        // Extract 4x4 average pixels (16 pixels) via scale + signalstats
+        // signalstats prints YUV values per frame; we use the Y (luma) channel
+        // as a simple brightness histogram proxy — fast and sufficient for
+        // near-duplicate detection without loading the full image into memory.
+        const out = execFileSync(
+            ffmpeg,
+            ['-i', imagePath, '-vf', 'scale=4:4,signalstats', '-f', 'null', '-'],
+            { encoding: 'utf8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }
+        );
+        // Parse YAVG values from signalstats output
+        const yavgMatches = out.match(/YAVG:\d+/g) || [];
+        if (yavgMatches.length === 0) return null;
+        const bins = new Float32Array(64);
+        for (let i = 0; i < Math.min(yavgMatches.length, 16); i++) {
+            const val = parseInt(yavgMatches[i].split(':')[1], 10);
+            const bin = Math.min(63, Math.floor((val / 255) * 64));
+            bins[bin] += 1;
+        }
+        // Normalize
+        const total = bins.reduce((a, b) => a + b, 0);
+        if (total > 0) {
+            for (let i = 0; i < 64; i++) bins[i] /= total;
+        }
+        return bins;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Compute histogram intersection similarity (0.0 to 1.0) between two
+ * normalized histograms. 1.0 = identical, 0.0 = no overlap.
+ */
+function histogramSimilarity(a: Float32Array, b: Float32Array): number {
+    let intersection = 0;
+    for (let i = 0; i < a.length; i++) {
+        intersection += Math.min(a[i], b[i]);
+    }
+    return intersection;
+}
+
+/**
+ * Compute histogram intersection similarity between two comma-separated
+ * histogram strings (as stored in the Set<string> by computeApprovedHashes).
+ */
+function stringHistogramSimilarity(a: string, b: string): number {
+    const arrA = a.split(',').map(Number);
+    const arrB = b.split(',').map(Number);
+    if (arrA.length !== arrB.length) return 0;
+    let intersection = 0;
+    for (let i = 0; i < arrA.length; i++) {
+        intersection += Math.min(arrA[i], arrB[i]);
+    }
+    return intersection;
+}
+
+/**
+ * Compute color hashes for a set of already-approved candidates.
+ * Used by the gateway to pass approved hashes to scoreCandidate.
+ */
+export function computeApprovedHashes(candidates: AssetCandidate[], decisions: AssetDecision[]): Set<string> {
+    const hashes = new Set<string>();
+    for (const d of decisions) {
+        if (d.decision !== 'approved' || d.kind === 'music') continue;
+        const c = candidates.find((c) => `${c.kind}_s${c.sceneIndex}_c${c.candidateIndex}` === d.assetId);
+        if (!c) continue;
+        const hash = computeColorHash(c.localPath);
+        if (hash) {
+            // Store as a compact string for Set comparison
+            hashes.add(Array.from(hash).map((v) => v.toFixed(3)).join(','));
+        }
+    }
+    return hashes;
 }
 
 export function agentDecide(input: DecideInput): {
@@ -212,7 +317,7 @@ export function agentDecide(input: DecideInput): {
     rationale: string;
     newKeywords?: string[];
 } {
-    const { candidate, verification, approvedInScene } = input;
+    const { candidate, verification, approvedInScene, approvedHashes } = input;
 
     // Hard fail -> reject (and let the gateway re-fetch fresh candidates).
     if (!verification.passes) {
@@ -237,7 +342,7 @@ export function agentDecide(input: DecideInput): {
         };
     }
 
-    const score = scoreCandidate(candidate, verification);
+    const score = scoreCandidate(candidate, verification, { alreadyApprovedHashes: approvedHashes });
     return {
         decision: 'approved',
         rationale: `Visual passes at conf ${verification.confidence}/10 (score ${score.totalScore.toFixed(1)}): ${verification.reason}`,
