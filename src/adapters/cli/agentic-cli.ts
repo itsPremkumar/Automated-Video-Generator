@@ -86,7 +86,13 @@ async function main() {
                 },
             );
 
-            if (result.gate.pass && result.manifest) {
+            // dryRun produces no gate/manifest by design — treat successful
+            // planning as a completed job (no render expected).
+            if (req.dryRun) {
+                completed++;
+                console.log(`\n  ✅ DRY RUN OK — ${result.plan.scenes.length} scenes planned, ${result.plan.totalDurationSec}s`);
+                console.log(`  🧪 Control-surface validated (no assets fetched, no render)`);
+            } else if (result.gate.pass && result.manifest) {
                 completed++;
                 console.log(`\n  ✅ Gate PASS — ${result.plan.scenes.length} scenes, ${result.plan.totalDurationSec}s`);
                 console.log(`  📁 Workspace: ${result.workspace.root}`);

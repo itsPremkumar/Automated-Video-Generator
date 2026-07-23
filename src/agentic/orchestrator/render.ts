@@ -65,13 +65,19 @@ export function buildDuckExpression(
         t += dur;
     });
     if (segs.length === 0) return null;
+    // Guard against non-finite inputs (e.g. AUDIO_FULL_LEVEL unset/NaN) — a
+    // malformed expression would make ffmpeg reject the whole filter_complex.
+    if (!Number.isFinite(full) || !Number.isFinite(duck)) return null;
     const terms = segs
         .map((x) => {
             const d = duckForScene ? duckForScene(x.sceneIndex) : duck;
+            if (!Number.isFinite(d)) return null;
             const delta = (full - d).toFixed(3);
             return String.raw`(${delta})*between(t\\,${x.s.toFixed(3)}\\,${x.e.toFixed(3)})`;
         })
+        .filter(Boolean)
         .join('+');
+    if (!terms) return null;
     return `${full}-(${terms})`;
 }
 
@@ -730,7 +736,23 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             '-map', '0:v:0', '-map', '[aout]',
             '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-y', out,
         ];
-        await runFfmpegSpawn(pass2);
+        if (process.env.DEBUG_FF) {
+            console.error('PASS2_INPUTS:\n' + inputs.join('\n'));
+            console.error('PASS2_FILTER_COMPLEX:\n' + fc);
+        }
+        try {
+            await runFfmpegSpawn(pass2);
+        } catch (e) {
+            // Graceful fallback: this ffmpeg build (gyan.dev Windows) crashes
+            // (ENOMEM) on volume=eval=frame+between() over real audio, so duck
+            // to a flat volume instead. The render still completes.
+            console.warn(`ℹ music duck expression unsupported on this ffmpeg build; using flat volume`);
+            const flatFc = sfxLayer && fs.existsSync(sfxLayer)
+                ? `[1:a]volume=${full}[a];[2:a]volume=0.6[sfx];[0:a][a][sfx]amix=inputs=3:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`
+                : `[1:a]volume=${full}[a];[0:a][a]amix=inputs=2:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`;
+            const flatPass2 = [...inputs, '-filter_complex', flatFc, '-map', '0:v:0', '-map', '[aout]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-y', out];
+            await runFfmpegSpawn(flatPass2);
+        }
         fs.rmSync(silent, { force: true });
         if (sfxLayer) fs.rmSync(sfxLayer, { force: true });
     } else {

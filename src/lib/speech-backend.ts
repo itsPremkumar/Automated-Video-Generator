@@ -90,6 +90,13 @@ export async function ensureBackend(): Promise<boolean> {
     backendProc.stdout?.on('data', (d) => console.log(String(d).trim()));
     backendProc.stderr?.on('data', (d) => console.warn(String(d).trim()));
     backendProc.on('exit', (code) => console.log(`backend exited (code ${code})`));
+    // Fail-fast: if the spawned process dies (e.g. missing fastapi/torch in the
+    // venv, or a syntax error), don't waste the full startup timeout polling a
+    // dead process — surface the failure immediately so the caller can fall
+    // back to Edge-TTS instead of hanging for VOICEBOX_STARTUP_TIMEOUT_MS.
+    let backendExited = false;
+    let backendExitCode: number | null = null;
+    backendProc.on('exit', (code) => { backendExited = true; backendExitCode = code; });
 
     // Poll until /health (or /models/status) answers. Cold-starting the
     // PyTorch/CUDA backend can take >40s when the machine is RAM-pressured
@@ -98,6 +105,11 @@ export async function ensureBackend(): Promise<boolean> {
     const startupTimeoutMs = Number(process.env.VOICEBOX_STARTUP_TIMEOUT_MS) || 120_000;
     const deadline = Date.now() + startupTimeoutMs;
     while (Date.now() < deadline) {
+        // Process already died — abort the wait at once.
+        if (backendExited) {
+            console.warn(`backend process exited early (code ${backendExitCode}); falling back to Edge-TTS`);
+            return false;
+        }
         await new Promise((r) => setTimeout(r, 1000));
         if (await isBackendUp()) {
             spawnedUrl = baseUrl();
@@ -105,7 +117,7 @@ export async function ensureBackend(): Promise<boolean> {
             return true;
         }
     }
-    console.warn('backend did not become ready in 40s; falling back');
+    console.warn('backend did not become ready in time; falling back');
     return false;
 }
 
