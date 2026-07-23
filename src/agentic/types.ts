@@ -17,6 +17,10 @@ export type Decision = 'approved' | 'rejected' | 'pending' | 'fallback';
 export interface ScenePlan {
     sceneNumber: number;
     voiceoverText: string;
+    /** Localized caption text (e.g. translated to the target voice language).
+     *  When set, the renderer burns THIS instead of voiceoverText so on-screen
+     *  captions match a non-English voiceover. Falls back to voiceoverText. */
+    captionText?: string;
     /** Keywords used to fetch candidate visuals for this scene. */
     searchKeywords: string[];
     /** 'image' = prefer a still; 'video' = prefer motion. */

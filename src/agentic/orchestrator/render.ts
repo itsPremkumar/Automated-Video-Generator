@@ -482,7 +482,7 @@ export async function renderAgenticSlideshow(
         let tBase = 0;
         for (const a of visuals) {
             const dur = a.durationSec ?? 4;
-            const scText = (res.plan.scenes[a.sceneIndex] && res.plan.scenes[a.sceneIndex].voiceoverText) || '';
+            const scText = (res.plan.scenes[a.sceneIndex] && (res.plan.scenes[a.sceneIndex].captionText ?? res.plan.scenes[a.sceneIndex].voiceoverText)) || '';
             // Per-scene caption theme wins over the global opts.captionTheme.
             const sceneCaptionTheme = stylePlan.scenes[a.sceneIndex]?.captionTheme ?? opts.captionTheme;
             const theme = resolveCaptionTheme(sceneCaptionTheme);
@@ -611,7 +611,7 @@ else vfArgs.push(`${videoMap}null[vig]`);
                 const a = visuals[clip.idx];
                 const raw = a.captionSegments?.length
                     ? a.captionSegments
-                    : [{ text: res.plan.scenes[a.sceneIndex]?.voiceoverText ?? '', startMs: 0, endMs: Math.round(dur * 1000) }];
+                    : [{ text: res.plan.scenes[a.sceneIndex]?.captionText ?? res.plan.scenes[a.sceneIndex]?.voiceoverText ?? '', startMs: 0, endMs: Math.round(dur * 1000) }];
                 const lines = mergeWordsToLines(raw);
                 const theme = resolveCaptionTheme(stylePlan.scenes[clip.idx]?.captionTheme ?? opts.captionTheme);
                 const { fontcolor: capColor, fontsize: baseSize, boxArgs, yExpr: defaultY } = captionThemeToDrawtext(theme);

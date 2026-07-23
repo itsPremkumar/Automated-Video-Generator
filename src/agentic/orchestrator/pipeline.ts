@@ -118,6 +118,25 @@ export async function runAgenticPipeline(
         brain,
     });
 
+    // Localize burned captions to match a non-English voiceover. When the
+    // target language isn't English, translate each scene's voiceoverText and
+    // stash it as captionText; the renderer prefers captionText over
+    // voiceoverText so on-screen captions match the spoken language. English
+    // (or a failed/again-skipped translation) keeps the original text.
+    const targetLang = (req.language || 'english').toLowerCase();
+    if (targetLang && targetLang !== 'english' && brain) {
+        try {
+            const { translateScenes } = await import('../media/translate.js');
+            const translated = await translateScenes(plan.scenes.map((s) => s.voiceoverText), targetLang, brain);
+            if (translated && translated.length === plan.scenes.length) {
+                plan.scenes.forEach((s, i) => { if (translated[i] && translated[i] !== s.voiceoverText) s.captionText = translated[i]; });
+                logInfo(`🌐 localized ${translated.filter((t, i) => t && t !== plan.scenes[i].voiceoverText).length} caption(s) to ${targetLang}`);
+            }
+        } catch (e: any) {
+            console.warn(`⚠ caption localization skipped: ${e?.message ?? e}`);
+        }
+    }
+
     for (const s of plan.scenes) {
         const base = s.voiceoverText || s.searchKeywords.join(' ');
         s.searchKeywords = cfg.expandKeywords
