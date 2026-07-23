@@ -79,7 +79,6 @@
     "mcp": "tsx src/mcp-server.ts",
     "agentic": "tsx bin/agentic-run.ts",
     "agentic:batch": "tsx bin/agentic-batch.ts",
-    "voicebox:clone": "node scripts/setup-voicebox-clone.mjs",
     "prepublishOnly": "npm run typecheck",
     "prepare": "node -e \"try{process.exit(0)}catch(e){process.exit(0)}\"",
     "electron:compile": "tsc -p tsconfig.electron.json",

@@ -6,6 +6,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { logInfo, logWarn, logError } from '../../../shared/logging/runtime-logging.js';
 import {
     AgenticPlugin,
     PluginCategory,
@@ -52,7 +53,7 @@ export class PluginRegistry {
             return categoryPriority(eB.plugin.category) - categoryPriority(eA.plugin.category);
         });
 
-        console.log(
+        logInfo(
             `[PluginRegistry] Registered: ${plugin.metadata.name} v${plugin.metadata.version} [${plugin.category}]`,
         );
     }
@@ -81,7 +82,7 @@ export class PluginRegistry {
             }
         }
 
-        console.log(`[PluginRegistry] Loaded ${loaded} plugins from ${dir}`);
+        logInfo(`[PluginRegistry] Loaded ${loaded} plugins from ${dir}`);
         return loaded;
     }
 

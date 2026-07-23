@@ -6,6 +6,7 @@
  */
 
 import { createPluginRegistry, setupPluginsForAutopilot, getPluginRegistry, registerAllPlugins } from './index.js';
+import { logInfo, logWarn, logError } from '../../shared/logging/runtime-logging.js';
 import { PluginPlan, PluginAssets, PluginStylePlan, PluginFilterGraph } from './core/types.js';
 import { runAgenticPipeline, renderAgenticSlideshow, PipelineRequest } from '../orchestrate.js';
 import { PluginContext } from './core/types.js';
@@ -45,7 +46,7 @@ export async function runWithPluginsAutopilot(
     };
 
     const res = await runAgenticPipeline(req, (progress) => {
-        console.log(`[${progress.stage}] ${progress.percent}% - ${progress.message}`);
+        logInfo(`[${progress.stage}] ${progress.percent}% - ${progress.message}`);
     });
 
     // 4. Apply plugin render modifications

@@ -12,6 +12,7 @@ import { chunkCues, mergeWordsToLines, fmtSrt } from './captions.js';
 import { runFfmpeg, estimateAudioDurationSafe } from './ffmpeg.js';
 import type { PipelineResult } from './types.js';
 import { AGENTIC_OUTPUT_DIR } from '../management/workspace.js';
+import { logInfo, logWarn, logError } from '../../shared/logging/runtime-logging.js';
 
 /** Title card at the start of the video. */
 export interface IntroCard { title: string; subtitle?: string; durationSec?: number; }
@@ -143,7 +144,7 @@ async function writeOutputArtifacts(
                     try { fs.copyFileSync(p, base + '_' + p.split(/[\\/]/).pop()); } catch { /* ignore */ }
                 }
                 if (out.length)
-                    console.log(`🌐 localized subtitles: ${out.length} language(s) -> ${out.map((p) => p.split(/[\\/]/).pop()).join(', ')}`);
+                    logInfo(`🌐 localized subtitles: ${out.length} language(s) -> ${out.map((p) => p.split(/[\\/]/).pop()).join(', ')}`);
             } catch (e: any) {
                 console.warn(`⚠ subtitle localization skipped: ${e?.message ?? e}`);
             }
@@ -213,24 +214,24 @@ async function writeOutputArtifacts(
             cfg: res.plan as unknown as import('../config.js').AgenticConfig,
             title: fm.title, description: fm.description, hashtags: fm.hashtags, languages: languages ?? [],
         });
-        console.log(`📤 publish manifest: ${manifest.targets.length} platform target(s) → ${res.workspace.jobId}_publish-manifest.json`);
+        logInfo(`📤 publish manifest: ${manifest.targets.length} platform target(s) → ${res.workspace.jobId}_publish-manifest.json`);
     } catch (e: any) { console.warn(`⚠ publish manifest skipped: ${e?.message ?? e}`); }
     try {
         const { archiveJob } = await import('../delivery/archive.js');
         const arch = archiveJob(res.workspace, mp4);
-        if (arch) console.log(`📦 archived ${arch.totalFiles} files (${arch.totalBytes} bytes) → ${arch.archiveDir}`);
+        if (arch) logInfo(`📦 archived ${arch.totalFiles} files (${arch.totalBytes} bytes) → ${arch.archiveDir}`);
     } catch { /* archive is best-effort */ }
     try {
         const { openReview } = await import('../delivery/revision.js');
         openReview(res.workspace, res.workspace.jobId, res.plan.title);
-        console.log(`🔍 review thread opened for "${res.plan.title}" — awaiting client approval`);
+        logInfo(`🔍 review thread opened for "${res.plan.title}" — awaiting client approval`);
     } catch { /* review thread is best-effort */ }
     try {
         const { getPluginRegistry } = await import('../plugins/index.js');
         const reg = getPluginRegistry();
         if (reg) {
             await reg.invokeOnPostRender(mp4);
-            console.log(`🧩 plugin post-render hooks applied`);
+            logInfo(`🧩 plugin post-render hooks applied`);
         }
     } catch { /* plugin hooks are best-effort */ }
     try {
@@ -244,7 +245,7 @@ async function writeOutputArtifacts(
             try { fs.copyFileSync(src, dst); copied++; } catch { /* skip individual failures */ }
         }
         if (copied > 0)
-            console.log(`📁 ${copied} deliverable artifact(s) copied → ${outputDir}`);
+            logInfo(`📁 ${copied} deliverable artifact(s) copied → ${outputDir}`);
     } catch { /* output copy is best-effort */ }
 }
 
@@ -356,7 +357,7 @@ export async function renderAgenticSlideshow(
                 if (m && totalSec > 0) {
                     const secs = +m[1] * 3600 + +m[2] * 60 + parseFloat(m[3]);
                     const pct = Math.min(99, Math.round((secs / totalSec) * 100));
-                    if (pct !== lastPct) { lastPct = pct; console.log(`  · render ${pct}%`); }
+                    if (pct !== lastPct) { lastPct = pct; logInfo(`  · render ${pct}%`); }
                 }
                 if (buf.length > 4096) buf = buf.slice(-2048);
             });
@@ -731,7 +732,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             });
             fs.rmSync(out, { force: true });
             fs.renameSync(logoOut, out);
-            console.log(`  🎨 Logo watermark applied`);
+            logInfo(`  🎨 Logo watermark applied`);
         } catch {
             console.warn(`  ⚠ Logo watermark skipped`);
             if (fs.existsSync(logoOut)) fs.rmSync(logoOut, { force: true });
