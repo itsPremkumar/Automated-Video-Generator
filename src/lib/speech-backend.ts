@@ -157,11 +157,20 @@ export async function unloadAll(): Promise<void> {
     }
 }
 
-/** Terminate the backend process — zero RAM footprint until next run. */
+/** Terminate the backend process — zero RAM footprint until next run.
+ *  On Windows the backend is spawned `detached`, so a bare SIGTERM only kills
+ *  the parent shell, not the Python interpreter it launched. Use `taskkill
+ *  /T` to tear down the whole process tree reliably. */
 export function killBackend(): void {
     if (backendProc && !backendProc.killed) {
+        const pid = backendProc.pid;
         try {
-            backendProc.kill('SIGTERM');
+            if (process.platform === 'win32' && pid) {
+                // /T = tree, /F = force. Kills python.exe + children.
+                spawn('taskkill', ['/T', '/F', '/PID', String(pid)], { stdio: 'ignore', windowsHide: true });
+            } else {
+                backendProc.kill('SIGTERM');
+            }
         } catch {
             /* ignore */
         }
