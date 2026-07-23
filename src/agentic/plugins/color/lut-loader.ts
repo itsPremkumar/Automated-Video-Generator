@@ -5,6 +5,7 @@
  */
 
 import { AgenticPlugin, PluginCategory, Capability } from '../core/types.js';
+import { logInfo, logWarn, logError } from '../../../shared/logging/runtime-logging.js';
 
 interface LUTConfig {
     /** Directory containing .cube/.3dl files */
@@ -85,7 +86,7 @@ export const lutLoaderPlugin: AgenticPlugin = {
                 console.warn(`[lut-loader] LUT directory not found: ${lutDir}`);
             } else {
                 const files = fs.readdirSync(lutDir).filter((f) => f.endsWith('.cube') || f.endsWith('.3dl'));
-                console.log(`[lut-loader] Found ${files.length} LUT files:`, files);
+                logInfo(`[lut-loader] Found ${files.length} LUT files:`, files);
             }
         },
 

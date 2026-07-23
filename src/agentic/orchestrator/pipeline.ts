@@ -27,6 +27,7 @@ import { sourceFromUrl } from './source.js';
 import { withTimeout, estimateAudioDurationSafe, makePlaceholder, normalizeAudio, runFfmpeg } from './ffmpeg.js';
 import { makeContactSheet, writeDecisionsReport } from './artifacts.js';
 import type { PipelineRequest, PipelineResult, PipelineProgress } from './types.js';
+import { logInfo, logWarn, logError } from '../../shared/logging/runtime-logging.js';
 
 export type { PipelineRequest, PipelineResult, PipelineProgress };
 
@@ -65,7 +66,7 @@ export async function runAgenticPipeline(
     const sharedImagePool: { url: string }[] = [];
     sharedImagePool.length = 0;
 
-    pruneWorkspaces(req.pruneWorkspaces ?? Number(process.env.AGENTIC_KEEP_WORKSPACES ?? 25));
+    pruneWorkspaces(req.pruneWorkspaces ?? Number(process.env.AGENTIC_KEEP_WORKSPACES ?? 2));
 
     const brainOpts = cfg.brain ? { maxCalls: cfg.brain.maxCalls, maxFails: cfg.brain.maxFails } : undefined;
     const driverLLM: DriverLlmCallback | undefined = req.driverLLM;
@@ -391,7 +392,7 @@ export async function runAgenticPipeline(
             if (req.backgroundMusic) {
                 const bgmPath = inputAssetPath(req.backgroundMusic);
                 if (fs.existsSync(bgmPath)) {
-                    console.log(`  🎵 Using custom background music: ${req.backgroundMusic}`);
+                    logInfo(`  🎵 Using custom background music: ${req.backgroundMusic}`);
                     const normalized = normalizeAudio(bgmPath);
                     const finalPath = normalized && fs.existsSync(normalized) ? normalized : bgmPath;
                     if (finalPath) {

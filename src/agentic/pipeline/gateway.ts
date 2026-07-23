@@ -90,23 +90,24 @@ export async function runGateway(
             decisions.push(mkDecision(c, 'approved', decided.rationale, 'agent', false));
         } else if (decided.decision === 'replace') {
             let replaced: AssetCandidate | null = null;
-            for (let attempt = 0; attempt < maxRetries && !replaced; attempt++) {
+            let replacedApproved = false;
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
                 replaced = await reAcquireScene(plan, c.sceneIndex, decided.newKeywords ?? c.keywords, deps, ws);
-                if (replaced) {
-                    const rv = (await verifyAll([replaced], ws, deps))[0];
-                    const r2 = await deps.decide(replaced, {
-                        passes: rv.passes,
-                        confidence: rv.confidence,
-                        reason: rv.reason,
-                    });
-                    if (r2.decision === 'approved') {
-                        candidates.push(replaced);
-                        decisions.push(mkDecision(replaced, 'approved', r2.rationale, 'agent', false));
-                        break;
-                    }
+                if (!replaced) break; // network failure, no point retrying
+                const rv = (await verifyAll([replaced], ws, deps))[0];
+                const r2 = await deps.decide(replaced, {
+                    passes: rv.passes,
+                    confidence: rv.confidence,
+                    reason: rv.reason,
+                });
+                if (r2.decision === 'approved') {
+                    candidates.push(replaced);
+                    decisions.push(mkDecision(replaced, 'approved', r2.rationale, 'agent', false));
+                    replacedApproved = true;
+                    break;
                 }
             }
-            if (!replaced) {
+            if (!replacedApproved) {
                 decisions.push(mkDecision(c, 'rejected', decided.rationale, 'agent', false));
             }
         } else {

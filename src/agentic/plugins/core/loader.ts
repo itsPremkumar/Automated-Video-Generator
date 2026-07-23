@@ -5,6 +5,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { logInfo, logWarn, logError } from '../../../shared/logging/runtime-logging.js';
 import { PluginRegistry, createRegistry, getRegistry } from './registry.js';
 import { PluginContext, AgenticPlugin } from './types.js';
 
@@ -83,7 +84,7 @@ export async function loadPlugins(options: PluginLoaderOptions): Promise<PluginR
     }
 
     await registry.invokeOnLoad();
-    console.log(`[PluginLoader] Loaded ${registry.getEnabled().length} enabled plugins`);
+    logInfo(`[PluginLoader] Loaded ${registry.getEnabled().length} enabled plugins`);
     return registry;
 }
 
@@ -134,7 +135,7 @@ export function createDefaultConfigFile(outputPath: string): void {
             2,
         ),
     );
-    console.log(`[PluginLoader] Created default config at ${outputPath}`);
+    logInfo(`[PluginLoader] Created default config at ${outputPath}`);
 }
 
 export function getPluginRegistry(): PluginRegistry | null {

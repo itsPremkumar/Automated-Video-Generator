@@ -359,18 +359,37 @@ async function runVoice(cliArgs: CliArgs) {
         const { runVoiceStageSafe } = await import('../../agentic/media/voice-controller.js');
         const { generateAgenticVoiceovers } = await import('../../agentic/media/tts.js');
         const { estimateAudioDurationSafe } = await import('../../agentic/orchestrator/ffmpeg.js');
-        const rootWs = { root: ws.root } as any;
+        const { syllableWordTimings } = await import('../../lib/captions.js');
+        // Build a full AgenticWorkspace so VoiceController's audioDir resolves correctly.
+        const rootWs = {
+            root: ws.root,
+            assetsDir: ws.assetsDir,
+            imagesDir: ws.imagesDir,
+            videosDir: ws.videosDir,
+            musicDir: ws.musicDir,
+            verificationDir: ws.verificationDir,
+            audioDir: ws.audioDir,
+        } as any;
         let voiceovers;
         try {
             const vres = await runVoiceStageSafe(plan, rootWs, job.voice);
+            // Generate real word-timed caption segments (same as orchestrator path).
             voiceovers = {
                 voiceoverDriven: vres.voiceoverDriven,
-                scenes: vres.voices.map((v: any) => ({ sceneIndex: v.sceneIndex, audioPath: v.audioPath, durationSec: v.durationSec, captionSegments: [] })),
+                scenes: vres.voices.map((v: any) => ({
+                    sceneIndex: v.sceneIndex,
+                    audioPath: v.audioPath,
+                    durationSec: v.durationSec,
+                    captionSegments: syllableWordTimings(
+                        plan.scenes[v.sceneIndex]?.voiceoverText ?? '',
+                        Math.round((v.durationSec || 2) * 1000),
+                    ),
+                })),
                 fallbackUsed: vres.fallbackUsed,
             };
         } catch (e: any) {
             console.warn(`  ⚠ kokoro voice stage unavailable ("${e?.message}"); falling back to Edge-TTS dispatcher`);
-            voiceovers = await generateAgenticVoiceovers(plan, { root: ws.root } as any, job.voice);
+            voiceovers = await generateAgenticVoiceovers(plan, rootWs, job.voice);
         }
 
         if (!targetScene) {
@@ -404,18 +423,17 @@ async function runRender(cliArgs: CliArgs) {
         console.log(`  [RENDER] ${job.title || id}`);
         console.log(`═══════════════════════════════════════════`);
 
-        // Reconstruct PipelineResult for render
+        // Build minimal PipelineResult-like object
         const manifest = readJson(ws.root, 'render-manifest.json') || readJson(ws.root, 'scene-data.json');
         if (!manifest) {
             console.error(`✖ No manifest found for job "${id}". Run "visuals" stage first.`);
             continue;
         }
-
-        // Build minimal PipelineResult-like object
+        const voiceoverMeta = readJson(ws.root, 'voiceover-meta.json');
         const result: any = {
             backend: job.backend ?? 'agent',
             plan,
-            workspace: { root: ws.root, assetsDir: ws.assetsDir },
+            workspace: { root: ws.root, assetsDir: ws.assetsDir, imagesDir: ws.imagesDir, videosDir: ws.videosDir, musicDir: ws.musicDir, verificationDir: ws.verificationDir, audioDir: ws.audioDir },
             manifest: manifest.assets ? manifest : {
                 assets: plan.scenes.map((s: any, i: number) => ({
                     sceneIndex: i,
@@ -423,14 +441,14 @@ async function runRender(cliArgs: CliArgs) {
                     localPath: s.localAsset ? path.join(ws.assetsDir, s.localAsset) : undefined,
                     durationSec: s.durationSec,
                 })),
-                voiceoverDriven: readJson(ws.root, 'voiceover-meta.json')?.voiceoverDriven ?? false,
+                voiceoverDriven: voiceoverMeta?.voiceoverDriven ?? false,
             },
-            voiceovers: readJson(ws.root, 'voiceover-meta.json'),
+            voiceovers: voiceoverMeta,
             gate: { pass: true, checks: [] },
             fullyAgentDriven: true,
         };
 
-        // Build voiceovers scenes from files on disk
+        // Build voiceovers scenes from files on disk (matches orchestrator path)
         const audioDir = ws.audioDir;
         const voiceScenes: any[] = [];
         if (fs.existsSync(audioDir)) {
@@ -439,17 +457,18 @@ async function runRender(cliArgs: CliArgs) {
                 const mp3File = path.join(audioDir, `scene_${s.sceneNumber}_voice.mp3`);
                 const found = [audioFile, mp3File].find(f => fs.existsSync(f));
                 if (found) {
+                    const dur = s.durationSec || 4;
                     voiceScenes.push({
                         sceneIndex: s.sceneNumber - 1,
                         audioPath: found,
-                        durationSec: s.durationSec,
+                        durationSec: dur,
                         captionSegments: s.captionSegments || [],
                     });
                 }
             }
         }
         if (voiceScenes.length > 0) {
-            result.voiceovers = { scenes: voiceScenes, voiceoverDriven: true, fallbackUsed: false };
+            result.voiceovers = { scenes: voiceScenes, voiceoverDriven: true, fallbackUsed: voiceoverMeta?.fallbackUsed ?? false };
         }
 
         const { renderAgenticSlideshow } = await import('../../agentic/orchestrator/render.js');

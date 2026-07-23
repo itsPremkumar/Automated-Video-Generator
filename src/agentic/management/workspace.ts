@@ -118,10 +118,10 @@ export function readJson<T = any>(ws: AgenticWorkspace, relativePath: string): T
 
 /**
  * Prune old workspaces so workspace/jobs never grows unbounded.
- * Keeps the N most-recent jobs (default 25) and deletes the rest. Safe to call
+ * Keeps the N most-recent jobs (default 2) and deletes the rest. Safe to call
  * at the start of every run. Returns the number of workspaces removed.
  */
-export function pruneWorkspaces(maxKeep = 25, root: string = WORKSPACES_ROOT): number {
+export function pruneWorkspaces(maxKeep = 2, root: string = WORKSPACES_ROOT): number {
     try {
         if (!fs.existsSync(root)) return 0;
         const dirs = fs

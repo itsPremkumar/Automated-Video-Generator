@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { runVoiceStage } from './voice-controller.js';
 import { AgenticWorkspace } from '../management/workspace.js';
-import { killBackend } from '../../lib/speech-backend.js';
+import { ensureBackend, killBackend } from '../../lib/speech-backend.js';
 import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../shared/runtime/paths.js';
 
 // Ensure the controller targets the voicebox provider + real python.
@@ -41,7 +41,17 @@ function makeWorkspace(): AgenticWorkspace {
     };
 }
 
-test('runVoiceStage generates real WAVs via live speech backend (auto-provisioned)', { timeout: 240_000 }, async () => {
+test('runVoiceStage generates real WAVs via live speech backend (auto-provisioned)', { timeout: 240_000 }, async (t) => {
+    // This is a live-backend integration test. Skip (not fail) when the
+    // vendored voicebox backend cannot be started — e.g. no torch/kokoro venv
+    // present at VOICEBOX_PYTHON. Keeps the suite green offline while still
+    // exercising the real TTS path when the backend IS provisioned.
+    const backendUp = await ensureBackend();
+    if (!backendUp) {
+        t.skip('voicebox backend unavailable (set VOICEBOX_PYTHON to a torch/kokoro venv to enable)');
+        return;
+    }
+
     const ws = makeWorkspace();
     const plan = makePlan();
 
