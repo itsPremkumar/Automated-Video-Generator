@@ -116,7 +116,8 @@
     "agentic:mode:music": "tsx src/adapters/cli/agentic-batch.ts --mode download-music",
     "agentic:mode:voice-edgetts": "tsx src/adapters/cli/agentic-batch.ts --mode generate-voice-edgetts",
     "agentic:mode:voice-voicebox": "tsx src/adapters/cli/agentic-batch.ts --mode generate-voice-voicebox",
-    "agentic:mode:clone": "tsx src/adapters/cli/agentic-batch.ts --mode clone-voice"
+    "agentic:mode:clone": "tsx src/adapters/cli/agentic-batch.ts --mode clone-voice",
+    "agentic:fetch": "tsx src/adapters/cli/agentic-batch.ts --search"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.28.0",

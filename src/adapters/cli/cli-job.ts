@@ -124,6 +124,14 @@ export interface AgenticCliJob {
     downloadImagesOnly?: boolean;
     /** When mode='download-videos', only download video assets (no images/music). */
     downloadVideosOnly?: boolean;
+    /** Bulk fetch: when mode='download-images' and this is set, ignore the
+     *  script/scenes and download `downloadCount` distinct images of this exact
+     *  subject (e.g. "eagle", "mountain sunset"). Enables "download 10 eagle
+     *  images" as a single command. */
+    searchQuery?: string;
+    /** Number of distinct assets to download for a bulk `searchQuery` fetch
+     *  (overrides candidatesPerAsset for the bulk path). */
+    downloadCount?: number;
 }
 
 /**

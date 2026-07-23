@@ -202,5 +202,22 @@
     "cloneVoiceFrom": "reference_voice.wav",
     "candidatesPerAsset": 1,
     "mode": "clone-voice"
+  },
+  {
+    "id": "sf_bulk_eagle",
+    "title": "Bulk: 10 Eagle Images",
+    "topic": "eagle reference pack",
+    "mode": "download-images",
+    "searchQuery": "eagle",
+    "downloadCount": 10,
+    "orientation": "landscape"
+  },
+  {
+    "id": "sf_bulk_ocean",
+    "title": "Bulk: 5 Ocean Wave Videos",
+    "topic": "ocean broll pack",
+    "mode": "download-videos",
+    "searchQuery": "ocean waves",
+    "downloadCount": 5
   }
 ]

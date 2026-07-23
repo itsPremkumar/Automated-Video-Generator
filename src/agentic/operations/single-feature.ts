@@ -26,7 +26,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { fetchVisualsForScene, downloadMedia } from '../../lib/visual-fetcher/index.js';
+import { fetchVisualsForScene, searchImages, downloadMedia } from '../../lib/visual-fetcher/index.js';
 import { resolveFreeBackgroundMusic } from '../../lib/free-music.js';
 import { parseScript } from '../../lib/script-parser.js';
 import { buildPlan, applyProEdits } from '../pipeline/plan.js';
@@ -79,10 +79,31 @@ async function buildPlanOnly(job: AgenticCliJob, id: string): Promise<{ plan: Pl
 
 /** Download only image assets for each scene. */
 async function runDownloadImages(job: AgenticCliJob, id: string): Promise<SingleFeatureResult> {
-    const { plan, ws } = await buildPlanOnly(job, id);
+    const ws = createAgenticWorkspace(id);
     const outDir = path.join(ws.root, 'download-images');
     fs.mkdirSync(outDir, { recursive: true });
     const outputs: string[] = [];
+
+    // ── Bulk fetch path: "download N images of <subject>" ──────────────
+    // When an explicit `searchQuery` is supplied (and mode=download-images),
+    // bypass the per-scene script logic and pull `downloadCount` DISTINCT
+    // images of that exact subject in one shot.
+    if (job.searchQuery && job.searchQuery.trim().length > 0) {
+        const query = job.searchQuery.trim();
+        const count = Math.max(1, job.downloadCount ?? job.candidatesPerAsset ?? 10);
+        const { runBulkImageFetch } = await import('./bulk-fetch.js');
+        const fetched = await runBulkImageFetch(query, count, outDir, job.orientation ?? 'portrait', 'image');
+        for (const p of fetched) outputs.push(p);
+        return {
+            mode: 'download-images',
+            jobId: id,
+            workspace: ws,
+            outputs,
+            summary: `Bulk downloaded ${outputs.length}/${count} image(s) for query="${query}" → ${outDir}`,
+        };
+    }
+
+    const { plan } = await buildPlanOnly(job, id);
     const sceneFilter = job.sceneIndices ?? plan.scenes.map((_, i) => i);
     for (const i of sceneFilter) {
         const scene = plan.scenes[i];

@@ -17,9 +17,12 @@
  *   npx tsx src/adapters/cli/agentic-batch.ts --mode clone-voice --job <id>      # Clone a person's voice
  *   npx tsx src/adapters/cli/agentic-batch.ts --mode plan                        # Plan ONLY (no network)
  *   npx tsx src/adapters/cli/agentic-batch.ts --mode download-images --job gen_3scene_hookfirst
+ *   npx tsx src/adapters/cli/agentic-batch.ts --search "eagle" --count 10        # Download 10 eagle images (ad-hoc, no JSON)
+ *   npx tsx src/adapters/cli/agentic-batch.ts --search "ocean waves" --count 5 --kind video
  *
- * You can also set "mode" per-job inside agentic-scripts.json (e.g. "mode": "download-music")
- * to run that one job in single-feature mode during a normal batch run.
+ * Bulk fetch can ALSO be driven from agentic-scripts.json by setting
+ *   "mode": "download-images", "searchQuery": "eagle", "downloadCount": 10
+ * on a job — the bulk path ignores the script and pulls N distinct images of the subject.
  * Environment:
  *   AGENTIC_WAVE_SIZE=3           Override wave size
  *   AGENTIC_PREVIEW=1             Enable preview mode
@@ -96,6 +99,25 @@ async function main() {
             }
             return;
         }
+        return;
+    }
+
+    // ─── Ad-hoc bulk fetch: "download N <subject> images/videos" ───
+    //   npx tsx src/adapters/cli/agentic-batch.ts --search "eagle" --count 10
+    //   npx tsx src/adapters/cli/agentic-batch.ts --search "ocean waves" --count 5 --kind video
+    // No JSON editing required — runs standalone from the CLI args.
+    const searchQuery = args.search ? String(args.search) : undefined;
+    if (searchQuery) {
+        const count = Number(args.count || 10);
+        const kind = (args.kind === 'video' ? 'video' : 'image') as 'image' | 'video';
+        const { runBulkImageFetch } = await import('../../agentic/operations/bulk-fetch.js');
+        const outDir = path.resolve(process.cwd(), 'workspace', 'bulk', kind === 'video' ? 'videos' : 'images', searchQuery.replace(/[^a-z0-9]+/gi, '_').toLowerCase().slice(0, 40));
+        fs.mkdirSync(outDir, { recursive: true });
+        console.log(`\n🎯 Bulk ${kind} fetch: "${searchQuery}" × ${count} → ${outDir}`);
+        const files = await runBulkImageFetch(searchQuery, count, outDir, (args.orientation as any) || '', kind);
+        console.log(`  ✅ Downloaded ${files.length}/${count} distinct ${kind}(s):`);
+        for (const f of files.slice(0, 10)) console.log(`     • ${f}`);
+        if (files.length > 10) console.log(`     … +${files.length - 10} more`);
         return;
     }
 
