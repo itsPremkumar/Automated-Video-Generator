@@ -150,11 +150,22 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     }, []);
     const totalDur = durations.reduce((a, d) => a + d, 0) || DEFAULT_SCENE_SEC;
 
-    // Output frame size (hoisted above the FX map so Ken Burns zoompan renders
-    // at the SAME dimensions as the slideshow — otherwise portrait jobs get
-    // landscape-squashed kenBurns clips). Kept in sync with W/H below.
-    const outW = job.orientation === 'landscape' ? 1280 : 720;
-    const outH = job.orientation === 'landscape' ? 720 : 1280;
+    // Output frame size. Driven by `orientation` for backward compat, but
+    // ALSO honor an explicit `aspect` override (e.g. "1:1" square, "9:16"
+    // portrait, "16:9" landscape). Previously `aspect` was silently ignored
+    // and every non-landscape job fell back to 720x1280 — so a square
+    // (1:1) job rendered as a squashed portrait. This is the canonical
+    // resolution used everywhere below (FX, slideshow, overlays, export).
+    const PORT = 720; // portrait/reel short side
+    const LAND = 1280; // landscape long side
+    let outW: number;
+    let outH: number;
+    const asp = job.aspect;
+    if (asp === '1:1') { outW = PORT; outH = PORT; }
+    else if (asp === '16:9') { outW = LAND; outH = Math.round(LAND * 9 / 16); }
+    else if (asp === '9:16') { outW = PORT; outH = Math.round(PORT * 16 / 9); }
+    else if (job.orientation === 'landscape') { outW = LAND; outH = Math.round(LAND * 9 / 16); }
+    else { outW = PORT; outH = Math.round(PORT * 16 / 9); } // portrait default
 
     // ── 2) Per-clip visual FX (speed / stabilize / chromaKey / bw / blur / kenBurns)
     //        then per-scene inline-tag grade + vignette. ──
@@ -225,7 +236,10 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     }
 
     // ── 6) Audio: voice + music(loop+normalize) + sfx on cuts ──
+    // Remove any stale final from a previous run so a failed/skipped mix can't
+    // silently leave an out-of-date video behind (was masking the aspect fix).
     const finalVideo = path.join(outDir, 'final.mp4');
+    if (fs.existsSync(finalVideo)) fs.rmSync(finalVideo, { force: true });
     const audioMixed = path.join(outDir, 'mixed_audio.aac');
     const musicForMix = (music && fs.existsSync(music))
         ? (job.loopMusic ? loopAudioToDuration(music, audioMixed + '.loop.mp3', Math.ceil(totalDur)) : music)

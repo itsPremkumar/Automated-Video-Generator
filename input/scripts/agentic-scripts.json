@@ -413,5 +413,130 @@
     "watermark": "logo.png",
     "lowerThird": "Blue World",
     "exportFormat": "gif"
+  },
+  {
+    "id": "var_w1_portrait_fx",
+    "title": "W1: Portrait + KenBurns+chroma+blur+stabilize (tests portrait Ken Burns fix)",
+    "topic": "nature montage",
+    "script": "A calm lake at dawn. [Visual: lake]\nForests breathe with the wind. [Visual: forest]\nStars wheel across the night. [Visual: night sky]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "musicQuery": "ambient piano",
+    "kenBurns": true,
+    "stabilizeScenes": [
+      0
+    ],
+    "chromaKeyScenes": [
+      1
+    ],
+    "blurScenes": [
+      2
+    ],
+    "titleCard": {
+      "title": "Nature",
+      "subtitle": "Montage"
+    },
+    "lowerThird": "Shot on AVG",
+    "endCta": "Subscribe!",
+    "exportFormat": "gif",
+    "posterScene": 0,
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "var_w1_landscape_grade",
+    "title": "W1: Landscape + per-scene grade (warm/cinematic/sepia)",
+    "topic": "mountain adventure",
+    "script": "Did you know mountains shape our climate? [Visual: mountain peak] [Grade: warm]\nSnow caps store fresh water. [Visual: glacier] [Grade: cinematic]\nRivers begin in the hills. [Visual: river valley] [Grade: sepia]",
+    "mode": "compose",
+    "orientation": "landscape",
+    "musicQuery": "cinematic ambient",
+    "filterByScene": {
+      "0": "bw"
+    },
+    "sfxOnCut": true,
+    "endCta": "Follow for more!",
+    "exportFormat": "gif",
+    "posterScene": 0,
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "var_w1_square_speed",
+    "title": "W1: Square + clip speed + emoji + progress bar",
+    "topic": "blue ocean",
+    "script": "The ocean stretches to the horizon. [Visual: ocean]\nWaves carry the light. [Visual: waves]\nA quiet blue world. [Visual: blue]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "aspect": "1:1",
+    "musicQuery": "ambient",
+    "progressBar": true,
+    "emojiByScene": {
+      "0": "🌊",
+      "2": "💧"
+    },
+    "clipSpeedByScene": {
+      "2": 0.8
+    },
+    "titleCard": {
+      "title": "Blue World"
+    },
+    "exportFormat": "gif"
+  },
+  {
+    "id": "var_w2_slowmo_story",
+    "title": "W2: 5-scene story arc + slow-mo + dialogue voices",
+    "topic": "startup journey",
+    "script": "Every startup begins with a single idea. [Visual: idea lightbulb] [Grade: warm] [Transition: fade]\nThe first prototype is always rough. [Visual: prototype sketch] [Grade: neutral] [Transition: slide]\nThen comes the moment of truth — the first customer. [Visual: first customer] [Grade: cinematic] [Transition: zoomblur]\nGrowth accelerates, but challenges multiply. [Visual: growth chart] [Grade: vivid] [Transition: cut]\nThe key insight: persistence beats talent. [Visual: success] [Grade: warm] [Transition: fade]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "voice": "en-US-GuyNeural",
+    "dialogueVoices": [
+      "en-US-AriaNeural",
+      "en-US-JennyNeural"
+    ],
+    "variablePacing": true,
+    "musicIntensity": "calm",
+    "endCta": "Subscribe!",
+    "posterScene": 0,
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "var_w2_bw_kinetics",
+    "title": "W2: Portrait + bw filter + kinetic + j-cut",
+    "topic": "video editing tips",
+    "script": "Most video editors waste hours on manual tasks. [Visual: video editing] [Grade: cool] [Transition: cut]\nHere's how to automate your editing workflow. [Visual: editing software] [KenBurns: off] [CaptionTheme: bold]\nThese shortcuts will save you 10 hours per week. [Visual: productivity] [Grade: vivid] [Transition: zoomblur]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "captions": "karaoke",
+    "captionTheme": "bold",
+    "kineticText": true,
+    "jCutSec": 0.4,
+    "filterByScene": {
+      "0": "bw"
+    },
+    "musicIntensity": "energetic",
+    "endCta": "Try it now!",
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "var_w2_landscape_nature",
+    "title": "W2: Landscape nature + minimal captions + documentary preset",
+    "topic": "forest wildlife",
+    "script": "Deep in the forest, nature reveals its secrets. [Visual: forest wildlife] [Grade: cinematic] [Transition: fade]\nEvery creature plays its part in the ecosystem. [Visual: ecosystem] [Grade: cool] [Transition: slide]\nThe most beautiful moments happen in silence. [Visual: peaceful nature] [Grade: neutral] [Transition: fade]",
+    "mode": "compose",
+    "orientation": "landscape",
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "preset": "documentary",
+    "musicIntensity": "calm",
+    "backgroundMusic": "ambient_nature.mp3",
+    "musicVolume": 0.15,
+    "endCta": "Explore more.",
+    "exportFormat": "gif",
+    "posterScene": 0,
+    "contactSheet": true
   }
 ]
