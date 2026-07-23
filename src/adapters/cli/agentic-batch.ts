@@ -137,7 +137,7 @@ async function main() {
             'plan', 'visuals', 'voice', 'render', 'download-images', 'download-videos',
             'download-music', 'download-sfx', 'download-url', 'generate-voice-edgetts',
             'generate-voice-voicebox', 'clone-voice', 'apply-advanced', 'rerender',
-            'render-gif', 'render-poster', 'render-contact-sheet',
+            'render-gif', 'render-poster', 'render-contact-sheet', 'compose',
         ];
         if (!validModes.includes(singleMode)) {
             console.error(`✖ Invalid --mode "${singleMode}". Valid: ${validModes.join(', ')}`);

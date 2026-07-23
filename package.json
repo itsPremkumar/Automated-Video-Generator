@@ -121,6 +121,7 @@
     "agentic:mode:url": "tsx src/adapters/cli/agentic-batch.ts --mode download-url",
     "agentic:mode:advanced": "tsx src/adapters/cli/agentic-batch.ts --mode apply-advanced",
     "agentic:mode:rerender": "tsx src/adapters/cli/agentic-batch.ts --mode rerender",
+    "agentic:mode:compose": "tsx src/adapters/cli/agentic-batch.ts --mode compose",
     "agentic:fetch": "tsx src/adapters/cli/agentic-batch.ts --search"
   },
   "dependencies": {

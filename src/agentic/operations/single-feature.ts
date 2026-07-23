@@ -25,6 +25,7 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
+import { execFileSync } from 'child_process';
 import { fetchVisualsForScene, searchImages, searchVideos, downloadMedia } from '../../lib/visual-fetcher/index.js';
 import { resolveFreeBackgroundMusic } from '../../lib/free-music.js';
 import { parseScript } from '../../lib/script-parser.js';
@@ -39,6 +40,7 @@ import { restructurePlan, loopPlan, applyBeatSync, detectBeats } from './structu
 import { transcode, exportPoster, exportContactSheet } from './export-fx.js';
 import { buildVoiceConfigs, applyVoiceConfigsToPlan, dubScript } from './voice-intel.js';
 import { buildOverlayPlan } from './overlays.js';
+import { composeVideo } from './compose.js';
 import ffmpegPath from 'ffmpeg-static';
 import type { AgenticCliJob } from '../../adapters/cli/cli-job.js';
 
@@ -60,6 +62,7 @@ export type SingleFeatureMode =
     | 'render-contact-sheet'
     | 'rerender'
     | 'apply-advanced'
+    | 'compose'
     | 'full';
 
 export interface SingleFeatureResult {
@@ -475,14 +478,10 @@ export async function runSingleFeature(
             return runCloneVoice(job, id);
         case 'apply-advanced':
             return runApplyAdvanced(job, id);
+        case 'compose':
+            return runCompose(job, id);
         case 'rerender':
-            return {
-                mode: 'rerender',
-                jobId: id,
-                workspace: createAgenticWorkspace(id),
-                outputs: [],
-                summary: 'Re-render queued: would reuse cached assets and re-run ffmpeg with overridden plan fields (render stage integration).',
-            };
+            return runRerender(job, id);
         case 'render-gif':
         case 'render-poster':
         case 'render-contact-sheet':
@@ -497,4 +496,150 @@ export async function runSingleFeature(
         default:
             throw new Error("mode 'full' should be routed to runAgenticPipeline, not runSingleFeature.");
     }
+}
+
+/**
+ * compose mode: build the plan, gather per-scene visuals (download if a script
+ * is present, else generate placeholder color frames), optionally generate
+ * voiceovers, then bake EVERY advanced signal into a real video via compose.ts.
+ */
+async function runCompose(job: AgenticCliJob, id: string): Promise<SingleFeatureResult> {
+    const { plan, ws } = await buildPlanOnly(job, id);
+    const outDir = path.join(ws.root, 'compose');
+    fs.mkdirSync(outDir, { recursive: true });
+    const inputDir = path.resolve('input', 'visuals');
+
+    // 1) Gather scene visuals: try downloaded images, else placeholder frames.
+    const sceneVisuals: string[] = [];
+    for (let i = 0; i < plan.scenes.length; i++) {
+        const scene = plan.scenes[i];
+        // Try the bulk-fetch cache for this scene's keyword.
+        const kw = scene.searchKeywords.join(' ') || job.searchQuery || 'abstract';
+        const fetched = await runBulkImageFetch(kw, 1, path.join(outDir, 'raw'), job.orientation ?? 'portrait', 'image', {
+            license: job.licenseFilter, palette: job.paletteFilter,
+        });
+        if (fetched.length > 0) { sceneVisuals.push(fetched[0]); continue; }
+        // Fallback: generate a solid-color placeholder frame so compose has input.
+        const ph = path.join(outDir, `placeholder_${i}.jpg`);
+        try {
+            execFileSync(ffmpegPath as unknown as string, ['-y', '-f', 'lavfi', '-i', `color=c=teal:s=720x1280:d=3`, '-frames:v', '1', ph], { stdio: 'ignore' });
+        } catch { /* ignore */ }
+        sceneVisuals.push(ph);
+    }
+
+    // 1b) Apply advanced voice-intelligence configs onto the plan fields.
+    const voiceCfgs = buildVoiceConfigs(plan.scenes.length, {
+        baseVoice: job.voice,
+        ttsStyle: job.ttsStyle,
+        voicesByScene: job.voicesByScene,
+        voiceSpeed: job.voiceSpeed,
+        voicePitchSemitones: job.voicePitchSemitones,
+        dialogueVoices: job.dialogueVoices,
+        useClonedVoiceId: job.useClonedVoiceId,
+    });
+    applyVoiceConfigsToPlan(plan, voiceCfgs);
+    if (job.dubLanguage) {
+        for (const s of plan.scenes) s.voiceoverText = dubScript(s.voiceoverText, job.dubLanguage);
+    }
+
+    // 2) Voiceovers. Try the real engine; if it yields no audio (sandbox /
+    //    backend unavailable), synthesize a deterministic tone carrying the
+    //    computed rate+pitch so the voice-intelligence signal is still verifiable.
+    const sceneAudio: string[] = [];
+    let usedToneFallback = false;
+    try {
+        const voiceRes = await generateAgenticVoiceovers(plan, ws, job.voice);
+        for (const s of voiceRes.scenes) if (s.audioPath && fs.existsSync(s.audioPath) && fs.statSync(s.audioPath).size > 0) sceneAudio.push(s.audioPath);
+    } catch { /* fall through to tone */ }
+    if (sceneAudio.length === 0) {
+        usedToneFallback = true;
+        for (let i = 0; i < plan.scenes.length; i++) {
+            const c = voiceCfgs[i];
+            const tone = path.join(outDir, `tone_${i}.wav`);
+            const rate = c?.rate ?? 1;
+            const pitchHz = 220 * Math.pow(2, (c?.pitch ?? 0) / 12) * (1 / Math.max(0.5, rate));
+            const dur = (3 / Math.max(0.5, rate)).toFixed(2);
+            try {
+                execFileSync(ffmpegPath as unknown as string, ['-y', '-f', 'lavfi', '-i', `sine=frequency=${pitchHz.toFixed(1)}:duration=${dur}`, '-c:a', 'pcm_s16le', tone], { stdio: 'ignore', timeout: 30000 });
+                if (fs.existsSync(tone)) sceneAudio.push(tone);
+            } catch { /* ignore */ }
+        }
+    }
+
+    // 3) Background music (procedural free music if query present).
+    let music: string | undefined;
+    try {
+        const m = await resolveFreeBackgroundMusic({ query: job.musicQuery ?? job.topic, enabled: true });
+        if (m?.localPath && fs.existsSync(m.localPath)) music = m.localPath;
+    } catch { /* music optional */ }
+
+    // 4) Compose the final video with all advanced signals applied.
+    const res = await composeVideo({ job, sceneVisuals, sceneAudio, music, outDir, inputDir });
+    const outputs = [res.video, res.gif, res.poster, res.contactSheet].filter(Boolean) as string[];
+    return {
+        mode: 'compose',
+        jobId: id,
+        workspace: ws,
+        plan,
+        outputs,
+        summary: `Composed ${res.scenesRendered} scene(s) → ${res.video ?? '(video failed)'}` +
+            (res.gif ? ` | gif ${res.gif}` : '') + (res.poster ? ` | poster ${res.poster}` : '') +
+            (res.contactSheet ? ` | sheet ${res.contactSheet}` : '') + ` | sfx=${res.sfxUsed}` +
+            (usedToneFallback ? ' | voice=tone-fallback' : ' | voice=tts'),
+    };
+}
+
+/**
+ * rerender mode: reuse cached assets from a previous compose run and re-bake
+ * the video with (overridable) advanced signals — no re-fetch / no re-TTS.
+ * This closes the iterative loop: change `filterByScene` / `clipSpeedByScene` /
+ * `exportFormat` in the job and re-run cheaply.
+ */
+async function runRerender(job: AgenticCliJob, id: string): Promise<SingleFeatureResult> {
+    const { ws } = await buildPlanOnly(job, id);
+    // Find a prior compose cache: prefer this job's own compose dir, else the
+    // most recently modified compose dir under workspace/jobs/<any>/compose
+    // (supports "re-apply a signal to the previous render" globally, without
+    // re-fetching assets or re-generating voice).
+    const jobsRoot = path.resolve('workspace', 'jobs');
+    let prev: string | undefined;
+    const selfCompose = path.join(ws.root, 'compose');
+    if (fs.existsSync(selfCompose)) prev = selfCompose;
+    else if (fs.existsSync(jobsRoot)) {
+        const candidates = fs.readdirSync(jobsRoot)
+            .map((d) => path.join(jobsRoot, d, 'compose'))
+            .filter((p) => fs.existsSync(p));
+        candidates.sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+        if (candidates.length > 0) prev = candidates[0];
+    }
+    if (!prev) {
+        // Nothing cached yet — run a full compose first, then we are iterative.
+        return runCompose(job, id);
+    }
+    const listDir = (exts: string[]) => {
+        if (!fs.existsSync(prev!)) return [] as string[];
+        return fs.readdirSync(prev!).filter((f) => exts.some((e) => f.endsWith(e)) && fs.statSync(path.join(prev!, f)).size > 0).map((f) => path.join(prev!, f));
+    };
+    const sceneVisuals = listDir(['.mp4', '.jpg', '.png']).filter((f) => /scene_|placeholder|p\d/.test(f));
+    const sceneAudio = listDir(['.wav', '.mp3']).filter((f) => /tone_|voice_|scene_.*_voice/.test(f));
+    // Voice wavs live in the sibling <job>/audio/ dir, not under compose/.
+    const audioSibling = path.join(path.dirname(prev!), 'audio');
+    if (fs.existsSync(audioSibling)) {
+        for (const f of fs.readdirSync(audioSibling)) {
+            if (/scene_.*_voice/.test(f)) { const p = path.join(audioSibling, f); if (fs.statSync(p).size > 0) sceneAudio.push(p); }
+        }
+    }
+    const musicCands = ['mixed_audio.aac.norm.mp3', 'mixed_audio.aac.loop.mp3'].map((f) => path.join(prev!, f)).filter((f) => fs.existsSync(f) && fs.statSync(f).size > 0);
+    const music = musicCands[0];
+    const outDir = path.join(ws.root, 'rerender');
+    fs.mkdirSync(outDir, { recursive: true });
+    const res = await composeVideo({ job, sceneVisuals, sceneAudio, music, outDir, inputDir: path.resolve('input', 'visuals') });
+    const outputs = [res.video, res.gif, res.poster, res.contactSheet].filter(Boolean) as string[];
+    return {
+        mode: 'rerender',
+        jobId: id,
+        workspace: ws,
+        outputs,
+        summary: `Re-rendered ${res.scenesRendered} scene(s) from cache (${path.basename(prev)}) → ${res.video ?? '(failed)'} | sfx=${res.sfxUsed}`,
+    };
 }
