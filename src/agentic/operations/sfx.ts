@@ -39,10 +39,15 @@ async function searchOpenverseAudio(query: string, count = 3): Promise<{ url: st
 /** A tiny built-in fallback so SFX never hard-fails offline: generate a short
  *  silent/tone clip locally with ffmpeg (acts as a placeholder marker). */
 function makeFallbackTone(outPath: string, ms = 400): void {
-    execFileSync(ff(), [
-        '-y', '-f', 'lavfi', '-i', `sine=frequency=440:duration=${ms / 1000}`,
-        '-ac', '1', '-ar', '44100', outPath,
-    ], { stdio: 'ignore' });
+    try {
+        execFileSync(ff(), [
+            '-y', '-f', 'lavfi', '-i', `sine=frequency=440:duration=${ms / 1000}`,
+            '-ac', '1', '-ar', '44100', outPath,
+        ], { stdio: 'ignore' });
+    } catch (e: any) {
+        // Tone is a non-fatal placeholder; log the real cause for observability.
+        console.warn(`  ⚠ makeFallbackTone failed: ${String(e?.stderr ?? e?.message).slice(0, 200)}`);
+    }
 }
 
 export interface SfxFetchResult {
@@ -70,7 +75,9 @@ export async function fetchSfxForScene(
         try {
             execFileSync(ff(), ['-y', '-i', it.url, '-t', '5', '-ac', '1', '-ar', '44100', dest], { stdio: 'ignore', timeout: 20000 });
             if (fs.existsSync(dest) && fs.statSync(dest).size > 0) { wrote = true; break; }
-        } catch { /* try next */ }
+        } catch (e: any) {
+            console.warn(`  ⚠ sfx fetch failed for "${query}": ${String(e?.stderr ?? e?.message).slice(0, 200)}`);
+        }
     }
     if (!wrote) makeFallbackTone(dest);
     return { sceneIndex, localPath: dest, query, fromCache: false };
@@ -107,7 +114,8 @@ export function normalizeAudio(input: string, output: string, targetLufs = -14):
             '-af', `loudnorm=I=${targetLufs}:TP=-1.5:LRA=11`,
             '-ar', '44100', '-ac', '2', output,
         ], { stdio: 'ignore', timeout: 60000 });
-    } catch {
+    } catch (e: any) {
+        console.warn(`  ⚠ normalizeAudio failed: ${String(e?.stderr ?? e?.message).slice(0, 200)}`);
         return input;
     }
     return fs.existsSync(output) && fs.statSync(output).size > 0 ? output : input;
@@ -122,7 +130,8 @@ export function loopAudioToDuration(input: string, output: string, targetSec: nu
             '-y', '-stream_loop', '-1', '-i', input,
             '-t', String(targetSec), '-ac', '2', output,
         ], { stdio: 'ignore', timeout: 60000 });
-    } catch {
+    } catch (e: any) {
+        console.warn(`  ⚠ loopAudioToDuration failed: ${String(e?.stderr ?? e?.message).slice(0, 200)}`);
         return input;
     }
     return fs.existsSync(output) && fs.statSync(output).size > 0 ? output : input;

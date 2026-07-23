@@ -702,7 +702,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
         try {
             execFileSync(ff(), ['-y', '-i', withOverlays, '-i', watermarkPath, '-filter_complex', '[0:v][1:v]overlay=W-w-20:H-h-20', '-c:v', 'libx264', '-preset', 'veryfast', wm], { stdio: 'ignore', timeout: 120000 });
             if (fs.existsSync(wm)) withOverlays = wm;
-        } catch { /* keep previous */ }
+        } catch (e: any) { console.warn(`  ⚠ watermark ffmpeg failed: ${String(e?.stderr ?? e?.message).slice(0, 300)}`); /* keep previous */ }
     }
     // Emoji stickers: overlay each rendered PNG at its scene window.
     for (const st of stickerOverlays) {

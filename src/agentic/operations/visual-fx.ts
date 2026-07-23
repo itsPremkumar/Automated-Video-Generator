@@ -120,7 +120,9 @@ export function applySceneFx(clipPath: string, sceneIndex: number, fx: FxJob, wo
         const trf = path.join(workDir, `fx_${sceneIndex}_stab.trf`);
         try {
             execFileSync(ff(), ['-y', '-i', clipPath, '-vf', `vidstabdetect=shakiness=5:accuracy=15:result=${trf}`, '-an', '-f', 'null', '-'], { stdio: 'ignore', timeout: 60000 });
-        } catch { /* ignore */ }
+        } catch (e: any) {
+            console.warn(`  ⚠ vidstabdetect failed (scene ${sceneIndex}): ${String(e?.stderr ?? e?.message).slice(0, 200)}`);
+        }
         if (fs.existsSync(trf)) {
             filters.push(`vidstabtransform=smoothing=30:input=${trf}`);
             tag.push('stab');
