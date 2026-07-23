@@ -34,14 +34,22 @@ export interface FxJob {
     blurScenes?: number[];
     /** Ken Burns global toggle (zoom/pan across stills). */
     kenBurns?: boolean;
+    /** Optional output frame size for Ken Burns zoompan. Defaults to 1280x720
+     *  (landscape) for backward compatibility. Set to portrait dims (e.g.
+     *  1080x1920) for vertical/reel output — otherwise zoompan silently forces
+     *  landscape 720p and squashes portrait clips. */
+    kenBurnsWidth?: number;
+    kenBurnsHeight?: number;
+    kenBurnsFps?: number;
 }
 
 function run(input: string, output: string, filters: string[]): string {
     if (filters.length === 0) return input;
     const p = ff();
     try {
-        execFileSync(p, ['-y', '-i', input, '-vf', filters.join(','), '-an', '-c:v', 'libx264', '-preset', 'veryfast', output], { stdio: 'ignore', timeout: 90000 });
-    } catch (e) {
+        execFileSync(p, ['-y', '-i', input, '-vf', filters.join(','), '-an', '-c:v', 'libx264', '-preset', 'veryfast', output], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 90000 });
+    } catch (e: any) {
+        console.warn(`  ⚠ applySceneFx failed (${filters.join(',').slice(0, 60)}…): ${String(e?.stderr ?? e?.message).slice(0, 300)}`);
         return input;
     }
     return fs.existsSync(output) && fs.statSync(output).size > 0 ? output : input;
@@ -79,7 +87,7 @@ export function applySceneFx(clipPath: string, sceneIndex: number, fx: FxJob, wo
     if (fx.blurScenes?.includes(sceneIndex)) filters.push('boxblur=10');
 
     if (fx.kenBurns) {
-        filters.push(kenBurnsFilter(1.15, 3));
+        filters.push(kenBurnsFilter(1.15, 3, fx.kenBurnsWidth, fx.kenBurnsHeight, fx.kenBurnsFps));
         tag.push('kb');
     }
 
@@ -96,7 +104,10 @@ export function applyChromaKey(clipPath: string, sceneIndex: number, fx: FxJob, 
     return res;
 }
 
-/** Ken Burns zoompan filter string for Remotion/ffmpeg usage. */
-export function kenBurnsFilter(zoom = 1.15, durationSec = 5): string {
-    return `zoompan=z='min(zoom*1.005,${zoom})':d=${Math.round(durationSec * 25)}:s=1280x720:fps=25`;
+/** Ken Burns zoompan filter string for Remotion/ffmpeg usage.
+ *  Dimensions default to 1280x720 (landscape) for backward compatibility.
+ *  Pass width/height for portrait or custom output (e.g. 1080x1920 reels) —
+ *  otherwise the output is silently forced to landscape 720p. */
+export function kenBurnsFilter(zoom = 1.15, durationSec = 5, width = 1280, height = 720, fps = 25): string {
+    return `zoompan=z='min(zoom*1.005,${zoom})':d=${Math.round(durationSec * fps)}:s=${width}x${height}:fps=${fps}`;
 }

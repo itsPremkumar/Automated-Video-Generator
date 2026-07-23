@@ -150,6 +150,12 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     }, []);
     const totalDur = durations.reduce((a, d) => a + d, 0) || DEFAULT_SCENE_SEC;
 
+    // Output frame size (hoisted above the FX map so Ken Burns zoompan renders
+    // at the SAME dimensions as the slideshow — otherwise portrait jobs get
+    // landscape-squashed kenBurns clips). Kept in sync with W/H below.
+    const outW = job.orientation === 'landscape' ? 1280 : 720;
+    const outH = job.orientation === 'landscape' ? 720 : 1280;
+
     // ── 2) Per-clip visual FX (speed / stabilize / chromaKey / bw / blur / kenBurns)
     //        then per-scene inline-tag grade + vignette. ──
     const fxVisuals = visuals.map((v, i) => {
@@ -161,6 +167,9 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
             blurScenes: job.blurScenes,
             // Per-scene [KenBurns:] tag overrides the job-level kenBurns flag.
             kenBurns: scenes[i]?.kenBurns ?? job.kenBurns,
+            // Match output orientation so portrait/reel jobs aren't squashed.
+            kenBurnsWidth: outW,
+            kenBurnsHeight: outH,
         }, outDir);
         out = applyChromaKey(out, i, { chromaKeyScenes: job.chromaKeyScenes }, outDir);
         // Inline [Grade:] and [Vignette:] tags (with job.vignette fallback).
@@ -173,8 +182,8 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     result.sfxUsed = sfx.length;
 
     // ── 4) Build the slideshow video (concat images/clips with crossfade) ──
-    const W = job.orientation === 'landscape' ? 1280 : 720;
-    const H = job.orientation === 'landscape' ? 720 : 1280;
+    const W = outW;
+    const H = outH;
     const baseVideo = path.join(outDir, 'base.mp4');
     await buildSlideshow(fxVisuals, audios, W, H, baseVideo, durations);
 
