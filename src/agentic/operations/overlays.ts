@@ -20,6 +20,8 @@ export interface OverlayPlan {
     watermark?: string;
     font: { family: string; color: string; weight: number };
     emojiByScene: Record<number, string>;
+    /** Animated progress bar (grows left→right over the clip). */
+    progressBar?: boolean;
 }
 
 export function buildOverlayPlan(job: {
@@ -31,6 +33,7 @@ export function buildOverlayPlan(job: {
     fontColor?: string;
     fontWeight?: number;
     emojiByScene?: Record<number, string>;
+    progressBar?: boolean;
 }): OverlayPlan {
     return {
         lowerThird: job.lowerThird,
@@ -43,6 +46,7 @@ export function buildOverlayPlan(job: {
             weight: job.fontWeight ?? 700,
         },
         emojiByScene: job.emojiByScene ?? {},
+        progressBar: job.progressBar ?? false,
     };
 }
 

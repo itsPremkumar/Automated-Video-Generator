@@ -548,7 +548,7 @@ async function runCompose(job: AgenticCliJob, id: string): Promise<SingleFeature
     const sceneAudio: string[] = [];
     let usedToneFallback = false;
     try {
-        const voiceRes = await generateAgenticVoiceovers(plan, ws, job.voice);
+        const voiceRes = await generateAgenticVoiceovers(plan, ws, job.voice, job.useClonedVoiceId);
         for (const s of voiceRes.scenes) if (s.audioPath && fs.existsSync(s.audioPath) && fs.statSync(s.audioPath).size > 0) sceneAudio.push(s.audioPath);
     } catch { /* fall through to tone */ }
     if (sceneAudio.length === 0) {

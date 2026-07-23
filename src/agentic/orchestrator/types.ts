@@ -108,6 +108,7 @@ export interface PipelineRequest {
     fontColor?: string;
     fontWeight?: number;
     emojiByScene?: Record<number, string>;
+    progressBar?: boolean;
     clipSpeedByScene?: Record<number, number>;
     stabilizeScenes?: number[];
     chromaKeyScenes?: number[];

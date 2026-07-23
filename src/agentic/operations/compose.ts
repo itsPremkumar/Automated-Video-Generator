@@ -57,7 +57,14 @@ export interface ComposeResult {
 }
 
 function esc(t: string): string {
-    return t.replace(/:/g, '\\:').replace(/'/g, "'\\''");
+    // ffmpeg drawtext: escape '\' then ':', and wrap text safely.
+    return t.replace(/\\/g, '\\\\').replace(/:/g, '\\:').replace(/'/g, "'\\''");
+}
+
+/** Escape a comma inside an ffmpeg filter *expression* (e.g. enable=lte(t,4))
+ *  so the -vf parser doesn't treat it as a filterchain separator. */
+function escExpr(e: string): string {
+    return e.replace(/,/g, '\\,');
 }
 
 /** Resolve a font family+weight to an installed .ttf path (best-effort).
@@ -91,7 +98,7 @@ function resolveFontFile(family: string | undefined, weight?: number): string {
 function drawTextFilter(text: string, x: string, y: string, size: number, color: string, opts?: { fontFile?: string; weight?: number; enable?: string }): string {
     const isHex = color.startsWith('#') || /^0x?[0-9a-fA-F]{6}$/.test(color);
     const c = isHex ? (color.startsWith('#') ? `0x${color.slice(1)}` : color) : color;
-    const en = opts?.enable ? `:enable='${opts.enable}'` : '';
+    const en = opts?.enable ? `:enable='${escExpr(opts.enable)}'` : '';
     const ff = opts?.fontFile ?? resolveFontFile(undefined);
     return `drawtext=fontfile='${ff}':text='${esc(text)}':fontcolor=${c}:fontsize=${size}:x=${x}:y=${y}:box=1:boxcolor=black@0.4:boxborderw=6${en}`;
 }
@@ -150,6 +157,15 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     if (overlay.endCta) vf.push(drawTextFilter(overlay.endCta, '(w-text_w)/2', 'H-th-60', 42, 'yellow', { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight }));
     for (const [idx, emoji] of Object.entries(overlay.emojiByScene)) {
         vf.push(drawTextFilter(emoji, 'W-80', '80', 56, 'white', { enable: `gte(t,${Number(idx) * 3})*lte(t,${Number(idx) * 3 + 3})` }));
+    }
+    // Animated progress bar: a thin bar pinned to the bottom that grows
+    // left→right over the clip using a time-based width expression.
+    if (overlay.progressBar) {
+        const dur = Math.max(1, fxVisuals.length * 3);
+        // NOTE: avoid enable= with a comma — in a -vf string the comma is read
+        // as a filterchain separator. The width expression min(W,W*t/dur)
+        // already keeps the bar growing and clamped, so enable is unnecessary.
+        vf.push(`drawbox=x=0:y=ih-8:w='min(iw,iw*(t/${dur}))':h=8:color=white@0.9:t=fill`);
     }
     const watermarkPath = overlay.watermark ? path.join(inputDir, overlay.watermark) : undefined;
     let withOverlays = baseVideo;

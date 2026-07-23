@@ -60,6 +60,7 @@ export async function generateAgenticVoiceovers(
     plan: Plan,
     ws: AgenticWorkspace,
     voice?: string,
+    useClonedVoiceId?: string,
 ): Promise<VoiceoverResult> {
     const root = ws.root;
     const audioDir = path.join(root, 'audio');
@@ -79,7 +80,7 @@ export async function generateAgenticVoiceovers(
     };
     try {
         const { runVoiceStageSafe } = await import('../media/voice-controller.js');
-        const res = await runVoiceStageSafe(plan, backendWs, voice);
+        const res = await runVoiceStageSafe(plan, backendWs, voice, undefined, useClonedVoiceId);
         if (res.voiceoverDriven || res.voices.length > 0) {
             const scenes: SceneVoiceover[] = res.voices.map((v) => ({
                 sceneIndex: v.sceneIndex,

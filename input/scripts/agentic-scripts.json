@@ -13,8 +13,14 @@
     "musicVolume": 0.15,
     "vignette": true,
     "captions": "burned",
-    "intro": { "title": "Modular Test", "durationSec": 2 },
-    "outro": { "ctaText": "Done", "durationSec": 2 }
+    "intro": {
+      "title": "Modular Test",
+      "durationSec": 2
+    },
+    "outro": {
+      "ctaText": "Done",
+      "durationSec": 2
+    }
   },
   {
     "id": "gen_3scene_hookfirst",
@@ -226,28 +232,51 @@
     "topic": "space facts",
     "script": "Did you know the sun is 93 million miles away? [Visual: sun flare] [Caption: mind blown] Space is completely silent. [Visual: nebula] Black holes bend light itself. [Visual: black hole]",
     "mode": "apply-advanced",
-    "sfxByScene": { "0": "whoosh", "2": "boom" },
+    "sfxByScene": {
+      "0": "whoosh",
+      "2": "boom"
+    },
     "sfxOnCut": true,
     "normalizeLufs": -14,
     "loopMusic": true,
     "ttsStyle": "excited",
-    "voicesByScene": { "0": "en-US-AriaNeural", "1": "en-US-GuyNeural" },
+    "voicesByScene": {
+      "0": "en-US-AriaNeural",
+      "1": "en-US-GuyNeural"
+    },
     "voiceSpeed": 1.05,
-    "dialogueVoices": ["en-US-AriaNeural", "en-US-GuyNeural"],
+    "dialogueVoices": [
+      "en-US-AriaNeural",
+      "en-US-GuyNeural"
+    ],
     "dubLanguage": "hi",
     "lowerThird": "Prem — Space Explorer",
-    "titleCard": { "title": "Space Facts", "subtitle": "Episode 1" },
+    "titleCard": {
+      "title": "Space Facts",
+      "subtitle": "Episode 1"
+    },
     "endCta": "Subscribe for more!",
     "fontFamily": "Inter",
     "fontColor": "cyan",
     "fontWeight": 800,
-    "emojiByScene": { "0": "🔥", "2": "🕳️" },
-    "clipSpeedByScene": { "2": 0.5 },
+    "emojiByScene": {
+      "0": "🔥",
+      "2": "🕳️"
+    },
+    "clipSpeedByScene": {
+      "2": 0.5
+    },
     "stabilizeScenes": [],
     "chromaKeyScenes": [],
-    "filterByScene": { "1": "bw" },
+    "filterByScene": {
+      "1": "bw"
+    },
     "blurScenes": [],
-    "sceneOrder": [1, 0, 2],
+    "sceneOrder": [
+      1,
+      0,
+      2
+    ],
     "loopVideo": 1,
     "exportFormat": "gif",
     "posterScene": 0,
@@ -260,7 +289,11 @@
     "title": "SF: Sound Effects Pack",
     "topic": "ui sfx",
     "mode": "download-sfx",
-    "sfxByScene": { "0": "click", "1": "pop", "2": "swoosh" }
+    "sfxByScene": {
+      "0": "click",
+      "1": "pop",
+      "2": "swoosh"
+    }
   },
   {
     "id": "sf_url_demo",
@@ -279,22 +312,41 @@
     "orientation": "portrait",
     "musicQuery": "cinematic ambient",
     "sfxOnCut": true,
-    "sfxByScene": { "0": "whoosh", "2": "water" },
+    "sfxByScene": {
+      "0": "whoosh",
+      "2": "water"
+    },
     "normalizeLufs": -14,
     "loopMusic": true,
-    "ttsStyle": "calm",
+    "ttsStyle": "cheerful",
     "lowerThird": "Geo Facts",
-    "titleCard": { "title": "Mountain Facts", "subtitle": "Ep 1" },
+    "titleCard": {
+      "title": "Mountain Facts",
+      "subtitle": "Ep 1"
+    },
     "endCta": "Follow for more!",
     "fontColor": "white",
-    "emojiByScene": { "0": "🏔️", "2": "💧" },
-    "clipSpeedByScene": { "2": 0.8 },
-    "filterByScene": { "1": "bw" },
-    "sceneOrder": [0, 2, 1],
-    "ttsStyle": "cheerful",
+    "emojiByScene": {
+      "0": "🏔️",
+      "2": "💧"
+    },
+    "clipSpeedByScene": {
+      "2": 0.8
+    },
+    "filterByScene": {
+      "1": "bw"
+    },
+    "sceneOrder": [
+      0,
+      2,
+      1
+    ],
     "voiceSpeed": 0.9,
     "voicePitchSemitones": 3,
-    "dialogueVoices": ["en-US-GuyNeural", "en-US-JennyNeural"],
+    "dialogueVoices": [
+      "en-US-GuyNeural",
+      "en-US-JennyNeural"
+    ],
     "exportFormat": "gif",
     "posterScene": 0,
     "contactSheet": true,
@@ -307,8 +359,12 @@
     "mode": "rerender",
     "orientation": "portrait",
     "musicQuery": "cinematic ambient",
-    "filterByScene": { "0": "sepia" },
-    "clipSpeedByScene": { "1": 1.2 },
+    "filterByScene": {
+      "0": "sepia"
+    },
+    "clipSpeedByScene": {
+      "1": 1.2
+    },
     "exportFormat": "gif",
     "contactSheet": true
   },
@@ -321,18 +377,41 @@
     "orientation": "portrait",
     "musicQuery": "ambient piano",
     "kenBurns": true,
-    "stabilizeScenes": [0],
-    "chromaKeyScenes": [1],
-    "blurScenes": [2],
+    "stabilizeScenes": [
+      0
+    ],
+    "chromaKeyScenes": [
+      1
+    ],
+    "blurScenes": [
+      2
+    ],
     "watermark": "logo.png",
     "fontFamily": "Georgia, serif",
     "fontWeight": 700,
-    "titleCard": { "title": "Nature", "subtitle": "Montage" },
+    "titleCard": {
+      "title": "Nature",
+      "subtitle": "Montage"
+    },
     "lowerThird": "Shot on AVG",
     "endCta": "Subscribe!",
     "exportFormat": "gif",
     "posterScene": 0,
     "contactSheet": true,
     "licenseFilter": "cc0"
+  },
+  {
+    "id": "adv_progress_demo",
+    "title": "ADV: Progress bar + palette filter bake",
+    "topic": "blue ocean",
+    "script": "The ocean stretches to the horizon. [Visual: ocean]\n\nWaves carry the light. [Visual: waves]\n\nA quiet blue world. [Visual: blue]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "musicQuery": "ambient",
+    "progressBar": true,
+    "paletteFilter": "blue",
+    "watermark": "logo.png",
+    "lowerThird": "Blue World",
+    "exportFormat": "gif"
   }
 ]

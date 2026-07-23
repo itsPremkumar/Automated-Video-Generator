@@ -183,6 +183,8 @@ export interface AgenticCliJob {
     fontWeight?: number;
     /** Emoji/sticker overlay per scene (map scene index → emoji). */
     emojiByScene?: Record<number, string>;
+    /** Animated progress bar that grows left→right over the clip. */
+    progressBar?: boolean;
 
     // ── Visual Effects (per-clip / per-scene) ──
     /** Playback speed multiplier for visuals (scene index → multiplier). */
@@ -303,6 +305,7 @@ export function buildPipelineRequest(job: AgenticCliJob, id: string, topic: stri
         fontColor: job.fontColor,
         fontWeight: job.fontWeight,
         emojiByScene: job.emojiByScene,
+        progressBar: job.progressBar,
         clipSpeedByScene: job.clipSpeedByScene,
         stabilizeScenes: job.stabilizeScenes,
         chromaKeyScenes: job.chromaKeyScenes,
