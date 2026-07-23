@@ -97,6 +97,7 @@ export interface PipelineRequest {
     voicesByScene?: Record<number, string>;
     voiceSpeed?: number;
     voicePitchSemitones?: number;
+    voiceAging?: 'younger' | 'older';
     dubLanguage?: string;
     useClonedVoiceId?: string;
     dialogueVoices?: [string, string];

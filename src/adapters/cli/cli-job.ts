@@ -159,6 +159,8 @@ export interface AgenticCliJob {
     voiceSpeed?: number;
     /** Pitch shift in semitones (Voicebox/Kokoro path only). */
     voicePitchSemitones?: number;
+    /** Voice-aging preset: 'younger' (+4 semitones) | 'older' (-4 semitones). */
+    voiceAging?: 'younger' | 'older';
     /** Dub/translate the script into this language code (e.g. 'hi','ta'). */
     dubLanguage?: string;
     /** Use a cloned-voice profile id saved earlier to narrate this render. */
@@ -294,6 +296,7 @@ export function buildPipelineRequest(job: AgenticCliJob, id: string, topic: stri
         voicesByScene: job.voicesByScene,
         voiceSpeed: job.voiceSpeed,
         voicePitchSemitones: job.voicePitchSemitones,
+        voiceAging: job.voiceAging,
         dubLanguage: job.dubLanguage,
         useClonedVoiceId: job.useClonedVoiceId,
         dialogueVoices: job.dialogueVoices,

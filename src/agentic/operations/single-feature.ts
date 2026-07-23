@@ -386,6 +386,7 @@ async function runApplyAdvanced(job: AgenticCliJob, id: string): Promise<SingleF
         voicesByScene: job.voicesByScene,
         voiceSpeed: job.voiceSpeed,
         voicePitchSemitones: job.voicePitchSemitones,
+        voiceAging: job.voiceAging,
         dialogueVoices: job.dialogueVoices,
         useClonedVoiceId: job.useClonedVoiceId,
     });
@@ -534,6 +535,7 @@ async function runCompose(job: AgenticCliJob, id: string): Promise<SingleFeature
         voicesByScene: job.voicesByScene,
         voiceSpeed: job.voiceSpeed,
         voicePitchSemitones: job.voicePitchSemitones,
+        voiceAging: job.voiceAging,
         dialogueVoices: job.dialogueVoices,
         useClonedVoiceId: job.useClonedVoiceId,
     });

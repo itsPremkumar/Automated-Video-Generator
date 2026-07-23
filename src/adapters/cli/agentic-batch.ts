@@ -129,6 +129,29 @@ async function main() {
             console.error(`✖ No jobs matched filter "${jobFilter ?? ''}"`);
             process.exit(1);
         }
+
+        // ─── Broadcast: apply ONE signal override to EVERY job in this run ───
+        //   e.g.  --broadcast "exportFormat:gif"   (re-applies to all jobs)
+        //   e.g.  --broadcast "filterByScene:{0:bw}" (real JSON value)
+        // This is the "apply one signal to all jobs" iteration primitive that
+        // goes BEYOND the --mode filter — it mutates each job's config before
+        // dispatch, so a single command re-grades / re-exports the whole set.
+        const broadcast = args.broadcast ? String(args.broadcast) : undefined;
+        if (broadcast) {
+            const colon = broadcast.indexOf(':');
+            if (colon < 0) {
+                console.error(`✖ --broadcast must be "field:value" (got "${broadcast}")`);
+                process.exit(1);
+            }
+            const field = broadcast.slice(0, colon);
+            let raw = broadcast.slice(colon + 1);
+            let value: any = raw;
+            // attempt JSON parse for objects/arrays/numbers/booleans
+            try { value = JSON.parse(raw); } catch { /* keep string */ }
+            console.log(`  📡 Broadcasting ${field} = ${JSON.stringify(value)} → ${filtered.length} job(s)`);
+            for (const j of filtered) (j as any)[field] = value;
+        }
+
         console.log(
             `\n🎯 Single-feature mode: ${singleMode} | ${filtered.length} job(s)` +
                 (jobFilter ? ` (filter: ${jobFilter})` : ''),

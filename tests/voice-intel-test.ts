@@ -29,5 +29,13 @@ check('dub hi prefix', dubScript('Hello', 'hi').startsWith('नमस्ते')
 check('dub ta prefix', dubScript('Hello', 'ta').startsWith('வணக்கம்'));
 check('dub unknown passthrough', dubScript('Hello', 'xx') === 'Hello');
 
+// voiceAging preset → semitone shift (zero-cost, no neural backend)
+const agYoung = buildVoiceConfigs(1, { voiceAging: 'younger' })[0];
+check('voiceAging younger → +4 semitones', agYoung.pitch === 4);
+const agOld = buildVoiceConfigs(1, { voiceAging: 'older' })[0];
+check('voiceAging older → -4 semitones', agOld.pitch === -4);
+const agCombine = buildVoiceConfigs(1, { voicePitchSemitones: 2, voiceAging: 'younger' })[0];
+check('voiceAging combines with explicit pitch', agCombine.pitch === 6);
+
 console.log(`\nvoice-intel: ${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

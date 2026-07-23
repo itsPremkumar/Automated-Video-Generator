@@ -6,6 +6,8 @@
  *   voicesByScene       → per-scene voice override map
  *   voiceSpeed          → 0.5–2.0 playback speed (Edge-TTS rate)
  *   voicePitchSemitones → pitch shift (Voicebox/Kokoro path)
+ *   voiceAging          → 'younger'|'older' preset (zero-cost pitch shift;
+ *                         younger = +4 semitones, older = -4 semitones)
  *   dubLanguage         → translate the script before TTS (heuristic offline)
  *   useClonedVoiceId    → reuse a saved clone profile to narrate
  *   dialogueVoices      → two-voice alternating dialogue
@@ -49,12 +51,16 @@ export function buildVoiceConfigs(
         voicesByScene?: Record<number, string>;
         voiceSpeed?: number;
         voicePitchSemitones?: number;
+        voiceAging?: 'younger' | 'older';
         dialogueVoices?: [string, string];
         useClonedVoiceId?: string;
     },
 ): SceneVoiceConfig[] {
     const base = opts.baseVoice ?? 'en-US-GuyNeural';
     const speed = EDGE_RATE(opts.voiceSpeed ?? 1);
+    // voiceAging preset → semitone shift (zero-cost, no neural backend needed).
+    const agingShift = opts.voiceAging === 'younger' ? 4 : opts.voiceAging === 'older' ? -4 : 0;
+    const pitch = (opts.voicePitchSemitones ?? 0) + agingShift;
     const cfgs: SceneVoiceConfig[] = [];
     for (let i = 0; i < sceneCount; i++) {
         let voice = opts.voicesByScene?.[i] ?? base;
@@ -64,7 +70,7 @@ export function buildVoiceConfigs(
             voice,
             rate: speed,
             style: opts.ttsStyle,
-            pitch: opts.voicePitchSemitones,
+            pitch,
         });
     }
     return cfgs;
