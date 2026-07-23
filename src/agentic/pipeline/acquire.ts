@@ -21,6 +21,7 @@ import { inputAssetPath } from '../../lib/path-safety.js';
 import { aiVerifyAsset } from '../ai/ai-verify.js';
 import { ModelBridge, NullBridge, type LlmBridge } from '../ai/bridge.js';
 import { trimBlackFrames } from '../../lib/media-downloader.js';
+import { getCached, putCache } from '../operations/asset-cache.js';
 
 /**
  * Run async producers with a bounded concurrency. `tasks` is an array of
@@ -276,10 +277,33 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                 // or a stale file from a previous job, which would poison the
                 // render (mixed asset kinds, wrong durations). Copy if a real
                 // local file exists, otherwise download from the URL.
+                //
+                // P2: Shared asset cache — check if this URL was already downloaded
+                // for a previous job. If so, reuse the cached file instead of
+                // re-downloading (saves network + RAM in batch mode).
                 const destPath = path.join(dir, filename);
                 let localPath = destPath;
                 try {
-                    if (f.localPath && fs.existsSync(f.localPath)) {
+                    // Check shared cache first
+                    if (f.url && f.url.startsWith('http')) {
+                        const cached = getCached(f.url);
+                        if (cached && fs.existsSync(cached.localPath)) {
+                            fs.mkdirSync(dir, { recursive: true });
+                            fs.copyFileSync(cached.localPath, destPath);
+                            localPath = destPath;
+                        } else if (f.localPath && fs.existsSync(f.localPath)) {
+                            fs.mkdirSync(dir, { recursive: true });
+                            fs.copyFileSync(f.localPath, destPath);
+                            // Store in cache for future jobs
+                            putCache(f.url, f.localPath, { source: f.source, license: f.license, licenseUrl: f.licenseUrl });
+                        } else {
+                            localPath = await deps.download(f.url, dir, filename);
+                            // Store in cache for future jobs
+                            if (fs.existsSync(localPath)) {
+                                putCache(f.url, localPath, { source: f.source, license: f.license, licenseUrl: f.licenseUrl });
+                            }
+                        }
+                    } else if (f.localPath && fs.existsSync(f.localPath)) {
                         fs.mkdirSync(dir, { recursive: true });
                         fs.copyFileSync(f.localPath, destPath);
                     } else {
@@ -345,8 +369,26 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
             const filename = `candidate_${c + 1}${ext}`;
             let localPath;
             try {
-                localPath =
-                    f.localPath && fs.existsSync(f.localPath) ? f.localPath : await deps.download(f.url, ws.musicDir, filename);
+                // Check shared cache first for music too
+                if (f.url && f.url.startsWith('http')) {
+                    const cached = getCached(f.url);
+                    if (cached && fs.existsSync(cached.localPath)) {
+                        const destPath = path.join(ws.musicDir, filename);
+                        fs.mkdirSync(ws.musicDir, { recursive: true });
+                        fs.copyFileSync(cached.localPath, destPath);
+                        localPath = destPath;
+                    } else if (f.localPath && fs.existsSync(f.localPath)) {
+                        localPath = f.localPath;
+                        putCache(f.url, f.localPath, { source: f.source, license: f.license, licenseUrl: f.licenseUrl });
+                    } else {
+                        localPath = await deps.download(f.url, ws.musicDir, filename);
+                        if (fs.existsSync(localPath)) {
+                            putCache(f.url, localPath, { source: f.source, license: f.license, licenseUrl: f.licenseUrl });
+                        }
+                    }
+                } else {
+                    localPath = f.localPath && fs.existsSync(f.localPath) ? f.localPath : await deps.download(f.url, ws.musicDir, filename);
+                }
             } catch (e) {
                 console.warn(`⚠ music materialise failed for cand ${c + 1}: ${(e as Error)?.message ?? e}`);
                 return; // skip this music candidate; never register a ghost (unwritten) path

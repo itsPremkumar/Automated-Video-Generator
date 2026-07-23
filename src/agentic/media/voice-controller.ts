@@ -268,7 +268,6 @@ async function generateScene(
 }
 
 /**
-/**
  * Run the full voice stage for a plan.
  * @param plan        agentic plan (scene.voiceoverText + voiceOverride)
  * @param ws          agentic workspace (audio -> ws.audioDir)

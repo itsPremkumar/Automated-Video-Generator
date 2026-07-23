@@ -104,7 +104,12 @@
     "agentic:editor": "tsx src/adapters/cli/agentic-editor.ts",
     "agentic:revise": "tsx src/adapters/cli/agentic-modular.ts revise",
     "agentic:critique": "tsx src/adapters/cli/agentic-modular.ts critique",
-    "agentic:reorder": "tsx src/adapters/cli/agentic-modular.ts reorder"
+    "agentic:reorder": "tsx src/adapters/cli/agentic-modular.ts reorder",
+    "agentic:batch": "tsx src/adapters/cli/agentic-batch.ts",
+    "agentic:batch:parallel": "tsx src/adapters/cli/agentic-batch.ts --parallel 3",
+    "agentic:preview": "tsx src/adapters/cli/agentic-batch.ts --preview",
+    "agentic:generate": "tsx src/adapters/cli/agentic-batch.ts --generate --topics \"AI coding,Video editing,Photography,Web development,Data science\"",
+    "agentic:generate:preview": "tsx src/adapters/cli/agentic-batch.ts --generate --preview --topics \"AI coding,Video editing,Photography,Web development,Data science\""
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.28.0",
