@@ -246,6 +246,7 @@ function parseScriptLocally(script: string): ParsedScript {
         const cleanText = line
             .replace(/\[Visual:?\s*.*?\]/gis, '')
             .replace(/\[Text:?\s*.*?\]/gis, '')
+            .replace(/\[Caption:?\s*.*?\]/gis, '')
             .replace(/\[Transition:?\s*.*?\]/gis, '')
             .replace(/\[Grade:?\s*.*?\]/gis, '')
             .replace(/\[KenBurns:?\s*.*?\]/gis, '')

@@ -26,6 +26,12 @@ import { transcode, exportPoster, exportContactSheet } from './export-fx.js';
 import { restructurePlan, loopPlan } from './structure.js';
 import { buildOverlayPlan } from './overlays.js';
 import { dubScript } from './voice-intel.js';
+import {
+    resolveSceneDurations,
+    applySceneGradeVignette,
+    DEFAULT_SCENE_SEC,
+} from './compose-scene-fx.js';
+import type { ScenePlan } from '../types.js';
 
 function ff(): string {
     const p = ffmpegPath as unknown as string;
@@ -45,6 +51,13 @@ export interface ComposeInput {
     outDir: string;
     /** Resolved input/visuals dir (for watermark). */
     inputDir: string;
+    /**
+     * OPTIONAL per-scene plan carrying inline-tag signals ([Grade:],
+     * [Vignette:], [KenBurns:], …). When provided, compose bakes these
+     * per-scene tags on top of job-level fields. When omitted, behaviour is
+     * exactly as before (job-level only) — fully backward-compatible.
+     */
+    scenes?: ScenePlan[];
 }
 
 export interface ComposeResult {
@@ -118,14 +131,27 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     if (job.deleteScenes) order = order.filter((i) => !job.deleteScenes!.includes(i));
     let visuals = order.map((i) => sceneVisuals[i]);
     let audios = order.map((i) => sceneAudio[i] ?? '');
+    // Keep the per-scene plan aligned with the reordered visuals/audios so
+    // inline tags ([Grade:]/[Vignette:]/…) follow their scene through reorder.
+    let scenes: (ScenePlan | undefined)[] = order.map((i) => input.scenes?.[i]);
     if (job.loopVideo && job.loopVideo > 1) {
-        const v2: string[] = []; const a2: string[] = [];
-        for (let n = 0; n < job.loopVideo; n++) { v2.push(...visuals); a2.push(...audios); }
-        visuals = v2; audios = a2;
+        const v2: string[] = []; const a2: string[] = []; const s2: (ScenePlan | undefined)[] = [];
+        for (let n = 0; n < job.loopVideo; n++) { v2.push(...visuals); a2.push(...audios); s2.push(...scenes); }
+        visuals = v2; audios = a2; scenes = s2;
     }
     result.scenesRendered = visuals.length;
 
+    // ── 1b) Real per-scene durations from voiceover length (fixes hardcoded 3s
+    //        drift). Falls back to plan duration, then DEFAULT_SCENE_SEC. ──
+    const durations = resolveSceneDurations(audios, scenes as ScenePlan[]);
+    const cumStart = durations.reduce<number[]>((acc, d, i) => {
+        acc.push(i === 0 ? 0 : acc[i - 1] + durations[i - 1]);
+        return acc;
+    }, []);
+    const totalDur = durations.reduce((a, d) => a + d, 0) || DEFAULT_SCENE_SEC;
+
     // ── 2) Per-clip visual FX (speed / stabilize / chromaKey / bw / blur / kenBurns)
+    //        then per-scene inline-tag grade + vignette. ──
     const fxVisuals = visuals.map((v, i) => {
         let out = applySceneFx(v, i, {
             clipSpeedByScene: job.clipSpeedByScene,
@@ -133,9 +159,12 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
             chromaKeyScenes: job.chromaKeyScenes,
             filterByScene: job.filterByScene,
             blurScenes: job.blurScenes,
-            kenBurns: job.kenBurns,
+            // Per-scene [KenBurns:] tag overrides the job-level kenBurns flag.
+            kenBurns: scenes[i]?.kenBurns ?? job.kenBurns,
         }, outDir);
         out = applyChromaKey(out, i, { chromaKeyScenes: job.chromaKeyScenes }, outDir);
+        // Inline [Grade:] and [Vignette:] tags (with job.vignette fallback).
+        out = applySceneGradeVignette(out, i, scenes[i], job.vignette, outDir);
         return out;
     });
 
@@ -147,7 +176,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     const W = job.orientation === 'landscape' ? 1280 : 720;
     const H = job.orientation === 'landscape' ? 720 : 1280;
     const baseVideo = path.join(outDir, 'base.mp4');
-    await buildSlideshow(fxVisuals, audios, W, H, baseVideo);
+    await buildSlideshow(fxVisuals, audios, W, H, baseVideo, durations);
 
     // ── 5) Burned overlays (title / lower-third / CTA / emoji / captions) ──
     const overlay = buildOverlayPlan(job);
@@ -156,12 +185,15 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     if (overlay.lowerThird) vf.push(drawTextFilter(overlay.lowerThird, '40', 'H-th-40', 36, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: 'gte(t,1)*lte(t,4)' }));
     if (overlay.endCta) vf.push(drawTextFilter(overlay.endCta, '(w-text_w)/2', 'H-th-60', 42, 'yellow', { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight }));
     for (const [idx, emoji] of Object.entries(overlay.emojiByScene)) {
-        vf.push(drawTextFilter(emoji, 'W-80', '80', 56, 'white', { enable: `gte(t,${Number(idx) * 3})*lte(t,${Number(idx) * 3 + 3})` }));
+        const si = Number(idx);
+        const start = cumStart[si] ?? 0;
+        const end = start + (durations[si] ?? DEFAULT_SCENE_SEC);
+        vf.push(drawTextFilter(emoji, 'W-80', '80', 56, 'white', { enable: `gte(t,${start.toFixed(2)})*lte(t,${end.toFixed(2)})` }));
     }
     // Animated progress bar: a thin bar pinned to the bottom that grows
     // left→right over the clip using a time-based width expression.
     if (overlay.progressBar) {
-        const dur = Math.max(1, fxVisuals.length * 3);
+        const dur = Math.max(1, totalDur);
         // NOTE: avoid enable= with a comma — in a -vf string the comma is read
         // as a filterchain separator. The width expression min(W,W*t/dur)
         // already keeps the bar growing and clamped, so enable is unnecessary.
@@ -187,7 +219,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     const finalVideo = path.join(outDir, 'final.mp4');
     const audioMixed = path.join(outDir, 'mixed_audio.aac');
     const musicForMix = (music && fs.existsSync(music))
-        ? (job.loopMusic ? loopAudioToDuration(music, audioMixed + '.loop.mp3', estimateDur(fxVisuals.length)) : music)
+        ? (job.loopMusic ? loopAudioToDuration(music, audioMixed + '.loop.mp3', Math.ceil(totalDur)) : music)
         : undefined;
     const normMusic = musicForMix ? normalizeAudio(musicForMix, audioMixed + '.norm.mp3', job.normalizeLufs ?? -14) : undefined;
 
@@ -225,7 +257,10 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     // ── 7) Export artifacts ──
     if (job.exportFormat === 'gif' && result.video) result.gif = transcode(result.video, 'gif', outDir) ?? undefined;
     if (job.exportFormat === 'webm' && result.video) result.gif = transcode(result.video, 'webm', outDir) ?? undefined;
-    if (job.posterScene != null && result.video) result.poster = exportPoster(result.video, Math.max(0, job.posterScene) * 3, outDir) ?? undefined;
+    if (job.posterScene != null && result.video) {
+        const si = Math.max(0, job.posterScene);
+        result.poster = exportPoster(result.video, cumStart[si] ?? 0, outDir) ?? undefined;
+    }
     if (job.contactSheet && result.video) result.contactSheet = exportContactSheet(result.video, outDir, Math.max(2, fxVisuals.length)) ?? undefined;
 
     return result;
@@ -235,36 +270,47 @@ function estimateDur(sceneCount: number): number {
     return Math.max(6, sceneCount * 3);
 }
 
-/** Concatenate image(s)/clip(s) into a video slideshow with per-scene timing. */
-async function buildSlideshow(visuals: string[], audios: string[], W: number, H: number, out: string): Promise<void> {
+/** Concatenate image(s)/clip(s) into a video slideshow with per-scene timing.
+ *  `durations` (optional, indexed like `visuals`) sets each scene's on-screen
+ *  hold; when absent every scene falls back to DEFAULT_SCENE_SEC (old behaviour). */
+async function buildSlideshow(visuals: string[], audios: string[], W: number, H: number, out: string, durations?: number[]): Promise<void> {
     const dir = path.dirname(out);
     const sceneClips: string[] = [];
     visuals.forEach((v, i) => {
         const isImg = /\.(jpg|jpeg|png|webp)$/i.test(v);
         const clip = path.join(dir, `scene_${i}.mp4`);
+        const hold = Math.max(0.5, durations?.[i] ?? DEFAULT_SCENE_SEC).toFixed(2);
         if (isImg) {
-            // Hold each image for 3s at the target resolution.
+            // Hold each image for its real scene duration at the target resolution.
             try {
-                execFileSync(ff(), ['-y', '-loop', '1', '-i', v, '-t', '3', '-vf', `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}`, '-r', '25', '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-preset', 'veryfast', clip], { stdio: 'ignore', timeout: 60000 });
-            } catch { return; }
+                execFileSync(ff(), ['-y', '-loop', '1', '-i', v, '-t', hold, '-vf', `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}`, '-r', '25', '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-preset', 'veryfast', clip], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 });
+            } catch (e: any) { console.warn(`  ⚠ scene ${i} image encode failed: ${String(e?.stderr ?? e?.message).slice(0, 300)}`); return; }
         } else {
-            // Re-encode clip to target size/rate for clean concat.
+            // Re-encode clip to target size/rate AND enforce the scene's real
+            // duration: -stream_loop extends clips shorter than `hold` (e.g.
+            // a still-image-derived FX clip that is only 1 frame long) and -t
+            // trims longer ones, so every scene matches its voiceover length.
             try {
-                execFileSync(ff(), ['-y', '-i', v, '-vf', `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}`, '-r', '25', '-c:v', 'libx264', '-preset', 'veryfast', clip], { stdio: 'ignore', timeout: 90000 });
-            } catch { return; }
+                execFileSync(ff(), ['-y', '-stream_loop', '-1', '-i', v, '-t', hold, '-vf', `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}`, '-r', '25', '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-preset', 'veryfast', clip], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 90000 });
+            } catch (e: any) { console.warn(`  ⚠ scene ${i} clip encode failed: ${String(e?.stderr ?? e?.message).slice(0, 300)}`); return; }
         }
         if (fs.existsSync(clip) && fs.statSync(clip).size > 0) sceneClips.push(clip);
     });
-    if (sceneClips.length === 0) return; // leave absent → caller notices
+    if (sceneClips.length === 0) { console.warn('  ⚠ slideshow produced 0 scene clips — no video will be built'); return; }
+    if (sceneClips.length < visuals.length) console.warn(`  ⚠ slideshow: only ${sceneClips.length}/${visuals.length} scenes encoded successfully`);
     // Concat the per-scene clips.
     const list = path.join(dir, 'slideshow_list.txt');
     fs.writeFileSync(list, sceneClips.map((c) => `file '${c.replace(/'/g, "'\\''")}'`).join('\n'));
     const args = ['-y', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', out];
-    try { execFileSync(ff(), args, { stdio: 'ignore', timeout: 120000 }); } catch (e: any) { console.warn(`  ⚠ slideshow concat failed: ${String(e?.stderr ?? e?.message).slice(0, 300)}`); }
+    try { execFileSync(ff(), args, { stdio: ['ignore', 'ignore', 'pipe'], timeout: 120000 }); } catch (e: any) { console.warn(`  ⚠ slideshow concat failed: ${String(e?.stderr ?? e?.message).slice(0, 300)}`); }
 }
 
 function concatAudio(files: string[], out: string): void {
     const list = path.join(path.dirname(out), 'audio_list.txt');
     fs.writeFileSync(list, files.map((f) => `file '${f.replace(/'/g, "'\\''")}'`).join('\n'));
-    try { execFileSync(ff(), ['-y', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', out], { stdio: 'ignore', timeout: 60000 }); } catch { /* leave absent */ }
+    // Re-encode to AAC rather than `-c copy`: the inputs are pcm_s16le WAVs and
+    // the output is an .aac container, so a stream copy always fails (and used
+    // to silently drop the voiceover from the final mix). Encoding produces a
+    // valid concatenated voice track.
+    try { execFileSync(ff(), ['-y', '-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', list, '-c:a', 'aac', '-b:a', '192k', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 }); } catch (e: any) { console.warn(`  ⚠ audio concat failed: ${String(e?.stderr ?? e?.message).slice(0, 300)}`); }
 }

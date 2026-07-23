@@ -576,7 +576,7 @@ async function runCompose(job: AgenticCliJob, id: string): Promise<SingleFeature
     } catch { /* music optional */ }
 
     // 4) Compose the final video with all advanced signals applied.
-    const res = await composeVideo({ job, sceneVisuals, sceneAudio, music, outDir, inputDir });
+    const res = await composeVideo({ job, sceneVisuals, sceneAudio, music, outDir, inputDir, scenes: plan.scenes });
     const outputs = [res.video, res.gif, res.poster, res.contactSheet].filter(Boolean) as string[];
     return {
         mode: 'compose',
