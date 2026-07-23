@@ -21,91 +21,14 @@ import { runAgenticPipeline } from '../../agentic/orchestrator/pipeline.js';
 import { renderAgenticSlideshow } from '../../agentic/orchestrator/render.js';
 import type { PipelineRequest } from '../../agentic/orchestrator/types.js';
 import type { AgenticBackend } from '../../agentic/ai/agent.js';
+import { AgenticCliJob, buildPipelineRequest } from './cli-job.js';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 const INPUT_DIR = path.join(process.cwd(), 'input', 'scripts');
 const SCRIPTS_FILE = path.join(INPUT_DIR, 'agentic-scripts.json');
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-interface AgenticCliJob {
-    id?: string;
-    title: string;
-    /** Script with [Visual: ...] and [Text: ...] tags.
-     *  When omitted the pipeline auto-generates from title+topic. */
-    script?: string;
-    /** Fallback topic when no custom script is provided. */
-    topic?: string;
-    orientation?: 'portrait' | 'landscape';
-    voice?: string;
-    musicQuery?: string;
-    /** Bind files from input/visuals/ to scenes (cycles if fewer than scenes). */
-    localAssets?: string[];
-    /** Bind video clips from input/visuals/ to scenes (prefers video). */
-    videoClips?: string[];
-    /** Per-scene personal audio overrides (files from input/voiceover/). */
-    personalAudio?: string[];
-    /** Hook-first scene reordering (default: true). */
-    hookFirst?: boolean;
-    /** Variable pacing (hook 3s, body 5s, breath 5/3s). (default: true). */
-    variablePacing?: boolean;
-    /** Backend: 'agent' (default) or 'vision'. Sets backend for the agentic pipeline. */
-    backend?: AgenticBackend;
-    /** Number of stock candidates to fetch per scene (default: 2). */
-    candidatesPerAsset?: number;
-    /** Language code for voice fallback. */
-    language?: string;
-    /** Filename of a local audio file in input/visuals/ for background music. */
-    backgroundMusic?: string;
-    /** Volume for background music (0.0–1.0, default ~0.15). */
-    musicVolume?: number;
-    /** Branded title card at the start. */
-    intro?: { title: string; subtitle?: string; durationSec?: number };
-    /** Branded CTA card at the end. */
-    outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number };
-    // ═══════════════════════════════════════════════
-    //  Extended customization — Phase 1
-    // ═══════════════════════════════════════════════
-    /** Named caption theme preset. */
-    captionTheme?: string;
-    /** Caption rendering mode. */
-    captions?: 'burned' | 'karaoke' | 'none';
-    /** Enable transition sound effects. */
-    sfx?: boolean;
-    /** J-cut: next voiceover leads picture by N seconds. */
-    jCutSec?: number;
-    /** Named format preset. */
-    format?: string;
-    /** Named visual preset. */
-    preset?: string;
-    /** Override aspect ratio. */
-    aspect?: '9:16' | '1:1' | '16:9';
-    /** Enable/disable vignette (default on). */
-    vignette?: boolean;
-    /** Enable kinetic lower-third text (default on). */
-    kineticText?: boolean;
-    /** Music ducking depth. */
-    musicIntensity?: 'calm' | 'mid' | 'energetic';
-    /** Target platform for auto-tailoring. */
-    platform?: 'tiktok' | 'youtube' | 'instagram' | 'reels';
-    /** Video content type. */
-    videoType?: 'facts' | 'tutorial' | 'news' | 'story' | 'product' | 'motivational' | 'nature';
-    /** Branding config. */
-    brand?: { watermark?: string; accent?: string };
-    /** Render engine. */
-    renderer?: 'ffmpeg' | 'remotion';
-    /** Retry budget. */
-    maxAttempts?: number;
-    /** Extra subtitle languages. */
-    languages?: string[];
-    /** Global Ken Burns toggle. */
-    kenBurns?: boolean;
-    /** Global transition override. */
-    transition?: string;
-    /** Global grade override. */
-    grade?: string;
-}
+// ─── Config ──────────────────────────────────────────────────────────────────
 
 // ─── CLI Entry ──────────────────────────────────────────────────────────────
 
@@ -148,47 +71,7 @@ async function main() {
         const topic = job.topic ?? job.title ?? 'Untitled video';
         const id = sanitizeId(job.id ?? job.title ?? `job_${Date.now()}`);
 
-        const req: PipelineRequest = {
-            script: job.script,           // ← custom script or undefined → auto-generate
-            topic: topic,
-            title: job.title || topic,
-            jobId: id,
-            orientation: job.orientation ?? 'portrait',
-            voice: job.voice,
-            musicQuery: job.musicQuery,
-            localAssets: job.localAssets,
-            videoClips: job.videoClips,
-            personalAudio: job.personalAudio,
-            hookFirst: job.hookFirst ?? true,
-            variablePacing: job.variablePacing ?? true,
-            backend: job.backend ?? 'agent',
-            candidatesPerAsset: job.candidatesPerAsset ?? 2,
-            language: job.language,
-            backgroundMusic: job.backgroundMusic,
-            musicVolume: job.musicVolume,
-            intro: job.intro,
-            outro: job.outro,
-            // Phase 1 — extended
-            captionTheme: job.captionTheme,
-            captions: job.captions,
-            sfx: job.sfx,
-            jCutSec: job.jCutSec,
-            format: job.format,
-            preset: job.preset,
-            aspect: job.aspect,
-            vignette: job.vignette,
-            kineticText: job.kineticText,
-            musicIntensity: job.musicIntensity,
-            platform: job.platform,
-            videoType: job.videoType,
-            brand: job.brand,
-            renderer: job.renderer,
-            maxAttempts: job.maxAttempts,
-            languages: job.languages,
-            kenBurns: job.kenBurns,
-            transition: job.transition,
-            grade: job.grade,
-        };
+        const req = buildPipelineRequest(job, id, topic);
 
         try {
             const result = await runAgenticPipeline(

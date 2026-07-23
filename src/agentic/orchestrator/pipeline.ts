@@ -41,6 +41,9 @@ export async function runAgenticPipeline(
         writeScript: req.agent?.writeScript,
         expandKeywords: req.agent?.expandKeywords,
         visionVerify: req.agent?.visionVerify,
+        // Control-surface extension — reached from the script JSON
+        aiVerify: req.aiVerify,
+        brain: req.brain,
     };
     const jobId = req.jobId ?? `job_${Date.now()}`;
     try {
@@ -62,7 +65,7 @@ export async function runAgenticPipeline(
     const sharedImagePool: { url: string }[] = [];
     sharedImagePool.length = 0;
 
-    pruneWorkspaces(Number(process.env.AGENTIC_KEEP_WORKSPACES ?? 25));
+    pruneWorkspaces(req.pruneWorkspaces ?? Number(process.env.AGENTIC_KEEP_WORKSPACES ?? 25));
 
     const brainOpts = cfg.brain ? { maxCalls: cfg.brain.maxCalls, maxFails: cfg.brain.maxFails } : undefined;
     const driverLLM: DriverLlmCallback | undefined = req.driverLLM;

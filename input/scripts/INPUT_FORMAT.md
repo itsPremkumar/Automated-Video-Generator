@@ -39,6 +39,44 @@ The file must be a valid JSON array. Each item in the array is a "job" that prod
 | **`backgroundMusic`** | `string` | No | The filename of an audio file to use as background music. <br>• **Source**: Must be located in `input/visuals/`. <br>• **Format**: `.mp3`, `.wav`, or `.m4a`. <br>• **Behavior**: Loops automatically for the duration of the video. |
 | **`musicVolume`** | `number` | No | The volume level for the background music. <br>• **Range**: `0.0` (silent) to `1.0` (max). <br>• **Recommended**: `0.1` to `0.2` to keep the voiceover clear. <br>• **Default**: `0.15`. |
 
+---
+
+## 🎛️ Control-Surface Extension (full config reachability)
+
+These fields make **every** agentic knob reachable from the script JSON (not just the
+legacy batch fields above). They map 1:1 into `PipelineRequest` via `buildPipelineRequest`
+(`src/adapters/cli/cli-job.ts`).
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| **`aiVerify`** | `object` | **OPT-IN** AI visual/audio verification (reuses the agent's own model — zero extra cost). <br>• Shape: `{ enabled: true, minConfidence?: number, verifyOnAcquire?, verifyOnApprove?, verifyOnEdit?, verifyOnRender?, finalMode?: 'signal'\|'vision', checkSubjectMatch?, checkWatermark?, checkSafety?, checkMusicMood?, checkSpeechClarity?, checkBackgroundNoise? }`. <br>• Example: `"aiVerify": { "enabled": true, "checkSubjectMatch": true, "finalMode": "vision" }` |
+| **`brain`** | `object` | Model circuit-breaker: `{ maxCalls?: number, maxFails?: number }`. Caps model calls per run; trips the breaker and falls back to heuristics. |
+| **`pruneWorkspaces`** | `number` | How many workspaces to keep after pruning (RAM discipline). Default `2`. Overrides `AGENTIC_KEEP_WORKSPACES`. |
+| **`dryRun`** | `boolean` | If `true`, run plan + acquire + verify + gate but **skip the render** (inspect only). |
+| **`defaultVisual`** | `string` | Filename in `input/visuals/` used as the fallback visual when a scene resolves to none. |
+| **`agent`** | `object` | Per-job backend hooks: `{ writeScript?, expandKeywords?, visionVerify? }` (programmatic; rarely needed from JSON). |
+
+### Per-scene inline tags (inside `script`)
+Parsed by `src/lib/script-parser.ts` — each applies to the sentence/scene it sits in,
+and is stripped from the spoken text + subtitles:
+
+`[Visual: kw|file]` · `[Text: on|off]` · `[Transition: fade|slide|zoomblur|cut]` ·
+`[Grade: neutral|warm|cool|cinematic|vivid]` · `[KenBurns: on|off]` ·
+`[Trim: MM:SS-MM:SS]` · `[Style: top|bottom|center]` · `[Color: white|yellow|…]` ·
+`[FadeIn: 0.3]` · `[FadeOut: 0.3]` · `[Voice: en-US-GuyNeural]` ·
+`[Music: file.mp3]` · `[Volume: 0.8]`
+
+Example:
+```json
+{
+  "id": "demo",
+  "title": "Demo",
+  "script": "Intro scene. [Visual: technology abstract] [Transition: fade] [Grade: warm]\nSecond scene. [Visual: code programming] [Style: top] [Color: yellow]\nOutro. [Visual: success rocket] [Trim: 0:05-0:12]",
+  "aiVerify": { "enabled": true, "checkSubjectMatch": true },
+  "pruneWorkspaces": 2,
+  "dryRun": false
+}
+```
 
 ---
 
