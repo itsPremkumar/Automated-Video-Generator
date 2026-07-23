@@ -32,6 +32,8 @@ export interface FxJob {
     chromaKeyScenes?: number[];
     filterByScene?: Record<number, 'bw' | 'vintage' | 'sepia'>;
     blurScenes?: number[];
+    /** Ken Burns global toggle (zoom/pan across stills). */
+    kenBurns?: boolean;
 }
 
 function run(input: string, output: string, filters: string[]): string {
@@ -57,28 +59,33 @@ export function applySceneFx(clipPath: string, sceneIndex: number, fx: FxJob, wo
         filters.push(`setpts=${1 / speed}*PTS`);
         tag.push(`speed${speed}`);
     }
+
+    // Stabilize: detect pass writes a .trf, then transform is chained below.
     if (fx.stabilizeScenes?.includes(sceneIndex)) {
-        filters.push('vidstabdetect=shakiness=5:accuracy=15');
-        // two-pass: detect then transform
+        const trf = path.join(workDir, `fx_${sceneIndex}_stab.trf`);
+        try {
+            execFileSync(ff(), ['-y', '-i', clipPath, '-vf', `vidstabdetect=shakiness=5:accuracy=15:result=${trf}`, '-an', '-f', 'null', '-'], { stdio: 'ignore', timeout: 60000 });
+        } catch { /* ignore */ }
+        if (fs.existsSync(trf)) {
+            filters.push(`vidstabtransform=smoothing=30:input=${trf}`);
+            tag.push('stab');
+        }
     }
+
     const filt = fx.filterByScene?.[sceneIndex];
     if (filt === 'bw') filters.push('format=gray');
-    else if (filt === 'vintage') filters.push('curves=vintage, saturation=1.2');
+    else if (filt === 'vintage') filters.push('curves=vintage,saturation=1.2');
     else if (filt === 'sepia') filters.push('sepia=0.8');
     if (fx.blurScenes?.includes(sceneIndex)) filters.push('boxblur=10');
 
+    if (fx.kenBurns) {
+        filters.push(kenBurnsFilter(1.15, 3));
+        tag.push('kb');
+    }
+
     if (filters.length === 0) return clipPath;
     const out = path.join(workDir, `fx_${sceneIndex}_${tag.join('_')}.mp4`);
-    let res = run(clipPath, out, filters);
-
-    if (fx.stabilizeScenes?.includes(sceneIndex)) {
-        const stab = path.join(workDir, `fx_${sceneIndex}_stab.mp4`);
-        try {
-            execFileSync(ff(), ['-y', '-i', res, '-vf', 'vidstabtransform=smoothing=30:input=transforms.trf', '-an', '-c:v', 'libx264', '-preset', 'veryfast', stab], { stdio: 'ignore', timeout: 90000 });
-            if (fs.existsSync(stab) && fs.statSync(stab).size > 0) res = stab;
-        } catch { /* keep previous */ }
-    }
-    return res;
+    return run(clipPath, out, filters);
 }
 
 /** Chroma-key (green-screen) removal for a clip. Returns new path. */

@@ -60,12 +60,40 @@ function esc(t: string): string {
     return t.replace(/:/g, '\\:').replace(/'/g, "'\\''");
 }
 
+/** Resolve a font family+weight to an installed .ttf path (best-effort).
+ * ffmpeg drawtext has no `fontweight` option — bold is selected by the
+ * bold font file (e.g. arialbd.ttf). */
+function resolveFontFile(family: string | undefined, weight?: number): string {
+    const base = 'C:\\Windows\\Fonts';
+    const bold = (weight ?? 400) >= 600;
+    const map: Record<string, [string, string]> = { // [regular, bold]
+        'inter, sans-serif': ['arial.ttf', 'arialbd.ttf'],
+        'arial': ['arial.ttf', 'arialbd.ttf'],
+        'sans-serif': ['arial.ttf', 'arialbd.ttf'],
+        'georgia, serif': ['georgia.ttf', 'georgiab.ttf'],
+        'georgia': ['georgia.ttf', 'georgiab.ttf'],
+        'times new roman': ['times.ttf', 'timesbd.ttf'],
+        'times': ['times.ttf', 'timesbd.ttf'],
+        'courier new': ['cour.ttf', 'courbd.ttf'],
+        'courier': ['cour.ttf', 'courbd.ttf'],
+        'calibri': ['calibri.ttf', 'calibrib.ttf'],
+        'comic sans ms': ['comic.ttf', 'comicbd.ttf'],
+        'impact': ['impact.ttf', 'impact.ttf'],
+    };
+    const key = (family ?? 'arial').toLowerCase().trim();
+    const [reg, bld] = map[key] ?? ['arial.ttf', 'arialbd.ttf'];
+    const file = bold ? bld : reg;
+    const p = path.join(base, file);
+    return fs.existsSync(p) ? p : path.join(base, 'arial.ttf');
+}
+
 /** Build an ffmpeg filter for burned text overlay (drawtext). */
-function drawTextFilter(text: string, x: string, y: string, size: number, color: string, enable?: string): string {
+function drawTextFilter(text: string, x: string, y: string, size: number, color: string, opts?: { fontFile?: string; weight?: number; enable?: string }): string {
     const isHex = color.startsWith('#') || /^0x?[0-9a-fA-F]{6}$/.test(color);
     const c = isHex ? (color.startsWith('#') ? `0x${color.slice(1)}` : color) : color;
-    const en = enable ? `:enable='${enable}'` : '';
-    return `drawtext=fontfile='${path.join('C:\\\\Windows\\\\Fonts', 'arial.ttf')}':text='${esc(text)}':fontcolor=${c}:fontsize=${size}:x=${x}:y=${y}:box=1:boxcolor=black@0.4:boxborderw=6${en}`;
+    const en = opts?.enable ? `:enable='${opts.enable}'` : '';
+    const ff = opts?.fontFile ?? resolveFontFile(undefined);
+    return `drawtext=fontfile='${ff}':text='${esc(text)}':fontcolor=${c}:fontsize=${size}:x=${x}:y=${y}:box=1:boxcolor=black@0.4:boxborderw=6${en}`;
 }
 
 /**
@@ -90,7 +118,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     }
     result.scenesRendered = visuals.length;
 
-    // ── 2) Per-clip visual FX (speed / stabilize / chromaKey / bw / blur) ──
+    // ── 2) Per-clip visual FX (speed / stabilize / chromaKey / bw / blur / kenBurns)
     const fxVisuals = visuals.map((v, i) => {
         let out = applySceneFx(v, i, {
             clipSpeedByScene: job.clipSpeedByScene,
@@ -98,6 +126,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
             chromaKeyScenes: job.chromaKeyScenes,
             filterByScene: job.filterByScene,
             blurScenes: job.blurScenes,
+            kenBurns: job.kenBurns,
         }, outDir);
         out = applyChromaKey(out, i, { chromaKeyScenes: job.chromaKeyScenes }, outDir);
         return out;
@@ -116,11 +145,11 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     // ── 5) Burned overlays (title / lower-third / CTA / emoji / captions) ──
     const overlay = buildOverlayPlan(job);
     const vf: string[] = [];
-    if (overlay.titleCard) vf.push(drawTextFilter(overlay.titleCard.title, '(w-text_w)/2', 'h/2-40', 48, overlay.font.color));
-    if (overlay.lowerThird) vf.push(drawTextFilter(overlay.lowerThird, '40', 'H-th-40', 36, overlay.font.color, 'gte(t,1)*lte(t,4)'));
-    if (overlay.endCta) vf.push(drawTextFilter(overlay.endCta, '(w-text_w)/2', 'H-th-60', 42, 'yellow'));
+    if (overlay.titleCard) vf.push(drawTextFilter(overlay.titleCard.title, '(w-text_w)/2', 'h/2-40', 48, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight }));
+    if (overlay.lowerThird) vf.push(drawTextFilter(overlay.lowerThird, '40', 'H-th-40', 36, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: 'gte(t,1)*lte(t,4)' }));
+    if (overlay.endCta) vf.push(drawTextFilter(overlay.endCta, '(w-text_w)/2', 'H-th-60', 42, 'yellow', { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight }));
     for (const [idx, emoji] of Object.entries(overlay.emojiByScene)) {
-        vf.push(drawTextFilter(emoji, 'W-80', '80', 56, 'white', `gte(t,${Number(idx) * 3})*lte(t,${Number(idx) * 3 + 3})`));
+        vf.push(drawTextFilter(emoji, 'W-80', '80', 56, 'white', { enable: `gte(t,${Number(idx) * 3})*lte(t,${Number(idx) * 3 + 3})` }));
     }
     const watermarkPath = overlay.watermark ? path.join(inputDir, overlay.watermark) : undefined;
     let withOverlays = baseVideo;

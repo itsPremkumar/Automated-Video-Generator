@@ -311,5 +311,28 @@
     "clipSpeedByScene": { "1": 1.2 },
     "exportFormat": "gif",
     "contactSheet": true
+  },
+  {
+    "id": "adv_fx_demo",
+    "title": "ADV: Full FX bake (kenBurns+stabilize+chroma+blur+watermark+font)",
+    "topic": "nature montage",
+    "script": "A calm lake at dawn. [Visual: lake]\n\nForests breathe with the wind. [Visual: forest]\n\nStars wheel across the night. [Visual: night sky]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "musicQuery": "ambient piano",
+    "kenBurns": true,
+    "stabilizeScenes": [0],
+    "chromaKeyScenes": [1],
+    "blurScenes": [2],
+    "watermark": "logo.png",
+    "fontFamily": "Georgia, serif",
+    "fontWeight": 700,
+    "titleCard": { "title": "Nature", "subtitle": "Montage" },
+    "lowerThird": "Shot on AVG",
+    "endCta": "Subscribe!",
+    "exportFormat": "gif",
+    "posterScene": 0,
+    "contactSheet": true,
+    "licenseFilter": "cc0"
   }
 ]
