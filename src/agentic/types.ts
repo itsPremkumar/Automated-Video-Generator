@@ -53,6 +53,18 @@ export interface ScenePlan {
     musicOverride?: string;
     /** Per-scene audio volume (0.0–1.0). */
     volumeOverride?: number;
+    /** Per-scene caption theme preset (e.g. 'minimal', 'cinematic', 'neon'). */
+    captionTheme?: string;
+    /** Enable transition sound effects for this scene. */
+    sfx?: boolean;
+    /** J-cut for this scene: next scene's voiceover leads picture by N seconds. */
+    jCutSec?: number;
+    /** Enable cinematic vignette for this scene. */
+    vignette?: boolean;
+    /** Enable animated kinetic lower-third text for this scene. */
+    kineticText?: boolean;
+    /** Background music ducking depth for this scene. */
+    musicIntensity?: 'calm' | 'mid' | 'energetic';
 }
 
 export interface Plan {

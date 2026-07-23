@@ -40,6 +40,18 @@ export interface Scene {
     musicOverride?: string;
     /** Per-scene audio volume (0.0–1.0). */
     volumeOverride?: string;
+    /** Per-scene caption theme preset (e.g. 'minimal', 'cinematic', 'neon'). */
+    captionTheme?: string;
+    /** Enable transition sound effects for this scene. */
+    sfx?: boolean;
+    /** J-cut for this scene: next scene's voiceover leads picture by N seconds. */
+    jCutSec?: number;
+    /** Enable cinematic vignette for this scene. */
+    vignette?: boolean;
+    /** Enable animated kinetic lower-third text for this scene. */
+    kineticText?: boolean;
+    /** Background music ducking depth for this scene. */
+    musicIntensity?: 'calm' | 'mid' | 'energetic';
     /** Speech-timed caption cues (relative to scene start, ms) persisted from TTS. */
     captionSegments?: { text: string; startMs: number; endMs: number }[];
     visual?: {
@@ -183,6 +195,12 @@ function parseScriptLocally(script: string): ParsedScript {
     let voiceOverride: string | undefined;
     let musicOverride: string | undefined;
     let volumeOverride: string | undefined;
+    let captionTheme: string | undefined;
+    let sfx: boolean | undefined;
+    let jCutSec: number | undefined;
+    let sceneVignette: boolean | undefined;
+    let sceneKineticText: boolean | undefined;
+    let sceneMusicIntensity: 'calm' | 'mid' | 'energetic' | undefined;
 
     for (const line of lines) {
         const inlineTextMatch = line.match(/\[Text:?\s*(on|off)\]/is);
@@ -212,6 +230,18 @@ function parseScriptLocally(script: string): ParsedScript {
         musicOverride = musicMatch ? musicMatch[1].trim() : undefined;
         const volumeMatch = line.match(/\[Volume:?\s*([\d.]+)\]/is);
         volumeOverride = volumeMatch ? volumeMatch[1] : undefined;
+        const captionThemeMatch = line.match(/\[CaptionTheme:?\s*([a-zA-Z0-9_-]+)\]/is);
+        captionTheme = captionThemeMatch ? captionThemeMatch[1].toLowerCase() : undefined;
+        const sfxMatch = line.match(/\[Sfx:?\s*(on|off|true|false)\]/is);
+        sfx = sfxMatch ? (['on', 'true'].includes(sfxMatch[1].toLowerCase())) : undefined;
+        const jCutMatch = line.match(/\[JCut:?\s*([\d.]+)\]/is);
+        jCutSec = jCutMatch ? parseFloat(jCutMatch[1]) : undefined;
+        const vignetteMatch = line.match(/\[Vignette:?\s*(on|off|true|false)\]/is);
+        sceneVignette = vignetteMatch ? (['on', 'true'].includes(vignetteMatch[1].toLowerCase())) : undefined;
+        const kineticMatch = line.match(/\[Kinetic:?\s*(on|off|true|false)\]/is);
+        sceneKineticText = kineticMatch ? (['on', 'true'].includes(kineticMatch[1].toLowerCase())) : undefined;
+        const musicIntensityMatch = line.match(/\[MusicIntensity:?\s*(calm|mid|energetic)\]/is);
+        sceneMusicIntensity = musicIntensityMatch ? (musicIntensityMatch[1].toLowerCase() as 'calm' | 'mid' | 'energetic') : undefined;
 
         const cleanText = line
             .replace(/\[Visual:?\s*.*?\]/gis, '')
@@ -227,6 +257,12 @@ function parseScriptLocally(script: string): ParsedScript {
             .replace(/\[Voice:?\s*.*?\]/gis, '')
             .replace(/\[Music:?\s*.*?\]/gis, '')
             .replace(/\[Volume:?\s*.*?\]/gis, '')
+            .replace(/\[CaptionTheme:?\s*.*?\]/gis, '')
+            .replace(/\[Sfx:?\s*.*?\]/gis, '')
+            .replace(/\[JCut:?\s*.*?\]/gis, '')
+            .replace(/\[Vignette:?\s*.*?\]/gis, '')
+            .replace(/\[Kinetic:?\s*.*?\]/gis, '')
+            .replace(/\[MusicIntensity:?\s*.*?\]/gis, '')
             .trim();
 
         // Find all visual matches in the line
@@ -250,6 +286,12 @@ function parseScriptLocally(script: string): ParsedScript {
                     kenBurns: sceneKenBurns,
                     trimStart: sceneTrimStart,
                     trimEnd: sceneTrimEnd,
+            captionTheme,
+            sfx,
+            jCutSec,
+            vignette: sceneVignette,
+            kineticText: sceneKineticText,
+            musicIntensity: sceneMusicIntensity,
                 });
             }
             pendingVisualCue = '';
@@ -275,6 +317,12 @@ function parseScriptLocally(script: string): ParsedScript {
                 kenBurns: sceneKenBurns,
                 trimStart: sceneTrimStart,
                 trimEnd: sceneTrimEnd,
+            captionTheme,
+            sfx,
+            jCutSec,
+            vignette: sceneVignette,
+            kineticText: sceneKineticText,
+            musicIntensity: sceneMusicIntensity,
             });
             pendingVisualCue = visualCue;
             continue;
@@ -328,6 +376,12 @@ function parseScriptLocally(script: string): ParsedScript {
             kenBurns: sceneKenBurns,
             trimStart: sceneTrimStart,
             trimEnd: sceneTrimEnd,
+            captionTheme,
+            sfx,
+            jCutSec,
+            vignette: sceneVignette,
+            kineticText: sceneKineticText,
+            musicIntensity: sceneMusicIntensity,
             captionStyle,
             captionColor,
             fadeIn,
@@ -358,6 +412,12 @@ function parseScriptLocally(script: string): ParsedScript {
             kenBurns: sceneKenBurns,
             trimStart: sceneTrimStart,
             trimEnd: sceneTrimEnd,
+            captionTheme,
+            sfx,
+            jCutSec,
+            vignette: sceneVignette,
+            kineticText: sceneKineticText,
+            musicIntensity: sceneMusicIntensity,
             captionStyle,
             captionColor,
             fadeIn,

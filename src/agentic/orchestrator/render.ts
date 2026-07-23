@@ -52,17 +52,26 @@ export function buildDuckExpression(
     visuals: { durationSec?: number; captionSegments?: { startMs: number; endMs: number }[] }[],
     full: number,
     duck: number,
+    duckForScene?: (sceneIndex: number) => number,
 ): string | null {
-    const segs: { s: number; e: number }[] = [];
+    // Each visual's caption segments drive the duck. Per-scene [MusicIntensity:]
+    // overrides the global duck depth for that scene.
+    const segs: { s: number; e: number; sceneIndex: number }[] = [];
     let t = 0;
-    for (const a of visuals) {
+    visuals.forEach((a, vi) => {
         const dur = a.durationSec ?? 4;
-        for (const c of a.captionSegments ?? []) segs.push({ s: t + c.startMs / 1000, e: t + c.endMs / 1000 });
+        for (const c of a.captionSegments ?? []) segs.push({ s: t + c.startMs / 1000, e: t + c.endMs / 1000, sceneIndex: vi });
         t += dur;
-    }
+    });
     if (segs.length === 0) return null;
-    const terms = segs.map((x) => String.raw`between(t\,${x.s.toFixed(3)}\,${x.e.toFixed(3)})`).join('+');
-    return `${full}-${(full - duck).toFixed(3)}*gt(${terms},0)`;
+    const terms = segs
+        .map((x) => {
+            const d = duckForScene ? duckForScene(x.sceneIndex) : duck;
+            const delta = (full - d).toFixed(3);
+            return String.raw`(${delta})*between(t\\,${x.s.toFixed(3)}\\,${x.e.toFixed(3)})`;
+        })
+        .join('+');
+    return `${full}-(${terms})`;
 }
 
 /** Build a single SFX audio layer (mp3) by resolving each scene's transition SFX. */
@@ -340,6 +349,12 @@ export async function renderAgenticSlideshow(
         const scene = res.plan.scenes[sc.sceneIndex];
         if (scene?.transition) sc.transitionIn = scene.transition as any;
         if (scene?.grade) sc.grade = scene.grade as any;
+        if (scene?.captionTheme !== undefined) sc.captionTheme = scene.captionTheme;
+        if (scene?.sfx !== undefined) sc.sfx = scene.sfx;
+        if (scene?.jCutSec !== undefined) sc.jCutSec = scene.jCutSec;
+        if (scene?.vignette !== undefined) sc.vignette = scene.vignette;
+        if (scene?.kineticText !== undefined) sc.kineticText = scene.kineticText;
+        if (scene?.musicIntensity !== undefined) sc.musicIntensity = scene.musicIntensity;
     }
 
     const xf = opts.crossfadeSec ?? 0.5;
@@ -454,14 +469,16 @@ export async function renderAgenticSlideshow(
     let videoMap = videoChain;
 
     if (captionFile) {
-        const theme = resolveCaptionTheme(opts.captionTheme);
-        const { fontcolor: capColor, fontsize: baseSize, boxArgs, yExpr } = captionThemeToDrawtext(theme);
         let ctag = videoChain;
         let ci = 0;
         let tBase = 0;
         for (const a of visuals) {
             const dur = a.durationSec ?? 4;
             const scText = (res.plan.scenes[a.sceneIndex] && res.plan.scenes[a.sceneIndex].voiceoverText) || '';
+            // Per-scene caption theme wins over the global opts.captionTheme.
+            const sceneCaptionTheme = stylePlan.scenes[a.sceneIndex]?.captionTheme ?? opts.captionTheme;
+            const theme = resolveCaptionTheme(sceneCaptionTheme);
+            const { fontcolor: capColor, fontsize: baseSize, boxArgs, yExpr } = captionThemeToDrawtext(theme);
             if (opts.captions === 'karaoke') {
                 const words = wordTimingsFromScript(scText, dur);
                 for (const wseg of words) {
@@ -521,7 +538,10 @@ export async function renderAgenticSlideshow(
         }
         if (ktag !== videoMap) { videoMap = ktag; }
     }
-    if (opts.vignette !== false) vfArgs.push(`${videoMap}vignette=PI/5[vig]`);
+    // Vignette is a single global filter, so a per-scene [Vignette: off] disables
+    // it for the whole video; [Vignette: on] can't re-enable if globally off.
+    const doVignette = opts.vignette !== false && !stylePlan.scenes.some((s) => s.vignette === false);
+    if (doVignette) vfArgs.push(`${videoMap}vignette=PI/5[vig]`);
 else vfArgs.push(`${videoMap}null[vig]`);
     videoMap = '[vig]';
 
@@ -529,7 +549,7 @@ else vfArgs.push(`${videoMap}null[vig]`);
     let audioInputArgs: string[] = [];
     let audioFilter: string | null = null;
     let audioMap: string[] = [];
-    const jCut = opts.jCutSec && opts.jCutSec > 0 ? opts.jCutSec : 0;
+    const defaultJCut = opts.jCutSec && opts.jCutSec > 0 ? opts.jCutSec : 0;
     if (voScenes.length > 0) {
         audioInputArgs = voScenes.flatMap((a) => ['-i', a.audioPath!]);
         const videoInputCount = visuals.length + (introClip ? 1 : 0) + (outroClip ? 1 : 0);
@@ -537,6 +557,9 @@ else vfArgs.push(`${videoMap}null[vig]`);
         const introDur = introClip ? (opts.intro!.durationSec ?? 2.5) : 0;
         const delayed: string[] = [];
         voScenes.forEach((_, i) => {
+            // Per-scene [JCut:] overrides the global jCutSec for this scene.
+            const sc = stylePlan.scenes[visuals[i].sceneIndex];
+            const jCut = (sc?.jCutSec && sc.jCutSec > 0 ? sc.jCutSec : defaultJCut);
             const picStart = introDur + offsetFor(visuals, i, xf);
             const audioStart = Math.max(0, picStart - (i === 0 ? 0 : jCut));
             delayed.push(`[${base + i}:a]adelay=delays=${(audioStart * 1000).toFixed(0)}:all=1[a${i}]`);
@@ -582,7 +605,7 @@ else vfArgs.push(`${videoMap}null[vig]`);
                     ? a.captionSegments
                     : [{ text: res.plan.scenes[a.sceneIndex]?.voiceoverText ?? '', startMs: 0, endMs: Math.round(dur * 1000) }];
                 const lines = mergeWordsToLines(raw);
-                const theme = resolveCaptionTheme(opts.captionTheme);
+                const theme = resolveCaptionTheme(stylePlan.scenes[clip.idx]?.captionTheme ?? opts.captionTheme);
                 const { fontcolor: capColor, fontsize: baseSize, boxArgs, yExpr: defaultY } = captionThemeToDrawtext(theme);
                 // Per-scene caption style/color overrides from inline tags
                 const sceneStyle = clip.kind === 'scene' ? res.plan.scenes[clip.idx]?.captionStyle : undefined;
@@ -684,7 +707,14 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
     if (music && fs.existsSync(music.localPath)) {
         const duck = parseFloat(process.env.AUDIO_DUCK_LEVEL ?? '0.06');
         const full = parseFloat(process.env.AUDIO_FULL_LEVEL ?? '0.18');
-        const duckExpr = buildDuckExpression(visuals, full, duck);
+        // Per-scene [MusicIntensity:] maps to duck depth: calm=deeper duck (music quieter),
+        // energetic=shallower duck (music louder). Default uses the global duck level.
+        const MUSIC_INTENSITY_DUCK: Record<string, number> = { calm: 0.04, mid: 0.06, energetic: 0.10 };
+        const duckForScene = (sceneIndex: number): number => {
+            const mi = stylePlan.scenes[sceneIndex]?.musicIntensity;
+            return mi ? (MUSIC_INTENSITY_DUCK[mi] ?? duck) : duck;
+        };
+        const duckExpr = buildDuckExpression(visuals, full, duck, duckForScene);
         const volFilter = duckExpr ? `volume=eval=frame:volume='${duckExpr}'` : `volume=${full}`;
         const inputs: string[] = ['-i', silent, '-i', music.localPath];
         let fc = `[1:a]${volFilter}[a]`;

@@ -79,4 +79,10 @@ export interface PipelineRequest {
     transition?: string;
     /** Global grade override. */
     grade?: string;
+    /** OPT-IN AI visual/audio verification (reuses the agent's own model). */
+    aiVerify?: import('../config.js').AgenticConfig['aiVerify'];
+    /** Workspace retention budget (how many workspaces to keep after pruning). */
+    pruneWorkspaces?: number;
+    /** Model circuit-breaker budget for the agent brain. */
+    brain?: { maxCalls?: number; maxFails?: number };
 }

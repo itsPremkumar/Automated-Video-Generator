@@ -42,6 +42,12 @@ function toScenePlans(parsed: ParsedScript): ScenePlan[] {
         voiceOverride: s.voiceOverride,
         musicOverride: s.musicOverride,
         volumeOverride: s.volumeOverride ? parseFloat(s.volumeOverride) : undefined,
+        captionTheme: s.captionTheme,
+        sfx: s.sfx,
+        jCutSec: s.jCutSec,
+        vignette: s.vignette,
+        kineticText: s.kineticText,
+        musicIntensity: s.musicIntensity,
     }));
 }
 
