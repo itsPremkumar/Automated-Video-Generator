@@ -64,7 +64,9 @@ and is stripped from the spoken text + subtitles:
 `[Grade: neutral|warm|cool|cinematic|vivid]` · `[KenBurns: on|off]` ·
 `[Trim: MM:SS-MM:SS]` · `[Style: top|bottom|center]` · `[Color: white|yellow|…]` ·
 `[FadeIn: 0.3]` · `[FadeOut: 0.3]` · `[Voice: en-US-GuyNeural]` ·
-`[Music: file.mp3]` · `[Volume: 0.8]`
+`[Music: file.mp3]` · `[Volume: 0.8]` ·
+`[CaptionTheme: neon]` · `[Sfx: on|off]` · `[JCut: 0.4]` ·
+`[Vignette: on|off]` · `[Kinetic: on|off]` · `[MusicIntensity: calm|mid|energetic]`
 
 Example:
 ```json

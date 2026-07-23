@@ -19,8 +19,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { runAgenticPipeline } from '../../agentic/orchestrator/pipeline.js';
 import { renderAgenticSlideshow } from '../../agentic/orchestrator/render.js';
-import type { PipelineRequest } from '../../agentic/orchestrator/types.js';
-import type { AgenticBackend } from '../../agentic/ai/agent.js';
 import { AgenticCliJob, buildPipelineRequest } from './cli-job.js';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
