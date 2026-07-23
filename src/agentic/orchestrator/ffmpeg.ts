@@ -76,7 +76,11 @@ export async function probeVideo(p: string): Promise<{ width: number; height: nu
             const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } reject(new Error('ffprobe timed out')); }, 15000);
             child.stdout?.on('data', (d: Buffer) => { buf += d.toString(); });
             child.on('error', (e: Error) => { clearTimeout(t); reject(e); });
-            child.on('close', (code: number) => { clearTimeout(t); code === 0 ? resolve(buf) : reject(new Error('ffprobe failed')); });
+            child.on('close', (code: number) => {
+                clearTimeout(t);
+                if (code === 0) resolve(buf);
+                else reject(new Error('ffprobe failed'));
+            });
         });
         const parsed = JSON.parse(out);
         const s = parsed?.streams?.[0] || {};

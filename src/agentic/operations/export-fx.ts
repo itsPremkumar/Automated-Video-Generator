@@ -67,7 +67,7 @@ export function exportContactSheet(input: string, outDir: string, tiles = 6): st
     try {
         execFileSync(p, [
             '-y', '-i', input,
-            '-vf', `select='not(mod(n\,${(tiles * 25) / tiles}))',scale=320:-1,tile=${tiles}x1`,
+            '-vf', `select='not(mod(n,${(tiles * 25) / tiles}))',scale=320:-1,tile=${tiles}x1`,
             '-frames:v', '1', out,
         ], { stdio: 'ignore', timeout: 90000 });
         return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : null;

@@ -144,7 +144,7 @@ async function main() {
                 process.exit(1);
             }
             const field = broadcast.slice(0, colon);
-            let raw = broadcast.slice(colon + 1);
+            const raw = broadcast.slice(colon + 1);
             let value: any = raw;
             // attempt JSON parse for objects/arrays/numbers/booleans
             try { value = JSON.parse(raw); } catch { /* keep string */ }

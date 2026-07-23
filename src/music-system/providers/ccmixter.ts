@@ -36,7 +36,7 @@ interface CcMixterTrack {
     }>;
 }
 
-interface CcMixterResponse extends Array<CcMixterTrack> {}
+export type CcMixterResponse = CcMixterTrack[];
 
 export class CcMixterProvider extends BaseMusicProvider {
     readonly name = 'ccmixter';
