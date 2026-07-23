@@ -13,6 +13,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { runFfmpeg } from './edit.js';
 import { probeMedia, type ProbeRunner } from './probe.js';
+import { ffmpegDrawtextEscape } from '../../lib/ffmpeg-text.js';
 
 export interface BrandKit {
     /** brand display name (used for wordmark + intro/outro text). */
@@ -69,7 +70,7 @@ export function buildBrandFilter(kit: BrandKit, w = 720, h = 1280): string {
         const lo = kit.logo.replace(/\\/g, '/');
         parts.push(`movie='${lo}'[lg];[in][lg]overlay=W-w-24:24[ovl]`);
     } else if (kit.name) {
-        const safe = kit.name.replace(/:/g, '\\:').replace(/'/g, "'\\''");
+        const safe = ffmpegDrawtextEscape(kit.name);
         parts.push(`drawtext=text='${safe}':fontcolor=white:fontsize=34:x=w-tw-24:y=24`);
     }
     return parts.join(',');
@@ -77,7 +78,7 @@ export function buildBrandFilter(kit: BrandKit, w = 720, h = 1280): string {
 
 async function makeCard(text: string, color: string, dur: number, w: number, h: number, out: string): Promise<boolean> {
     const rgb = rgbExpr(color);
-    const safe = text.replace(/:/g, '\\:').replace(/'/g, "'\\''");
+    const safe = ffmpegDrawtextEscape(text);
     const vf = `drawtext=text='${safe}':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2`;
     const { code } = await runFfmpeg([
         '-f',

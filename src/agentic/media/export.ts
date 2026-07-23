@@ -18,6 +18,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Plan } from '../types.js';
 import type { PipelineResult } from '../types.js';
+import { ffmpegDrawtextEscape } from '../../lib/ffmpeg-text.js';
 
 export type Aspect = '9:16' | '16:9' | '1:1';
 
@@ -149,7 +150,7 @@ export async function renderThumbnail(srcMp4: string, plan: Plan): Promise<strin
             fontArg = `fontfile='${c}':`;
             break;
         }
-    const filter = `drawtext=${fontArg}text='${title}':fontcolor=white:fontsize=48:box=1:boxcolor=black@0.55:boxborderw=20:line_spacing=8:x=(w-text_w)/2:y=(h-text_h)/2`;
+    const filter = `drawtext=${fontArg}text='${ffmpegDrawtextEscape(title)}':fontcolor=white:fontsize=48:box=1:boxcolor=black@0.55:boxborderw=20:line_spacing=8:x=(w-text_w)/2:y=(h-text_h)/2`;
     try {
         const code = await runFfmpeg(['-y', '-ss', '00:00:01', '-i', srcMp4, '-frames:v', '1', '-vf', filter, out]);
         return code === 0 && fs.existsSync(out) ? out : null;
