@@ -109,7 +109,14 @@
     "agentic:batch:parallel": "tsx src/adapters/cli/agentic-batch.ts --parallel 3",
     "agentic:preview": "tsx src/adapters/cli/agentic-batch.ts --preview",
     "agentic:generate": "tsx src/adapters/cli/agentic-batch.ts --generate --topics \"AI coding,Video editing,Photography,Web development,Data science\"",
-    "agentic:generate:preview": "tsx src/adapters/cli/agentic-batch.ts --generate --preview --topics \"AI coding,Video editing,Photography,Web development,Data science\""
+    "agentic:generate:preview": "tsx src/adapters/cli/agentic-batch.ts --generate --preview --topics \"AI coding,Video editing,Photography,Web development,Data science\"",
+    "agentic:mode:plan": "tsx src/adapters/cli/agentic-batch.ts --mode plan",
+    "agentic:mode:images": "tsx src/adapters/cli/agentic-batch.ts --mode download-images",
+    "agentic:mode:videos": "tsx src/adapters/cli/agentic-batch.ts --mode download-videos",
+    "agentic:mode:music": "tsx src/adapters/cli/agentic-batch.ts --mode download-music",
+    "agentic:mode:voice-edgetts": "tsx src/adapters/cli/agentic-batch.ts --mode generate-voice-edgetts",
+    "agentic:mode:voice-voicebox": "tsx src/adapters/cli/agentic-batch.ts --mode generate-voice-voicebox",
+    "agentic:mode:clone": "tsx src/adapters/cli/agentic-batch.ts --mode clone-voice"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.28.0",

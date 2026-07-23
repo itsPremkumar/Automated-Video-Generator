@@ -102,7 +102,7 @@ function findReferenceTranscript(clipPath: string): string {
 /** Auto-clone a real voice profile from a reference clip in input/voices/.
  *  If a sidecar transcript (.txt/.srt) sits next to the clip, it is used as the
  *  reference_text for maximum clone fidelity (otherwise a short placeholder). */
-async function cloneFromVoicesDir(
+export async function cloneFromVoicesDir(
     clip: string,
     cacheFile: string,
 ): Promise<ResolvedProfile> {

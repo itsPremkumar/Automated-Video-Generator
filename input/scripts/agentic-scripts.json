@@ -149,5 +149,58 @@
     "platform": "youtube",
     "backgroundMusic": "ambient_nature.mp3",
     "musicVolume": 0.15
+  },
+  {
+    "id": "sf_images_only",
+    "title": "SF: Download Images Only",
+    "topic": "space exploration",
+    "script": "Space is vast and mysterious. [Visual: galaxy nebula]\nBlack holes bend light. [Visual: black hole]\nWe explore with telescopes. [Visual: space telescope]",
+    "orientation": "portrait",
+    "candidatesPerAsset": 4,
+    "mode": "download-images"
+  },
+  {
+    "id": "sf_videos_only",
+    "title": "SF: Download Videos Only",
+    "topic": "ocean waves",
+    "script": "The ocean moves in endless rhythm. [Visual: ocean waves]\nWaves crash on cliffs. [Visual: cliff waves]\nCalm seas soothe the mind. [Visual: calm sea]",
+    "orientation": "landscape",
+    "candidatesPerAsset": 3,
+    "mode": "download-videos"
+  },
+  {
+    "id": "sf_music_only",
+    "title": "SF: Download Music Only",
+    "topic": "lofi study beats",
+    "musicQuery": "lofi chill study beats",
+    "candidatesPerAsset": 3,
+    "mode": "download-music"
+  },
+  {
+    "id": "sf_voice_edgetts",
+    "title": "SF: Voice Only (Edge-TTS)",
+    "topic": "daily motivation",
+    "script": "Start your day with intention. [Visual: sunrise]\nSmall steps build momentum. [Visual: steps]\nYou are capable of more. [Visual: mountain]",
+    "voice": "en-US-GuyNeural",
+    "candidatesPerAsset": 4,
+    "mode": "generate-voice-edgetts"
+  },
+  {
+    "id": "sf_voice_voicebox",
+    "title": "SF: Voice Only (Voicebox/Kokoro)",
+    "topic": "tech news",
+    "script": "A new model broke benchmarks today. [Visual: AI chip]\nOpen source is winning. [Visual: open source]\nThe future is local. [Visual: local server]",
+    "voice": "en-US-GuyNeural",
+    "kokoroVoice": "af_heart",
+    "candidatesPerAsset": 4,
+    "mode": "generate-voice-voicebox"
+  },
+  {
+    "id": "sf_clone_voice",
+    "title": "SF: Clone a Person's Voice",
+    "topic": "voice clone demo",
+    "cloneVoiceFrom": "reference_voice.wav",
+    "candidatesPerAsset": 1,
+    "mode": "clone-voice"
   }
 ]

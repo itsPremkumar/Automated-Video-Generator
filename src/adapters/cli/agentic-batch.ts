@@ -9,7 +9,17 @@
  *   npx tsx src/adapters/cli/agentic-batch.ts --preview         # Preview without fetching/rendering
  *   npx tsx src/adapters/cli/agentic-batch.ts --generate        # Generate dynamic jobs from topics
  *   npx tsx src/adapters/cli/agentic-batch.ts --generate --topics "AI coding,Video editing,Photography"
+ *   npx tsx src/adapters/cli/agentic-batch.ts --mode download-images             # Fetch ONLY images
+ *   npx tsx src/adapters/cli/agentic-batch.ts --mode download-videos             # Fetch ONLY videos
+ *   npx tsx src/adapters/cli/agentic-batch.ts --mode download-music              # Fetch ONLY music
+ *   npx tsx src/adapters/cli/agentic-batch.ts --mode generate-voice-edgetts      # Voice ONLY via Edge-TTS
+ *   npx tsx src/adapters/cli/agentic-batch.ts --mode generate-voice-voicebox    # Voice ONLY via Voicebox/Kokoro
+ *   npx tsx src/adapters/cli/agentic-batch.ts --mode clone-voice --job <id>      # Clone a person's voice
+ *   npx tsx src/adapters/cli/agentic-batch.ts --mode plan                        # Plan ONLY (no network)
+ *   npx tsx src/adapters/cli/agentic-batch.ts --mode download-images --job gen_3scene_hookfirst
  *
+ * You can also set "mode" per-job inside agentic-scripts.json (e.g. "mode": "download-music")
+ * to run that one job in single-feature mode during a normal batch run.
  * Environment:
  *   AGENTIC_WAVE_SIZE=3           Override wave size
  *   AGENTIC_PREVIEW=1             Enable preview mode
@@ -23,6 +33,7 @@ import { generateJobBatch, writeJobBatch } from '../../agentic/operations/job-ge
 import { AgentBrain } from '../../agentic/ai/brain.js';
 import { buildPipelineRequest } from './cli-job.js';
 import type { AgenticCliJob } from './cli-job.js';
+import { runSingleFeature, type SingleFeatureMode } from '../../agentic/operations/single-feature.js';
 
 const INPUT_DIR = path.join(process.cwd(), 'input', 'scripts');
 const SCRIPTS_FILE = path.join(INPUT_DIR, 'agentic-scripts.json');
@@ -60,6 +71,8 @@ async function main() {
     const preview = args.preview === true || process.env.AGENTIC_PREVIEW === '1';
     const generate = args.generate === true;
     const topics = args.topics ? String(args.topics).split(',').map((t) => t.trim()) : undefined;
+    const singleMode = args.mode ? String(args.mode) : undefined;
+    const jobFilter = args.job ? String(args.job) : undefined;
 
     // ─── Generate mode: create dynamic jobs from topics ───
     if (generate) {
@@ -82,6 +95,44 @@ async function main() {
                 printPreview(report);
             }
             return;
+        }
+        return;
+    }
+
+    // ─── Single-feature mode: run ONLY one stage (download/voice/clone/plan) ───
+    if (singleMode) {
+        const jobs = readJobJson() as AgenticCliJob[];
+        const filtered = jobFilter ? jobs.filter((j) => (j.id ?? j.title) === jobFilter) : jobs;
+        if (filtered.length === 0) {
+            console.error(`✖ No jobs matched filter "${jobFilter ?? ''}"`);
+            process.exit(1);
+        }
+        console.log(
+            `\n🎯 Single-feature mode: ${singleMode} | ${filtered.length} job(s)` +
+                (jobFilter ? ` (filter: ${jobFilter})` : ''),
+        );
+        const validModes = [
+            'plan', 'visuals', 'voice', 'render', 'download-images', 'download-videos',
+            'download-music', 'generate-voice-edgetts', 'generate-voice-voicebox', 'clone-voice',
+        ];
+        if (!validModes.includes(singleMode)) {
+            console.error(`✖ Invalid --mode "${singleMode}". Valid: ${validModes.join(', ')}`);
+            process.exit(1);
+        }
+        for (const job of filtered) {
+            const id = (job.id || `job_${Date.now()}`).toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 64);
+            const topic = job.topic ?? job.title ?? 'Untitled video';
+            try {
+                const res = await runSingleFeature(job, id, singleMode as SingleFeatureMode);
+                console.log(`  ✅ ${job.title}: ${res.summary}`);
+                if (res.outputs.length > 0) {
+                    console.log(`     outputs (${res.outputs.length}):`);
+                    for (const o of res.outputs.slice(0, 8)) console.log(`       • ${o}`);
+                    if (res.outputs.length > 8) console.log(`       … +${res.outputs.length - 8} more`);
+                }
+            } catch (e) {
+                console.error(`  ❌ ${job.title}: ${(e as Error)?.message ?? e}`);
+            }
         }
         return;
     }

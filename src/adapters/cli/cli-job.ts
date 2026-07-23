@@ -101,6 +101,29 @@ export interface AgenticCliJob {
     defaultVisual?: string;
     /** Per-job agent backend config (model/provider hooks). */
     agent?: Partial<import('../../agentic/ai/agent.js').AgentBackendConfig>;
+    // ═════════════════════════════════════════════════
+    //  Single-Feature Execution Modes
+    //  Each mode runs ONLY the specified stage, skipping all others.
+    //  Useful for testing individual pipeline stages in isolation.
+    // ═════════════════════════════════════════════════
+    /** Run ONLY the plan stage (script → scenes → keywords). No fetch/render. */
+    mode?: 'plan' | 'visuals' | 'voice' | 'render' | 'download-images' | 'download-videos' | 'download-music' | 'generate-voice-edgetts' | 'generate-voice-voicebox' | 'clone-voice' | 'full';
+    /** When mode='download-images', only download image assets for these scene indices (0-based). */
+    sceneIndices?: number[];
+    /** When mode='generate-voice-voicebox', use this reference voice clip from input/voices/. */
+    voiceReferenceClip?: string;
+    /** When mode='clone-voice', clone this person's voice from input/voices/<clip>. */
+    cloneVoiceFrom?: string;
+    /** When mode='generate-voice-edgetts', use this specific Edge-TTS voice. */
+    edgeTtsVoice?: string;
+    /** When mode='generate-voice-voicebox', use this Kokoro preset voice. */
+    kokoroVoice?: string;
+    /** When mode='download-music', only download music tracks (no visuals/voice). */
+    downloadMusicOnly?: boolean;
+    /** When mode='download-images', only download image assets (no videos/music). */
+    downloadImagesOnly?: boolean;
+    /** When mode='download-videos', only download video assets (no images/music). */
+    downloadVideosOnly?: boolean;
 }
 
 /**
