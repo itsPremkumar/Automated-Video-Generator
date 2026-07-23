@@ -117,6 +117,10 @@
     "agentic:mode:voice-edgetts": "tsx src/adapters/cli/agentic-batch.ts --mode generate-voice-edgetts",
     "agentic:mode:voice-voicebox": "tsx src/adapters/cli/agentic-batch.ts --mode generate-voice-voicebox",
     "agentic:mode:clone": "tsx src/adapters/cli/agentic-batch.ts --mode clone-voice",
+    "agentic:mode:sfx": "tsx src/adapters/cli/agentic-batch.ts --mode download-sfx",
+    "agentic:mode:url": "tsx src/adapters/cli/agentic-batch.ts --mode download-url",
+    "agentic:mode:advanced": "tsx src/adapters/cli/agentic-batch.ts --mode apply-advanced",
+    "agentic:mode:rerender": "tsx src/adapters/cli/agentic-batch.ts --mode rerender",
     "agentic:fetch": "tsx src/adapters/cli/agentic-batch.ts --search"
   },
   "dependencies": {

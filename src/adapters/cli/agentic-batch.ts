@@ -135,7 +135,9 @@ async function main() {
         );
         const validModes = [
             'plan', 'visuals', 'voice', 'render', 'download-images', 'download-videos',
-            'download-music', 'generate-voice-edgetts', 'generate-voice-voicebox', 'clone-voice',
+            'download-music', 'download-sfx', 'download-url', 'generate-voice-edgetts',
+            'generate-voice-voicebox', 'clone-voice', 'apply-advanced', 'rerender',
+            'render-gif', 'render-poster', 'render-contact-sheet',
         ];
         if (!validModes.includes(singleMode)) {
             console.error(`✖ Invalid --mode "${singleMode}". Valid: ${validModes.join(', ')}`);

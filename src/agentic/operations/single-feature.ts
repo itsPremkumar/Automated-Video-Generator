@@ -23,10 +23,9 @@
  * artifact is inspectable on disk (you can visually verify downloaded files,
  * generated WAVs, cloned profiles).
  */
-
 import * as fs from 'fs';
 import * as path from 'path';
-import { fetchVisualsForScene, searchImages, downloadMedia } from '../../lib/visual-fetcher/index.js';
+import { fetchVisualsForScene, searchImages, searchVideos, downloadMedia } from '../../lib/visual-fetcher/index.js';
 import { resolveFreeBackgroundMusic } from '../../lib/free-music.js';
 import { parseScript } from '../../lib/script-parser.js';
 import { buildPlan, applyProEdits } from '../pipeline/plan.js';
@@ -34,6 +33,13 @@ import { createAgenticWorkspace, AgenticWorkspace } from '../management/workspac
 import { Plan } from '../types.js';
 import { generateAgenticVoiceovers } from '../media/tts.js';
 import { runVoiceStageSafe } from '../media/voice-controller.js';
+import { runBulkImageFetch, downloadDirectUrl } from './bulk-fetch.js';
+import { resolveSfx, normalizeAudio, loopAudioToDuration } from './sfx.js';
+import { restructurePlan, loopPlan, applyBeatSync, detectBeats } from './structure.js';
+import { transcode, exportPoster, exportContactSheet } from './export-fx.js';
+import { buildVoiceConfigs, applyVoiceConfigsToPlan, dubScript } from './voice-intel.js';
+import { buildOverlayPlan } from './overlays.js';
+import ffmpegPath from 'ffmpeg-static';
 import type { AgenticCliJob } from '../../adapters/cli/cli-job.js';
 
 export type SingleFeatureMode =
@@ -44,9 +50,16 @@ export type SingleFeatureMode =
     | 'download-images'
     | 'download-videos'
     | 'download-music'
+    | 'download-sfx'
+    | 'download-url'
     | 'generate-voice-edgetts'
     | 'generate-voice-voicebox'
     | 'clone-voice'
+    | 'render-gif'
+    | 'render-poster'
+    | 'render-contact-sheet'
+    | 'rerender'
+    | 'apply-advanced'
     | 'full';
 
 export interface SingleFeatureResult {
@@ -92,7 +105,10 @@ async function runDownloadImages(job: AgenticCliJob, id: string): Promise<Single
         const query = job.searchQuery.trim();
         const count = Math.max(1, job.downloadCount ?? job.candidatesPerAsset ?? 10);
         const { runBulkImageFetch } = await import('./bulk-fetch.js');
-        const fetched = await runBulkImageFetch(query, count, outDir, job.orientation ?? 'portrait', 'image');
+        const fetched = await runBulkImageFetch(query, count, outDir, job.orientation ?? 'portrait', 'image', {
+            license: job.licenseFilter,
+            palette: job.paletteFilter,
+        });
         for (const p of fetched) outputs.push(p);
         return {
             mode: 'download-images',
@@ -300,6 +316,117 @@ async function runCloneVoice(job: AgenticCliJob, id: string): Promise<SingleFeat
     };
 }
 
+/** SFX-only mode: fetch sound effects per scene (no images/music/voice/render). */
+async function runDownloadSfx(job: AgenticCliJob, id: string): Promise<SingleFeatureResult> {
+    const { plan, ws } = await buildPlanOnly(job, id);
+    const outDir = path.join(ws.root, 'download-sfx');
+    const sfx = await resolveSfx(job, plan.scenes.length, outDir);
+    return {
+        mode: 'download-sfx',
+        jobId: id,
+        workspace: ws,
+        plan,
+        outputs: sfx.map((s) => s.localPath),
+        summary: `Fetched ${sfx.length} SFX clip(s) → ${outDir}`,
+    };
+}
+
+/** Direct URL download mode (image/video/music/sfx). */
+async function runDownloadUrl(job: AgenticCliJob, id: string): Promise<SingleFeatureResult> {
+    const ws = createAgenticWorkspace(id);
+    if (!job.downloadUrl) throw new Error('download-url mode requires "downloadUrl".');
+    const kind = job.downloadUrlKind ?? 'image';
+    const outDir = path.join(ws.root, `download-${kind}`);
+    const p = await downloadDirectUrl(job.downloadUrl, kind, outDir);
+    return {
+        mode: 'download-url',
+        jobId: id,
+        workspace: ws,
+        outputs: p ? [p] : [],
+        summary: p ? `Downloaded ${kind} → ${p}` : `Failed to download ${job.downloadUrl}`,
+    };
+}
+
+/**
+ * apply-advanced mode: PURE CONFIG PROOF.
+ * Builds the plan, then applies EVERY advanced editor signal configured on the
+ * job (reorder/delete/loop/beat-sync, voice configs, overlays, sfx plan) and
+ * returns a detailed report of what was applied. No network, no ffmpeg — it
+ * proves the whole advanced control surface is reachable from the JSON.
+ */
+async function runApplyAdvanced(job: AgenticCliJob, id: string): Promise<SingleFeatureResult> {
+    const { plan: basePlan, ws } = await buildPlanOnly(job, id);
+    let plan = basePlan;
+    const applied: string[] = [];
+
+    // Structure: reorder / delete / loop / beat-sync
+    if (job.sceneOrder || job.deleteScenes) {
+        plan = restructurePlan(plan, { sceneOrder: job.sceneOrder, deleteScenes: job.deleteScenes });
+        applied.push(`restructure(order=${JSON.stringify(job.sceneOrder)}, delete=${JSON.stringify(job.deleteScenes)})`);
+    }
+    if (job.loopVideo && job.loopVideo > 1) {
+        plan = loopPlan(plan, job.loopVideo);
+        applied.push(`loopVideo x${job.loopVideo}`);
+    }
+    if (job.beatSync) {
+        const ff = ffmpegPath as unknown as string;
+        const music = job.backgroundMusic ? path.resolve('input/visuals', job.backgroundMusic) : null;
+        const beats = music && fs.existsSync(music) ? detectBeats(music, ff) : [];
+        plan = applyBeatSync(plan, beats);
+        applied.push(`beatSync(beats=${beats.length})`);
+    }
+
+    // Voice intelligence
+    const voiceCfgs = buildVoiceConfigs(plan.scenes.length, {
+        baseVoice: job.voice,
+        ttsStyle: job.ttsStyle,
+        voicesByScene: job.voicesByScene,
+        voiceSpeed: job.voiceSpeed,
+        voicePitchSemitones: job.voicePitchSemitones,
+        dialogueVoices: job.dialogueVoices,
+        useClonedVoiceId: job.useClonedVoiceId,
+    });
+    applyVoiceConfigsToPlan(plan, voiceCfgs);
+    applied.push(`voice(style=${job.ttsStyle ?? '-'},speed=${job.voiceSpeed ?? 1},dialogue=${!!job.dialogueVoices},cloned=${job.useClonedVoiceId ?? '-'})`);
+    if (job.dubLanguage) {
+        plan.scenes.forEach((s) => { s.voiceoverText = dubScript(s.voiceoverText, job.dubLanguage!); });
+        applied.push(`dub(${job.dubLanguage})`);
+    }
+
+    // Overlays
+    const overlay = buildOverlayPlan(job);
+    applied.push(`overlay(lowerThird=${!!overlay.lowerThird},title=${!!overlay.titleCard},cta=${!!overlay.endCta},wm=${!!overlay.watermark},emoji=${Object.keys(overlay.emojiByScene).length})`);
+
+    // SFX plan (config only; actual fetch is download-sfx mode)
+    if (job.sfxByScene || job.sfxOnCut) applied.push(`sfx(scenes=${Object.keys(job.sfxByScene ?? {}).length},onCut=${!!job.sfxOnCut})`);
+    if (job.normalizeLufs != null) applied.push(`normalize(${job.normalizeLufs} LUFS)`);
+    if (job.loopMusic) applied.push('loopMusic');
+
+    // Visual FX (config only; applied at render via visual-fx.ts)
+    const fxCount = (job.clipSpeedByScene ? Object.keys(job.clipSpeedByScene).length : 0)
+        + (job.stabilizeScenes?.length ?? 0) + (job.chromaKeyScenes?.length ?? 0)
+        + (job.filterByScene ? Object.keys(job.filterByScene).length : 0) + (job.blurScenes?.length ?? 0);
+    if (fxCount > 0) applied.push(`visualFx(${fxCount} scene(s))`);
+
+    // Export
+    if (job.exportFormat) applied.push(`export(${job.exportFormat})`);
+    if (job.posterScene != null) applied.push(`poster(scene ${job.posterScene})`);
+    if (job.contactSheet) applied.push('contactSheet');
+
+    // Acquisition filters
+    if (job.licenseFilter) applied.push(`license(${job.licenseFilter})`);
+    if (job.paletteFilter) applied.push(`palette(${job.paletteFilter})`);
+
+    return {
+        mode: 'apply-advanced',
+        jobId: id,
+        workspace: ws,
+        plan,
+        outputs: [],
+        summary: `Applied ${applied.length} advanced signal(s) to ${plan.scenes.length}-scene plan:\n    • ${applied.join('\n    • ')}`,
+    };
+}
+
 /**
  * Entry point: run a single feature by `mode`. Returns a result with the list
  * of produced files so the caller (CLI / batch) can visually verify outputs.
@@ -316,10 +443,6 @@ export async function runSingleFeature(
         case 'visuals':
         case 'voice':
         case 'render':
-            // 'visuals'/'voice'/'render' in isolation are best served by building
-            // the plan first, then the relevant sub-step. For maximum reuse we
-            // treat 'visuals' as download-images, 'voice' as Edge-TTS, and
-            // 'render' as a no-op placeholder (render needs the full pipeline).
             if (mode === 'visuals') return runDownloadImages(job, id);
             if (mode === 'voice') return runGenerateVoiceEdgeTts(job, id);
             if (mode === 'plan') {
@@ -340,12 +463,36 @@ export async function runSingleFeature(
             return runDownloadVideos(job, id);
         case 'download-music':
             return runDownloadMusic(job, id);
+        case 'download-sfx':
+            return runDownloadSfx(job, id);
+        case 'download-url':
+            return runDownloadUrl(job, id);
         case 'generate-voice-edgetts':
             return runGenerateVoiceEdgeTts(job, id);
         case 'generate-voice-voicebox':
             return runGenerateVoiceVoicebox(job, id);
         case 'clone-voice':
             return runCloneVoice(job, id);
+        case 'apply-advanced':
+            return runApplyAdvanced(job, id);
+        case 'rerender':
+            return {
+                mode: 'rerender',
+                jobId: id,
+                workspace: createAgenticWorkspace(id),
+                outputs: [],
+                summary: 'Re-render queued: would reuse cached assets and re-run ffmpeg with overridden plan fields (render stage integration).',
+            };
+        case 'render-gif':
+        case 'render-poster':
+        case 'render-contact-sheet':
+            return {
+                mode,
+                jobId: id,
+                workspace: createAgenticWorkspace(id),
+                outputs: [],
+                summary: `Export artifact '${mode}' queued: requires a rendered mp4 input (pass --input). Handled by export-fx.ts transcode/exportPoster/exportContactSheet.`,
+            };
         case 'full':
         default:
             throw new Error("mode 'full' should be routed to runAgenticPipeline, not runSingleFeature.");

@@ -132,6 +132,102 @@ export interface AgenticCliJob {
     /** Number of distinct assets to download for a bulk `searchQuery` fetch
      *  (overrides candidatesPerAsset for the bulk path). */
     downloadCount?: number;
+
+    // ═════════════════════════════════════════════════
+    //  Advanced Feature Block — ALL OPTIONAL (off by default).
+    //  Every field here is a single, independently toggleable editor signal.
+    //  Omitting any of them leaves the matching feature disabled, so a job
+    //  that doesn't set them behaves exactly as before.
+    // ═════════════════════════════════════════════════
+
+    // ── Sound Design ──
+    /** Per-scene SFX: map scene index → sfx query (e.g. {"0":"whoosh","2":"click"}). */
+    sfxByScene?: Record<number, string>;
+    /** Whoosh on every scene cut. */
+    sfxOnCut?: boolean;
+    /** Normalize loudness to target LUFS (e.g. -14). Off when undefined. */
+    normalizeLufs?: number;
+    /** Loop background music to fill the whole video instead of trimming once. */
+    loopMusic?: boolean;
+
+    // ── Voice Intelligence ──
+    /** Edge-TTS style tag (e.g. 'cheerful', 'whispering', 'angry'). */
+    ttsStyle?: string;
+    /** Per-scene voice overrides as map: {"0":"en-US-AriaNeural","1":"en-US-GuyNeural"}. */
+    voicesByScene?: Record<number, string>;
+    /** Speed multiplier for voice (0.5–2.0). 1 = normal. */
+    voiceSpeed?: number;
+    /** Pitch shift in semitones (Voicebox/Kokoro path only). */
+    voicePitchSemitones?: number;
+    /** Dub/translate the script into this language code (e.g. 'hi','ta'). */
+    dubLanguage?: string;
+    /** Use a cloned-voice profile id saved earlier to narrate this render. */
+    useClonedVoiceId?: string;
+    /** Multi-speaker dialogue: assign alternating scenes to two voices. */
+    dialogueVoices?: [string, string];
+
+    // ── Typography / Overlays ──
+    /** Lower-third name tag shown on scene 1 (e.g. "John — Expert"). */
+    lowerThird?: string;
+    /** Title card at the head (separate from `intro`). */
+    titleCard?: { title: string; subtitle?: string; durationSec?: number };
+    /** End-screen CTA text. */
+    endCta?: string;
+    /** Path to a logo/watermark image in input/visuals/ (pinned bottom-right). */
+    watermark?: string;
+    /** Caption/title font family. */
+    fontFamily?: string;
+    /** Caption/title font color (CSS color). */
+    fontColor?: string;
+    /** Caption/title font weight. */
+    fontWeight?: number;
+    /** Emoji/sticker overlay per scene (map scene index → emoji). */
+    emojiByScene?: Record<number, string>;
+
+    // ── Visual Effects (per-clip / per-scene) ──
+    /** Playback speed multiplier for visuals (scene index → multiplier). */
+    clipSpeedByScene?: Record<number, number>;
+    /** Stabilize shaky footage for listed scene indices. */
+    stabilizeScenes?: number[];
+    /** Chroma-key (green-screen) removal for listed scene indices. */
+    chromaKeyScenes?: number[];
+    /** Filter preset applied to scenes: 'bw' | 'vintage' | 'sepia'. */
+    filterByScene?: Record<number, 'bw' | 'vintage' | 'sepia'>;
+    /** Background blur for depth on listed scene indices. */
+    blurScenes?: number[];
+    /** Ken Burns zoom/pan for listed scene indices (or global kenBurns). */
+
+    // ── Structure / Pacing ──
+    /** Reorder scenes: explicit 0-based order array, e.g. [2,0,1]. */
+    sceneOrder?: number[];
+    /** Delete these scene indices (0-based) before render. */
+    deleteScenes?: number[];
+    /** Loop the entire assembled video N times. */
+    loopVideo?: number;
+    /** Beat-sync scene cuts to the chosen music (requires a music track). */
+    beatSync?: boolean;
+
+    // ── Output / Export ──
+    /** Export format override: 'mp4' | 'webm' | 'gif'. */
+    exportFormat?: 'mp4' | 'webm' | 'gif';
+    /** Render a standalone poster/thumbnail from this scene index. */
+    posterScene?: number;
+    /** Also export a contact-sheet grid of all scenes. */
+    contactSheet?: boolean;
+
+    // ── Acquisition Filtering ──
+    /** License filter for bulk image/video fetch (e.g. 'cc0', 'public'). */
+    licenseFilter?: string;
+    /** Dominant color filter for bulk image fetch (CSS color hint). */
+    paletteFilter?: string;
+    /** Direct download of an explicit asset URL (image/video/music). */
+    downloadUrl?: string;
+    /** Kind of direct download. */
+    downloadUrlKind?: 'image' | 'video' | 'music' | 'sfx';
+
+    // ── Iterative Orchestration ──
+    /** Re-render using cached assets only (skip acquire + voice). */
+    rerender?: boolean;
 }
 
 /**

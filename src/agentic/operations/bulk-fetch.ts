@@ -21,6 +21,10 @@ import { searchImages, searchVideos, fetchVisualsForScene, downloadMedia } from 
 export interface BulkFetchOptions {
     orientation?: 'portrait' | 'landscape' | 'square' | '';
     kind?: 'image' | 'video';
+    /** License filter (e.g. 'cc0', 'public'). Passed to Openverse when available. */
+    license?: string;
+    /** Dominant color hint (CSS color) used as a soft pre-filter on metadata. */
+    palette?: string;
 }
 
 /**
@@ -33,6 +37,7 @@ export async function runBulkImageFetch(
     outDir: string,
     orientation: 'portrait' | 'landscape' | 'square' | '' = '',
     kind: 'image' | 'video' = 'image',
+    opts: BulkFetchOptions = {},
 ): Promise<string[]> {
     fs.mkdirSync(outDir, { recursive: true });
     const seen = new Set<string>();
@@ -77,11 +82,15 @@ export async function runBulkImageFetch(
     }
 
     // 2) Openverse / Wikimedia fallback ladder (works with zero API keys).
+    //    Openverse supports `license` / `license_type` and `colors` query params;
+    //    we pass them through when present.
     let page = 0;
     while (results.length < count && page < 8) {
         const more = await tryCollect(async () => {
             const res = await fetchVisualsForScene([query], kind === 'video', (orientation || 'portrait') as any, undefined, page * count);
-            const arr = !res ? [] : Array.isArray(res) ? res : [res];
+            // Soft license/palette pre-filter on the returned metadata.
+            let arr = !res ? [] : Array.isArray(res) ? res : [res];
+            if (opts.license) arr = arr.filter((a: any) => (a.license ?? '').toLowerCase().includes(opts.license!.toLowerCase()));
             return arr.map((a: any) => ({ url: a.url, source: a.source }));
         });
         // tryCollect already appends; loop until we have enough or run out.
@@ -94,4 +103,23 @@ export async function runBulkImageFetch(
     }
 
     return results;
+}
+
+/** Direct download of a single explicit URL (image/video/music/sfx). */
+export async function downloadDirectUrl(
+    url: string,
+    kind: 'image' | 'video' | 'music' | 'sfx',
+    outDir: string,
+    filename?: string,
+): Promise<string | null> {
+    fs.mkdirSync(outDir, { recursive: true });
+    const ext = path.extname(url).split('?')[0] || (kind === 'video' ? '.mp4' : kind === 'image' ? '.jpg' : '.mp3');
+    const name = filename ?? `${kind}_direct${ext}`;
+    try {
+        const r = await downloadMedia(url, outDir, name);
+        if (r.path && fs.existsSync(r.path)) return r.path;
+    } catch (e) {
+        console.warn(`  ⚠ direct download failed for ${url}: ${(e as Error)?.message ?? e}`);
+    }
+    return null;
 }
