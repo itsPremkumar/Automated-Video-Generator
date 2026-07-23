@@ -28,6 +28,14 @@ export interface SceneStyle {
     transitionIn: TransitionKind; // transition used to ENTER this scene (scene 0 = none)
     grade: GradeKind;
     kinetic: KineticCue[];
+    // Per-scene overrides from inline [Tag:] directives (ScenePlan). When set,
+    // they win over the preset-derived default for that single scene.
+    captionTheme?: string;
+    sfx?: boolean;
+    jCutSec?: number;
+    vignette?: boolean;
+    kineticText?: boolean;
+    musicIntensity?: 'calm' | 'mid' | 'energetic';
 }
 
 export interface StylePlan {
@@ -69,7 +77,20 @@ function pick<T>(list: T[], seed: number): T {
  * sceneCount) always produces the identical StylePlan.
  */
 export function computeStylePlan(
-    plan: { title: string; scenes: { sceneNumber: number; voiceoverText: string; durationSec?: number }[] },
+    plan: {
+        title: string;
+        scenes: {
+            sceneNumber: number;
+            voiceoverText: string;
+            durationSec?: number;
+            captionTheme?: string;
+            sfx?: boolean;
+            jCutSec?: number;
+            vignette?: boolean;
+            kineticText?: boolean;
+            musicIntensity?: 'calm' | 'mid' | 'energetic';
+        }[];
+    },
     style: AgenticStyle = {},
 ): StylePlan {
     const preset = style.preset ?? 'cinematic';
@@ -100,7 +121,9 @@ export function computeStylePlan(
         const grade: GradeKind = style.gradeBias?.[i] ?? pick(gradePool, seed >> 7);
 
         const kinetic: KineticCue[] = [];
-        if (style.kinetic !== false) {
+        // Kinetic cues show when BOTH the global preset allows it AND this
+        // scene hasn't explicitly disabled them via [Kinetic: off].
+        if (style.kinetic !== false && s.kineticText !== false) {
             const dur = s.durationSec ?? 4;
             // Lower-third reveal at scene start (the scene's spoken hook).
             kinetic.push({ atSec: 0.15, text: String(s.voiceoverText ?? '').split(/[.!?]/)[0].slice(0, 60), kind: 'lowerthird' });
@@ -110,7 +133,18 @@ export function computeStylePlan(
             );
             if (emph) kinetic.push({ atSec: Math.max(0.4, dur * 0.45), text: emph.toUpperCase(), kind: 'wordpop' });
         }
-        return { sceneIndex: i, transitionIn, grade, kinetic };
+        return {
+            sceneIndex: i,
+            transitionIn,
+            grade,
+            kinetic,
+            captionTheme: s.captionTheme,
+            sfx: s.sfx,
+            jCutSec: s.jCutSec,
+            vignette: s.vignette,
+            kineticText: s.kineticText,
+            musicIntensity: s.musicIntensity,
+        };
     });
 
     const transitions = scenes.map((sc) => sc.transitionIn);

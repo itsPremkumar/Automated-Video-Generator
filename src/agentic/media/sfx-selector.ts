@@ -29,6 +29,11 @@ export function planSceneSfx(plan: Plan): SceneSfxPlan[] {
 
     for (let i = 0; i < plan.scenes.length; i++) {
         const scene = plan.scenes[i];
+        // Per-scene [Sfx: off] disables all SFX for this scene.
+        if (scene.sfx === false) {
+            plans.push({ sceneIndex: i, transitionIn: null, transitionOut: null, emphasisPoints: [] });
+            continue;
+        }
         const keywords = scene.searchKeywords.join(' ').toLowerCase();
         const isIntro = i === 0;
         const isOutro = i === plan.scenes.length - 1;
