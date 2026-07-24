@@ -1081,5 +1081,23 @@
       "3": "💧"
     },
     "transition": "zoomblur"
+  },
+  {
+    "id": "waveM_default_visual",
+    "title": "WAVE M: defaultVisual should replace teal fallback",
+    "topic": "xyzzy-nonexistent-keyword-qqq",
+    "script": "First line of the script.\nSecond line here.\nThird line for the reel.\nFourth and final line.",
+    "defaultVisual": "brand_cover.jpg",
+    "captionTheme": "softCard",
+    "captions": "burned",
+    "outro": {
+      "ctaText": "Follow for more",
+      "showSubscribe": true,
+      "hashtags": [
+        "#test",
+        "#demo"
+      ]
+    },
+    "transition": "fade"
   }
 ]
