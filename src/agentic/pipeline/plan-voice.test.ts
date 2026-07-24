@@ -14,6 +14,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildPlan } from '../pipeline/plan.js';
+import { buildVoiceConfigs } from '../operations/voice-intel.js';
 
 test('buildPlan defaults voice to en-US-JennyNeural when unset', async () => {
   const plan = await buildPlan('A fact. Another fact.', { jobId: 't1', title: 'T' });
@@ -23,4 +24,18 @@ test('buildPlan defaults voice to en-US-JennyNeural when unset', async () => {
 test('buildPlan honors an explicit voice override', async () => {
   const plan = await buildPlan('A fact.', { jobId: 't2', title: 'T', voice: 'en-US-AriaNeural' });
   assert.equal(plan.voice, 'en-US-AriaNeural');
+});
+
+test('buildVoiceConfigs defaults base voice to en-US-JennyNeural (not GuyNeural)', () => {
+  // Wave J root cause: voice-intel.ts defaulted base to 'en-US-GuyNeural',
+  // which applyVoiceConfigsToPlan() then forced onto the plan — overriding
+  // buildPlan()'s Jenny default and timing out on flaky Edge-TTS.
+  const cfgs = buildVoiceConfigs(3, {});
+  assert.equal(cfgs.length, 3);
+  for (const c of cfgs) assert.equal(c.voice, 'en-US-JennyNeural');
+});
+
+test('buildVoiceConfigs honors an explicit baseVoice', () => {
+  const cfgs = buildVoiceConfigs(2, { baseVoice: 'en-US-AriaNeural' });
+  for (const c of cfgs) assert.equal(c.voice, 'en-US-AriaNeural');
 });

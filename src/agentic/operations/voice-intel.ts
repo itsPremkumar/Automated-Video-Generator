@@ -56,7 +56,12 @@ export function buildVoiceConfigs(
         useClonedVoiceId?: string;
     },
 ): SceneVoiceConfig[] {
-    const base = opts.baseVoice ?? 'en-US-GuyNeural';
+    // Default base voice MUST match buildPlan()/single-feature's default
+    // ('en-US-JennyNeural'). 'en-US-GuyNeural' was the prior hardcoded
+    // default and it is the voice that times out on a flaky Edge-TTS
+    // connection, so an unset job.voice would fail the whole voice stage
+    // (and silently override the Jenny default set upstream by buildPlan).
+    const base = opts.baseVoice ?? 'en-US-JennyNeural';
     const speed = EDGE_RATE(opts.voiceSpeed ?? 1);
     // voiceAging preset → semitone shift (zero-cost, no neural backend needed).
     const agingShift = opts.voiceAging === 'younger' ? 4 : opts.voiceAging === 'older' ? -4 : 0;
