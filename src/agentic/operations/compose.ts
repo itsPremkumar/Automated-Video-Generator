@@ -429,7 +429,13 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     const musicForMix = (music && fs.existsSync(music))
         ? (job.loopMusic ? loopAudioToDuration(music, audioMixed + '.loop.mp3', Math.ceil(totalDur)) : music)
         : undefined;
-    const normMusic = musicForMix ? normalizeAudio(musicForMix, audioMixed + '.norm.mp3', job.normalizeLufs ?? -14) : undefined;
+    // `musicIntensity` ('calm'|'mid'|'energetic') was previously an
+    // AI-style-engine hint only — the deterministic render ignored it and
+    // always normalized music to -14 LUFS. Map it to a target LUFS so the
+    // declared field actually affects output loudness. Precedence: explicit
+    // `normalizeLufs` > `musicIntensity` > default -14 (backward-compatible).
+    const targetLufs = resolveMusicLufs(job);
+    const normMusic = musicForMix ? normalizeAudio(musicForMix, audioMixed + '.norm.mp3', targetLufs) : undefined;
 
     const amixInputs = ['-i', withOverlays];
     // J-cut: when job.jCutSec > 0, start the PICTURE jCutSec seconds
@@ -642,4 +648,27 @@ export function resolveOutputSize(job: {
     if (job.orientation === 'square') { return { width: PORT, height: PORT }; }
     if (job.orientation === 'landscape') { return { width: LAND, height: Math.round(LAND * 9 / 16) }; }
     return { width: PORT, height: Math.round(PORT * 16 / 9) }; // portrait default
+}
+
+/**
+ * Resolve the music normalization target (LUFS) from a job spec.
+ *
+ * `musicIntensity` ('calm' | 'mid' | 'energetic') was previously an
+ * AI-style-engine hint only — the deterministic render ignored it. Now it
+ * maps to a real loudness target:
+ *   calm -> -18 LUFS (quieter bed), mid -> -14, energetic -> -10 (louder).
+ *
+ * Precedence: explicit `normalizeLufs` > `musicIntensity` > default -14.
+ * Extracted as a pure function so the mapping is unit-testable without
+ * running ffmpeg.
+ */
+export function resolveMusicLufs(job: {
+    musicIntensity?: 'calm' | 'mid' | 'energetic';
+    normalizeLufs?: number;
+}): number {
+    const intensityLufs = job.musicIntensity === 'calm' ? -18
+        : job.musicIntensity === 'energetic' ? -10
+        : job.musicIntensity === 'mid' ? -14
+        : undefined;
+    return job.normalizeLufs ?? intensityLufs ?? -14;
 }

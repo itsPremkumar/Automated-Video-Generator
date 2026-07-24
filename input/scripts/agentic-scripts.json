@@ -1056,5 +1056,30 @@
       "3": "🌱"
     },
     "transition": "fade"
+  },
+  {
+    "id": "waveL_music_intensity",
+    "title": "WAVE L: musicIntensity=energetic should raise music LUFS",
+    "topic": "workout tips",
+    "script": "Warm up 5 minutes before lifting.\nProgressive overload beats ego lifting.\nSleep is when muscle actually grows.\nHydrate before you feel thirsty.",
+    "musicIntensity": "energetic",
+    "captionTheme": "highContrast",
+    "captions": "burned",
+    "outro": {
+      "ctaText": "Smash follow for gains",
+      "showSubscribe": true,
+      "hashtags": [
+        "#fitness",
+        "#gym"
+      ]
+    },
+    "paletteFilter": "cyberpunk",
+    "emojiByScene": {
+      "0": "🔥",
+      "1": "💪",
+      "2": "😴",
+      "3": "💧"
+    },
+    "transition": "zoomblur"
   }
 ]
