@@ -105,7 +105,7 @@ export class CcMixterFreeProvider implements FreeMusicProvider {
 }
 
 export class FallbackToneProvider implements FreeMusicProvider {
-    readonly name = 'fallback-ambient';
+    readonly name = 'bundled';
     async search(_query: string, _count = 1): Promise<FreeMusicTrack[]> {
         return [{
             id: 'fallback_ambient_drone',
@@ -211,7 +211,14 @@ export async function resolveFreeBackgroundMusic(
 
     const query = opts.query?.trim() || 'ambient lofi chill';
 
-    // Try the new engine first
+    // When the caller explicitly prefers the OFFLINE 'bundled' provider
+    // (e.g. a test that mocks the network), skip the online engine
+    // and go straight to the legacy bundled fallback so we don't
+    // return a network provider's track instead.
+    const prefersBundled = !!opts.preferProviders?.includes('bundled');
+
+    // Try the new engine first (online)
+    if (!prefersBundled) {
     try {
         await ensureEngine().init();
         const result = await ensureEngine().resolveBackground({
@@ -228,6 +235,7 @@ export async function resolveFreeBackgroundMusic(
         }
     } catch (err: any) {
         console.warn(`Music engine failed, falling back to legacy providers: ${err.message}`);
+    }
     }
 
     // Legacy fallback path (iterates providers sequentially)
