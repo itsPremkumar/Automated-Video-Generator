@@ -1029,5 +1029,32 @@
       ]
     },
     "transition": "slide"
+  },
+  {
+    "id": "waveK_brand_accent",
+    "title": "WAVE K: brand.accent should tint captions (was dead signal)",
+    "topic": "coffee facts",
+    "script": "Espresso has 63mg caffeine per shot.\nCold brew steeps 12 to 24 hours.\nThe crema is the soul of the shot.\nRobusta beans are twice as caffeinated.",
+    "brand": {
+      "accent": "#FF6B35"
+    },
+    "captions": "burned",
+    "lowerThird": "Brewed by Prem",
+    "outro": {
+      "ctaText": "Subscribe for more coffee",
+      "showSubscribe": true,
+      "hashtags": [
+        "#coffee",
+        "#brew"
+      ]
+    },
+    "paletteFilter": "warm",
+    "emojiByScene": {
+      "0": "☕",
+      "1": "🧊",
+      "2": "☁️",
+      "3": "🌱"
+    },
+    "transition": "fade"
   }
 ]
