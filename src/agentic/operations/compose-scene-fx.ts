@@ -94,7 +94,11 @@ export function gradeFilter(grade: string | undefined): string | undefined {
         case 'cool':
             return 'eq=gamma_b=1.12:gamma_r=0.92:saturation=1.05';
         case 'cinematic':
-            return 'curves=preset=strong_contrast,eq=saturation=0.92';
+            // Single filter (no comma) — a comma would be read as a filterchain
+            // separator by the caller's filters.join(','), splitting this into two
+            // broken tokens and producing a corrupt/clip-less output (moov atom
+            // missing). eq alone gives the contrast/saturation "cinematic" look.
+            return 'eq=contrast=1.15:saturation=1.05';
         case 'vivid':
             return 'eq=saturation=1.40:contrast=1.10';
         case 'neutral':

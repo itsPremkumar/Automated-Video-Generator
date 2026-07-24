@@ -666,5 +666,74 @@
     "endCta": "Try it now",
     "contactSheet": true,
     "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveC_palette_blue_kinetic",
+    "title": "WAVE C: blue palette + kinetic captions + fade",
+    "topic": "ocean documentary",
+    "script": "The deep blue holds secrets. [Visual: ocean] [Kinetic: on]\nLight bends through the water. [Visual: waves] [Kinetic: on]\nA world few ever see. [Visual: blue] [Kinetic: on]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "paletteFilter": "blue",
+    "captionTheme": "neon",
+    "kineticText": true,
+    "transition": "fade",
+    "endCta": "Dive in",
+    "titleCard": {
+      "title": "Blue World",
+      "subtitle": "Ep 1"
+    },
+    "posterScene": 0,
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveC_palette_teal_landscape",
+    "title": "WAVE C: teal palette + zoomblur + highContrast (landscape)",
+    "topic": "forest river",
+    "script": "Rivers carve the land. [Visual: river valley] [Grade: cinematic]\nMoss drinks the morning. [Visual: glacier] [Grade: warm]\nLife follows the water. [Visual: mountain peak] [Grade: sepia]",
+    "mode": "compose",
+    "orientation": "landscape",
+    "paletteFilter": "teal",
+    "captionTheme": "highContrast",
+    "transition": "zoomblur",
+    "sfxOnCut": true,
+    "endCta": "Explore more",
+    "posterScene": 0,
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveC_palette_cinematic_emoji",
+    "title": "WAVE C: cinematic palette + emoji + mixed transitions (square)",
+    "topic": "city night",
+    "script": "Cities never sleep. [Visual: city night] [Transition: slide]\nNeon paints the dark. [Visual: skyline] [Transition: cut]\nEnergy in every street. [Visual: street] [Transition: fade]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "aspect": "1:1",
+    "paletteFilter": "cinematic",
+    "captionTheme": "softCard",
+    "emojiByScene": {
+      "0": "🌃",
+      "2": "⚡"
+    },
+    "endCta": "Feel it",
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveC_palette_warm_loop",
+    "title": "WAVE C: warm palette + loopVideo x2 + progress + captions",
+    "topic": "coffee morning",
+    "script": "Mornings start slow. [Visual: coffee]\nThe first sip wakes the world. [Visual: cafe]\nA small ritual, daily. [Visual: warm light]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "paletteFilter": "warm",
+    "captionTheme": "minimal",
+    "loopVideo": 2,
+    "progressBar": true,
+    "endCta": "Slow down",
+    "contactSheet": true,
+    "licenseFilter": "cc0"
   }
 ]

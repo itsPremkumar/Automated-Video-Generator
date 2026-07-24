@@ -159,7 +159,46 @@ export function estimateTextWidth(s: string, size: number): number {
     return Math.ceil(s.length * size * 0.52);
 }
 
-/** Greedy word-wrap a caption so no line exceeds `maxW` px at `size`. */
+/** Cheap sanity check: does `p` exist, is non-empty, and does ffprobe
+ *  see a video stream? Used to skip FX/palette stages whose input
+ *  is a corrupt/empty upstream intermediate (so one bad clip can't
+ *  poison the whole composition). Uses the ffprobe binary (NOT ffmpeg). */
+export function isReadableVideo(p: string): boolean {
+    if (!p || !fs.existsSync(p) || fs.statSync(p).size === 0) return false;
+    try {
+        const bin = ffprobeStaticPath();
+        if (!bin) return false;
+        const o = execFileSync(bin, ['-v', 'error', '-show_entries', 'stream=codec_type', '-of', 'csv=p=0', p], { stdio: ['ignore', 'pipe', 'ignore'], timeout: 15000 }).toString();
+        return /video/.test(o);
+    } catch { return false; }
+}
+
+/** Resolve the ffprobe-static binary path (no type decls shipped). */
+function ffprobeStaticPath(): string | undefined {
+    try {
+        const mod = require('ffprobe-static') as { path?: string };
+        return mod?.path && fs.existsSync(mod.path) ? mod.path : undefined;
+    } catch { return undefined; }
+}
+
+/** Named color-grade "palette" presets for the whole comp or per scene.
+ *  The old code emitted a raw `palette(<name>)` string which ffmpeg
+ *  has NO filter for (it failed silently). Here we map names to real
+ *  ffmpeg color filters so `paletteFilter` is a usable high-control knob.
+ *  Returns a filter string, or '' when the preset is unknown/empty. */
+export function buildPaletteFilter(preset?: string): string {
+    const p = (preset ?? '').toLowerCase().trim();
+    switch (p) {
+        case 'warm':    return "colortemperature=6500,eq=saturation=1.15:gamma=0.95";
+        case 'cool':    return "colortemperature=9500,eq=saturation=1.1:gamma=1.05";
+        case 'blue':    return "colorbalance=bs=0.12:rs=-0.06:gs=-0.03,eq=saturation=1.2";
+        case 'teal':    return "colorbalance=bs=0.14:gs=0.05:rs=-0.10,eq=saturation=1.25";
+        case 'cyberpunk': return "colorbalance=rs=0.10:bs=0.10:gs=-0.08,eq=contrast=1.2:saturation=1.3";
+        case 'vintage': return "colorbalance=rs=0.08:gs=0.02:bs=-0.08,eq=contrast=0.95:saturation=0.85:gamma=1.1";
+        case 'cinematic': return "eq=contrast=1.15:saturation=1.05,colortemperature=7000";
+        default: return '';
+    }
+}
 export function wrapCaption(s: string, size: number, maxW: number): string[] {
     const words = s.split(/\s+/).filter(Boolean);
     const lines: string[] = [];
@@ -242,6 +281,22 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
         out = applyChromaKey(out, i, { chromaKeyScenes: job.chromaKeyScenes }, outDir);
         // Inline [Grade:] and [Vignette:] tags (with job.vignette fallback).
         out = applySceneGradeVignette(out, i, scenes[i], job.vignette, outDir);
+        // Named color-grade palette (warm/cool/blue/teal/cyberpunk/vintage/
+        // cinematic) — a real high-control knob that used to emit a
+        // raw `palette(name)` string ffmpeg rejected.
+        const pal = job.paletteFilter ? buildPaletteFilter(job.paletteFilter) : '';
+        if (pal) {
+            const pf = path.join(outDir, `pal_${i}.mp4`);
+            if (fs.existsSync(pf)) fs.rmSync(pf, { force: true }); // avoid stale 0-byte reuse
+            // Guard: only apply if `out` is a readable video (a corrupt
+            // upstream FX intermediate must not poison the whole chain).
+            if (isReadableVideo(out)) {
+                try { execFileSync(ff(), ['-y', '-i', out, '-filter_complex', `[0:v]${pal}[v]`, '-map', '[v]', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', pf], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 }); if (fs.existsSync(pf) && fs.statSync(pf).size > 0) out = pf; else console.warn(`  ⚠ palette skipped: empty output for scene ${i}`); }
+                catch (e: any) { console.warn(`  ⚠ palette filter failed: ${(String(e?.stderr ?? e?.message)).split('\n').slice(-3).join(' | ').slice(0, 280)}`); }
+            } else {
+                console.warn(`  ⚠ palette skipped: scene ${i} input not a readable video (upstream FX issue)`);
+            }
+        }
         return out;
     });
 

@@ -12,7 +12,7 @@ import type { ScenePlan } from '../types';
 test('gradeFilter maps known grades to real ffmpeg filters', () => {
     assert.match(gradeFilter('warm')!, /eq=/);
     assert.match(gradeFilter('cool')!, /eq=/);
-    assert.match(gradeFilter('cinematic')!, /curves=/);
+    assert.match(gradeFilter('cinematic')!, /eq=contrast/);
     assert.match(gradeFilter('vivid')!, /saturation/);
 });
 
