@@ -17,6 +17,8 @@ export interface OverlayPlan {
     lowerThird?: string;
     titleCard?: { title: string; subtitle?: string; durationSec?: number };
     endCta?: string;
+    /** End-card: CTA + optional SUBSCRIBE + hashtags, gated to the final window. */
+    outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number };
     watermark?: string;
     font: { family: string; color: string; weight: number; shadow?: boolean };
     emojiByScene: Record<number, string>;
@@ -55,6 +57,7 @@ export function buildOverlayPlan(job: {
     lowerThird?: string;
     titleCard?: { title: string; subtitle?: string; durationSec?: number };
     endCta?: string;
+    outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number };
     watermark?: string;
     fontFamily?: string;
     fontColor?: string;
@@ -69,6 +72,7 @@ export function buildOverlayPlan(job: {
         lowerThird: job.lowerThird,
         titleCard: job.titleCard,
         endCta: job.endCta,
+        outro: job.outro,
         watermark: job.watermark,
         font: {
             family: job.fontFamily ?? 'Inter, sans-serif',

@@ -325,6 +325,17 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     }
     if (overlay.lowerThird) vf.push(txt(overlay.lowerThird, '40', 'H-th-40', 36, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: 'gte(t,1)*lte(t,4)' }));
     if (overlay.endCta) vf.push(txt(overlay.endCta, '(w-text_w)/2', 'H-th-60', 42, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight }));
+    // Outro end-card: CTA text (+ optional SUBSCRIBE + hashtags) shown
+    // only in the final `durationSec` window. Previously declared in
+    // cli-job.ts but never burned — dead signal. Uses totalDur for the
+    // enable window so it lands at the very end regardless of cut count.
+    if (overlay.outro) {
+        const oDur = overlay.outro.durationSec ?? 3;
+        const oEnable = `gte(t,${Math.max(0, totalDur - oDur).toFixed(2)})`;
+        vf.push(txt(overlay.outro.ctaText, '(w-text_w)/2', 'H-th-70', 42, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: oEnable }));
+        if (overlay.outro.showSubscribe) vf.push(txt('SUBSCRIBE', '(w-text_w)/2', 'H-th-30', 28, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: 400, enable: oEnable }));
+        if (overlay.outro.hashtags?.length) vf.push(txt(overlay.outro.hashtags.join(' '), '(w-text_w)/2', 'h-40', 24, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: 400, enable: oEnable }));
+    }
     // Emoji stickers: ffmpeg drawtext can't composite color emoji on
     // Windows (libFreetype renders them blank), so we rasterize each emoji
     // to a transparent PNG sticker via ffmpeg, then overlay it.
@@ -449,7 +460,16 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     if (normMusic && fs.existsSync(normMusic) && fs.statSync(normMusic).size > 0) {
         amixInputs.push('-i', normMusic); filterParts.push(`[${ai}:a]`); ai++;
     }
-    for (const s of sfx) { if (fs.existsSync(s.localPath) && fs.statSync(s.localPath).size > 0) { amixInputs.push('-i', s.localPath); filterParts.push(`[${ai}:a]`); ai++; } }
+    for (const s of sfx) {
+        if (fs.existsSync(s.localPath) && fs.statSync(s.localPath).size > 0) {
+            // Time each SFX to its scene cut (sfxByScene / sfxOnCut) instead
+            // of stacking them all at t=0. cumStart[sceneIndex] is the
+            // video timestamp where that scene's picture begins.
+            const at = cumStart[s.sceneIndex] ?? 0;
+            if (at > 0) amixInputs.push('-itsoffset', at.toFixed(2));
+            amixInputs.push('-i', s.localPath); filterParts.push(`[${ai}:a]`); ai++;
+        }
+    }
 
     if (filterParts.length > 0) {
         // amix needs >=2 real inputs; if only 1 audio input, map it directly

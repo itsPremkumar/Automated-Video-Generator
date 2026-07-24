@@ -14,6 +14,14 @@ test('gradeFilter maps known grades to real ffmpeg filters', () => {
     assert.match(gradeFilter('cool')!, /eq=/);
     assert.match(gradeFilter('cinematic')!, /eq=contrast/);
     assert.match(gradeFilter('vivid')!, /saturation/);
+    // Wave F: sepia / black-&-white / vintage now real (were no-ops before)
+    assert.match(gradeFilter('sepia')!, /sepia=/);
+    assert.match(gradeFilter('bw')!, /format=gray/);
+    assert.match(gradeFilter('mono')!, /format=gray/);
+    assert.match(gradeFilter('vintage')!, /curves=vintage/);
+    // unknown + neutral stay no-op
+    assert.equal(gradeFilter('bogus'), undefined);
+    assert.equal(gradeFilter('neutral'), undefined);
 });
 
 test('gradeFilter returns undefined for neutral and unknown (no-op)', () => {

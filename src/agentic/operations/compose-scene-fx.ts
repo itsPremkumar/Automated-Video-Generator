@@ -99,6 +99,15 @@ export function gradeFilter(grade: string | undefined): string | undefined {
             // broken tokens and producing a corrupt/clip-less output (moov atom
             // missing). eq alone gives the contrast/saturation "cinematic" look.
             return 'eq=contrast=1.15:saturation=1.05';
+        case 'sepia':
+            return 'sepia=0.8';
+        case 'bw':
+        case 'mono':
+        case 'grayscale':
+            return 'format=gray';
+        case 'vintage':
+            // curves=vintage is a single valid filter (no comma).
+            return 'curves=vintage:saturation=1.20';
         case 'vivid':
             return 'eq=saturation=1.40:contrast=1.10';
         case 'neutral':

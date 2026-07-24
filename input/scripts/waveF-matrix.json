@@ -1,0 +1,48 @@
+[
+  {
+    "id": "waveF_sfx_timed",
+    "title": "WAVE F: sfxByScene + sfxOnCut (timed to cuts) + kinetic",
+    "topic": "tech review",
+    "script": "Unbox the new device. [Visual: gadget] [Kinetic: on]\nFirst boot feels instant. [Visual: screen ui] [Kinetic: on]\nVerdict: worth it. [Visual: desk setup] [Kinetic: on]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "captionTheme": "bold",
+    "kineticText": true,
+    "transition": "slide",
+    "sfxByScene": { "0": "pop", "2": "ding" },
+    "sfxOnCut": true,
+    "endCta": "See the full review",
+    "titleCard": { "title": "Tech Drop", "subtitle": "hands-on" },
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveF_sepia_grade",
+    "title": "WAVE F: [Grade: sepia] now real + zoomblur + softCard (landscape)",
+    "topic": "vintage travel",
+    "script": "Old towns keep their secrets. [Visual: european street] [Grade: sepia] [Kinetic: on]\nCobblestones remember every step. [Visual: alley] [Grade: sepia] [Kinetic: on]\nTime slows here. [Visual: window] [Grade: sepia] [Kinetic: on]",
+    "mode": "compose",
+    "orientation": "landscape",
+    "captionTheme": "softCard",
+    "kineticText": true,
+    "transition": "fade",
+    "endCta": "Wander more",
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveF_outro_card",
+    "title": "WAVE F: outro end-card (CTA + SUBSCRIBE + hashtags) + teal + progress",
+    "topic": "fitness routine",
+    "script": "Warm up before you sprint. [Visual: stretch] [Kinetic: on]\nConsistency beats intensity. [Visual: gym] [Kinetic: on]\nOne rep at a time. [Visual: trainer] [Kinetic: on]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "paletteFilter": "teal",
+    "captionTheme": "neon",
+    "kineticText": true,
+    "progressBar": true,
+    "outro": { "ctaText": "Follow for daily tips", "showSubscribe": true, "hashtags": ["#fitness", "#health"], "durationSec": 3 },
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  }
+]
