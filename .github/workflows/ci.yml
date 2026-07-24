@@ -39,7 +39,8 @@ jobs:
         run: npm run test:unit
 
       - name: Coverage
-        # Produces a coverage report (lines/functions/branches). Not enforced
-        # with a hard threshold yet (would need a seeded baseline), but the
-        # numbers are surfaced on every run so regressions are visible.
-        run: npm run test:coverage
+        # Produces a coverage report (lines/functions/branches) and fails CI if
+        # line coverage drops below a seeded floor (empirical-proof bar: a
+        # production change must not silently erode coverage). The floor is set
+        # just below the current ~82% so only genuine regressions turn CI red.
+        run: npm run test:coverage | node scripts/check-coverage.mjs
