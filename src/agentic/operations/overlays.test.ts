@@ -25,3 +25,15 @@ test('resolveCaptionTheme returns default for undefined', () => {
     assert.deepEqual(resolveCaptionTheme(undefined), CAPTION_THEMES.default);
     assert.equal(resolveCaptionTheme('BOLD').weight, 800);
 });
+
+test('outro end-card flows through buildOverlayPlan (ctaText spelling)', () => {
+    const p = buildOverlayPlan({
+        outro: { ctaText: 'Follow for daily tips', showSubscribe: true, hashtags: ['#fitness', '#health'], durationSec: 3 },
+    });
+    // Field name must match the JSON job spec ('ctaText'), else the
+    // reader gets undefined and the whole end-card silently vanishes.
+    assert.ok(p.outro, 'outro present');
+    assert.equal(p.outro!.ctaText, 'Follow for daily tips');
+    assert.equal(p.outro!.showSubscribe, true);
+    assert.deepEqual(p.outro!.hashtags, ['#fitness', '#health']);
+});
