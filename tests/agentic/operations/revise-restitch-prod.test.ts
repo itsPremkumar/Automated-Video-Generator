@@ -9,6 +9,13 @@ import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../src/sha
 const ROOT = 'C:/one/Automated-Video-Generator';
 const FF = path.join(ROOT, 'node_modules', 'ffmpeg-static', 'ffmpeg.exe');
 
+// Heavy ffmpeg integration test. Skip on boxes where ffmpeg-static cannot be
+// resolved (e.g. a bare checkout) so CI stays green instead of hanging.
+function ffmpegAvailable(): boolean {
+    try { return fs.existsSync(FF) || !!require.resolve('ffmpeg-static'); } catch { return false; }
+}
+const hasFfmpeg = ffmpegAvailable();
+
 function mkClip(p: string, w: number, h: number, dur: number, audio: boolean) {
   const a = audio ? ['-f', 'lavfi', '-i', `sine=frequency=440:duration=${dur}`, '-ac', '1'] : ['-an'];
   execFileSync(FF, ['-f', 'lavfi', '-i', `color=c=red:s=${w}x${h}:d=${dur}`, ...a, '-t', String(dur), '-r', '25', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', ...(audio ? ['-c:a', 'aac', '-b:a', '128k'] : []), '-y', p], { stdio: 'ignore' });
@@ -40,14 +47,16 @@ function buildCachedWorkspace(id: string, v: { w: number; h: number; dur: number
 }
 
 describe('revise.ts — production scenarios', () => {
-  test('reviseJob fails safe when plan.json is missing', async () => {
+  test('reviseJob fails safe when plan.json is missing', async (t) => {
+    if (!hasFfmpeg) return t.skip('ffmpeg-static unavailable');
     const { reviseJob } = await import('../../../src/agentic/operations/revise.js');
     const rep = await reviseJob('dog_no_plan_' + Date.now(), 'louder', [], {});
     assert.equal(rep.ok, false);
     assert.match(rep.detail, /plan\.json/);
   });
 
-  test('scope-aware cached revise re-renders without network (portrait/landscape/silent)', async () => {
+  test('scope-aware cached revise re-renders without network (portrait/landscape/silent)', async (t) => {
+    if (!hasFfmpeg) return t.skip('ffmpeg-static unavailable');
     const { reviseJob } = await import('../../../src/agentic/operations/revise.js');
     const { workspaceRootFor } = await import('../../../src/agentic/management/workspace.js');
     for (const v of [
@@ -66,7 +75,8 @@ describe('revise.ts — production scenarios', () => {
     }
   });
 
-  test('critiqueAndRevise prefers cached fast path when render-manifest exists', async () => {
+  test('critiqueAndRevise prefers cached fast path when render-manifest exists', async (t) => {
+    if (!hasFfmpeg) return t.skip('ffmpeg-static unavailable');
     const { critiqueAndRevise } = await import('../../../src/agentic/operations/revise.js');
     const id = 'dog_car_' + Date.now();
     const { wsRoot } = buildCachedWorkspace(id, { w: 720, h: 1280, dur: 1, audio: true }, 'car');
@@ -77,7 +87,8 @@ describe('revise.ts — production scenarios', () => {
     assert.equal(rep.ok, true, rep.detail);
   });
 
-  test('restitch works for all orientations incl. silent (regression guard)', async () => {
+  test('restitch works for all orientations incl. silent (regression guard)', { timeout: 240000 }, async (t) => {
+    if (!hasFfmpeg) return t.skip('ffmpeg-static unavailable');
     const { restitchMaster } = await import('../../../src/agentic/operations/restitch.js');
     for (const v of [
       { name: 'rt_portrait', w: 720, h: 1280, dur: 3, audio: true },

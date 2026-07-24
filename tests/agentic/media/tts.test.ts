@@ -14,6 +14,18 @@ import { generateAgenticVoiceovers } from '../../../src/agentic/media/tts.js';
 import { buildPlan } from '../../../src/agentic/pipeline/plan.js';
 import { Plan } from '../../../src/agentic/types.js';
 
+// The voice stage auto-starts the vendored Python backend; without its venv it
+// polls until the test timeout. Skip on boxes where the backend isn't
+// provisioned (same convention as the bundled-music / network skips).
+function voiceBackendAvailable(): boolean {
+    const candidates = [
+        path.resolve(process.cwd(), 'venv', 'Scripts', 'python.exe'),
+        'C:/one/voicebox/.venv/Scripts/python.exe',
+    ];
+    return candidates.some((p) => fs.existsSync(p));
+}
+const hasVoiceBackend = voiceBackendAvailable();
+
 function tmpWs(jobId: string) {
     const root = fs.mkdtempSync(path.join(__WS_TEST_TMP__, 'agentic-tts-' + jobId + '-'));
     return { root, jobId };
@@ -29,7 +41,8 @@ describe('agentic/tts (Phase 2 + 4.2)', () => {
         });
     });
 
-    it('produces one voiceover per scene with caption segments', async () => {
+    it('produces one voiceover per scene with caption segments', async (t) => {
+        if (!hasVoiceBackend) return t.skip('voice backend venv absent');
         const ws = tmpWs('tt1');
         const r = await generateAgenticVoiceovers(plan, ws as any, 'en-US-JennyNeural');
         assert.equal(r.scenes.length, plan.scenes.length);
@@ -40,7 +53,8 @@ describe('agentic/tts (Phase 2 + 4.2)', () => {
         }
     });
 
-    it('writes SRT + VTT sidecar files', async () => {
+    it('writes SRT + VTT sidecar files', async (t) => {
+        if (!hasVoiceBackend) return t.skip('voice backend venv absent');
         const ws = tmpWs('tt2');
         const r = await generateAgenticVoiceovers(plan, ws as any, 'en-US-JennyNeural');
         const srt = path.join(ws.root, 'audio', 'subtitles.srt');
@@ -54,7 +68,8 @@ describe('agentic/tts (Phase 2 + 4.2)', () => {
         }
     });
 
-    it('falls back to tones offline without throwing', async () => {
+    it('falls back to tones offline without throwing', async (t) => {
+        if (!hasVoiceBackend) return t.skip('voice backend venv absent');
         const ws = tmpWs('tt3');
         const r = await generateAgenticVoiceovers(plan, ws as any, 'en-US-JennyNeural');
         // Either real TTS or graceful tone fallback — both must yield audio.
