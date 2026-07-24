@@ -316,7 +316,13 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     const vf: string[] = [];
     const txt = (text: string, x: string, y: string, size: number, color: string, opts?: { fontFile?: string; weight?: number; enable?: string }) =>
         drawTextFilter(text, x, y, size, color, { fontFile: opts?.fontFile, weight: opts?.weight, enable: opts?.enable, shadow: overlay.font.shadow });
-    if (overlay.titleCard) vf.push(txt(overlay.titleCard.title, '(w-text_w)/2', 'h/2-40', 48, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight }));
+    if (overlay.titleCard) {
+        const tcDur = overlay.titleCard.durationSec ?? 3;
+        const tcEnable = `lte(t,${tcDur.toFixed(2)})`;
+        // Title (large) + optional subtitle (smaller, below).
+        vf.push(txt(overlay.titleCard.title, '(w-text_w)/2', 'h/2-40', 48, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: tcEnable }));
+        if (overlay.titleCard.subtitle) vf.push(txt(overlay.titleCard.subtitle, '(w-text_w)/2', 'h/2+10', 30, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: 400, enable: tcEnable }));
+    }
     if (overlay.lowerThird) vf.push(txt(overlay.lowerThird, '40', 'H-th-40', 36, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: 'gte(t,1)*lte(t,4)' }));
     if (overlay.endCta) vf.push(txt(overlay.endCta, '(w-text_w)/2', 'H-th-60', 42, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight }));
     // Emoji stickers: ffmpeg drawtext can't composite color emoji on

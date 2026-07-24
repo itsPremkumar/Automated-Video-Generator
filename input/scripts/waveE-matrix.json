@@ -1,0 +1,52 @@
+[
+  {
+    "id": "waveE_title_sub",
+    "title": "WAVE E: titleCard.subtitle burn + kinetic + fade (portrait)",
+    "topic": "ai coding tips",
+    "script": "AI writes 1000 lines per minute. [Visual: AI coding] [Kinetic: on]\nThe detail separates pros from beginners. [Visual: code programming] [Kinetic: on]\nApply this and see the difference. [Visual: developer workspace] [Kinetic: on]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "captionTheme": "bold",
+    "kineticText": true,
+    "transition": "fade",
+    "titleCard": { "title": "AI Coding", "subtitle": "Ep 7 - Pro Tips", "durationSec": 3 },
+    "endCta": "Build with AI",
+    "posterScene": 0,
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveE_speed_dialogue",
+    "title": "WAVE E: voiceSpeed + dialogueVoices + warm palette (square)",
+    "topic": "coffee morning",
+    "script": "Mornings start with a small ritual. [Visual: coffee]\nThe first sip wakes the whole world. [Visual: cafe]\nA daily calm, before the noise. [Visual: warm light]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "aspect": "1:1",
+    "voiceSpeed": 1.15,
+    "dialogueVoices": true,
+    "paletteFilter": "warm",
+    "captionTheme": "minimal",
+    "progressBar": true,
+    "endCta": "Slow down",
+    "titleCard": { "title": "Slow Mornings", "subtitle": "a daily ritual" },
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveE_speed_landscape",
+    "title": "WAVE E: voiceSpeed slow + teal palette + zoomblur (landscape)",
+    "topic": "mountain river",
+    "script": "Rivers carve the land. [Visual: river valley] [Grade: cinematic]\nSnow feeds the valleys below. [Visual: glacier] [Grade: warm]\nLife follows the water. [Visual: mountain peak] [Grade: sepia]",
+    "mode": "compose",
+    "orientation": "landscape",
+    "voiceSpeed": 0.9,
+    "paletteFilter": "teal",
+    "captionTheme": "highContrast",
+    "transition": "zoomblur",
+    "endCta": "Explore more",
+    "posterScene": 0,
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  }
+]
