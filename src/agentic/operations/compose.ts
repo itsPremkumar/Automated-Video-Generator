@@ -477,7 +477,14 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
         const amix = filterParts.length === 1
             ? `[${ai - 1}:a]acopy[a]`
             : `${filterParts.join('')}amix=inputs=${filterParts.length}:duration=longest[a]`;
-        const args = [...amixInputs, '-filter_complex', amix, '-map', '0:v', '-map', '[a]', '-c:v', 'copy', '-c:a', 'aac', '-shortest', finalVideo];
+        const args = [...amixInputs, '-filter_complex', amix, '-map', '0:v', '-map', '[a]',
+            // J-cut uses -itsoffset to shift the *video* timeline forward.
+            // Copying a timestamp-shifted stream corrupts the tail frames
+            // (undecodeable past the shift → outro/end-card region breaks),
+            // so re-encode video when J-cut is active. Otherwise copy
+            // (fast, lossless) is fine.
+            ...(job.jCutSec && job.jCutSec > 0 ? ['-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p'] : ['-c:v', 'copy']),
+            '-c:a', 'aac', '-shortest', finalVideo];
         try { execFileSync(ff(), args, { stdio: 'ignore', timeout: 150000 }); }
         catch (e: any) { console.warn(`  ⚠ audio mix ffmpeg failed: ${String(e?.stderr ?? e?.message).slice(0,400)}`); /* keep video-only */ }
     } else {
