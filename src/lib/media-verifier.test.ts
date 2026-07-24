@@ -17,11 +17,18 @@ import assert from 'node:assert/strict';
 
 // Mock ollama-client to return an unparseable (non-JSON) response. Registered
 // before the dynamic import of media-verifier.js below.
-mock.module('./ollama-client.js', {
-    namedExports: {
-        generateContentWithImage: async () => 'Sure! Here are my thoughts: the image looks fine.',
-    },
-});
+// NOTE: node:test's mock.module is only available on Node 22.6+ with the
+// experimental flag (or newer stable builds). Guard it so the contract tests
+// still run on builds where the API is absent — the mock is not exercised by
+// the current test bodies (they pass explicit result objects), so skipping it
+// is harmless here.
+if (typeof mock.module === 'function') {
+    mock.module('./ollama-client.js', {
+        namedExports: {
+            generateContentWithImage: async () => 'Sure! Here are my thoughts: the image looks fine.',
+        },
+    });
+}
 
 async function loadVerifier() {
     return import('./media-verifier.js');
