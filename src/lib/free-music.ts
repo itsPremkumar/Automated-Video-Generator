@@ -151,11 +151,17 @@ function ensureEngine(): MusicEngine {
 // ─── Legacy Helpers ───────────────────────────────────────────────
 
 function defaultProviders(): FreeMusicProvider[] {
+    // NOTE: FallbackToneProvider (name 'bundled') is the OFFLINE ffmpeg-
+    // generated ambient tone — it never touches the network and always
+    // succeeds. Put it FIRST so the legacy fallback resolves music
+    // instantly when the online providers are slow/down, instead of
+    // hanging on 15s timeouts per network provider (which previously
+    // stalled the whole compose pipeline on a bad-network day).
     return [
+        new FallbackToneProvider(),
         new LocalFreeProvider(),
         new CcMixterFreeProvider(),
         new InternetArchiveProvider(),
-        new FallbackToneProvider(),
     ];
 }
 

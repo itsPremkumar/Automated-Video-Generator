@@ -902,5 +902,85 @@
     },
     "contactSheet": true,
     "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveH_kitchen_sink",
+    "title": "WAVE H: kitchen-sink — every signal stacked",
+    "topic": "tech review",
+    "script": "Unbox the new gadget. [Visual: device] [Kinetic: open it now]\nBenchmark the specs. [Visual: benchmark] [Kinetic: numbers don't lie]\nFinal verdict. [Visual: verdict] [Kinetic: buy or skip]",
+    "aspect": "portrait",
+    "orientation": "portrait",
+    "transition": "slide",
+    "captionTheme": "neon",
+    "kineticText": true,
+    "emojiByScene": {
+      "0": "🔥",
+      "1": "⚡",
+      "2": "✅"
+    },
+    "jCutSec": 0.4,
+    "paletteFilter": "cyberpunk",
+    "voiceSpeed": 1.05,
+    "dialogueVoices": [
+      "male",
+      "female"
+    ],
+    "titleCard": {
+      "title": "Gadget Review",
+      "subtitle": "Ep 12 - Deep Dive"
+    },
+    "outro": {
+      "ctaText": "Subscribe for more",
+      "showSubscribe": true,
+      "hashtags": [
+        "#tech",
+        "#review"
+      ],
+      "durationSec": 3
+    },
+    "progressBar": true,
+    "lowerThird": "Hosted by Prem",
+    "loopVideo": false
+  },
+  {
+    "id": "waveH_square_stack",
+    "title": "WAVE H: square stack — palette+progress+emoji+kinetic",
+    "topic": "fitness tip",
+    "script": "Warm up first. [Visual: stretch] [Kinetic: move]\nPush your limits. [Visual: gym] [Kinetic: go]\nCool down. [Visual: rest] [Kinetic: breathe]",
+    "aspect": "square",
+    "orientation": "square",
+    "transition": "xfade",
+    "captionTheme": "bold",
+    "kineticText": true,
+    "emojiByScene": {
+      "0": "🏃",
+      "1": "💪",
+      "2": "🧘"
+    },
+    "paletteFilter": "warm",
+    "voiceSpeed": 0.95,
+    "progressBar": true
+  },
+  {
+    "id": "waveH_portrait_mix",
+    "title": "WAVE H: portrait mix — zoomblur+theme+sfxOnCut+outro",
+    "topic": "travel",
+    "script": "Land in the city. [Visual: skyline] [Kinetic: explore]\nTaste the street food. [Visual: market] [Kinetic: yum]\nCatch the sunset. [Visual: beach] [Kinetic: wow]",
+    "aspect": "portrait",
+    "orientation": "portrait",
+    "transition": "zoomblur",
+    "captionTheme": "minimal",
+    "sfxOnCut": true,
+    "paletteFilter": "teal",
+    "outro": {
+      "ctaText": "Follow the journey",
+      "showSubscribe": true,
+      "hashtags": [
+        "#travel",
+        "#vlog"
+      ],
+      "durationSec": 3
+    },
+    "progressBar": true
   }
 ]
