@@ -18,6 +18,15 @@ export interface PlanOptions {
     orientation?: 'portrait' | 'landscape' | 'square';
     voice?: string;
     musicQuery?: string;
+    /** Wave N/O — multi-persona cast carried onto the Plan. */
+    personas?: import('../types.js').PersonaSpec[];
+    defaultPersona?: string;
+    /** Per-scene persona id (matches personas[].id). */
+    scenePersonas?: Record<number, string>;
+    /** Two-voice alternating dialogue across scenes (legacy shorthand). */
+    dialogueVoices?: [string, string];
+    /** Per-scene in-scene dialogue (back-and-forth, each turn its own voice). */
+    sceneDialogue?: Record<number, { speaker: string; text: string }[]>;
 }
 
 export type Parser = (script: string) => Promise<ParsedScript> | ParsedScript;
@@ -61,6 +70,18 @@ function parseTimeToSeconds(t: string): number {
 export async function buildPlan(script: string, opts: PlanOptions, parser: Parser = parseScript): Promise<Plan> {
     const parsed = await parser(script);
     const scenes = toScenePlans(parsed);
+    // Wave N/O — assign each scene its speaking persona (precedence:
+    //   explicit scenePersonas[i] > alternating dialogueVoices[i%2] > defaultPersona.
+    // Also attach any in-scene dialogue turns (each spoken by its own persona).
+    scenes.forEach((s, i) => {
+        const persona =
+            opts.scenePersonas?.[i] ??
+            (opts.dialogueVoices ? opts.dialogueVoices[i % 2] : undefined) ??
+            opts.defaultPersona;
+        if (persona) s.voicePersona = persona;
+        const dlg = opts.sceneDialogue?.[i];
+        if (dlg && dlg.length > 0) s.dialogue = dlg;
+    });
     const defaultMusic = opts.musicQuery?.trim() || (await deriveMusicQueryAdvanced(scenes, opts.title));
     return {
         jobId: opts.jobId,
@@ -70,6 +91,7 @@ export async function buildPlan(script: string, opts: PlanOptions, parser: Parse
         musicQuery: defaultMusic,
         scenes,
         totalDurationSec: scenes.reduce((acc, s) => acc + s.durationSec, 0),
+        personas: opts.personas,
     };
 }
 

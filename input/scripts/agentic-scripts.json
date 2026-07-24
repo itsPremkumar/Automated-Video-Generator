@@ -1099,5 +1099,117 @@
       ]
     },
     "transition": "fade"
+  },
+  {
+    "id": "waveN_two_persona",
+    "title": "WAVE N: two distinct personas (host + guest) in one video",
+    "topic": "morning routine",
+    "script": "A. Host: your morning sets the tone for everything.\nB. Guest: I swear by a 10 minute walk before coffee.\nC. Host: Consistency beats intensity every single time.",
+    "personas": [
+      {
+        "id": "host",
+        "preset": {
+          "engine": "kokoro",
+          "voiceId": "af_heart"
+        }
+      },
+      {
+        "id": "guest",
+        "preset": {
+          "engine": "kokoro",
+          "voiceId": "am_michael"
+        }
+      }
+    ],
+    "scenePersonas": {
+      "0": "host",
+      "1": "guest",
+      "2": "host"
+    },
+    "captions": "burned",
+    "paletteFilter": "warm",
+    "outro": {
+      "ctaText": "Follow for daily habits",
+      "showSubscribe": true,
+      "hashtags": [
+        "#habits",
+        "#morning"
+      ]
+    },
+    "transition": "fade"
+  },
+  {
+    "id": "waveN_dialogue",
+    "title": "WAVE N: in-scene dialogue (two voices, one-by-one) in scene 2",
+    "topic": "ai news",
+    "script": "A. Here is today's AI headline.\nB. (a host and guest debate it)\nC. That is the story so far.",
+    "personas": [
+      {
+        "id": "host",
+        "preset": {
+          "engine": "kokoro",
+          "voiceId": "af_heart"
+        }
+      },
+      {
+        "id": "guest",
+        "preset": {
+          "engine": "kokoro",
+          "voiceId": "am_michael"
+        }
+      }
+    ],
+    "sceneDialogue": {
+      "1": [
+        {
+          "speaker": "host",
+          "text": "So the model just writes its own code now?"
+        },
+        {
+          "speaker": "guest",
+          "text": "Basically, with a human reviewing each patch."
+        },
+        {
+          "speaker": "host",
+          "text": "That actually sounds reasonable."
+        }
+      ]
+    },
+    "captions": "burned",
+    "paletteFilter": "cyberpunk",
+    "outro": {
+      "ctaText": "Subscribe for AI news",
+      "showSubscribe": true,
+      "hashtags": [
+        "#ai",
+        "#tech"
+      ]
+    },
+    "transition": "fade"
+  },
+  {
+    "id": "waveN_clone_real",
+    "title": "WAVE N: real voice clone from input/voices/sample_narrator.wav",
+    "topic": "book review",
+    "script": "A. This book changed how I think about focus.\nB. The core idea is single-tasking beats multitasking.\nC. Pick one deep work block a day.",
+    "personas": [
+      {
+        "id": "narrator",
+        "name": "My Cloned Voice",
+        "clone": "sample_narrator.wav"
+      }
+    ],
+    "defaultPersona": "narrator",
+    "captions": "burned",
+    "paletteFilter": "cinematic",
+    "outro": {
+      "ctaText": "Read more with me",
+      "showSubscribe": true,
+      "hashtags": [
+        "#books",
+        "#focus"
+      ]
+    },
+    "transition": "fade"
   }
 ]

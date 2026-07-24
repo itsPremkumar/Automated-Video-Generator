@@ -101,6 +101,14 @@ export interface PipelineRequest {
     dubLanguage?: string;
     useClonedVoiceId?: string;
     dialogueVoices?: [string, string];
+    /** Wave N/O — multi-persona cast + per-scene persona assignment. */
+    personas?: { id: string; name?: string; profileId?: string; clone?: string; preset?: { engine: string; voiceId: string }; language?: string; engine?: string; seed?: number }[];
+    defaultPersona?: string;
+    /** Per-scene persona id (matches personas[].id). Overrides defaultPersona. */
+    scenePersonas?: Record<number, string>;
+    /** In-scene dialogue per scene index: back-and-forth turns, each spoken
+     *  by its own persona voice and concatenated one-by-one. */
+    sceneDialogue?: Record<number, { speaker: string; text: string }[]>;
     lowerThird?: string;
     titleCard?: { title: string; subtitle?: string; durationSec?: number };
     endCta?: string;

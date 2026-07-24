@@ -37,6 +37,21 @@ export interface AgenticCliJob {
     candidatesPerAsset?: number;
     /** Language code for voice fallback. */
     language?: string;
+    /** Multi-persona voice cast. Each entry resolves to a VoiceBox profile
+     *  (existing id, a preset voice, or a real cloned voice from a clip).
+     *  Scenes reference a persona by id via `scenePersonas` (per-scene) or the
+     *  global `defaultPersona` applies to every scene. Enables two-or-more
+     *  distinct voices in one video (e.g. a host + a guest, or a dialogue). */
+    personas?: { id: string; name?: string; profileId?: string; clone?: string; preset?: { engine: string; voiceId: string }; language?: string; engine?: string; seed?: number }[];
+    /** Persona id applied to all scenes unless a scene overrides it. */
+    defaultPersona?: string;
+    /** Per-scene persona id keyed by scene index (0-based). Overrides defaultPersona. */
+    scenePersonas?: Record<number, string>;
+    /** In-scene dialogue per scene index: each entry is a back-and-forth
+     *  turn list; turn.speaker is a persona id, turn.text is that speaker's
+     *  line. The voice stage speaks each turn with its own persona voice and
+     *  concatenates them one-by-one into the scene audio. */
+    sceneDialogue?: Record<number, { speaker: string; text: string }[]>;
     /** Filename of a local audio file in input/visuals/ for background music. */
     backgroundMusic?: string;
     /** Volume for background music (0.0–1.0, default ~0.15). */
@@ -326,5 +341,9 @@ export function buildPipelineRequest(job: AgenticCliJob, id: string, topic: stri
         downloadUrl: job.downloadUrl,
         downloadUrlKind: job.downloadUrlKind,
         rerender: job.rerender,
+        // Wave N/O — multi-persona + dialogue voice control
+        personas: job.personas,
+        defaultPersona: job.defaultPersona,
+        scenePersonas: job.scenePersonas,
     };
 }

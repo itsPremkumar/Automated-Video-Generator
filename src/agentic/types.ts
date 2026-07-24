@@ -51,8 +51,19 @@ export interface ScenePlan {
     fadeIn?: number;
     /** Audio fade-out duration in seconds. */
     fadeOut?: number;
-    /** Per-scene voice override (e.g. 'en-US-GuyNeural'). */
+    /** Per-scene voice override (e.g. 'en-US-GuyNeural'). Also accepts a
+     *  VoiceBox profile id (for cloned/preset personas) when the agentic
+     *  voice stage drives the in-repo speech backend. */ 
     voiceOverride?: string;
+    /** Reference to a persona declared in Plan.personas (id). When set, this
+     *  scene's voiceover is spoken by that persona's resolved VoiceBox
+     *  profile. Takes precedence over the global/default voice. */
+    voicePersona?: string;
+    /** In-scene dialogue: two (or more) speakers talking one-by-one within a
+     *  single scene. Each turn is spoken by its own persona (cloned/preset
+     *  voice) and the turns are concatenated into one scene audio track.
+     *  When present, it overrides `voiceoverText` for that scene. */
+    dialogue?: { speaker: string; text: string }[];
     /** Per-scene background music file name (in input/visuals/). */
     musicOverride?: string;
     /** Per-scene audio volume (0.0–1.0). */
@@ -79,6 +90,30 @@ export interface Plan {
     musicQuery: string;
     scenes: ScenePlan[];
     totalDurationSec: number;
+    /** Multi-persona voice cast. Each entry resolves (by the agentic voice
+     *  stage) to a VoiceBox profile id — either an existing profile, a preset
+     *  (kokoro/chatterbox) voice, or a real cloned voice from a reference clip.
+     *  Scenes reference a persona by id via ScenePlan.voicePersona. */
+    personas?: PersonaSpec[];
+}
+
+/**
+ * A named voice persona the agent fully controls.
+ *  - profileId: reuse an already-existing VoiceBox profile (id or name).
+ *  - clone: path to a reference audio clip (input/voices/*.wav) → auto-clone a
+ *    real voice profile (cached per clip so re-runs reuse it).
+ *  - preset: a built-in TTS voice { engine, voiceId } (e.g. kokoro 'af_heart').
+ *  - language/engine/seed: optional per-persona overrides.
+ */
+export interface PersonaSpec {
+    id: string;
+    name?: string;
+    profileId?: string;
+    clone?: string;
+    preset?: { engine: string; voiceId: string };
+    language?: string;
+    engine?: string;
+    seed?: number;
 }
 
 export interface AssetCandidate {

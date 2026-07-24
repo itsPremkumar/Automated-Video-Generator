@@ -1,6 +1,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { execFileSync } from 'child_process';
 import axios from 'axios';
 import { logError, logInfo, logWarn } from '../../runtime';
 import {
@@ -13,6 +14,9 @@ import {
 import { AgenticWorkspace } from '../management/workspace.js';
 import { Plan } from '../types.js';
 import { generateVoiceovers } from '../../lib/voice-generator.js';
+
+const ffmpegPath: any = require('ffmpeg-static');
+const ffprobePath: any = require('ffprobe-static');
 
 const console = {
     log: (...a: unknown[]) => logInfo('[VOICE-CTRL]', ...a),
@@ -282,12 +286,100 @@ async function generateScene(
  * @returns VoiceRunResult — or throws if the backend cannot be brought up
  *          (caller falls back to Edge-TTS).
  */
+
+/**
+ * Resolve a single persona spec → a VoiceBox profile id + engine.
+ *  - profileId: reuse an existing profile (id or name).
+ *  - clone:     auto-clone a real voice from a reference clip (cached per clip).
+ *  - preset:    provision a built-in TTS preset profile (e.g. kokoro 'af_heart').
+ * Falls back to the supplied default when the persona cannot be resolved.
+ */
+async function resolvePersonaProfile(
+    persona: { id: string; name?: string; profileId?: string; clone?: string; preset?: { engine: string; voiceId: string }; engine?: string },
+    ws: AgenticWorkspace,
+    fallback: { id: string; engine: string },
+): Promise<{ id: string; engine: string }> {
+    try {
+        if (persona.profileId && persona.profileId.trim().length > 0) {
+            return { id: persona.profileId.trim(), engine: persona.engine || fallback.engine };
+        }
+        if (persona.clone) {
+            const clip = path.resolve(process.cwd(), 'input', 'voices', persona.clone);
+            if (fs.existsSync(clip)) {
+                const r = await cloneFromVoicesDir(clip, profileCachePath(ws).replace('.json', `-${persona.id}.json`));
+                return r;
+            }
+            console.warn(`persona '${persona.id}' clone clip ${clip} missing — falling back`);
+        }
+        if (persona.preset) {
+            const res = await axios.post(
+                `${baseUrl()}/profiles`,
+                { name: persona.name || `agentic-${persona.id}`, voice_type: 'preset', preset_engine: persona.preset.engine, preset_voice_id: persona.preset.voiceId },
+                { headers: { 'Content-Type': 'application/json' }, timeout: 30000 },
+            );
+            const id = res.data?.id || res.data?.profile_id;
+            if (!id) throw new Error(`preset profile create returned no id`);
+            return { id, engine: persona.preset.engine };
+        }
+    } catch (e: any) {
+        console.warn(`persona '${persona.id}' resolution failed (${e?.message}) — falling back`);
+    }
+    return fallback;
+}
+
+/** Resolve every declared persona to a profile id (cached, idempotent). */
+export async function resolvePersonas(
+    personas: { id: string; name?: string; profileId?: string; clone?: string; preset?: { engine: string; voiceId: string }; engine?: string }[] | undefined,
+    ws: AgenticWorkspace,
+    fallback: { id: string; engine: string },
+): Promise<Map<string, { id: string; engine: string }>> {
+    const map = new Map<string, { id: string; engine: string }>();
+    if (!personas || personas.length === 0) return map;
+    for (const p of personas) {
+        map.set(p.id, await resolvePersonaProfile(p, ws, fallback));
+    }
+    return map;
+}
+
+/** Concatenate per-turn audio files (each a persona voice) with a short
+ *  silence gap between turns, into one scene audio track. Returns duration. */
+export async function concatDialogueTurns(turnPaths: string[], outPath: string, gapSec = 0.35): Promise<number> {
+    if (turnPaths.length === 1) {
+        fs.copyFileSync(turnPaths[0], outPath);
+    } else {
+        const listFile = outPath + '.concat.txt';
+        const parts: string[] = [];
+        turnPaths.forEach((p, i) => {
+            parts.push(`file '${p.replace(/'/g, "'\\''")}'`);
+            if (i < turnPaths.length - 1) parts.push(`file '${outPath}.gap.wav'`);
+        });
+        fs.writeFileSync(listFile, parts.join('\n'));
+        // generate a tiny silence gap (valid low-frequency sine looped silently
+        // is avoided; use anullsrc for true silence)
+        execFileSync(ffmpegPath as unknown as string, ['-y', '-f', 'lavfi', '-i', `anullsrc=r=44100:cl=mono:d=${gapSec}`, '-c:a', 'pcm_s16le', outPath + '.gap.wav'], { stdio: 'ignore' });
+        execFileSync(ffmpegPath as unknown as string, ['-y', '-f', 'concat', '-safe', '0', '-i', listFile, '-c', 'copy', outPath], { stdio: 'ignore' });
+        fs.rmSync(listFile, { force: true });
+        fs.rmSync(outPath + '.gap.wav', { force: true });
+    }
+    // duration via ffprobe
+    try {
+        const probeBin: string = ffprobePath?.path ?? ffprobePath;
+        const out = execFileSync(probeBin, ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', outPath], { encoding: 'utf8' }).toString().trim();
+        return parseFloat(out) || 0;
+    } catch {
+        return 0;
+    }
+}
+
 export async function runVoiceStage(
     plan: Plan,
     ws: AgenticWorkspace,
     _voice?: string,
     onProgress?: (percent: number, message: string) => void,
     useClonedVoiceId?: string,
+    /** Wave N/O — declared persona cast (from Plan.personas). When present,
+     *  scenes may reference a persona by id for per-scene multi-voice. */
+    personas?: import('../types.js').PersonaSpec[],
 ): Promise<VoiceRunResult> {
     const report = (p: number, m: string) => {
         onProgress?.(p, m);
@@ -331,19 +423,25 @@ export async function runVoiceStage(
     const up = await ensureBackend();
     if (!up) throw new Error('speech backend unavailable — caller should fall back to Edge-TTS');
 
-    report(15, 'resolving voice profile');
-    const { id: profileId, engine } = await resolveProfileId(ws, useClonedVoiceId);
+    report(15, 'resolving voice profile(s)');
+    // Default single-voice profile (used when a scene has no persona assigned).
+    const defaultProfile = await resolveProfileId(ws, useClonedVoiceId);
+    // Wave N/O — resolve every declared persona to a VoiceBox profile so
+    // scenes can speak with distinct (cloned/preset) voices.
+    const personaMap = await resolvePersonas(personas ?? plan.personas, ws, defaultProfile);
+    const defaultProfileId = defaultProfile.id;
+    const defaultEngine = defaultProfile.engine;
 
     // Preload only for engines backed by the default model loader (chatterbox/qwen).
     // Kokoro loads lazily inside /speak and does NOT support /models/load
     // (that endpoint drives the default Qwen/Chatterbox loader and 500s on "kokoro").
     // A cloned real voice uses chatterbox_turbo → preload it for a warm first scene.
-    const preloadable = engine !== 'kokoro';
+    const preloadable = defaultEngine !== 'kokoro';
     if (preloadable) {
-        report(30, `preloading engine: ${engine}`);
-        await loadEngine(engine);
+        report(30, `preloading engine: ${defaultEngine}`);
+        await loadEngine(defaultEngine);
     } else {
-        report(30, `engine ${engine} loads on first speak (no explicit preload)`);
+        report(30, `engine ${defaultEngine} loads on first speak (no explicit preload)`);
     }
 
     const audioDir = ws.audioDir;
@@ -364,9 +462,50 @@ export async function runVoiceStage(
             continue;
         }
         try {
-            const dur = await generateScene(scene.voiceoverText, outPath, profileId, engine);
-            voices.push({ sceneIndex: scene.sceneNumber - 1, audioPath: outPath, durationSec: dur });
-            ok++;
+            // Wave N/O — resolve THIS scene's speaking profile.
+            // Precedence: scene.voicePersona (a declared persona id) >
+            //   scene.voiceOverride (a raw VoiceBox profile id) > default.
+            let profId = defaultProfileId;
+            let eng = defaultEngine;
+            const personaId = scene.voicePersona;
+            if (personaId && personaMap.has(personaId)) {
+                profId = personaMap.get(personaId)!.id;
+                eng = personaMap.get(personaId)!.engine;
+            } else if (scene.voiceOverride && !/Neural$/.test(scene.voiceOverride)) {
+                // A non-Edge voiceOverride is treated as a VoiceBox profile id.
+                profId = scene.voiceOverride;
+            }
+            // In-scene dialogue: each turn spoken by its own persona, one-by-one.
+            if (scene.dialogue && scene.dialogue.length > 0) {
+                const turnPaths: string[] = [];
+                let turnOk = true;
+                for (let t = 0; t < scene.dialogue.length; t++) {
+                    const turn = scene.dialogue[t];
+                    let turnProf = profId;
+                    let turnEng = eng;
+                    if (turn.speaker && personaMap.has(turn.speaker)) {
+                        turnProf = personaMap.get(turn.speaker)!.id;
+                        turnEng = personaMap.get(turn.speaker)!.engine;
+                    }
+                    const turnPath = path.join(audioDir, `scene_${scene.sceneNumber}_turn_${t}_voice.wav`);
+                    try {
+                        await generateScene(turn.text, turnPath, turnProf, turnEng);
+                        turnPaths.push(turnPath);
+                    } catch (e: any) {
+                        console.warn(`scene ${scene.sceneNumber} turn ${t} failed: ${e?.message}`);
+                        turnOk = false;
+                    }
+                }
+                if (turnOk && turnPaths.length > 0) {
+                    const dur = await concatDialogueTurns(turnPaths, outPath);
+                    voices.push({ sceneIndex: scene.sceneNumber - 1, audioPath: outPath, durationSec: dur });
+                    ok++;
+                }
+            } else {
+                const dur = await generateScene(scene.voiceoverText, outPath, profId, eng);
+                voices.push({ sceneIndex: scene.sceneNumber - 1, audioPath: outPath, durationSec: dur });
+                ok++;
+            }
         } catch (e: any) {
             console.warn(`scene ${scene.sceneNumber} voice failed: ${e?.message}`);
         }
@@ -379,7 +518,7 @@ export async function runVoiceStage(
     const voiceoverDriven = ok === total;
     report(100, voiceoverDriven ? 'voiceover generated via speech backend' : `partial (${ok}/${total})`);
 
-    return { voices, voiceoverDriven, profileId, fallbackUsed: !voiceoverDriven };
+    return { voices, voiceoverDriven, profileId: defaultProfileId, fallbackUsed: !voiceoverDriven };
 }
 
 /** Run the full voice stage, guaranteeing the backend is torn down
@@ -390,9 +529,10 @@ export async function runVoiceStageSafe(
     _voice?: string,
     onProgress?: (percent: number, message: string) => void,
     useClonedVoiceId?: string,
+    personas?: import('../types.js').PersonaSpec[],
 ): Promise<VoiceRunResult> {
     try {
-        return await runVoiceStage(plan, ws, _voice, onProgress, useClonedVoiceId);
+        return await runVoiceStage(plan, ws, _voice, onProgress, useClonedVoiceId, personas);
     } finally {
         killBackend();
     }

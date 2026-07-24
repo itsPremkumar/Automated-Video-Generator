@@ -92,6 +92,12 @@ async function buildPlanOnly(job: AgenticCliJob, id: string): Promise<{ plan: Pl
             // so an unset voice would fail the whole voice stage. Pin Jenny.
             voice: job.voice ?? 'en-US-JennyNeural',
             musicQuery: job.musicQuery,
+            // Wave N/O — multi-persona cast + per-scene persona/dialogue.
+            personas: job.personas as import('../types.js').PersonaSpec[] | undefined,
+            defaultPersona: job.defaultPersona,
+            scenePersonas: job.scenePersonas,
+            dialogueVoices: job.dialogueVoices,
+            sceneDialogue: job.sceneDialogue,
         },
         parseScript,
     );
