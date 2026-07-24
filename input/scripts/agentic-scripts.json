@@ -538,5 +538,68 @@
     "exportFormat": "gif",
     "posterScene": 0,
     "contactSheet": true
+  },
+  {
+    "id": "waveA_xfade_fade_neon",
+    "title": "WAVE A: fade transitions + neon captionTheme",
+    "topic": "AI coding tools",
+    "script": "Did you know AI coding assistants write 1000 lines per minute? [Visual: AI coding] [Transition: fade]\nThe detail that separates beginners from pros. [Visual: code programming] [Transition: fade]\nApply this one idea and you'll see the difference. [Visual: developer workspace] [Transition: fade]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "transition": "fade",
+    "captionTheme": "neon",
+    "kenBurns": true,
+    "sfxOnCut": true,
+    "endCta": "Build with AI",
+    "titleCard": {
+      "title": "AI Coding",
+      "subtitle": "Ep 1"
+    },
+    "posterScene": 0,
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveA_slide_softcard",
+    "title": "WAVE A: slide transitions + softCard theme",
+    "topic": "video editing tips",
+    "script": "Most video editors waste hours on manual tasks. [Visual: video editing] [Transition: slide]\nHere's how to automate your editing workflow. [Visual: editing software] [Transition: slide]\nThese shortcuts save 10 hours per week. [Visual: productivity] [Transition: slide]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "transition": "slide",
+    "captionTheme": "softCard",
+    "kineticText": true,
+    "endCta": "Try it now",
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveA_zoomblur_highcontrast",
+    "title": "WAVE A: zoomblur transitions + highContrast theme (landscape)",
+    "topic": "mountain adventure",
+    "script": "Mountains shape our climate. [Visual: mountain peak] [Transition: zoomblur] [Grade: warm]\nSnow caps store fresh water. [Visual: glacier] [Transition: zoomblur] [Grade: cinematic]\nRivers begin in the hills. [Visual: river valley] [Transition: zoomblur] [Grade: sepia]",
+    "mode": "compose",
+    "orientation": "landscape",
+    "transition": "zoomblur",
+    "captionTheme": "highContrast",
+    "sfxOnCut": true,
+    "endCta": "Explore more",
+    "posterScene": 0,
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveA_mixed_cut_minimal",
+    "title": "WAVE A: per-scene mixed transitions (fade/slide/cut) + minimal theme (square)",
+    "topic": "blue ocean",
+    "script": "The ocean stretches to the horizon. [Visual: ocean] [Transition: fade]\nWaves carry the light. [Visual: waves] [Transition: cut]\nA quiet blue world. [Visual: blue] [Transition: slide]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "aspect": "1:1",
+    "captionTheme": "minimal",
+    "progressBar": true,
+    "endCta": "Peace",
+    "contactSheet": true,
+    "licenseFilter": "cc0"
   }
 ]

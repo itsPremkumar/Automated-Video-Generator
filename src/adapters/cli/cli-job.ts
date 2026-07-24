@@ -83,7 +83,7 @@ export interface AgenticCliJob {
     /** Global Ken Burns toggle. */
     kenBurns?: boolean;
     /** Global transition override. */
-    transition?: string;
+    transition?: 'fade' | 'slide' | 'zoomblur' | 'cut';
     /** Global grade override. */
     grade?: string;
     // ═════════════════════════════════════════════════

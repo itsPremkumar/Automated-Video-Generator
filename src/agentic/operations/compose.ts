@@ -108,12 +108,13 @@ function resolveFontFile(family: string | undefined, weight?: number): string {
 }
 
 /** Build an ffmpeg filter for burned text overlay (drawtext). */
-function drawTextFilter(text: string, x: string, y: string, size: number, color: string, opts?: { fontFile?: string; weight?: number; enable?: string }): string {
+function drawTextFilter(text: string, x: string, y: string, size: number, color: string, opts?: { fontFile?: string; weight?: number; enable?: string; shadow?: boolean }): string {
     const isHex = color.startsWith('#') || /^0x?[0-9a-fA-F]{6}$/.test(color);
     const c = isHex ? (color.startsWith('#') ? `0x${color.slice(1)}` : color) : color;
     const en = opts?.enable ? `:enable='${escExpr(opts.enable)}'` : '';
+    const shadow = opts?.shadow ? `:shadowcolor=black@0.85:shadowx=3:shadowy=3` : '';
     const ff = opts?.fontFile ?? resolveFontFile(undefined);
-    return `drawtext=fontfile='${ff}':text='${esc(text)}':fontcolor=${c}:fontsize=${size}:x=${x}:y=${y}:box=1:boxcolor=black@0.4:boxborderw=6${en}`;
+    return `drawtext=fontfile='${ff}':text='${esc(text)}':fontcolor=${c}:fontsize=${size}:x=${x}:y=${y}:box=1:boxcolor=black@0.4:boxborderw=6${shadow}${en}`;
 }
 
 /**
@@ -196,14 +197,17 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     const W = outW;
     const H = outH;
     const baseVideo = path.join(outDir, 'base.mp4');
-    await buildSlideshow(fxVisuals, audios, W, H, baseVideo, durations);
+    const sceneTransitions = visuals.map((_, i) => scenes[i]?.transition);
+    await buildSlideshow(fxVisuals, audios, W, H, baseVideo, durations, sceneTransitions, job.transition ?? 'fade');
 
     // ── 5) Burned overlays (title / lower-third / CTA / emoji / captions) ──
     const overlay = buildOverlayPlan(job);
     const vf: string[] = [];
-    if (overlay.titleCard) vf.push(drawTextFilter(overlay.titleCard.title, '(w-text_w)/2', 'h/2-40', 48, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight }));
-    if (overlay.lowerThird) vf.push(drawTextFilter(overlay.lowerThird, '40', 'H-th-40', 36, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: 'gte(t,1)*lte(t,4)' }));
-    if (overlay.endCta) vf.push(drawTextFilter(overlay.endCta, '(w-text_w)/2', 'H-th-60', 42, 'yellow', { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight }));
+    const txt = (text: string, x: string, y: string, size: number, color: string, opts?: { fontFile?: string; weight?: number; enable?: string }) =>
+        drawTextFilter(text, x, y, size, color, { fontFile: opts?.fontFile, weight: opts?.weight, enable: opts?.enable, shadow: overlay.font.shadow });
+    if (overlay.titleCard) vf.push(txt(overlay.titleCard.title, '(w-text_w)/2', 'h/2-40', 48, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight }));
+    if (overlay.lowerThird) vf.push(txt(overlay.lowerThird, '40', 'H-th-40', 36, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: 'gte(t,1)*lte(t,4)' }));
+    if (overlay.endCta) vf.push(txt(overlay.endCta, '(w-text_w)/2', 'H-th-60', 42, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight }));
     for (const [idx, emoji] of Object.entries(overlay.emojiByScene)) {
         const si = Number(idx);
         const start = cumStart[si] ?? 0;
@@ -293,10 +297,13 @@ function estimateDur(sceneCount: number): number {
     return Math.max(6, sceneCount * 3);
 }
 
-/** Concatenate image(s)/clip(s) into a video slideshow with per-scene timing.
- *  `durations` (optional, indexed like `visuals`) sets each scene's on-screen
- *  hold; when absent every scene falls back to DEFAULT_SCENE_SEC (old behaviour). */
-async function buildSlideshow(visuals: string[], audios: string[], W: number, H: number, out: string, durations?: number[]): Promise<void> {
+/** Concatenate image(s)/clip(s) into a video slideshow with per-scene
+ *  crossfade transitions. `durations` (indexed like `visuals`) sets each
+ *  scene's on-screen hold; `transitions[i]` (or `defaultTransition`)
+ *  selects the wipe between scene i and i+1. Supported: 'fade',
+ *  'slide', 'zoomblur', 'cut' (hard cut, no transition).
+ *  When <2 clips or all 'cut', falls back to a plain concat copy. */
+async function buildSlideshow(visuals: string[], audios: string[], W: number, H: number, out: string, durations?: number[], transitions?: (string | undefined)[], defaultTransition: string = 'fade'): Promise<void> {
     const dir = path.dirname(out);
     const sceneClips: string[] = [];
     visuals.forEach((v, i) => {
@@ -321,11 +328,70 @@ async function buildSlideshow(visuals: string[], audios: string[], W: number, H:
     });
     if (sceneClips.length === 0) { console.warn('  ⚠ slideshow produced 0 scene clips — no video will be built'); return; }
     if (sceneClips.length < visuals.length) console.warn(`  ⚠ slideshow: only ${sceneClips.length}/${visuals.length} scenes encoded successfully`);
-    // Concat the per-scene clips.
+    // ── Crossfade / wipe transitions between consecutive scene clips ──
+    const trans = transitions ?? visuals.map(() => defaultTransition);
+    const wantXfade = sceneClips.length >= 2 && trans.some((t) => t && t !== 'cut');
+    if (wantXfade) {
+        const xf = crossfadeSlideshow(sceneClips, W, H, out, durations, trans, defaultTransition);
+        if (xf) return; // success path
+        console.warn('  ⚠ crossfade build failed — falling back to plain concat');
+    }
+    // Plain concat (hard cuts) — original behaviour.
     const list = path.join(dir, 'slideshow_list.txt');
     fs.writeFileSync(list, sceneClips.map((c) => `file '${c.replace(/'/g, "'\\''")}'`).join('\n'));
     const args = ['-y', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', out];
     try { execFileSync(ff(), args, { stdio: ['ignore', 'ignore', 'pipe'], timeout: 120000 }); } catch (e: any) { console.warn(`  ⚠ slideshow concat failed: ${String(e?.stderr ?? e?.message).slice(0, 300)}`); }
+}
+
+/**
+ * Build a slideshow with smooth transitions between scenes using the xfade
+ * filter. Returns the output path on success, or undefined on any failure
+ * (caller should fall back to plain concat).
+ *
+ * Transition types:
+ *   fade      → xfade=transition=fade
+ *   slide     → xfade=transition=slideleft
+ *   zoomblur → xfade=transition=zoomIn (subtle Ken-Burns-like push)
+ *   cut       → no transition (treated as hard cut at the seam)
+ *
+ * Each scene clip is (re)trimmed to its exact hold duration so the xfade
+ * offsets line up; the last clip keeps its full hold (no trailing fade).
+ */
+function crossfadeSlideshow(clips: string[], W: number, H: number, out: string, durations?: number[], transitions?: (string | undefined)[], defaultTransition: string = 'fade'): string | undefined {
+    const fps = 25;
+    const durOf = (i: number) => Math.max(0.5, durations?.[i] ?? DEFAULT_SCENE_SEC);
+    // Trim every clip to its hold so xfade offsets are exact.
+    const trimmed: string[] = [];
+    for (let i = 0; i < clips.length; i++) {
+        const t = path.join(path.dirname(out), `xf_${i}.mp4`);
+        try {
+            execFileSync(ff(), ['-y', '-i', clips[i], '-t', durOf(i).toFixed(2), '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', t], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 });
+            if (fs.existsSync(t) && fs.statSync(t).size > 0) trimmed.push(t); else return undefined;
+        } catch { return undefined; }
+    }
+    // Build xfade chain. Input k is trimmed[k] (label [k:v]).
+    // offset_i = sum(dur_0..dur_{i-1}) - i*tDur  (overlapping fades).
+    const tDur = 0.4;
+    const segs: string[] = [];
+    let offset = 0;
+    for (let i = 1; i < trimmed.length; i++) {
+        const kind = (transitions?.[i - 1] ?? defaultTransition ?? 'fade');
+        if (kind === 'cut') {
+            // hard cut: xfade with ~0 duration keeps the graph valid.
+            segs.push(`[${i}:v][${i - 1}:v]xfade=transition=fade:duration=0.001:offset=${offset.toFixed(3)}[v${i}]`);
+        } else {
+            const ttype = kind === 'slide' ? 'slideleft' : kind === 'zoomblur' ? 'zoomin' : 'fade';
+            segs.push(`[${i}:v][${i - 1}:v]xfade=transition=${ttype}:duration=${tDur}:offset=${offset.toFixed(3)}[v${i}]`);
+        }
+        offset += durOf(i - 1) - tDur;
+    }
+    const last = trimmed.length - 1;
+    const filter = `[0:v]format=yuv420p,${segs.join(',')}`;
+    const args: string[] = ['-y'];
+    for (let i = 0; i < trimmed.length; i++) args.push('-i', trimmed[i]);
+    args.push('-filter_complex', filter, '-map', `[v${last}]`, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-r', String(fps), out);
+    try { execFileSync(ff(), args, { stdio: ['ignore', 'ignore', 'pipe'], timeout: 180000 }); } catch (e: any) { console.warn(`  ⚠ xfade failed: ${String(e?.stderr ?? e?.message).slice(0, 300)}`); return undefined; }
+    return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : undefined;
 }
 
 function concatAudio(files: string[], out: string): void {
