@@ -252,17 +252,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     // and every non-landscape job fell back to 720x1280 — so a square
     // (1:1) job rendered as a squashed portrait. This is the canonical
     // resolution used everywhere below (FX, slideshow, overlays, export).
-    const PORT = 720; // portrait/reel short side
-    const LAND = 1280; // landscape long side
-    let outW: number;
-    let outH: number;
-    const asp = job.aspect;
-    if (asp === '1:1' || asp === 'square') { outW = PORT; outH = PORT; }
-    else if (asp === '16:9') { outW = LAND; outH = Math.round(LAND * 9 / 16); }
-    else if (asp === '9:16') { outW = PORT; outH = Math.round(PORT * 16 / 9); }
-    else if (job.orientation === 'square') { outW = PORT; outH = PORT; }
-    else if (job.orientation === 'landscape') { outW = LAND; outH = Math.round(LAND * 9 / 16); }
-    else { outW = PORT; outH = Math.round(PORT * 16 / 9); } // portrait default
+    const { width: outW, height: outH } = resolveOutputSize(job);
 
     // ── 2) Per-clip visual FX (speed / stabilize / chromaKey / bw / blur / kenBurns)
     //        then per-scene inline-tag grade + vignette. ──
@@ -614,4 +604,42 @@ function concatAudio(files: string[], out: string): void {
     // to silently drop the voiceover from the final mix). Encoding produces a
     // valid concatenated voice track.
     try { execFileSync(ff(), ['-y', '-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', list, '-c:a', 'aac', '-b:a', '192k', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 }); } catch (e: any) { console.warn(`  ⚠ audio concat failed: ${String(e?.stderr ?? e?.message).slice(0, 300)}`); }
+}
+
+/**
+ * Resolve the output frame size from a job spec.
+ *
+ * Driven by `orientation` for backward compat, but ALSO honors an explicit
+ * `aspect` override ("1:1" square, "9:16" portrait, "16:9" landscape) and a
+ * `platform` default (tiktok/reels→9:16, instagram→1:1, youtube→16:9).
+ *
+ * Previously `aspect` and `platform` were silently ignored (every non-
+ * landscape job fell back to 720x1280). `platform` was purely an AI-style
+ * hint that never touched the deterministic render.
+ *
+ * Precedence: explicit `aspect` > `orientation` > `platform`-derived default
+ * > portrait default. Extracted as a pure function so the resolution can be
+ * unit-tested without spinning up the whole compose pipeline.
+ */
+export function resolveOutputSize(job: {
+    aspect?: '9:16' | '1:1' | '16:9' | 'square';
+    orientation?: 'portrait' | 'landscape' | 'square';
+    platform?: 'tiktok' | 'youtube' | 'instagram' | 'reels';
+}): { width: number; height: number } {
+    const PORT = 720; // portrait/reel short side
+    const LAND = 1280; // landscape long side
+    const PLATFORM_ASPECT: Record<string, '9:16' | '16:9' | '1:1'> = {
+        tiktok: '9:16', reels: '9:16', instagram: '1:1', youtube: '16:9',
+    };
+    // Precedence: explicit aspect > explicit orientation > platform-derived
+    // default > portrait default. `platform` is only the fallback when the
+    // caller hasn't pinned aspect/orientation (so it stays backward-compatible
+    // and explicit orientation still wins over a platform default).
+    const asp = job.aspect ?? (job.orientation ? undefined : (job.platform ? PLATFORM_ASPECT[job.platform] : undefined));
+    if (asp === '1:1' || asp === 'square') { return { width: PORT, height: PORT }; }
+    if (asp === '16:9') { return { width: LAND, height: Math.round(LAND * 9 / 16) }; }
+    if (asp === '9:16') { return { width: PORT, height: Math.round(PORT * 16 / 9) }; }
+    if (job.orientation === 'square') { return { width: PORT, height: PORT }; }
+    if (job.orientation === 'landscape') { return { width: LAND, height: Math.round(LAND * 9 / 16) }; }
+    return { width: PORT, height: Math.round(PORT * 16 / 9) }; // portrait default
 }

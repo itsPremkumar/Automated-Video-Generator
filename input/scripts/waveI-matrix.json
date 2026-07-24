@@ -1,0 +1,49 @@
+[
+  {
+    "id": "waveI_youtube_landscape",
+    "title": "WAVE I: platform=youtube should force 16:9 landscape",
+    "topic": "space facts",
+    "script": "Did you know the Sun is 330000 times heavier than Earth.\nBlack holes bend light around them.\nJupiter has 95 known moons.\nThe Milky Way spins at 828000 km/h.",
+    "platform": "youtube",
+    "captionTheme": "neon",
+    "captions": "burned",
+    "paletteFilter": "cool",
+    "emojiByScene": {
+      "0": "🌞",
+      "1": "🕳️",
+      "2": "🪐",
+      "3": "🌌"
+    },
+    "progressBar": true,
+    "outro": {
+      "ctaText": "Subscribe for more space",
+      "showSubscribe": true,
+      "hashtags": [
+        "#space",
+        "#facts"
+      ]
+    },
+    "transition": "zoomblur"
+  },
+  {
+    "id": "waveI_tiktok_portrait",
+    "title": "WAVE I: platform=tiktok should force 9:16 portrait",
+    "topic": "cooking hack",
+    "script": "Freeze grapes for instant sorbet.\nAdd salt to coffee to cut bitterness.\nMicrowave lemon 15s for double juice.\nStore herbs in ice cube trays with oil.",
+    "platform": "tiktok",
+    "captionTheme": "highContrast",
+    "captions": "burned",
+    "paletteFilter": "warm",
+    "sfxOnCut": true,
+    "lowerThird": "Chef Prem",
+    "outro": {
+      "ctaText": "Follow for daily hacks",
+      "showSubscribe": true,
+      "hashtags": [
+        "#cooking",
+        "#hack"
+      ]
+    },
+    "transition": "slide"
+  }
+]
