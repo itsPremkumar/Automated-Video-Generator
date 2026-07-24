@@ -254,7 +254,7 @@ export function buildPipelineRequest(job: AgenticCliJob, id: string, topic: stri
         hookFirst: job.hookFirst ?? true,
         variablePacing: job.variablePacing ?? true,
         backend: job.backend ?? 'agent',
-        candidatesPerAsset: job.candidatesPerAsset ?? 4,
+        candidatesPerAsset: job.candidatesPerAsset ?? 2,
         language: job.language,
         backgroundMusic: job.backgroundMusic,
         musicVolume: job.musicVolume,
