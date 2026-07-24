@@ -37,3 +37,25 @@ test('outro end-card flows through buildOverlayPlan (ctaText spelling)', () => {
     assert.equal(p.outro!.showSubscribe, true);
     assert.deepEqual(p.outro!.hashtags, ['#fitness', '#health']);
 });
+
+test('brand.accent tints captions when no theme/fontColor set', () => {
+    // Wave K: brand.accent was declared but never consumed by the ffmpeg
+    // renderer, so a brand color silently did nothing. Now it tints text.
+    const p = buildOverlayPlan({ brand: { accent: '#FF6B35' } });
+    assert.equal(p.font.color, '#FF6B35');
+});
+
+test('brand.accent is overridden by explicit fontColor', () => {
+    const p = buildOverlayPlan({ brand: { accent: '#FF6B35' }, fontColor: 'yellow' });
+    assert.equal(p.font.color, 'yellow');
+});
+
+test('brand.accent is overridden by captionTheme', () => {
+    const p = buildOverlayPlan({ brand: { accent: '#FF6B35' }, captionTheme: 'neon' });
+    assert.equal(p.font.color, CAPTION_THEMES.neon.color);
+});
+
+test('without accent/theme/fontColor, falls back to theme default', () => {
+    const p = buildOverlayPlan({});
+    assert.equal(p.font.color, CAPTION_THEMES.default.color);
+});

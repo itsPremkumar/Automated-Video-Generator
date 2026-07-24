@@ -66,8 +66,18 @@ export function buildOverlayPlan(job: {
     progressBar?: boolean;
     captionTheme?: string;
     kineticText?: boolean;
+    brand?: { watermark?: string; accent?: string };
 }): OverlayPlan {
     const theme = resolveCaptionTheme(job.captionTheme);
+    // Text color precedence: captionTheme > explicit fontColor > brand.accent
+    // > theme default. `brand.accent` was previously declared but NEVER
+    // consumed by the ffmpeg renderer (only the unused Remotion path read
+    // an `accentColor`), so a brand color set in the job silently did
+    // nothing. Now it tints all burned captions/lower-third/CTA when no
+    // theme/fontColor is explicitly chosen.
+    const color = job.captionTheme
+        ? theme.color
+        : (job.fontColor ?? (job.brand?.accent || theme.color));
     return {
         lowerThird: job.lowerThird,
         titleCard: job.titleCard,
@@ -76,8 +86,7 @@ export function buildOverlayPlan(job: {
         watermark: job.watermark,
         font: {
             family: job.fontFamily ?? 'Inter, sans-serif',
-            // captionTheme overrides explicit fontColor when set (theme wins)
-            color: job.captionTheme ? theme.color : (job.fontColor ?? theme.color),
+            color,
             weight: job.fontWeight ?? theme.weight,
             shadow: theme.shadow,
         },
