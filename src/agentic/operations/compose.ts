@@ -107,14 +107,70 @@ function resolveFontFile(family: string | undefined, weight?: number): string {
     return fs.existsSync(p) ? p : path.join(base, 'arial.ttf');
 }
 
-/** Build an ffmpeg filter for burned text overlay (drawtext). */
-function drawTextFilter(text: string, x: string, y: string, size: number, color: string, opts?: { fontFile?: string; weight?: number; enable?: string; shadow?: boolean }): string {
+/** Resolve an emoji-capable font (Segoe UI Emoji on Windows, else the
+ *  default text font). Emoji glyphs render blank in Inter/DejaVu, so the
+ *  sticker overlay must use this. */
+function resolveEmojiFont(): string {
+    if (process.platform === 'win32') {
+        const p = 'C:/Windows/Fonts/seguiemj.ttf';
+        if (fs.existsSync(p)) return p;
+    }
+    // Best-effort Linux/macOS emoji fonts.
+    for (const p of ['/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf', '/System/Library/Fonts/Apple Color Emoji.ttf']) {
+        if (fs.existsSync(p)) return p;
+    }
+    return resolveFontFile(undefined);
+}
+
+/** Rasterize an emoji to a transparent PNG sticker via ffmpeg, so it can
+ *  be composited with the `overlay` filter (drawtext can't render color
+ *  emoji on Windows). Returns the PNG path, or undefined on failure. */
+function renderEmojiSticker(emoji: string, size: number, outDir: string): string | undefined {
+    const png = path.join(outDir, `sticker_${Buffer.from(emoji).toString('hex')}.png`);
+    if (fs.existsSync(png)) return png;
+    try {
+        // color=cindasium/transparent canvas + drawtext (no fontcolor) renders
+        // the emoji glyph in its native color onto an alpha channel.
+        execFileSync(ff(), [
+            '-y', '-f', 'lavfi', '-i',
+            `color=c=black@0:s=${size}x${size},format=rgba,format=yuva420p`,
+            '-frames:v', '1', '-vf',
+            `drawtext=fontfile='${resolveEmojiFont()}':text='${emoji.replace(/'/g, "'\\''")}':fontsize=${Math.round(size * 0.8)}:x=(w-text_w)/2:y=(h-text_h)/2`,
+            png,
+        ], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 30000 });
+        return fs.existsSync(png) && fs.statSync(png).size > 0 ? png : undefined;
+    } catch (e: any) { console.warn(`  ⚠ emoji sticker render failed: ${String(e?.stderr ?? e?.message).slice(0, 200)}`); return undefined; }
+}
+function drawTextFilter(text: string, x: string, y: string, size: number, color: string, opts?: { fontFile?: string; weight?: number; enable?: string; shadow?: boolean; emoji?: boolean }): string {
     const isHex = color.startsWith('#') || /^0x?[0-9a-fA-F]{6}$/.test(color);
     const c = isHex ? (color.startsWith('#') ? `0x${color.slice(1)}` : color) : color;
     const en = opts?.enable ? `:enable='${escExpr(opts.enable)}'` : '';
-    const shadow = opts?.shadow ? `:shadowcolor=black@0.85:shadowx=3:shadowy=3` : '';
+    const shadow = (opts?.shadow && !opts?.emoji) ? `:shadowcolor=black@0.85:shadowx=3:shadowy=3` : '';
+    // Emoji glyphs carry their own color; forcing fontcolor blanks them, so
+    // omit it for emoji overlays.
+    const colorPart = opts?.emoji ? '' : `:fontcolor=${c}`;
     const ff = opts?.fontFile ?? resolveFontFile(undefined);
-    return `drawtext=fontfile='${ff}':text='${esc(text)}':fontcolor=${c}:fontsize=${size}:x=${x}:y=${y}:box=1:boxcolor=black@0.4:boxborderw=6${shadow}${en}`;
+    return `drawtext=fontfile='${ff}':text='${esc(text)}'${colorPart}:fontsize=${size}:x=${x}:y=${y}:box=1:boxcolor=black@0.4:boxborderw=6${shadow}${en}`;
+}
+
+/** Rough glyph-width metric for the loaded font (~0.52em advance).
+ *  Good enough to decide wrapping/sizing without measuring text. */
+export function estimateTextWidth(s: string, size: number): number {
+    return Math.ceil(s.length * size * 0.52);
+}
+
+/** Greedy word-wrap a caption so no line exceeds `maxW` px at `size`. */
+export function wrapCaption(s: string, size: number, maxW: number): string[] {
+    const words = s.split(/\s+/).filter(Boolean);
+    const lines: string[] = [];
+    let cur = '';
+    for (const w of words) {
+        const trial = cur ? `${cur} ${w}` : w;
+        if (estimateTextWidth(trial, size) > maxW && cur) { lines.push(cur); cur = w; }
+        else cur = trial;
+    }
+    if (cur) lines.push(cur);
+    return lines.length ? lines : [s];
 }
 
 /**
@@ -208,11 +264,16 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     if (overlay.titleCard) vf.push(txt(overlay.titleCard.title, '(w-text_w)/2', 'h/2-40', 48, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight }));
     if (overlay.lowerThird) vf.push(txt(overlay.lowerThird, '40', 'H-th-40', 36, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: 'gte(t,1)*lte(t,4)' }));
     if (overlay.endCta) vf.push(txt(overlay.endCta, '(w-text_w)/2', 'H-th-60', 42, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight }));
+    // Emoji stickers: ffmpeg drawtext can't composite color emoji on
+    // Windows (libFreetype renders them blank), so we rasterize each emoji
+    // to a transparent PNG sticker via ffmpeg, then overlay it.
+    const stickerOverlays: { png: string; x: number; y: number; start: number; end: number }[] = [];
     for (const [idx, emoji] of Object.entries(overlay.emojiByScene)) {
         const si = Number(idx);
         const start = cumStart[si] ?? 0;
         const end = start + (durations[si] ?? DEFAULT_SCENE_SEC);
-        vf.push(drawTextFilter(emoji, 'W-80', '80', 56, 'white', { enable: `gte(t,${start.toFixed(2)})*lte(t,${end.toFixed(2)})` }));
+        const png = renderEmojiSticker(emoji, 96, outDir);
+        if (png) stickerOverlays.push({ png, x: W - 96 - 24, y: 24, start, end });
     }
     // Animated progress bar: a thin bar pinned to the bottom that grows
     // left→right over the clip using a time-based width expression.
@@ -223,6 +284,50 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
         // already keeps the bar growing and clamped, so enable is unnecessary.
         vf.push(`drawbox=x=0:y=ih-8:w='min(iw,iw*(t/${dur}))':h=8:color=white@0.9:t=fill`);
     }
+    // Per-scene burned captions (the spoken line). This was the single
+    // biggest gap: compose.ts burned title/lowerThird/CTA/emoji but NEVER
+    // the scene's own caption text — so `captions:'burned'` produced
+    // silent, textless clips. Now we burn `captionText ?? voiceoverText`
+    // per scene, themed, auto-wrapped + auto-fit to the frame width
+    // (long lines used to overflow and get clipped), and optionally
+    // animate it kinetically.
+    const frameW = W;
+    const maxTextW = Math.floor(frameW * 0.92);
+    scenes.forEach((sc, i) => {
+        if (!sc) return;
+        const cap = (sc.captionText && sc.captionText.trim()) ? sc.captionText : (sc.voiceoverText ?? '').trim();
+        if (!cap) return;
+        const start = cumStart[i] ?? 0;
+        const end = start + (durations[i] ?? DEFAULT_SCENE_SEC);
+        // Auto-shrink so the longest wrapped line fits the frame width.
+        let size = 40;
+        while (size > 20 && wrapCaption(cap, size, maxTextW).some((l) => estimateTextWidth(l, size) > maxTextW)) size -= 2;
+        const lines = wrapCaption(cap, size, maxTextW);
+        const lineH = Math.round(size * 1.3);
+        const blockH = lines.length * lineH;
+        if (overlay.kineticText && cap.split(/\s+/).length > 1) {
+            // Karaoke: highlight one word at a time (still wrapped, 2 lines).
+            const words = cap.split(/\s+/);
+            const step = Math.max(0.05, (end - start) / words.length);
+            words.forEach((w, wi) => {
+                const ws = (start + wi * step).toFixed(2);
+                const we = (start + (wi + 1) * step).toFixed(2);
+                const full = words.map((x, k) => (k === wi ? x : x.toLowerCase())).join(' ');
+                const wl = wrapCaption(full, size, maxTextW);
+                wl.forEach((ln, li) => {
+                    const ly = `H-th-${Math.max(60, 120 + blockH / 2) - (wl.length - 1 - li) * lineH}`;
+                    vf.push(drawTextFilter(ln, '(w-text_w)/2', ly, size, overlay.font.color,
+                        { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: `gte(t,${ws})*lte(t,${we})`, shadow: overlay.font.shadow }));
+                });
+            });
+        } else {
+            lines.forEach((ln, li) => {
+                const ly = `H-th-${Math.max(60, 120 + blockH / 2) - (lines.length - 1 - li) * lineH}`;
+                vf.push(txt(ln, '(w-text_w)/2', ly, size, overlay.font.color,
+                    { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: `gte(t,${start.toFixed(2)})*lte(t,${end.toFixed(2)})` }));
+            });
+        }
+    });
     const watermarkPath = overlay.watermark ? path.join(inputDir, overlay.watermark) : undefined;
     let withOverlays = baseVideo;
     if (vf.length > 0) {
@@ -237,6 +342,19 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
             execFileSync(ff(), ['-y', '-i', withOverlays, '-i', watermarkPath, '-filter_complex', '[0:v][1:v]overlay=W-w-20:H-h-20', '-c:v', 'libx264', '-preset', 'veryfast', wm], { stdio: 'ignore', timeout: 120000 });
             if (fs.existsSync(wm)) withOverlays = wm;
         } catch { /* keep previous */ }
+    }
+    // Emoji stickers: overlay each rendered PNG at its scene window.
+    for (const st of stickerOverlays) {
+        if (!fs.existsSync(st.png)) continue;
+        const out = path.join(outDir, `sticker_${stickerOverlays.indexOf(st)}_applied.mp4`);
+        try {
+            execFileSync(ff(), [
+                '-y', '-i', withOverlays, '-i', st.png,
+                '-filter_complex', `[1:v]scale=${96}:${96}[s];[0:v][s]overlay=x=${st.x}:y=${st.y}:enable='between(t,${st.start.toFixed(2)},${st.end.toFixed(2)})'`,
+                '-c:v', 'libx264', '-preset', 'veryfast', out,
+            ], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 120000 });
+            if (fs.existsSync(out)) withOverlays = out;
+        } catch (e: any) { console.warn(`  ⚠ sticker overlay failed: ${String(e?.stderr ?? e?.message).slice(0, 200)}`); }
     }
 
     // ── 6) Audio: voice + music(loop+normalize) + sfx on cuts ──

@@ -24,6 +24,8 @@ export interface OverlayPlan {
     progressBar?: boolean;
     /** Caption theme preset name (e.g. 'neon', 'softCard'). */
     captionTheme?: string;
+    /** Animate per-scene captions word-by-word (karaoke highlight). */
+    kineticText?: boolean;
 }
 
 /**
@@ -60,6 +62,7 @@ export function buildOverlayPlan(job: {
     emojiByScene?: Record<number, string>;
     progressBar?: boolean;
     captionTheme?: string;
+    kineticText?: boolean;
 }): OverlayPlan {
     const theme = resolveCaptionTheme(job.captionTheme);
     return {
@@ -77,6 +80,7 @@ export function buildOverlayPlan(job: {
         emojiByScene: job.emojiByScene ?? {},
         progressBar: job.progressBar ?? false,
         captionTheme: job.captionTheme,
+        kineticText: job.kineticText ?? false,
     };
 }
 

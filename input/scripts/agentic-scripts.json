@@ -601,5 +601,70 @@
     "endCta": "Peace",
     "contactSheet": true,
     "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveB_caption_kinetic",
+    "title": "WAVE B: burned captions + kinetic word-highlight",
+    "topic": "AI coding tools",
+    "script": "AI assistants write 1000 lines per minute. [Visual: AI coding] [Kinetic: on]\nThe detail that separates pros from beginners. [Visual: code programming] [Kinetic: on]\nApply this idea and see the difference. [Visual: developer workspace] [Kinetic: on]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "captionTheme": "bold",
+    "kineticText": true,
+    "kenBurns": true,
+    "endCta": "Build with AI",
+    "titleCard": {
+      "title": "AI Coding",
+      "subtitle": "Ep 1"
+    },
+    "posterScene": 0,
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveB_caption_static_loop",
+    "title": "WAVE B: static burned captions + loopVideo x2 (square)",
+    "topic": "blue ocean",
+    "script": "The ocean stretches to the horizon. [Visual: ocean]\nWaves carry the light. [Visual: waves]\nA quiet blue world. [Visual: blue]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "aspect": "1:1",
+    "captionTheme": "minimal",
+    "loopVideo": 2,
+    "progressBar": true,
+    "endCta": "Peace",
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveB_caption_themed_landscape",
+    "title": "WAVE B: themed captions + grades (landscape)",
+    "topic": "mountain adventure",
+    "script": "Mountains shape our climate. [Visual: mountain peak] [Grade: warm]\nSnow caps store fresh water. [Visual: glacier] [Grade: cinematic]\nRivers begin in the hills. [Visual: river valley] [Grade: sepia]",
+    "mode": "compose",
+    "orientation": "landscape",
+    "captionTheme": "highContrast",
+    "transition": "zoomblur",
+    "sfxOnCut": true,
+    "endCta": "Explore more",
+    "posterScene": 0,
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveB_caption_emoji_mixed",
+    "title": "WAVE B: captions + emoji + mixed transitions (portrait)",
+    "topic": "video editing tips",
+    "script": "Most editors waste hours on manual tasks. [Visual: video editing] [Transition: slide]\nAutomate your workflow here. [Visual: editing software] [Transition: fade]\nSave 10 hours per week. [Visual: productivity] [Transition: cut]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "captionTheme": "softCard",
+    "emojiByScene": {
+      "0": "⚡",
+      "2": "⏱️"
+    },
+    "endCta": "Try it now",
+    "contactSheet": true,
+    "licenseFilter": "cc0"
   }
 ]
