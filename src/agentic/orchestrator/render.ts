@@ -73,12 +73,18 @@ export function buildDuckExpression(
             const d = duckForScene ? duckForScene(x.sceneIndex) : duck;
             if (!Number.isFinite(d)) return null;
             const delta = (full - d).toFixed(3);
-            return String.raw`(${delta})*between(t\\,${x.s.toFixed(3)}\\,${x.e.toFixed(3)})`;
+            // ffmpeg expression commas stay RAW — `between(t,a,b)` is a function
+            // call, not a filterchain, so escaping the commas (e.g. `\,`) would
+            // make ffmpeg reject the expression. Each speech segment is gated by
+            // gt(between(t,s,e)) so volume = full when silent, full-delta when
+            // speaking. (Previously emitted via String.raw with `\\\\` which
+            // injected stray backslashes and dropped the gt() wrapper.)
+            return `${delta}*gt(between(t,${x.s.toFixed(3)},${x.e.toFixed(3)}))`;
         })
         .filter(Boolean)
         .join('+');
     if (!terms) return null;
-    return `${full}-(${terms})`;
+    return `${full}-${terms}`;
 }
 
 /** Build a single SFX audio layer (mp3) by resolving each scene's transition SFX. */
