@@ -7,6 +7,19 @@
 
 import * as assert from 'node:assert';
 import { describe, it, before } from 'node:test';
+import * as fs from 'fs';
+import * as path from 'path';
+
+// The BundledProvider is backed by committed offline tracks under
+// input/bgm/__bundled__. On a bare checkout (or CI without those assets) the
+// provider has nothing to return — skip those tests rather than hard-fail,
+// the same way the network image providers skip when hosts are unreachable.
+function bundledTracksAvailable(): boolean {
+    const dir = path.resolve(process.cwd(), 'input', 'bgm', '__bundled__');
+    if (!fs.existsSync(dir)) return false;
+    return fs.readdirSync(dir).some((f: string) => /\.(mp3|ogg|wav|m4a)$/i.test(f));
+}
+const hasBundled = bundledTracksAvailable();
 
 // ─── Types ───────────────────────────────────────────────────
 import {
@@ -50,7 +63,8 @@ describe('MusicQuery builder', () => {
 import { BundledProvider } from './providers/bundled';
 
 describe('BundledProvider', () => {
-    it('reads bundled tracks from input/bgm/__bundled__/', async () => {
+    it('reads bundled tracks from input/bgm/__bundled__/', async (t) => {
+        if (!hasBundled) return t.skip('bundled music assets absent (input/bgm/__bundled__ empty)');
         const provider = new BundledProvider();
         const tracks = await provider.search({ mood: 'any' as any, targetDurationSec: 60, minDurationSec: 10, role: 'background' as any });
         assert.ok(tracks.length >= 3, `Expected >=3 bundled tracks, got ${tracks.length}`);
@@ -60,7 +74,8 @@ describe('BundledProvider', () => {
         });
     });
 
-    it('filters by mood correctly', async () => {
+    it('filters by mood correctly', async (t) => {
+        if (!hasBundled) return t.skip('bundled music assets absent (input/bgm/__bundled__ empty)');
         const provider = new BundledProvider();
         const tracks = await provider.search({ mood: 'dramatic' as any, targetDurationSec: 60, minDurationSec: 10, role: 'background' as any });
         assert.ok(tracks.length >= 1, 'Expected at least 1 dramatic track');
@@ -75,7 +90,8 @@ describe('BundledProvider', () => {
         assert.equal(tracks.length, 0);
     });
 
-    it('copies file on download', async () => {
+    it('copies file on download', async (t) => {
+        if (!hasBundled) return t.skip('bundled music assets absent (input/bgm/__bundled__ empty)');
         const provider = new BundledProvider();
         const tracks = await provider.search({ mood: 'calm' as any, targetDurationSec: 60, minDurationSec: 10, role: 'background' as any });
         assert.ok(tracks.length >= 1, 'No calm tracks found');
@@ -132,7 +148,8 @@ describe('MusicEngine', () => {
         assert.ok(engine); // just make sure it doesn't throw
     });
 
-    it('resolves bundled music (offline, priority 1)', async () => {
+    it('resolves bundled music (offline, priority 1)', async (t) => {
+        if (!hasBundled) return t.skip('bundled music assets absent (input/bgm/__bundled__ empty)');
         const engine = new MusicEngine();
         await engine.init();
         const result = await engine.resolveBackground({ topic: 'calm meditation', targetDurationSec: 30 });

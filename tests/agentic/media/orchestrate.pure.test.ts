@@ -29,7 +29,7 @@ test('buildDuckExpression builds a summed between()*gt duck term', () => {
     assert.ok(out, 'expected a non-null expression');
     // full - (full-duck)*gt(...)
     assert.ok(out!.startsWith('0.18-0.120*gt('), `got: ${out}`);
-    assert.ok(out!.includes('between(t\\,0.000\\,1.000)'), `got: ${out}`);
+    assert.ok(out!.includes('between(t,0.000,1.000)'), `got: ${out}`);
 });
 
 test('buildDuckExpression accumulates offsets across multiple scenes', () => {
@@ -43,7 +43,7 @@ test('buildDuckExpression accumulates offsets across multiple scenes', () => {
     );
     assert.ok(out, 'expected non-null');
     // second scene starts at t=4s, so its cue is at 4.5 .. 5.5
-    assert.ok(out!.includes('between(t\\,4.500\\,5.500)'), `got: ${out}`);
+    assert.ok(out!.includes('between(t,4.500,5.500)'), `got: ${out}`);
 });
 
 // ── chunkCues ────────────────────────────────────────────────────────────────
