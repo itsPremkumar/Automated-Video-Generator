@@ -526,11 +526,23 @@ async function runCompose(job: AgenticCliJob, id: string): Promise<SingleFeature
             license: job.licenseFilter, palette: job.paletteFilter,
         });
         if (fetched.length > 0) { sceneVisuals.push(fetched[0]); continue; }
-        // Fallback: generate a solid-color placeholder frame so compose has input.
+        // Fallback: use the job's defaultVisual (a user-supplied brand/cover
+        // image) if provided, else generate a solid-color placeholder frame
+        // so compose still has input. `defaultVisual` was previously ignored
+        // by the deterministic compose path (only the autopilot/orchestrator
+        // path honored it), so a specified fallback image silently did
+        // nothing and every empty scene became a teal frame.
         const ph = path.join(outDir, `placeholder_${i}.jpg`);
-        try {
-            execFileSync(ffmpegPath as unknown as string, ['-y', '-f', 'lavfi', '-i', `color=c=teal:s=720x1280:d=3`, '-frames:v', '1', ph], { stdio: 'ignore' });
-        } catch { /* ignore */ }
+        const dv = job.defaultVisual ? path.resolve('input', 'visuals', job.defaultVisual) : undefined;
+        const dvExists = dv && fs.existsSync(dv);
+        if (dvExists) {
+            try { fs.copyFileSync(dv!, ph); } catch { /* fall through to teal */ }
+        }
+        if (!fs.existsSync(ph)) {
+            try {
+                execFileSync(ffmpegPath as unknown as string, ['-y', '-f', 'lavfi', '-i', `color=c=teal:s=720x1280:d=3`, '-frames:v', '1', ph], { stdio: 'ignore' });
+            } catch { /* ignore */ }
+        }
         sceneVisuals.push(ph);
     }
 
