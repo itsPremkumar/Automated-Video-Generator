@@ -424,6 +424,11 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     const normMusic = musicForMix ? normalizeAudio(musicForMix, audioMixed + '.norm.mp3', job.normalizeLufs ?? -14) : undefined;
 
     const amixInputs = ['-i', withOverlays];
+    // J-cut: when job.jCutSec > 0, start the PICTURE jCutSec seconds
+    // AFTER the voiceover, so each scene's audio leads its picture
+    // (classic documentary J-cut). Implemented by offsetting the video
+    // input relative to the audio timeline via -itsoffset.
+    if (job.jCutSec && job.jCutSec > 0) amixInputs.push('-itsoffset', job.jCutSec.toFixed(2));
     const filterParts: string[] = [];
     let ai = 1;
     // voice (concat scenes) — only if at least one non-empty voice file exists

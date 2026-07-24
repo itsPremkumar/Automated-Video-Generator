@@ -1,0 +1,49 @@
+[
+  {
+    "id": "waveD_jcut_doc",
+    "title": "WAVE D: J-cut audio-leads-picture (documentary style)",
+    "topic": "wildlife documentary",
+    "script": "The forest wakes before dawn. [Visual: forest] [KenBurns: on]\nA single deer steps into the clearing. [Visual: deer] [KenBurns: on]\nSilence, then the river answers. [Visual: river]",
+    "mode": "compose",
+    "orientation": "landscape",
+    "jCutSec": 1.2,
+    "captionTheme": "softCard",
+    "transition": "fade",
+    "endCta": "Watch nature",
+    "posterScene": 0,
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveD_jcut_stack",
+    "title": "WAVE D: J-cut + zoomblur + teal palette + kinetic + progress (square)",
+    "topic": "city life",
+    "script": "Cities move while we sleep. [Visual: city night] [Kinetic: on] [Transition: zoomblur]\nLights paint the dark. [Visual: skyline] [Kinetic: on] [Transition: fade]\nEvery window a story. [Visual: street] [Kinetic: on] [Transition: slide]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "aspect": "1:1",
+    "jCutSec": 0.8,
+    "paletteFilter": "teal",
+    "captionTheme": "neon",
+    "kineticText": true,
+    "progressBar": true,
+    "endCta": "Feel it",
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "waveD_jcut_portrait_kinetic",
+    "title": "WAVE D: J-cut + warm palette + emoji (portrait)",
+    "topic": "coffee ritual",
+    "script": "Mornings begin with a ritual. [Visual: coffee] [Kinetic: on]\nThe first sip wakes the world. [Visual: cafe] [Kinetic: on]\nSmall moments, daily. [Visual: warm light] [Kinetic: on]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "jCutSec": 1.0,
+    "paletteFilter": "warm",
+    "captionTheme": "minimal",
+    "emojiByScene": { "0": "☕", "2": "✨" },
+    "endCta": "Slow down",
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  }
+]
