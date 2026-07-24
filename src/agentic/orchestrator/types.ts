@@ -13,7 +13,7 @@ export interface PipelineRequest {
     topic: string;
     title: string;
     jobId?: string;
-    orientation?: 'portrait' | 'landscape';
+    orientation?: 'portrait' | 'landscape' | 'square';
     voice?: string;
     musicQuery?: string;
     candidatesPerAsset?: number;
@@ -54,7 +54,7 @@ export interface PipelineRequest {
     /** Named visual preset ('cinematic' | 'reels' | 'documentary' | ...). */
     preset?: string;
     /** Override default aspect ratio. */
-    aspect?: '9:16' | '1:1' | '16:9';
+    aspect?: '9:16' | '1:1' | '16:9' | 'square';
     /** Enable/disable cinematic vignette edge darkening (default on). */
     vignette?: boolean;
     /** Enable animated kinetic lower-third text pops (default on). */

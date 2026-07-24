@@ -18,7 +18,7 @@ export interface AgenticCliJob {
     script?: string;
     /** Fallback topic when no custom script is provided. */
     topic?: string;
-    orientation?: 'portrait' | 'landscape';
+    orientation?: 'portrait' | 'landscape' | 'square';
     voice?: string;
     musicQuery?: string;
     /** Bind files from input/visuals/ to scenes (cycles if fewer than scenes). */
@@ -61,7 +61,7 @@ export interface AgenticCliJob {
     /** Named visual preset. */
     preset?: string;
     /** Override aspect ratio. */
-    aspect?: '9:16' | '1:1' | '16:9';
+    aspect?: '9:16' | '1:1' | '16:9' | 'square';
     /** Enable/disable vignette (default on). */
     vignette?: boolean;
     /** Enable kinetic lower-third text (default on). */

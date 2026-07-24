@@ -410,15 +410,20 @@ export async function searchPixabayVideos(
 export async function fetchVisualsForScene(
     keywords: string[],
     preferVideo: boolean,
-    orientation: 'portrait' | 'landscape' | 'none' = 'portrait',
+    orientation: 'portrait' | 'landscape' | 'none' | 'square' = 'portrait',
     _outputDir?: string,
     resultIndex: number = 0,
 ): Promise<MediaAsset | MediaAsset[] | null> {
     if (!keywords || keywords.length === 0) return null;
 
+    // 'square' is a valid final-frame aspect but the cache-key helpers and
+    // free-source adapters only understand portrait/landscape/none. Coerce it
+    // for those internal uses; Pexels searchVideos/searchImages below accept
+    // 'square' natively and get the original value.
+    const cacheOrientation = orientation === 'square' ? 'portrait' : orientation;
     const query = keywords.join(' ');
-    const cacheKey = `${buildCacheKey(query, orientation, preferVideo ? 'video' : 'image')}_r${resultIndex}`;
-    const legacyCacheKey = buildLegacyCacheKey(query, orientation);
+    const cacheKey = `${buildCacheKey(query, cacheOrientation, preferVideo ? 'video' : 'image')}_r${resultIndex}`;
+    const legacyCacheKey = buildLegacyCacheKey(query, cacheOrientation);
 
     const cache = getCache();
 
@@ -563,7 +568,7 @@ export async function fetchVisualsForScene(
 
     console.log(`  ✗ No visual assets found for "${query}" from any source — generating offline placeholder card.`);
     try {
-        return await generatePlaceholderAsset(query, orientation);
+        return await generatePlaceholderAsset(query, cacheOrientation);
     } catch (e) {
         console.log(`  ✗ Placeholder generation also failed: ${(e as Error).message}`);
         return null;

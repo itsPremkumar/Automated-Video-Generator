@@ -87,7 +87,7 @@ export interface AcquireDeps {
     fetchVisual: (
         keywords: string[],
         kind: 'image' | 'video',
-        orientation: 'portrait' | 'landscape',
+        orientation: 'portrait' | 'landscape' | 'square',
         sceneIndex?: number,
     ) => Promise<FetchedVisual[]>;
     /** Persists a URL to a local path; returns the final path. */

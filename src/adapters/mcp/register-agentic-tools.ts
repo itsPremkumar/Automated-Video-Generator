@@ -46,7 +46,7 @@ const state = new Map<
 
 function depsFor(): GatewayDeps {
     return {
-        fetchVisual: async (keywords: string[], kind: 'image' | 'video', orientation: 'portrait' | 'landscape') => {
+        fetchVisual: async (keywords: string[], kind: 'image' | 'video', orientation: 'portrait' | 'landscape' | 'square') => {
             const q = keywords.join(' ');
             const res = await fetchVisualsForScene(keywords, kind === 'video', orientation, q);
             if (!res) return [];

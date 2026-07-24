@@ -15,7 +15,7 @@ import { AgentBrain } from '../ai/brain.js';
 export interface PlanOptions {
     jobId: string;
     title: string;
-    orientation?: 'portrait' | 'landscape';
+    orientation?: 'portrait' | 'landscape' | 'square';
     voice?: string;
     musicQuery?: string;
 }

@@ -257,9 +257,10 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     let outW: number;
     let outH: number;
     const asp = job.aspect;
-    if (asp === '1:1') { outW = PORT; outH = PORT; }
+    if (asp === '1:1' || asp === 'square') { outW = PORT; outH = PORT; }
     else if (asp === '16:9') { outW = LAND; outH = Math.round(LAND * 9 / 16); }
     else if (asp === '9:16') { outW = PORT; outH = Math.round(PORT * 16 / 9); }
+    else if (job.orientation === 'square') { outW = PORT; outH = PORT; }
     else if (job.orientation === 'landscape') { outW = LAND; outH = Math.round(LAND * 9 / 16); }
     else { outW = PORT; outH = Math.round(PORT * 16 / 9); } // portrait default
 

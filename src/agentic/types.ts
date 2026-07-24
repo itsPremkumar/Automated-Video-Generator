@@ -74,7 +74,7 @@ export interface ScenePlan {
 export interface Plan {
     jobId: string;
     title: string;
-    orientation: 'portrait' | 'landscape';
+    orientation: 'portrait' | 'landscape' | 'square';
     voice: string;
     musicQuery: string;
     scenes: ScenePlan[];
@@ -132,7 +132,7 @@ export interface RenderManifestEntry {
 export interface RenderManifest {
     jobId: string;
     title: string;
-    orientation: 'portrait' | 'landscape';
+    orientation: 'portrait' | 'landscape' | 'square';
     voice: string;
     musicQuery: string;
     assets: RenderManifestEntry[];
