@@ -1,7 +1,9 @@
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
+import { execFileSync } from 'node:child_process';
 import { logInfo, resolveProjectPath } from '../../runtime';
+import { ffmpegPath } from '../ffmpeg';
 import { generateContent as ollamaGenerateContent } from '../ollama-client';
 import { searchOpenverseImages } from '../openverse-fetcher';
 import { freeVideoDownloader, freeVideoAdapter } from '../free-video/index';
@@ -262,6 +264,27 @@ export async function searchImages(
 }
 
 // ========================================================================
+// Retry helper — exponential backoff for transient network blips
+// ========================================================================
+
+export async function withRetry<T>(fn: () => Promise<T>, label: string, maxAttempts = 3): Promise<T> {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+            return await fn();
+        } catch (e) {
+            lastError = e;
+            if (attempt < maxAttempts - 1) {
+                const delay = Math.min(800 * Math.pow(2, attempt), 5000);
+                console.log(`  ↻ [RETRY ${attempt + 1}/${maxAttempts}] ${label} failed, waiting ${delay}ms…`);
+                await sleep(delay);
+            }
+        }
+    }
+    throw lastError;
+}
+
+// ========================================================================
 // Free image search (Openverse, Wikimedia, etc.) — FALLBACK only
 // ========================================================================
 
@@ -271,10 +294,11 @@ export async function searchFreeImages(
 ): Promise<MediaAsset[]> {
     const results: MediaAsset[] = [];
 
-    // Openverse via our fetcher
+    // Openverse via our fetcher — retry on transient blips so a single
+    // network hiccup doesn't drop the whole scene (zero-cost/no-key path).
     if (openverseEnabled()) {
         try {
-            const openverse = await searchOpenverseImages(query, count);
+            const openverse = await withRetry(() => searchOpenverseImages(query, count), `openverse:${query}`);
             for (const img of openverse) {
                 results.push({
                     type: 'image',
@@ -285,13 +309,16 @@ export async function searchFreeImages(
                 });
             }
         } catch (e) {
-            console.log(`⚠ [OPENVERSE] Search error: ${(e as Error).message}`);
+            console.log(`⚠ [OPENVERSE] Search error after retries: ${(e as Error).message}`);
         }
     }
 
-    // FreeImageAdapter (Wikimedia, Archive, etc.)
+    // FreeImageAdapter (Wikimedia, Archive, etc.) — same retry guard.
     try {
-        const sourceResults = await freeImageAdapter.searchAll(query, { count: Math.max(1, count - results.length) });
+        const sourceResults = await withRetry(
+            () => freeImageAdapter.searchAll(query, { count: Math.max(1, count - results.length) }),
+            `free-image:${query}`,
+        );
         for (const sr of sourceResults) {
             for (const img of sr.results) {
                 results.push({
@@ -304,7 +331,7 @@ export async function searchFreeImages(
             }
         }
     } catch (e) {
-        console.log(`⚠ [FREE-IMAGE] Search error: ${(e as Error).message}`);
+        console.log(`⚠ [FREE-IMAGE] Search error after retries: ${(e as Error).message}`);
     }
 
     if (results.length > 0) {
@@ -534,6 +561,52 @@ export async function fetchVisualsForScene(
         }
     } catch { /* give up */ }
 
-    console.log(`  ✗ No visual assets found for "${query}" from any source.`);
-    return null;
+    console.log(`  ✗ No visual assets found for "${query}" from any source — generating offline placeholder card.`);
+    try {
+        return await generatePlaceholderAsset(query, orientation);
+    } catch (e) {
+        console.log(`  ✗ Placeholder generation also failed: ${(e as Error).message}`);
+        return null;
+    }
+}
+
+// ========================================================================
+// Offline placeholder — guarantees a scene always has SOME visual
+// ========================================================================
+// When every network source fails (no Pexels key + free sources blip),
+// synthesize a local gradient card with the keyword burnt on it. This keeps
+// the slideshow at the correct scene count instead of silently dropping
+// scenes (which previously produced 1/3-scene degenerate videos).
+
+let _placeholderFont: string | undefined;
+function placeholderFont(): string {
+    if (_placeholderFont) return _placeholderFont;
+    for (const f of ['C:/Windows/Fonts/arial.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf']) {
+        if (fs.existsSync(f)) { _placeholderFont = f; return f; }
+    }
+    return 'C:/Windows/Fonts/arial.ttf';
+}
+
+async function generatePlaceholderAsset(
+    query: string,
+    orientation: 'portrait' | 'landscape' | 'none',
+): Promise<MediaAsset> {
+    const dir = resolveProjectPath('workspace', 'cache', 'placeholders');
+    fs.mkdirSync(dir, { recursive: true });
+    const safe = (query || 'scene').replace(/[^a-z0-9]+/gi, '_').slice(0, 40);
+    const out = path.join(dir, `ph_${safe}.png`);
+    if (fs.existsSync(out) && fs.statSync(out).size > 1000) {
+        return { type: 'image', url: out, width: 1280, height: 720, photographer: 'placeholder' };
+    }
+    const [W, H] = orientation === 'portrait' ? [720, 1280] : [1280, 720];
+    const label = query.length > 28 ? query.slice(0, 28) + '…' : query;
+    execFileSync(ffmpegPath(), [
+        '-y', '-v', 'error',
+        '-f', 'lavfi', '-i', `color=c=0x1a2b4c:s=${W}x${H},format=yuv420p`,
+        '-frames:v', '1',
+        '-vf', `drawtext=fontfile='${placeholderFont()}':text='${label.replace(/'/g, "'\\\\''")}':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2`,
+        out,
+    ], { timeout: 30000 });
+    if (!fs.existsSync(out)) throw new Error('placeholder PNG not created');
+    return { type: 'image', url: out, width: W, height: H, photographer: 'placeholder' };
 }
