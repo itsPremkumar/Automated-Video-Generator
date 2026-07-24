@@ -84,7 +84,13 @@ async function buildPlanOnly(job: AgenticCliJob, id: string): Promise<{ plan: Pl
             jobId: id,
             title: job.title,
             orientation: job.orientation ?? 'portrait',
-            voice: job.voice ?? 'en-US-GuyNeural',
+            // NOTE: default voice MUST match buildPlan()'s default
+            // ('en-US-JennyNeural'), otherwise an unset job.voice silently
+            // resolves to two different voices depending on entry point.
+            // 'en-US-GuyNeural' was the prior hardcoded default here and it
+            // is the voice that times out on a flaky Edge-TTS connection,
+            // so an unset voice would fail the whole voice stage. Pin Jenny.
+            voice: job.voice ?? 'en-US-JennyNeural',
             musicQuery: job.musicQuery,
         },
         parseScript,
