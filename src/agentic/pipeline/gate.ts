@@ -332,7 +332,11 @@ export async function verifyRenderedVideo(
                 fs.mkdirSync(frameDir, { recursive: true });
                 const frame = require('path').join(frameDir, 'f.jpg');
                 await new Promise<void>((res) => {
-                    const c = spawn(ffmpeg, ['-y', '-ss', '00:00:00.5', '-i', mp4Path, '-frames:v', '1', frame], {
+                    // -ss AFTER -i = output-accurate seek. Seeking BEFORE -i
+                    // uses input-fast seek which returns undecodeable/black
+                    // frames on J-cut / -itsoffset / shifted streams, silently
+                    // feeding the vision gate a garbage frame.
+                    const c = spawn(ffmpeg, ['-y', '-i', mp4Path, '-ss', '00:00:00.5', '-frames:v', '1', frame], {
                         stdio: 'ignore',
                     });
                     const t = setTimeout(() => {

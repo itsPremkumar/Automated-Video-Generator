@@ -53,7 +53,7 @@ export function exportPoster(input: string, atSec: number, outDir: string): stri
     const base = path.basename(input, path.extname(input));
     const out = path.join(outDir, `${base}_poster_${atSec}s.jpg`);
     try {
-        execFileSync(p, ['-y', '-ss', String(atSec), '-i', input, '-frames:v', '1', '-q:v', '3', out], { stdio: 'ignore', timeout: 60000 });
+        execFileSync(p, ['-y', '-i', input, '-ss', String(atSec), '-frames:v', '1', '-q:v', '3', out], { stdio: 'ignore', timeout: 60000 });
         return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : null;
     } catch { return null; }
 }

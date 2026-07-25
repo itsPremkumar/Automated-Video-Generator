@@ -252,7 +252,9 @@ function extractFrame(mp4: string, atSec: number, out: string): Promise<void> {
         try {
             const ffmpeg = require('ffmpeg-static');
             const { spawn } = require('child_process');
-            const c = spawn(ffmpeg, ['-y', '-ss', String(atSec), '-i', mp4, '-frames:v', '1', out], { stdio: 'ignore' });
+            // -ss AFTER -i = output-accurate seek so the critique vision model
+            // sees the real frame at atSec, not an undecodeable input-seek tail.
+            const c = spawn(ffmpeg, ['-y', '-i', mp4, '-ss', String(atSec), '-frames:v', '1', out], { stdio: 'ignore' });
             const t = setTimeout(() => {
                 try {
                     c.kill('SIGKILL');

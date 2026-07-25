@@ -21,7 +21,9 @@ export async function makeContactSheet(res: PipelineResult): Promise<string | nu
         else if (c.kind === 'video') {
             const frame = `${tmpDir}/cs_frame_${res.workspace.jobId}_${d.sceneIndex}.png`;
             try {
-                await runFfmpeg(['-y', '-ss', '00:00:00.1', '-i', c.localPath, '-frames:v', '1', frame]);
+                // -ss AFTER -i for output-accurate seek (avoids undecodeable
+                // frames on shifted/J-cut streams that break the contact sheet).
+                await runFfmpeg(['-y', '-i', c.localPath, '-ss', '00:00:00.1', '-frames:v', '1', frame]);
                 if (fs.existsSync(frame)) imgs.push(frame);
             } catch { /* skip unreadable video */ }
         }
