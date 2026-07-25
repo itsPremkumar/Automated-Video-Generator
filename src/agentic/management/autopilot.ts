@@ -23,6 +23,7 @@ import type { PipelineProgress, PipelineResult } from '../types.js';
 import { AgentBrain } from '../ai/brain.js';
 import { resolveWorkspacePath } from '../../shared/runtime/paths.js';
 import { pruneWorkspaces } from './workspace.js';
+import { recordRender } from './render-ledger.js';
 
 export interface AutoRunEvent {
     t: number;
@@ -174,6 +175,72 @@ export interface AutoRunOptions {
     ) => Promise<{ out: string; post: import('../pipeline/gate.js').PostRenderCheck | undefined; gatePass: boolean }>;
     /** Full customization surface (overrides the individual knobs above). */
     config?: import('../config.js').AgenticConfig;
+    /** Opt-in (default true): record the render outcome to the L3 render-ledger
+     *  so future renders of similar topics can be primed from what worked. Set
+     *  false to disable persistence (e.g. throwaway test runs). Recording is
+     *  always best-effort and never affects the render result. */
+    learn?: boolean;
+}
+
+/**
+ * Blend a PostRenderCheck into a 0..1 quality score for the render-ledger:
+ * fraction of gate checks that passed, with a small bonus when an AI/vision
+ * check is among the passers. Pure, defensive — never throws.
+ */
+function scorePostRender(post: import('../pipeline/gate.js').PostRenderCheck | undefined): number {
+    const checks = post?.checks ?? [];
+    if (checks.length === 0) return post?.pass ? 1 : 0;
+    const passed = checks.filter((c: any) => c.pass).length;
+    let score = passed / checks.length;
+    const visionOk = checks.some(
+        (c: any) => c.pass && /vision|ai content|ai verif/i.test(String(c.label ?? c.id)),
+    );
+    if (visionOk) score = Math.min(1, score + 0.05);
+    return Number(score.toFixed(3));
+}
+
+/**
+ * Persist a successful render to the L3 ledger. Best-effort: any failure is
+ * swallowed so learning can never break a render. Reads the creative choices
+ * from the pipeline request + resolved config.
+ */
+function learnFromRender(
+    req: PipelineRequest,
+    cfg: import('../config.js').AgenticConfig,
+    out: string,
+    post: import('../pipeline/gate.js').PostRenderCheck | undefined,
+    enabled: boolean,
+): void {
+    if (enabled === false) return;
+    try {
+        recordRender({
+            topic: req.topic,
+            title: req.title,
+            choices: {
+                orientation: (req as any).orientation ?? (cfg as any).orientation,
+                aspect: (req as any).aspect ?? (cfg as any).aspect,
+                paletteFilter: (req as any).paletteFilter ?? (cfg as any).paletteFilter,
+                captionTheme: (req as any).captionTheme ?? (cfg as any).captionTheme,
+                transition: (req as any).transition ?? (cfg as any).transition,
+                musicIntensity: (req as any).musicIntensity ?? (cfg as any).musicIntensity,
+                voice: req.voice ?? (cfg as any).voice,
+                preset: (cfg as any).preset,
+                videoType: (req as any).videoType ?? (cfg as any).videoType,
+                hookFirst: req.hookFirst ?? (cfg as any).hookFirst,
+            },
+            outcome: {
+                gatePass: !!post?.pass,
+                score: scorePostRender(post),
+                visionPass: post?.checks?.some(
+                    (c: any) => c.pass && /vision|ai content|ai verif/i.test(String(c.label ?? c.id)),
+                ),
+                durationSec: post?.probed?.durationSec,
+                outputPath: out,
+            },
+        });
+    } catch {
+        /* learning is best-effort — never break the render */
+    }
 }
 
 /**
@@ -247,6 +314,7 @@ export async function autoRunVideo(req: PipelineRequest, opts: AutoRunOptions = 
                 const ok = !!post?.pass;
                 if (ok) {
                     emit('info', `SUCCESS → ${r.out}`);
+                    learnFromRender(req, cfg, r.out, post, opts.learn !== false);
                     return {
                         topic: req.topic,
                         success: true,
@@ -382,6 +450,7 @@ export async function autoRunVideo(req: PipelineRequest, opts: AutoRunOptions = 
                 if (ok) {
                     const detail = post?.checks?.map((c: any) => c.id + ':' + (c.pass ? '✓' : '✗')).join(' ') ?? '';
                     emit('info', `SUCCESS → ${out} [${detail}]`);
+                    learnFromRender(req, cfg, out, post, opts.learn !== false);
                     return {
                         topic: req.topic,
                         success: true,

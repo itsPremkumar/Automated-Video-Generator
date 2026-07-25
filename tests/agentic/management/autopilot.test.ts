@@ -64,6 +64,7 @@ describe('autopilot P3 disk guard', () => {
             { topic: 't', title: 'x', backend: 'agent' },
             {
                 maxAttempts: 3,
+                learn: false,
                 runner: async () => {
                     pipelineCalled = true;
                     return { out: 'good.mp4', post: check(true, ['X7', 'X8', 'X9']), gatePass: true };
@@ -99,6 +100,7 @@ describe('autopilot retry loop (offline, injected runner)', () => {
             { topic: 't', title: 'x', backend: 'agent' },
             {
                 maxAttempts: 3,
+                learn: false,
                 runner: async () => {
                     calls++;
                     if (calls === 1) return { out: 'bad.mp4', post: check(false, ['X7', 'X8', 'X9']), gatePass: true };
@@ -118,6 +120,7 @@ describe('autopilot retry loop (offline, injected runner)', () => {
             { topic: 't', title: 'x', backend: 'agent' },
             {
                 maxAttempts: 3,
+                learn: false,
                 // Throw an unrelated error (does NOT match any diagnose rule) so
                 // the loop must stop after one attempt, not retry.
                 runner: async () => {
@@ -137,6 +140,7 @@ describe('autopilot retry loop (offline, injected runner)', () => {
             { topic: 't', title: 'x', backend: 'agent' },
             {
                 maxAttempts: 3,
+                learn: false,
                 runner: async () => {
                     calls++;
                     if (calls === 1) return { out: 'x.mp4', post: undefined, gatePass: false };
@@ -160,6 +164,7 @@ describe('autopilot batch (offline, injected runner)', () => {
             ],
             {
                 maxAttempts: 2,
+                learn: false,
                 runner: async () => ({ out: 'ok.mp4', post: check(true, ['X7', 'X8', 'X9']), gatePass: true }),
                 onEvent: () => {},
             },
@@ -180,6 +185,7 @@ describe('autopilot batch (offline, injected runner)', () => {
             ],
             {
                 maxAttempts: 1,
+                learn: false,
                 runner: async () => {
                     n++;
                     // Make the 2nd item always fail post-render (triggers soften, but maxAttempts=1 stops).
@@ -192,5 +198,47 @@ describe('autopilot batch (offline, injected runner)', () => {
         assert.equal(batch.total, 2);
         assert.equal(batch.succeeded, 1);
         assert.equal(batch.failed, 1);
+    });
+});
+
+describe('autopilot -> render-ledger (L3 learning wiring)', () => {
+    test('a successful run records its outcome, retrievable by bestFor', async () => {
+        const { bestFor, readLedger, ledgerPath } = require('../../../src/agentic/management/render-ledger.js');
+        // Unique topic so this assertion is isolated from other records.
+        const topic = 'zzq unique ledger wiring topic ' + Date.now();
+        const before = readLedger().length;
+        const report = await autoRunVideo(
+            { topic, title: 'Wiring Test' } as any,
+            {
+                maxAttempts: 1,
+                runner: async () => ({ out: 'wired.mp4', post: check(true, ['X7', 'X8', 'X9']), gatePass: true }),
+                onEvent: () => {},
+            },
+        );
+        assert.equal(report.success, true);
+        const after = readLedger().length;
+        assert.ok(after > before, `expected a new ledger record in ${ledgerPath()}`);
+        const match = bestFor(topic, {});
+        assert.ok(match, 'bestFor should retrieve the just-recorded render');
+        assert.equal(match.topic, topic);
+        assert.equal(match.outcome.gatePass, true);
+        assert.ok(match.outcome.score > 0);
+    });
+
+    test('learn:false disables recording', async () => {
+        const { readLedger } = require('../../../src/agentic/management/render-ledger.js');
+        const topic = 'zzq no-learn topic ' + Date.now();
+        const before = readLedger().length;
+        await autoRunVideo(
+            { topic, title: 'No Learn' } as any,
+            {
+                maxAttempts: 1,
+                learn: false,
+                runner: async () => ({ out: 'nolearn.mp4', post: check(true, ['X7', 'X8', 'X9']), gatePass: true }),
+                onEvent: () => {},
+            },
+        );
+        const after = readLedger().length;
+        assert.equal(after, before, 'learn:false must not write a record');
     });
 });
