@@ -24,6 +24,10 @@ import { AgentBrain } from '../ai/brain.js';
 import { resolveWorkspacePath } from '../../shared/runtime/paths.js';
 import { pruneWorkspaces } from './workspace.js';
 import { recordRender } from './render-ledger.js';
+// L3 self-improving read-side (standalone, additive): prime creative choices
+// from past proven renders. Behavior is identical to before when the ledger is
+// empty or the topic is unfamiliar — user-specified values always win.
+import { primeInputFromLedger, describePriming } from './ledger-prime.js';
 
 export interface AutoRunEvent {
     t: number;
@@ -254,10 +258,20 @@ export async function autoRunVideo(req: PipelineRequest, opts: AutoRunOptions = 
     delete process.env.AGENTIC_RENDER_SOFTEN;
     // Resolve the full customization surface (preset + overrides) into concrete knobs.
     const { resolveConfig } = await import('../config.js');
-    const cfg = resolveConfig({ ...(opts.config ?? {}), topic: req.topic, title: req.title });
+    // L3 read-side: if the ledger holds proven choices for a similar topic, fill
+    // the user-left-open fields BEFORE resolveConfig applies presets/defaults.
+    // User-specified values already win; empty ledger => strict no-op.
+    const primedInput = primeInputFromLedger({ ...(opts.config ?? {}) }, req.topic);
+    const cfg = resolveConfig({ ...primedInput, topic: req.topic, title: req.title });
     if (cfg.pruneWorkspaces) process.env.AGENTIC_KEEP_WORKSPACES = String(cfg.pruneWorkspaces);
     const events: AutoRunEvent[] = [];
     const fixesApplied: string[] = [];
+    // L3 observability: surface priming in the run report so operators can diagnose
+    // self-improvement actually firing (or confirm a clean no-op on first render).
+    const primedFrom = describePriming(primedInput);
+    if (primedFrom) {
+        events.push({ t: now(), level: 'info', msg: `L3 ledger prime: ${primedFrom}` });
+    }
     const emit = (level: AutoRunEvent['level'], msg: string) => {
         const e = { t: now(), level, msg };
         events.push(e);
