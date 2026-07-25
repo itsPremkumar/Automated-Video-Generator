@@ -9,6 +9,8 @@ release/
 output/
 .remotion/
 *.remotion
+/workspace/
+workspace/
 workspace/staging/
 workspace/tmp/
 workspace/cache/

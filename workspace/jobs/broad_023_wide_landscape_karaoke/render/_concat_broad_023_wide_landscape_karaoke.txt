@@ -1,2 +1,0 @@
-file 'C:/one/Automated-Video-Generator/workspace/jobs/broad_023_wide_landscape_karaoke/render/_seg_broad_023_wide_landscape_karaoke_0.mp4'
-file 'C:/one/Automated-Video-Generator/workspace/jobs/broad_023_wide_landscape_karaoke/render/_seg_broad_023_wide_landscape_karaoke_1.mp4'

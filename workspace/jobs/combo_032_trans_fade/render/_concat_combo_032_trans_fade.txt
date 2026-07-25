@@ -1,2 +1,0 @@
-file 'C:/one/Automated-Video-Generator/workspace/jobs/combo_032_trans_fade/render/_seg_combo_032_trans_fade_0.mp4'
-file 'C:/one/Automated-Video-Generator/workspace/jobs/combo_032_trans_fade/render/_seg_combo_032_trans_fade_1.mp4'

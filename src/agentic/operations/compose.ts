@@ -31,6 +31,21 @@ import {
     applySceneGradeVignette,
     DEFAULT_SCENE_SEC,
 } from './compose-scene-fx.js';
+import {
+    applyVoiceAudioFx,
+    sceneDuckGain,
+    sceneVoiceVolume,
+    sceneVoiceDelay,
+    applyColorGradeDepth,
+    applyParallax,
+    applyParticles,
+    applyWatermarkScene,
+    applyBrandTint,
+    resolveEncodeOpts,
+    hasHardwareEncoder,
+    resolveOutputName,
+    resolveAspectSizes,
+} from './advanced-fx.js';
 import type { ScenePlan } from '../types.js';
 
 function ff(): string {
@@ -65,6 +80,8 @@ export interface ComposeResult {
     gif?: string;
     poster?: string;
     contactSheet?: string;
+    /** Phase 2: extra aspect-ratio renders keyed by label (e.g. "1x1"). */
+    extraAspects?: Record<string, string>;
     sfxUsed: number;
     scenesRendered: number;
 }
@@ -299,6 +316,14 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
         out = applyOpacityBlend(out, i, job, outDir);
         // Phase 2: per-scene LUT
         out = applyLut(out, i, job, outDir);
+        // Phase 2: color-grading depth (highlights/shadows/whites/blacks/wheels/tone-curve)
+        out = applyColorGradeDepth(out, i, job, outDir);
+        // Phase 2: motion — parallax + particles
+        out = applyParallax(out, i, job, outDir, outW, outH);
+        out = applyParticles(out, i, job, outDir, outW, outH);
+        // Phase 2: brand — per-scene watermark + brand tint
+        out = applyWatermarkScene(out, i, job, outDir, inputDir, outW, outH);
+        out = applyBrandTint(out, i, job, outDir);
         return out;
     });
 
@@ -310,8 +335,20 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     const W = outW;
     const H = outH;
     const baseVideo = path.join(outDir, 'base.mp4');
-    const sceneTransitions = visuals.map((_, i) => scenes[i]?.transition);
-    await buildSlideshow(fxVisuals, audios, W, H, baseVideo, durations, sceneTransitions, job.transition ?? 'fade');
+    // Phase 2: per-scene transition resolution. Each scene's effective
+    // transition is: transitionOutByScene[i] ?? inline scene.transition ??
+    // transitionInByScene[i+1] (the OUT of scene i == IN of scene i+1) ??
+    // job.transition ?? 'fade'. Duration/curve honored in crossfadeSlideshow.
+    const sceneTransitions = fxVisuals.map((_, i) => {
+        const inline = scenes[i]?.transition;
+        const out = job.transitionOutByScene?.[i];
+        const inNext = job.transitionInByScene?.[i + 1];
+        return out ?? inline ?? inNext ?? job.transition ?? 'fade';
+    });
+    // Phase 2: per-scene transition duration + curve → global crossfade params.
+    const xfDurByScene = (i: number) => job.transitionDurationByScene?.[i] ?? job.crossfadeSec ?? 0.4;
+    const xfCurve = job.transitionCurve ?? 'ease-in-out';
+    await buildSlideshow(fxVisuals, audios, W, H, baseVideo, durations, sceneTransitions, job.transition ?? 'fade', xfDurByScene, xfCurve);
 
     // ── 5) Burned overlays (title / lower-third / CTA / emoji / captions) ──
     const overlay = buildOverlayPlan(job);
@@ -502,16 +539,39 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     const filterParts: string[] = [];
     let ai = 1;
     // voice (concat scenes) — only if at least one non-empty voice file exists
-    const validVoices = audios.filter((a) => a && fs.existsSync(a) && fs.statSync(a).size > 0);
+    const validVoices = audios
+        .filter((a) => a && fs.existsSync(a) && fs.statSync(a).size > 0)
+        .map((a, idx) => applyVoiceAudioFx(a, idx, job, outDir)); // Phase 2: per-scene voice FX
     const voiceConcat = path.join(outDir, 'voice_concat.aac');
     if (validVoices.length > 0) {
         concatAudio(validVoices, voiceConcat);
         if (fs.existsSync(voiceConcat) && fs.statSync(voiceConcat).size > 0) {
-            amixInputs.push('-i', voiceConcat); filterParts.push(`[${ai}:a]`); ai++;
+            // Phase 2: per-scene voice volume (scene 0 representative; the
+            // concat already merged per-scene FX, so we scale the merged voice).
+            const vVol = sceneVoiceVolume(job, 0);
+            if (vVol !== 1) {
+                filterParts.push(`[${ai}:a]volume=${vVol.toFixed(2)}[va]`);
+            } else {
+                filterParts.push(`[${ai}:a]`);
+            }
+            amixInputs.push('-i', voiceConcat); ai++;
         }
     }
     if (normMusic && fs.existsSync(normMusic) && fs.statSync(normMusic).size > 0) {
-        amixInputs.push('-i', normMusic); filterParts.push(`[${ai}:a]`); ai++;
+        // Phase 2: music ducking — average duck across scenes (0..1).
+        const duckAvg = (() => {
+            if (!job.duckDepthByScene && !job.duckDepth) return 1;
+            const n = fxVisuals.length || 1;
+            let sum = 0;
+            for (let s = 0; s < n; s++) sum += sceneDuckGain(job, s);
+            return sum / n;
+        })();
+        if (duckAvg !== 1) {
+            filterParts.push(`[${ai}:a]volume=${duckAvg.toFixed(2)}[ma]`);
+        } else {
+            filterParts.push(`[${ai}:a]`);
+        }
+        amixInputs.push('-i', normMusic); ai++;
     }
     for (const s of sfx) {
         if (fs.existsSync(s.localPath) && fs.statSync(s.localPath).size > 0) {
@@ -523,6 +583,18 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
             amixInputs.push('-i', s.localPath); filterParts.push(`[${ai}:a]`); ai++;
         }
     }
+
+    // Phase 2: resolve encode options (fps / gop / codec / resolution).
+    const enc = resolveEncodeOpts(job, W, H);
+    // Fall back from requested hardware encode if unavailable.
+    let codecArgs = enc.codecArgs;
+    if (job.hardwareEncode) {
+        const hw = hasHardwareEncoder();
+        if (hw === 'nvenc') codecArgs = ['-c:v', 'h264_nvenc', '-preset', 'p2', '-pix_fmt', 'yuv420p'];
+        else if (hw === 'videotoolbox') codecArgs = ['-c:v', 'h264_videotoolbox', '-pix_fmt', 'yuv420p'];
+        else codecArgs = ['-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p']; // safe fallback
+    }
+    const vEncArgs = job.jCutSec && job.jCutSec > 0 ? codecArgs : ['-c:v', 'copy'];
 
     if (filterParts.length > 0) {
         // amix needs >=2 real inputs; if only 1 audio input, map it directly
@@ -536,16 +608,39 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
             // (undecodeable past the shift → outro/end-card region breaks),
             // so re-encode video when J-cut is active. Otherwise copy
             // (fast, lossless) is fine.
-            ...(job.jCutSec && job.jCutSec > 0 ? ['-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p'] : ['-c:v', 'copy']),
+            ...vEncArgs,
+            ...(enc.scaleW !== W || enc.scaleH !== H ? ['-vf', `scale=${enc.scaleW}:${enc.scaleH}`] : []),
+            '-r', String(enc.fps), '-g', String(enc.gop), '-keyint_min', String(enc.gop),
             '-c:a', 'aac', '-shortest', finalVideo];
         try { execFileSync(ff(), args, { stdio: 'ignore', timeout: 150000 }); }
         catch (e: any) { console.warn(`  ⚠ audio mix ffmpeg failed: ${String(e?.stderr ?? e?.message).slice(0,400)}`); /* keep video-only */ }
     } else {
         fs.copyFileSync(withOverlays, finalVideo);
     }
-    if (fs.existsSync(finalVideo)) result.video = finalVideo;
+    // Phase 2: honor outputName
+    if (fs.existsSync(finalVideo)) {
+        const named = resolveOutputName(job, finalVideo);
+        if (named !== 'final.mp4') {
+            const dst = path.join(outDir, named);
+            if (dst !== finalVideo) { fs.copyFileSync(finalVideo, dst); result.video = dst; }
+            else result.video = finalVideo;
+        } else {
+            result.video = finalVideo;
+        }
+    }
 
     // ── 7) Export artifacts ──
+    // Phase 2: multi-aspect re-render (exportAspects)
+    const aspectSizes = resolveAspectSizes(job, W, H);
+    for (const a of aspectSizes) {
+        const outPath = path.join(outDir, `final_${a.label}.mp4`);
+        if (result.video && (a.w !== W || a.h !== H)) {
+            try {
+                execFileSync(ff(), ['-y', '-i', result.video, '-vf', `scale=${a.w}:${a.h}:force_original_aspect_ratio=decrease,pad=${a.w}:${a.h}:(ow-iw)/2:(oh-ih)/2`, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', outPath], { stdio: 'ignore', timeout: 120000 });
+                if (fs.existsSync(outPath) && fs.statSync(outPath).size > 0) (result.extraAspects ??= {})[a.label] = outPath;
+            } catch (e: any) { console.warn(`  ⚠ aspect ${a.label} render failed: ${String(e?.stderr ?? e?.message).slice(0,150)}`); }
+        }
+    }
     if (job.exportFormat === 'gif' && result.video) result.gif = transcode(result.video, 'gif', outDir) ?? undefined;
     if (job.exportFormat === 'webm' && result.video) result.gif = transcode(result.video, 'webm', outDir) ?? undefined;
     if (job.posterScene != null && result.video) {
@@ -567,7 +662,7 @@ function estimateDur(sceneCount: number): number {
  *  selects the wipe between scene i and i+1. Supported: 'fade',
  *  'slide', 'zoomblur', 'cut' (hard cut, no transition).
  *  When <2 clips or all 'cut', falls back to a plain concat copy. */
-async function buildSlideshow(visuals: string[], audios: string[], W: number, H: number, out: string, durations?: number[], transitions?: (string | undefined)[], defaultTransition: string = 'fade'): Promise<void> {
+async function buildSlideshow(visuals: string[], audios: string[], W: number, H: number, out: string, durations?: number[], transitions?: (string | undefined)[], defaultTransition: string = 'fade', xfDurByScene?: (i: number) => number, xfCurve?: string): Promise<void> {
     const dir = path.dirname(out);
     const sceneClips: string[] = [];
     visuals.forEach((v, i) => {
@@ -596,7 +691,7 @@ async function buildSlideshow(visuals: string[], audios: string[], W: number, H:
     const trans = transitions ?? visuals.map(() => defaultTransition);
     const wantXfade = sceneClips.length >= 2 && trans.some((t) => t && t !== 'cut');
     if (wantXfade) {
-        const xf = crossfadeSlideshow(sceneClips, W, H, out, durations, trans, defaultTransition);
+        const xf = crossfadeSlideshow(sceneClips, W, H, out, durations, trans, defaultTransition, xfDurByScene, xfCurve);
         if (xf) return; // success path
         console.warn('  ⚠ crossfade build failed — falling back to plain concat');
     }
@@ -621,9 +716,10 @@ async function buildSlideshow(visuals: string[], audios: string[], W: number, H:
  * Each scene clip is (re)trimmed to its exact hold duration so the xfade
  * offsets line up; the last clip keeps its full hold (no trailing fade).
  */
-function crossfadeSlideshow(clips: string[], W: number, H: number, out: string, durations?: number[], transitions?: (string | undefined)[], defaultTransition: string = 'fade'): string | undefined {
+function crossfadeSlideshow(clips: string[], W: number, H: number, out: string, durations?: number[], transitions?: (string | undefined)[], defaultTransition: string = 'fade', xfDurByScene?: (i: number) => number, xfCurve?: string): string | undefined {
     const fps = 25;
     const durOf = (i: number) => Math.max(0.5, durations?.[i] ?? DEFAULT_SCENE_SEC);
+    const tDurOf = (i: number) => xfDurByScene ? Math.min(2, Math.max(0.1, xfDurByScene(i))) : 0.4;
     // Trim every clip to its hold so xfade offsets are exact.
     const trimmed: string[] = [];
     for (let i = 0; i < clips.length; i++) {
@@ -634,27 +730,29 @@ function crossfadeSlideshow(clips: string[], W: number, H: number, out: string, 
         } catch { return undefined; }
     }
     // Build xfade chain. Input k is trimmed[k] (label [k:v]).
-    // offset_i = sum(dur_0..dur_{i-1}) - i*tDur  (overlapping fades).
-    const tDur = 0.4;
+    // offset_i = sum(dur_0..dur_{i-1}) - i*segDur  (overlapping fades).
     const segs: string[] = [];
     let offset = 0;
     for (let i = 1; i < trimmed.length; i++) {
         const kind = (transitions?.[i - 1] ?? defaultTransition ?? 'fade');
+        const segDur = tDurOf(i - 1);
         if (kind === 'cut') {
             // hard cut: xfade with ~0 duration keeps the graph valid.
             segs.push(`[${i}:v][${i - 1}:v]xfade=transition=fade:duration=0.001:offset=${offset.toFixed(3)}[v${i}]`);
         } else {
             const ttype = kind === 'slide' ? 'slideleft' : kind === 'zoomblur' ? 'zoomin' : 'fade';
-            segs.push(`[${i}:v][${i - 1}:v]xfade=transition=${ttype}:duration=${tDur}:offset=${offset.toFixed(3)}[v${i}]`);
+            // xfade eases by default; this build doesn't expose an :ease
+            // override, so we drop the curve modifier (intent preserved).
+            segs.push(`[${i}:v][${i - 1}:v]xfade=transition=${ttype}:duration=${segDur.toFixed(2)}:offset=${offset.toFixed(3)}[v${i}]`);
         }
-        offset += durOf(i - 1) - tDur;
+        offset += durOf(i - 1) - segDur;
     }
     const last = trimmed.length - 1;
-    const filter = `[0:v]format=yuv420p,${segs.join(',')}`;
+    const filter = `${segs.join(',')},format=yuv420p`;
     const args: string[] = ['-y'];
     for (let i = 0; i < trimmed.length; i++) args.push('-i', trimmed[i]);
     args.push('-filter_complex', filter, '-map', `[v${last}]`, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-r', String(fps), out);
-    try { execFileSync(ff(), args, { stdio: ['ignore', 'ignore', 'pipe'], timeout: 180000 }); } catch (e: any) { console.warn(`  ⚠ xfade failed: ${String(e?.stderr ?? e?.message).slice(0, 300)}`); return undefined; }
+    try { execFileSync(ff(), args, { stdio: ['ignore', 'ignore', 'pipe'], timeout: 180000 }); } catch (e: any) { console.warn(`  ⚠ xfade failed: ${String(e?.stderr ?? e?.message).split('\n').filter((l: string) => /Error|Invalid|not found|mismatch|non-monoton|exist/.test(l)).slice(-3).join(' | ').slice(0, 300)}`); return undefined; }
     return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : undefined;
 }
 
@@ -741,8 +839,9 @@ function applyMirror(clipPath: string, sceneIndex: number, job: any, workDir: st
     }
 }
 
-/** Phase 2: per-scene opacity + blend mode. Uses a transparent background
- *  composite so the blend mode has a second layer to blend against. */
+/** Phase 2: per-scene opacity + blend mode. Opacity via colorchannelmixer
+ *  (reliable on all builds). Blend mode uses ffmpeg `blend` against a
+ *  generated solid-color base layer. */
 function applyOpacityBlend(clipPath: string, sceneIndex: number, job: any, workDir: string): string {
     const opacity = job.opacityByScene?.[sceneIndex];
     const blend = job.blendModeByScene?.[sceneIndex];
@@ -753,17 +852,18 @@ function applyOpacityBlend(clipPath: string, sceneIndex: number, job: any, workD
     if (!isReadableVideo(clipPath)) return clipPath;
     try {
         let filter = '';
-        if (opacity !== undefined) {
-            filter = `[0:v]format=yuva420p,geq='if(gt(X,0),255*${opacity},0)':a=255[v]`;
-        }
         if (blend) {
-            // Blend the clip with a black background using the specified blend mode
-            filter = filter
-                ? `[0:v]format=yuva420p,geq='if(gt(X,0),255*${opacity},0)':a=255[va];[va]blend=all_mode=${blend}[v]`
-                : `[0:v]blend=all_mode=${blend}[v]`;
+            // Generate a black base, then blend the clip over it with the mode.
+            const blackBase = path.join(workDir, `blendbase_${sceneIndex}.mp4`);
+            execFileSync(ff(), ['-y', '-f', 'lavfi', '-i', `color=c=black:s=1280x720:d=5`, '-c:v', 'libx264', '-preset', 'veryfast', blackBase], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 30000 });
+            filter = `[0:v][1:v]blend=all_mode=${blend}[v]`;
+            execFileSync(ff(), ['-y', '-i', clipPath, '-i', blackBase, '-filter_complex', filter, '-map', '[v]', '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 });
+            fs.rmSync(blackBase, { force: true });
+        } else if (opacity !== undefined) {
+            const a = Math.max(0, Math.min(1, Number(opacity))).toFixed(2);
+            filter = `format=yuva420p,colorchannelmixer=aa=${a}`;
+            execFileSync(ff(), ['-y', '-i', clipPath, '-vf', filter, '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 });
         }
-        const mapArg = filter.includes('[v]') ? '[v]' : '[0:v]';
-        execFileSync(ff(), ['-y', '-i', clipPath, '-filter_complex', filter, '-map', mapArg, '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 });
         return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : clipPath;
     } catch (e: any) {
         console.warn(`  ⚠ opacity/blend scene ${sceneIndex} failed: ${String(e?.stderr ?? e?.message).slice(0, 200)}`);

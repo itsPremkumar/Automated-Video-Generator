@@ -1,2 +1,0 @@
-file 'C:/one/Automated-Video-Generator/workspace/jobs/combo_039_tags_full/render/_seg_combo_039_tags_full_0.mp4'
-file 'C:/one/Automated-Video-Generator/workspace/jobs/combo_039_tags_full/render/_seg_combo_039_tags_full_1.mp4'

@@ -1,2 +1,0 @@
-file 'C:/one/Automated-Video-Generator/workspace/jobs/combo_034_trans_zoomblur/render/_seg_combo_034_trans_zoomblur_0.mp4'
-file 'C:/one/Automated-Video-Generator/workspace/jobs/combo_034_trans_zoomblur/render/_seg_combo_034_trans_zoomblur_1.mp4'

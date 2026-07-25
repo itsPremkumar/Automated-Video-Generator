@@ -1,2 +1,0 @@
-file 'C:/one/Automated-Video-Generator/workspace/jobs/combo_023_voice_hi_in_swararaneural/render/_seg_combo_023_voice_hi_in_swararaneural_0.mp4'
-file 'C:/one/Automated-Video-Generator/workspace/jobs/combo_023_voice_hi_in_swararaneural/render/_seg_combo_023_voice_hi_in_swararaneural_1.mp4'

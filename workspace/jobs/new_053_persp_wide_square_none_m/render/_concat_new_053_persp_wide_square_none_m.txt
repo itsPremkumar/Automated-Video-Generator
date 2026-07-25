@@ -1,2 +1,0 @@
-file 'C:/one/Automated-Video-Generator/workspace/jobs/new_053_persp_wide_square_none_m/render/_seg_new_053_persp_wide_square_none_m_0.mp4'
-file 'C:/one/Automated-Video-Generator/workspace/jobs/new_053_persp_wide_square_none_m/render/_seg_new_053_persp_wide_square_none_m_1.mp4'

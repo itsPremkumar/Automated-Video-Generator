@@ -1,2 +1,0 @@
-file 'C:/one/Automated-Video-Generator/workspace/jobs/new_025_persp_closeup_landscape_burned_m/render/_seg_new_025_persp_closeup_landscape_burned_m_0.mp4'
-file 'C:/one/Automated-Video-Generator/workspace/jobs/new_025_persp_closeup_landscape_burned_m/render/_seg_new_025_persp_closeup_landscape_burned_m_1.mp4'
