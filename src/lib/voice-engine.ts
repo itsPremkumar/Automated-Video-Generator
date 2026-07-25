@@ -5,7 +5,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { spawnSync } from 'child_process';
+import { spawnSync, spawn } from 'child_process';
 import { logError, logInfo, logWarn, resolveProjectPath, resolveResourcePath } from '../runtime';
 import { EdgeTtsRuntime, VoiceEngineStatus, VoiceMetadata, WindowsSapiStatus } from './voice-types';
 
@@ -64,6 +64,71 @@ export function runPowerShellEncoded(
         ],
         { encoding: 'utf-8', env: envOverrides, shell: false, stdio: 'pipe', timeout, windowsHide: true },
     );
+}
+
+/**
+ * Async PowerShell runner with a HARD, guaranteed timeout.
+ *
+ * `spawnSync(..., { timeout })` on Windows is UNSAFE for long-lived
+ * commands: when powershell.exe spawns a conhost.exe grandchild that
+ * keeps the stdio pipe open, killing the direct child at the timeout does
+ * NOT make spawnSync return — the await hangs FOREVER (observed: the
+ * Windows-SAPI voiceover froze the whole render for 10+ minutes).
+ *
+ * This version spawns asynchronously, races a timer that KILLS THE PROCESS
+ * TREE (taskkill /F /T /PID) so no orphaned conhost survives, and
+ * always rejects/rejects-cleanly so the caller can fall back.
+ */
+export function runPowerShellEncodedAsync(
+    script: string,
+    envOverrides: NodeJS.ProcessEnv = process.env,
+    timeoutMs = 120000,
+): Promise<{ status: number | null; stdout: string; stderr: string; timedOut: boolean; error?: string }> {
+    return new Promise((resolve) => {
+        const child = spawn(
+            'powershell.exe',
+            [
+                '-NoProfile',
+                '-NonInteractive',
+                '-ExecutionPolicy',
+                'Bypass',
+                '-EncodedCommand',
+                encodePowerShellCommand(script),
+            ],
+            { encoding: 'utf-8', env: envOverrides, shell: false, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true } as any,
+        ) as unknown as import('child_process').ChildProcess;
+        if (!child) {
+            resolve({ status: null, stdout: '', stderr: 'failed to spawn powershell', timedOut: false });
+            return;
+        }
+        let stdout = '';
+        let stderr = '';
+        let killed = false;
+        const timer = setTimeout(() => {
+            killed = true;
+            try {
+                // Kill the whole tree — conhost.exe children too.
+                spawnSync('taskkill.exe', ['/F', '/T', '/PID', String(child.pid)], { windowsHide: true });
+            } catch { /* best effort */ }
+            try { child.kill('SIGKILL'); } catch { /* ignore */ }
+        }, timeoutMs);
+        child.stdout?.on('data', (d: Buffer | string) => { stdout += d.toString(); });
+        child.stderr?.on('data', (d: Buffer | string) => { stderr += d.toString(); });
+        child.on('error', (err) => { stderr += String(err); });
+        child.on('close', (code) => {
+            clearTimeout(timer);
+            resolve({ status: code, stdout, stderr, timedOut: killed });
+        });
+        // Safety: if somehow never closes, force-resolve at 2x timeout so the
+        // outer await can NEVER hang.
+        setTimeout(() => {
+            if (!child.killed && child.exitCode === null) {
+                try { spawnSync('taskkill.exe', ['/F', '/T', '/PID', String(child.pid)], { windowsHide: true }); } catch { /* */ }
+                try { child.kill('SIGKILL'); } catch { /* */ }
+                resolve({ status: null, stdout, stderr, timedOut: true });
+            }
+        }, timeoutMs * 2);
+    });
 }
 
 export function runningInPackagedDesktopMode(): boolean {
