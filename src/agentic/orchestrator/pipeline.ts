@@ -158,7 +158,11 @@ export async function runAgenticPipeline(
             }
         }
         emit({ stage: 'plan', percent: 100, message: `Bound ${req.localAssets.length} local asset(s) to ${plan.scenes.length} scenes` });
-    } else {
+    } else if (req.autoLocalAssets) {
+        // Opt-in ONLY. Without this flag we do NOT scan input/visuals/, because
+        // doing so unconditionally hijacked every stock-based job with whatever
+        // file happened to be there (e.g. one brand_cover.jpg bound to all
+        // scenes → every video was a flat swatch). Stock acquisition is default.
         try {
             const assetsDir = inputAssetPath();
             if (fs.existsSync(assetsDir)) {

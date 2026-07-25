@@ -22,6 +22,10 @@ export interface PipelineRequest {
     agent?: Partial<AgentBackendConfig>;
     dryRun?: boolean;
     localAssets?: string[];
+    /** Opt-in auto-detect of input/visuals/ media (default false). See
+     *  AgenticConfig.autoLocalAssets — off by default so stock acquisition is
+     *  not silently hijacked by whatever sits in input/visuals/. */
+    autoLocalAssets?: boolean;
     videoClips?: string[];
     personalAudio?: string[];
     defaultVisual?: string;

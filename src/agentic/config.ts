@@ -271,6 +271,13 @@ export interface AgenticConfig {
      *  addition to) fetched stock. Files are distributed round-robin across
      *  scenes; any scene without a matching local file falls back to fetching. */
     localAssets?: string[];
+    /** Opt-in: when true (and `localAssets` is not explicitly set), the pipeline
+     *  auto-detects every media file in input/visuals/ and binds them round-robin
+     *  to scenes. Default FALSE. Previously this auto-detect ran unconditionally,
+     *  which silently hijacked EVERY stock-based job with whatever happened to sit
+     *  in input/visuals/ (e.g. a single brand_cover.jpg → every scene became that
+     *  one image). Stock acquisition is the correct default; local reuse is opt-in. */
+    autoLocalAssets?: boolean;
     /** C6: user-supplied video clips (per-scene) used directly as scene visuals. */
     videoClips?: string[];
     /** C2: user-supplied voiceover audio (per-scene) used instead of TTS. */

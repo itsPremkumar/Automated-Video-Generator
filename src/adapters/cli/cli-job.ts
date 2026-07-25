@@ -23,6 +23,7 @@ export interface AgenticCliJob {
     musicQuery?: string;
     /** Bind files from input/visuals/ to scenes (cycles if fewer than scenes). */
     localAssets?: string[];
+    autoLocalAssets?: boolean;
     /** Bind video clips from input/visuals/ to scenes (prefers video). */
     videoClips?: string[];
     /** Per-scene personal audio overrides (files from input/voiceover/). */
@@ -264,6 +265,7 @@ export function buildPipelineRequest(job: AgenticCliJob, id: string, topic: stri
         voice: job.voice,
         musicQuery: job.musicQuery,
         localAssets: job.localAssets,
+        autoLocalAssets: job.autoLocalAssets,
         videoClips: job.videoClips,
         personalAudio: job.personalAudio,
         hookFirst: job.hookFirst ?? true,
