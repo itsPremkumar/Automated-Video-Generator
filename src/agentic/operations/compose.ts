@@ -258,7 +258,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     const { width: outW, height: outH } = resolveOutputSize(job);
 
     // ── 2) Per-clip visual FX (speed / stabilize / chromaKey / bw / blur / kenBurns)
-    //        then per-scene inline-tag grade + vignette. ──
+    //        then per-scene inline-tag grade + vignette + Phase 2 color adjustments. ──
     const fxVisuals = visuals.map((v, i) => {
         let out = applySceneFx(v, i, {
             clipSpeedByScene: job.clipSpeedByScene,
@@ -286,11 +286,19 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
             // upstream FX intermediate must not poison the whole chain).
             if (isReadableVideo(out)) {
                 try { execFileSync(ff(), ['-y', '-i', out, '-filter_complex', `[0:v]${pal}[v]`, '-map', '[v]', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', pf], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 }); if (fs.existsSync(pf) && fs.statSync(pf).size > 0) out = pf; else console.warn(`  ⚠ palette skipped: empty output for scene ${i}`); }
-                catch (e: any) { console.warn(`  ⚠ palette filter failed: ${(String(e?.stderr ?? e?.message)).split('\n').slice(-3).join(' | ').slice(0, 280)}`); }
+                catch (e: any) { console.warn(`  ⚠ palette filter failed: ${(String(e?.stderr ?? e?.message)).split('\\n').slice(-3).join(' | ').slice(0, 280)}`); }
             } else {
                 console.warn(`  ⚠ palette skipped: scene ${i} input not a readable video (upstream FX issue)`);
             }
         }
+        // Phase 2: per-scene color adjustments (contrast/saturation/brightness/gamma/colorTemp)
+        out = applyColorAdjustments(out, i, job, outDir);
+        // Phase 2: per-scene mirror/flip
+        out = applyMirror(out, i, job, outDir);
+        // Phase 2: per-scene opacity + blend mode
+        out = applyOpacityBlend(out, i, job, outDir);
+        // Phase 2: per-scene LUT
+        out = applyLut(out, i, job, outDir);
         return out;
     });
 
@@ -330,6 +338,51 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
         if (overlay.outro.showSubscribe) vf.push(txt('SUBSCRIBE', '(w-text_w)/2', 'H-th-30', 28, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: 400, enable: oEnable }));
         if (overlay.outro.hashtags?.length) vf.push(txt(overlay.outro.hashtags.join(' '), '(w-text_w)/2', 'h-40', 24, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: 400, enable: oEnable }));
     }
+    // Phase 2: per-scene text overlays (from textOverlayByScene)
+    scenes.forEach((sc, i) => {
+        if (!sc) return;
+        const overlayText = job.textOverlayByScene?.[i];
+        if (!overlayText || !overlayText.text) return;
+        const start = cumStart[i] ?? 0;
+        const end = start + (durations[i] ?? DEFAULT_SCENE_SEC);
+        const enable = `gte(t,${start.toFixed(2)})*lte(t,${end.toFixed(2)})`;
+        const fontSize = overlayText.fontSize ?? 48;
+        const color = overlayText.color ?? 'white';
+        const x = overlayText.x ?? '(w-text_w)/2';
+        const y = overlayText.y ?? '40';
+        const fontFile = resolveFontFile(undefined);
+        vf.push(drawTextFilter(overlayText.text, x, y, fontSize, color, {
+            fontFile,
+            weight: 700,
+            enable,
+            shadow: true,
+        }));
+    });
+    // Phase 2: per-scene CTA buttons (from ctaButtonByScene)
+    scenes.forEach((sc, i) => {
+        if (!sc) return;
+        const cta = job.ctaButtonByScene?.[i];
+        if (!cta || !cta.text) return;
+        const start = cumStart[i] ?? 0;
+        const end = start + (durations[i] ?? DEFAULT_SCENE_SEC);
+        const enable = `gte(t,${start.toFixed(2)})*lte(t,${end.toFixed(2)})`;
+        const fontSize = 32;
+        const fontFile = resolveFontFile(undefined, cta.borderColor ? 800 : 700);
+        const x = cta.x ?? '(w-text_w)/2';
+        const y = cta.y ?? 'H-th-60';
+        const w = cta.width ?? 200;
+        const h = cta.height ?? 60;
+        const color = cta.color ?? '#FF6B35';
+        const borderColor = cta.borderColor ?? 'white';
+        // Note: ffmpeg drawbox doesn't support rounded corners natively;
+        // borderRadius is accepted for API completeness but renders as a
+        // sharp-cornered rectangle. A rounded variant would need a separate
+        // overlay PNG or the pad+ellipse approach.
+        // Draw CTA button: rectangle + text
+        vf.push(`drawbox=x='${x}':y='${y}':w=${w}:h=${h}:color=${color.replace('#', '0x')}@0.9:t=fill:enable='${enable}'`);
+        vf.push(`drawbox=x='${x}':y='${y}':w=${w}:h=${h}:color=${borderColor.replace('#', '0x')}@0.9:t=4:enable='${enable}'`);
+        vf.push(drawTextFilter(cta.text, x, `H-th-60`, fontSize, 'white', { fontFile, weight: 700, enable, shadow: false }));
+    });
     // Emoji stickers: rasterize each emoji to a transparent PNG (with
     // fontcolor so Segoe UI Emoji renders the COLOR glyph on Windows),
     // then overlay it at its scene window.
@@ -613,6 +666,209 @@ function concatAudio(files: string[], out: string): void {
     // to silently drop the voiceover from the final mix). Encoding produces a
     // valid concatenated voice track.
     try { execFileSync(ff(), ['-y', '-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', list, '-c:a', 'aac', '-b:a', '192k', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 }); } catch (e: any) { console.warn(`  ⚠ audio concat failed: ${String(e?.stderr ?? e?.message).slice(0, 300)}`); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Phase 2 — Advanced per-scene effect helpers
+// These consume the new agentic-scripts.json fields that were previously
+// declared but never reached the ffmpeg render path.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** Phase 2: per-scene color adjustments (contrast/saturation/brightness/gamma/colorTemp).
+ *  Builds a single `eq` filter with only the parameters that are set for this scene. */
+function applyColorAdjustments(clipPath: string, sceneIndex: number, job: any, workDir: string): string {
+    if (!fs.existsSync(clipPath)) return clipPath;
+    const c = job.contrastByScene?.[sceneIndex];
+    const s = job.saturationByScene?.[sceneIndex];
+    const b = job.brightnessByScene?.[sceneIndex];
+    const g = job.gammaByScene?.[sceneIndex];
+    const temp = job.colorTempByScene?.[sceneIndex];
+    if (c === undefined && s === undefined && b === undefined && g === undefined && temp === undefined) return clipPath;
+    const eqParts: string[] = [];
+    if (c !== undefined) eqParts.push(`contrast=${c}`);
+    if (s !== undefined) eqParts.push(`saturation=${s}`);
+    if (b !== undefined) eqParts.push(`brightness=${b}`);
+    if (g !== undefined) eqParts.push(`gamma=${g}`);
+    // Color temperature: use colorbalance for warm/cool shifts
+    let colorBalance = '';
+    if (temp !== undefined) {
+        const kelvin = temp;
+        if (kelvin < 6500) {
+            // Warmer (more red): positive rs, negative bs
+            const shift = Math.min(0.15, (6500 - kelvin) / 6500 * 0.15);
+            colorBalance = `colorbalance=rs=${shift.toFixed(3)}:bs=-${(shift * 0.5).toFixed(3)}`;
+        } else if (kelvin > 6500) {
+            // Cooler (more blue): positive bs, negative rs
+            const shift = Math.min(0.15, (kelvin - 6500) / 10000 * 0.15);
+            colorBalance = `colorbalance=bs=${shift.toFixed(3)}:rs=-${(shift * 0.5).toFixed(3)}`;
+        }
+    }
+    const filters = eqParts.length > 0 ? `eq=${eqParts.join(':')}` : '';
+    const allFilters = [filters, colorBalance].filter(Boolean).join(',');
+    if (!allFilters) return clipPath;
+    const out = path.join(workDir, `color_${sceneIndex}.mp4`);
+    if (fs.existsSync(out)) fs.rmSync(out, { force: true });
+    if (!isReadableVideo(clipPath)) return clipPath;
+    try {
+        execFileSync(ff(), ['-y', '-i', clipPath, '-vf', allFilters, '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 });
+        return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : clipPath;
+    } catch (e: any) {
+        console.warn(`  ⚠ color adjustments scene ${sceneIndex} failed: ${String(e?.stderr ?? e?.message).slice(0, 200)}`);
+        return clipPath;
+    }
+}
+
+/** Phase 2: per-scene mirror/flip. */
+function applyMirror(clipPath: string, sceneIndex: number, job: any, workDir: string): string {
+    const mirror = job.mirrorByScene?.[sceneIndex];
+    if (!mirror || !fs.existsSync(clipPath)) return clipPath;
+    let filter: string;
+    switch (mirror) {
+        case 'horizontal': filter = 'hflip'; break;
+        case 'vertical': filter = 'vflip'; break;
+        case 'both': filter = 'hflip,vflip'; break;
+        default: return clipPath;
+    }
+    const out = path.join(workDir, `mirror_${sceneIndex}.mp4`);
+    if (fs.existsSync(out)) fs.rmSync(out, { force: true });
+    if (!isReadableVideo(clipPath)) return clipPath;
+    try {
+        execFileSync(ff(), ['-y', '-i', clipPath, '-vf', filter, '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 });
+        return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : clipPath;
+    } catch (e: any) {
+        console.warn(`  ⚠ mirror scene ${sceneIndex} failed: ${String(e?.stderr ?? e?.message).slice(0, 200)}`);
+        return clipPath;
+    }
+}
+
+/** Phase 2: per-scene opacity + blend mode. Uses a transparent background
+ *  composite so the blend mode has a second layer to blend against. */
+function applyOpacityBlend(clipPath: string, sceneIndex: number, job: any, workDir: string): string {
+    const opacity = job.opacityByScene?.[sceneIndex];
+    const blend = job.blendModeByScene?.[sceneIndex];
+    if (opacity === undefined && !blend) return clipPath;
+    if (!fs.existsSync(clipPath)) return clipPath;
+    const out = path.join(workDir, `blend_${sceneIndex}.mp4`);
+    if (fs.existsSync(out)) fs.rmSync(out, { force: true });
+    if (!isReadableVideo(clipPath)) return clipPath;
+    try {
+        let filter = '';
+        if (opacity !== undefined) {
+            filter = `[0:v]format=yuva420p,geq='if(gt(X,0),255*${opacity},0)':a=255[v]`;
+        }
+        if (blend) {
+            // Blend the clip with a black background using the specified blend mode
+            filter = filter
+                ? `[0:v]format=yuva420p,geq='if(gt(X,0),255*${opacity},0)':a=255[va];[va]blend=all_mode=${blend}[v]`
+                : `[0:v]blend=all_mode=${blend}[v]`;
+        }
+        const mapArg = filter.includes('[v]') ? '[v]' : '[0:v]';
+        execFileSync(ff(), ['-y', '-i', clipPath, '-filter_complex', filter, '-map', mapArg, '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 });
+        return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : clipPath;
+    } catch (e: any) {
+        console.warn(`  ⚠ opacity/blend scene ${sceneIndex} failed: ${String(e?.stderr ?? e?.message).slice(0, 200)}`);
+        return clipPath;
+    }
+}
+
+/** Phase 2: per-scene LUT (Look-Up Table) via ffmpeg's lut3d filter.
+ *  Looks for the LUT file in input/visuals/. */
+function applyLut(clipPath: string, sceneIndex: number, job: any, workDir: string): string {
+    const lut = job.lutByScene?.[sceneIndex];
+    if (!lut || !fs.existsSync(clipPath)) return clipPath;
+    const lutPath = path.resolve(process.cwd(), 'input', 'visuals', lut);
+    if (!fs.existsSync(lutPath)) {
+        console.warn(`  ⚠ LUT not found for scene ${sceneIndex}: ${lutPath}`);
+        return clipPath;
+    }
+    const out = path.join(workDir, `lut_${sceneIndex}.mp4`);
+    if (fs.existsSync(out)) fs.rmSync(out, { force: true });
+    if (!isReadableVideo(clipPath)) return clipPath;
+    try {
+        execFileSync(ff(), ['-y', '-i', clipPath, '-vf', `lut3d=${lutPath}`, '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 });
+        return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : clipPath;
+    } catch (e: any) {
+        console.warn(`  ⚠ LUT scene ${sceneIndex} failed: ${String(e?.stderr ?? e?.message).slice(0, 200)}`);
+        return clipPath;
+    }
+}
+
+/** Phase 2: per-scene text overlay. Burns text onto the scene at a specific
+ *  time window using drawtext with an enable expression. */
+function applyTextOverlay(clipPath: string, sceneIndex: number, job: any, workDir: string, W: number, H: number, cumStart: number, duration: number): string | null {
+    const overlay = job.textOverlayByScene?.[sceneIndex];
+    if (!overlay || !overlay.text) return null;
+    if (!fs.existsSync(clipPath)) return null;
+    const out = path.join(workDir, `text_${sceneIndex}.mp4`);
+    if (fs.existsSync(out)) fs.rmSync(out, { force: true });
+    if (!isReadableVideo(clipPath)) return null;
+    const start = cumStart;
+    const end = start + duration;
+    const enable = `gte(t,${start.toFixed(2)})*lte(t,${end.toFixed(2)})`;
+    const fontSize = overlay.fontSize ?? 48;
+    const color = overlay.color ?? 'white';
+    const x = overlay.x ?? '(w-text_w)/2';
+    const y = overlay.y ?? '40';
+    const fontFile = resolveFontFile(undefined);
+    const textFilter = `drawtext=fontfile='${fontFile}':text='${overlay.text.replace(/'/g, "'\\''")}':fontcolor=${color}:fontsize=${fontSize}:x=${x}:y=${y}:box=1:boxcolor=black@0.4:boxborderw=6:enable='${enable}'`;
+    try {
+        execFileSync(ff(), ['-y', '-i', clipPath, '-vf', textFilter, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 });
+        return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : null;
+    } catch (e: any) {
+        console.warn(`  ⚠ text overlay scene ${sceneIndex} failed: ${String(e?.stderr ?? e?.message).slice(0, 200)}`);
+        return null;
+    }
+}
+
+/** Phase 2: per-scene animated zoom (Ken Burns-like) using zoompan. */
+function applyAnimatedZoom(clipPath: string, sceneIndex: number, job: any, workDir: string, W: number, H: number, duration: number): string | null {
+    const zoom = job.zoomByScene?.[sceneIndex];
+    if (!zoom) return null;
+    if (!fs.existsSync(clipPath)) return null;
+    const out = path.join(workDir, `zoom_${sceneIndex}.mp4`);
+    if (fs.existsSync(out)) fs.rmSync(out, { force: true });
+    if (!isReadableVideo(clipPath)) return null;
+    const fps = 25;
+    const frames = Math.round(duration * fps);
+    const zStart = zoom.start;
+    const zEnd = zoom.end;
+    // Linear interpolation of zoom factor over the scene duration
+    const filter = `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},zoompan=z='if(lte(zoom,${zEnd}),min(zoom*1.005,${zEnd}),${zEnd})':d=${frames}:s=${W}x${H}:fps=${fps}`;
+    try {
+        execFileSync(ff(), ['-y', '-i', clipPath, '-vf', filter, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 90000 });
+        return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : null;
+    } catch (e: any) {
+        console.warn(`  ⚠ animated zoom scene ${sceneIndex} failed: ${String(e?.stderr ?? e?.message).slice(0, 200)}`);
+        return null;
+    }
+}
+
+/** Phase 2: per-scene pan animation using x/y offset expressions. */
+function applyPanAnimation(clipPath: string, sceneIndex: number, job: any, workDir: string, W: number, H: number, duration: number): string | null {
+    const pan = job.panByScene?.[sceneIndex];
+    if (!pan) return null;
+    if (!fs.existsSync(clipPath)) return null;
+    const out = path.join(workDir, `pan_${sceneIndex}.mp4`);
+    if (fs.existsSync(out)) fs.rmSync(out, { force: true });
+    if (!isReadableVideo(clipPath)) return null;
+    const fps = 25;
+    const frames = Math.round(duration * fps);
+    // Interpolate x/y from start to end as percentage of frame size
+    const startX = (pan.startX / 100) * W;
+    const startY = (pan.startY / 100) * H;
+    const endX = (pan.endX / 100) * W;
+    const endY = (pan.endY / 100) * H;
+    // Use crop with moving origin (pan effect)
+    const cropW = Math.min(W, Math.round(W * 0.8));
+    const cropH = Math.min(H, Math.round(H * 0.8));
+    const filter = `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${cropW}:${cropH}:x='if(between(n,0,${frames}),${startX}+(${endX}-${startX})*n/${frames},${startX})':y='if(between(n,0,${frames}),${startY}+(${endY}-${startY})*n/${frames},${startY})'`;
+    try {
+        execFileSync(ff(), ['-y', '-i', clipPath, '-vf', filter, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 90000 });
+        return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : null;
+    } catch (e: any) {
+        console.warn(`  ⚠ pan animation scene ${sceneIndex} failed: ${String(e?.stderr ?? e?.message).slice(0, 200)}`);
+        return null;
+    }
 }
 
 /**
