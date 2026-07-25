@@ -128,4 +128,17 @@ src/data/
 *.db
 voicebox.db
 
+# Python (bytecode, caches, virtualenvs) — regenerable, machine-specific
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
 
