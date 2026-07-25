@@ -1211,5 +1211,347 @@
       ]
     },
     "transition": "fade"
+  },
+  {
+    "id": "adv_vfx_full",
+    "title": "ADV: Full VFX stack — color grade + FX + motion + overlays",
+    "topic": "cinematic cityscape",
+    "script": "The city never sleeps. [Visual: city night] [Grade: cinematic] [Kinetic: on]\nNeon paints the dark. [Visual: skyline] [Grade: warm] [Kinetic: on]\nEnergy in every street. [Visual: street] [Grade: vivid] [Kinetic: on]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "captionTheme": "neon",
+    "kineticText": true,
+    "transition": "slide",
+    "transitionInByScene": {
+      "0": "fade",
+      "1": "zoomblur",
+      "2": "slide"
+    },
+    "transitionDurationByScene": {
+      "0": 0.5,
+      "1": 0.3,
+      "2": 0.7
+    },
+    "transitionCurve": "ease-in-out",
+    "contrastByScene": {
+      "0": 1.2,
+      "1": 1.1,
+      "2": 1.3
+    },
+    "saturationByScene": {
+      "0": 1.1,
+      "1": 1.3,
+      "2": 1.5
+    },
+    "brightnessByScene": {
+      "0": 0.05,
+      "1": 0.1,
+      "2": 0
+    },
+    "gammaByScene": {
+      "0": 1,
+      "1": 0.95,
+      "2": 1.1
+    },
+    "colorTempByScene": {
+      "0": 6500,
+      "1": 5500,
+      "2": 8000
+    },
+    "zoomByScene": {
+      "0": {
+        "start": 1,
+        "end": 1.2
+      },
+      "2": {
+        "start": 1.1,
+        "end": 1.3
+      }
+    },
+    "panByScene": {
+      "1": {
+        "startX": 0,
+        "startY": 0,
+        "endX": 50,
+        "endY": 30
+      }
+    },
+    "opacityByScene": {
+      "1": 0.9
+    },
+    "blendModeByScene": {
+      "2": "screen"
+    },
+    "mirrorByScene": {
+      "0": "horizontal"
+    },
+    "textOverlayByScene": {
+      "0": {
+        "text": "CITY NIGHTS",
+        "x": "(w-text_w)/2",
+        "y": "40",
+        "fontSize": 48,
+        "color": "yellow",
+        "duration": 3
+      }
+    },
+    "emojiOverlayByScene": {
+      "0": {
+        "emoji": "🌃",
+        "x": "W-96-24",
+        "y": "24",
+        "size": 96
+      },
+      "2": {
+        "emoji": "⚡",
+        "x": "W-96-24",
+        "y": "24",
+        "size": 80
+      }
+    },
+    "ctaButtonByScene": {
+      "2": {
+        "text": "FOLLOW",
+        "x": "(w-text_w)/2",
+        "y": "H-th-60",
+        "width": 200,
+        "height": 60,
+        "color": "#FF6B35",
+        "borderColor": "white",
+        "borderRadius": 30
+      }
+    },
+    "watermark": "logo.png",
+    "watermarkRotation": 5,
+    "watermarkShadow": {
+      "x": 3,
+      "y": 3,
+      "blur": 5,
+      "color": "black@0.5"
+    },
+    "brandTintByScene": {
+      "0": "#FF6B35@0.1"
+    },
+    "parallaxDepthByScene": {
+      "0": 5,
+      "1": 3
+    },
+    "particlesByScene": {
+      "0": "sparkles"
+    },
+    "progressBar": true,
+    "crossfadeSec": 0.5,
+    "exportFormat": "gif",
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "adv_audio_full",
+    "title": "ADV: Full audio stack — ducking + EQ + compressor + SFX + reverb",
+    "topic": "podcast tips",
+    "script": "Start your podcast with a hook. [Visual: podcast mic]\nUse a good microphone. [Visual: audio interface]\nEdit for clarity. [Visual: editing software]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "captionTheme": "bold",
+    "kineticText": true,
+    "duckDepth": 0.3,
+    "duckDepthByScene": {
+      "0": 0.2,
+      "1": 0.4,
+      "2": 0.3
+    },
+    "voiceVolumeByScene": {
+      "0": 1,
+      "1": 0.9,
+      "2": 1
+    },
+    "sfxOnCut": true,
+    "sfxByScene": {
+      "0": "whoosh",
+      "2": "ding"
+    },
+    "normalizeLufs": -16,
+    "loopMusic": true,
+    "audioFilterByScene": {
+      "0": "noise_reduction",
+      "1": "compressor"
+    },
+    "eqByScene": {
+      "0": [
+        {
+          "freq": 100,
+          "gain": 3,
+          "q": 1
+        },
+        {
+          "freq": 5000,
+          "gain": 2,
+          "q": 1
+        }
+      ]
+    },
+    "compressorByScene": {
+      "0": {
+        "threshold": -20,
+        "ratio": 4,
+        "attack": 10,
+        "release": 100,
+        "makeup": 3
+      }
+    },
+    "noiseReductionByScene": {
+      "0": 0.5,
+      "1": 0.3
+    },
+    "reverbByScene": {
+      "2": "medium_room"
+    },
+    "pitchShiftByScene": {
+      "1": 2
+    },
+    "tempoByScene": {
+      "2": 1.1
+    },
+    "voiceSpeed": 1.05,
+    "transition": "fade",
+    "progressBar": true,
+    "exportFormat": "mp4",
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "adv_color_full",
+    "title": "ADV: Full color grading — LUTs + color wheels + tone curves + highlights",
+    "topic": "vintage travel",
+    "script": "Old towns keep their secrets. [Visual: european street] [Grade: sepia]\nCobblestones remember every step. [Visual: alley] [Grade: sepia]\nTime slows here. [Visual: window] [Grade: sepia]",
+    "mode": "compose",
+    "orientation": "landscape",
+    "captionTheme": "softCard",
+    "kineticText": true,
+    "transition": "fade",
+    "lutByScene": {
+      "0": "vintage_lut.cube",
+      "1": "vintage_lut.cube",
+      "2": "vintage_lut.cube"
+    },
+    "toneCurveByScene": {
+      "0": "s-curve",
+      "1": "s-curve",
+      "2": "s-curve"
+    },
+    "highlightsByScene": {
+      "0": 0.3,
+      "1": 0.2,
+      "2": 0.4
+    },
+    "shadowsByScene": {
+      "0": 0.2,
+      "1": 0.3,
+      "2": 0.1
+    },
+    "whitesByScene": {
+      "0": 0.9,
+      "1": 0.85,
+      "2": 0.95
+    },
+    "blacksByScene": {
+      "0": 0.1,
+      "1": 0.15,
+      "2": 0.05
+    },
+    "colorWheelsByScene": {
+      "0": {
+        "shadows": "#3a2a1a",
+        "midtones": "#6b4f3a",
+        "highlights": "#a67c52"
+      },
+      "1": {
+        "shadows": "#2a1a0a",
+        "midtones": "#5b3f2a",
+        "highlights": "#966c42"
+      },
+      "2": {
+        "shadows": "#4a3a2a",
+        "midtones": "#7b5f4a",
+        "highlights": "#b68c62"
+      }
+    },
+    "contrastByScene": {
+      "0": 1.1,
+      "1": 1.15,
+      "2": 1.05
+    },
+    "saturationByScene": {
+      "0": 0.8,
+      "1": 0.85,
+      "2": 0.9
+    },
+    "gammaByScene": {
+      "0": 1.1,
+      "1": 1.05,
+      "2": 1.15
+    },
+    "colorTempByScene": {
+      "0": 5500,
+      "1": 5000,
+      "2": 6000
+    },
+    "progressBar": true,
+    "exportFormat": "mp4",
+    "contactSheet": true,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "adv_output_full",
+    "title": "ADV: Full output control — multi-aspect, quality, hardware encode",
+    "topic": "fitness routine",
+    "script": "Warm up before you sprint. [Visual: stretch]\nConsistency beats intensity. [Visual: gym]\nOne rep at a time. [Visual: trainer]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "captionTheme": "highContrast",
+    "kineticText": true,
+    "transition": "zoomblur",
+    "exportAspects": [
+      "9:16",
+      "16:9",
+      "1:1"
+    ],
+    "outputQuality": "high",
+    "frameRate": 30,
+    "keyframeInterval": 2,
+    "hardwareEncode": true,
+    "progressBar": true,
+    "exportFormat": "mp4",
+    "contactSheet": true,
+    "posterScene": 0,
+    "licenseFilter": "cc0"
+  },
+  {
+    "id": "adv_batch_full",
+    "title": "ADV: Batch automation — variants, priority, retry, tags",
+    "topic": "AI news",
+    "script": "A new model broke benchmarks today. [Visual: AI chip]\nOpen source is winning. [Visual: open source]\nThe future is local. [Visual: local server]",
+    "mode": "compose",
+    "orientation": "portrait",
+    "captionTheme": "neon",
+    "kineticText": true,
+    "transition": "slide",
+    "variants": 3,
+    "seed": 42,
+    "priority": "high",
+    "retryCount": 2,
+    "timeoutSec": 300,
+    "tags": [
+      "ai",
+      "news",
+      "tech",
+      "waveA"
+    ],
+    "description": "AI news brief with neon captions, 3 variants for A/B testing",
+    "specVersion": "2.0",
+    "progressBar": true,
+    "exportFormat": "mp4",
+    "contactSheet": true,
+    "licenseFilter": "cc0"
   }
 ]

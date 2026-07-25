@@ -139,4 +139,81 @@ export interface PipelineRequest {
     downloadUrl?: string;
     downloadUrlKind?: 'image' | 'video' | 'music' | 'sfx';
     rerender?: boolean;
+
+    // ═══════════════════════════════════════════════
+    //  Advanced Editing Control — Phase 2
+    //  Forwarded from agentic-scripts.json for the
+    //  compose.ts render path to consume.
+    // ═══════════════════════════════════════════════
+    duckDepthByScene?: Record<number, number>;
+    duckDepth?: number;
+    voiceVolumeByScene?: Record<number, number>;
+    voiceDelayByScene?: Record<number, number>;
+    sceneDurationByScene?: Record<number, number>;
+    minSceneDuration?: number;
+    maxSceneDuration?: number;
+    crossfadeSec?: number;
+    colorTempByScene?: Record<number, number>;
+    contrastByScene?: Record<number, number>;
+    saturationByScene?: Record<number, number>;
+    brightnessByScene?: Record<number, number>;
+    gammaByScene?: Record<number, number>;
+    rotateByScene?: Record<number, number>;
+    cropByScene?: Record<number, { x: number; y: number; width: number; height: number }>;
+    scaleByScene?: Record<number, { width: number; height: number } | 'fit'>;
+    positionByScene?: Record<number, { x: number; y: number }>;
+    opacityByScene?: Record<number, number>;
+    blendModeByScene?: Record<number, string>;
+    mirrorByScene?: Record<number, 'horizontal' | 'vertical' | 'both'>;
+    textOverlayByScene?: Record<number, { text: string; x?: string; y?: string; fontSize?: number; color?: string; duration?: number }>;
+    imageOverlayByScene?: Record<number, { image: string; x?: string; y?: string; width?: number; height?: number; opacity?: number }>;
+    emojiOverlayByScene?: Record<number, { emoji: string; x?: string; y?: string; size?: number }>;
+    animatedText?: { text: string; start: number; end: number; x?: string; y?: string; fontSize?: number; color?: string }[];
+    ctaButtonByScene?: Record<number, { text: string; x?: string; y?: string; width?: number; height?: number; color?: string; borderColor?: string; borderRadius?: number }>;
+    transitionInByScene?: Record<number, string>;
+    transitionOutByScene?: Record<number, string>;
+    transitionDurationByScene?: Record<number, number>;
+    transitionCurve?: string;
+    audioFilterByScene?: Record<number, string>;
+    eqByScene?: Record<number, { freq: number; gain: number; q: number }[]>;
+    compressorByScene?: Record<number, { threshold: number; ratio: number; attack: number; release: number; makeup: number }>;
+    noiseReductionByScene?: Record<number, number>;
+    reverbByScene?: Record<number, string>;
+    pitchShiftByScene?: Record<number, number>;
+    tempoByScene?: Record<number, number>;
+    lutByScene?: Record<number, string>;
+    toneCurveByScene?: Record<number, string>;
+    highlightsByScene?: Record<number, number>;
+    shadowsByScene?: Record<number, number>;
+    whitesByScene?: Record<number, number>;
+    blacksByScene?: Record<number, number>;
+    colorWheelsByScene?: Record<number, { shadows: string; midtones: string; highlights: string }>;
+    zoomByScene?: Record<number, { start: number; end: number }>;
+    panByScene?: Record<number, { startX: number; startY: number; endX: number; endY: number }>;
+    parallaxDepthByScene?: Record<number, number>;
+    particlesByScene?: Record<number, string>;
+    exportAspects?: ('9:16' | '16:9' | '1:1' | 'square')[];
+    outputName?: string;
+    outputQuality?: 'low' | 'medium' | 'high' | 'lossless';
+    halfResolution?: boolean;
+    doubleResolution?: boolean;
+    frameRate?: number;
+    keyframeInterval?: number;
+    hardwareEncode?: boolean;
+    watermarkByScene?: Record<number, { image: string; x?: string; y?: string; width?: number; height?: number; opacity?: number; position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center' }>;
+    watermarkRotation?: number;
+    watermarkShadow?: { x: number; y: number; blur: number; color: string };
+    brandTintByScene?: Record<number, string>;
+    verifyScenes?: boolean;
+    verifyFinal?: boolean;
+    minConfidence?: number;
+    verifyPrompt?: string;
+    variants?: number;
+    seed?: number;
+    priority?: 'low' | 'normal' | 'high' | 'urgent';
+    retryCount?: number;
+    timeoutSec?: number;
+    tags?: string[];
+    description?: string;
+    specVersion?: string;
 }

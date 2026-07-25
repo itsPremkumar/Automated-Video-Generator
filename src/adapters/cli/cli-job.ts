@@ -248,6 +248,183 @@ export interface AgenticCliJob {
     // ── Iterative Orchestration ──
     /** Re-render using cached assets only (skip acquire + voice). */
     rerender?: boolean;
+
+    // ═════════════════════════════════════════════════
+    //  Advanced Editing Control — Phase 2
+    //  High-level, declarative video editing signals that
+    //  compose.ts bakes into the final render via ffmpeg.
+    //  All optional, off by default — backward compatible.
+    // ═════════════════════════════════════════════════
+
+    // ── Audio Ducking & Mixing ──
+    /** Per-scene music ducking depth override (0.0–1.0). When set, the
+     *  music volume drops to this level during speech in that scene. */
+    duckDepthByScene?: Record<number, number>;
+    /** Global ducking depth (0.0–1.0) when musicIntensity is not enough. */
+    duckDepth?: number;
+    /** Per-scene voice volume override (0.0–1.0) for balancing narration
+     *  against music/SFX. */
+    voiceVolumeByScene?: Record<number, number>;
+    /** Delay (seconds) before voice starts in each scene (for precise
+     *  lip-sync with stock footage). */
+    voiceDelayByScene?: Record<number, number>;
+
+    // ── Scene Timing & Pacing ──
+    /** Per-scene hold duration override (seconds). When set, overrides the
+     *  auto-calculated duration from voiceover length. */
+    sceneDurationByScene?: Record<number, number>;
+    /** Minimum scene duration (seconds). Scenes shorter than this are padded. */
+    minSceneDuration?: number;
+    /** Maximum scene duration (seconds). Scenes longer than this are trimmed. */
+    maxSceneDuration?: number;
+    /** Global crossfade duration between scenes (seconds). Default 0.4. */
+    crossfadeSec?: number;
+
+    // ── Visual Effects (Advanced) ──
+    /** Per-scene color temperature (Kelvin). Warmer = lower K, cooler = higher K. */
+    colorTempByScene?: Record<number, number>;
+    /** Per-scene contrast adjustment (-1.0 to 2.0, default 1.0). */
+    contrastByScene?: Record<number, number>;
+    /** Per-scene saturation adjustment (0.0 to 3.0, default 1.0). */
+    saturationByScene?: Record<number, number>;
+    /** Per-scene brightness adjustment (-1.0 to 1.0, default 0.0). */
+    brightnessByScene?: Record<number, number>;
+    /** Per-scene gamma adjustment (0.1 to 3.0, default 1.0). */
+    gammaByScene?: Record<number, number>;
+    /** Per-scene rotation (degrees). 90/180/270 for standard, arbitrary for custom. */
+    rotateByScene?: Record<number, number>;
+    /** Per-scene crop box: {x, y, width, height} in pixels. */
+    cropByScene?: Record<number, { x: number; y: number; width: number; height: number }>;
+    /** Per-scene scale override: {width, height} or "fit" to maintain aspect. */
+    scaleByScene?: Record<number, { width: number; height: number } | 'fit'>;
+    /** Per-scene position offset: {x, y} in pixels (for compositing). */
+    positionByScene?: Record<number, { x: number; y: number }>;
+    /** Per-scene opacity (0.0–1.0) for overlay/transparency effects. */
+    opacityByScene?: Record<number, number>;
+    /** Per-scene blend mode: 'normal' | 'multiply' | 'screen' | 'overlay' | 'softlight'. */
+    blendModeByScene?: Record<number, string>;
+    /** Per-scene mirror/flip: 'horizontal' | 'vertical' | 'both'. */
+    mirrorByScene?: Record<number, 'horizontal' | 'vertical' | 'both'>;
+
+    // ── Overlay & Text (Advanced) ──
+    /** Per-scene text overlay: {text, x, y, fontSize, color, duration}. */
+    textOverlayByScene?: Record<number, { text: string; x?: string; y?: string; fontSize?: number; color?: string; duration?: number }>;
+    /** Per-scene image overlay: {image, x, y, width, height, opacity}. */
+    imageOverlayByScene?: Record<number, { image: string; x?: string; y?: string; width?: number; height?: number; opacity?: number }>;
+    /** Per-scene emoji overlay with custom position and size. */
+    emojiOverlayByScene?: Record<number, { emoji: string; x?: string; y?: string; size?: number }>;
+    /** Animated text sequence: array of {text, start, end} for kinetic reveals. */
+    animatedText?: { text: string; start: number; end: number; x?: string; y?: string; fontSize?: number; color?: string }[];
+    /** Per-scene CTA button: {text, x, y, width, height, color, borderColor, borderRadius}. */
+    ctaButtonByScene?: Record<number, { text: string; x?: string; y?: string; width?: number; height?: number; color?: string; borderColor?: string; borderRadius?: number }>;
+
+    // ── Transitions (Advanced) ──
+    /** Per-scene transition IN type: 'fade' | 'slide' | 'zoomblur' | 'cut' | 'push' | 'wipe' | 'cube'. */
+    transitionInByScene?: Record<number, string>;
+    /** Per-scene transition OUT type. */
+    transitionOutByScene?: Record<number, string>;
+    /** Per-scene transition duration (seconds). */
+    transitionDurationByScene?: Record<number, number>;
+    /** Custom transition curve: 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear'. */
+    transitionCurve?: string;
+
+    // ── Audio Effects ──
+    /** Per-scene audio filter: 'bass_boost' | 'treble_boost' | 'noise_reduction' | 'compressor' | 'eq'. */
+    audioFilterByScene?: Record<number, string>;
+    /** Per-scene EQ bands: [{freq, gain, q}] for parametric EQ. */
+    eqByScene?: Record<number, { freq: number; gain: number; q: number }[]>;
+    /** Per-scene compressor settings: {threshold, ratio, attack, release, makeup}. */
+    compressorByScene?: Record<number, { threshold: number; ratio: number; attack: number; release: number; makeup: number }>;
+    /** Per-scene noise reduction strength (0.0–1.0). */
+    noiseReductionByScene?: Record<number, number>;
+    /** Per-scene reverb: 'small_room' | 'medium_room' | 'large_hall' | 'cathedral' | 'plate'. */
+    reverbByScene?: Record<number, string>;
+    /** Per-scene pitch shift in semitones (independent of voicePitchSemitones). */
+    pitchShiftByScene?: Record<number, number>;
+    /** Per-scene audio tempo (independent of voiceSpeed). */
+    tempoByScene?: Record<number, number>;
+
+    // ── Color Grading (Advanced) ──
+    /** Per-scene LUT (Look-Up Table) filename in input/visuals/. */
+    lutByScene?: Record<number, string>;
+    /** Per-scene tone curve: 'linear' | 's-curve' | 'reverse-s' | 'high-contrast' | 'low-contrast'. */
+    toneCurveByScene?: Record<number, string>;
+    /** Per-scene highlights recovery (0.0–1.0). */
+    highlightsByScene?: Record<number, number>;
+    /** Per-scene shadows lift (0.0–1.0). */
+    shadowsByScene?: Record<number, number>;
+    /** Per-scene whites clip point (0.0–1.0). */
+    whitesByScene?: Record<number, number>;
+    /** Per-scene blacks clip point (0.0–1.0). */
+    blacksByScene?: Record<number, number>;
+    /** Per-scene color wheels: {shadows, midtones, highlights} as RGB hex. */
+    colorWheelsByScene?: Record<number, { shadows: string; midtones: string; highlights: string }>;
+
+    // ── Motion Graphics ──
+    /** Per-scene animated zoom: {start, end} as multipliers (e.g. {1.0, 1.5}). */
+    zoomByScene?: Record<number, { start: number; end: number }>;
+    /** Per-scene pan: {startX, startY, endX, endY} as percentages (0–100). */
+    panByScene?: Record<number, { startX: number; startY: number; endX: number; endY: number }>;
+    /** Per-scene parallax depth (0–10) for 2.5D effect. */
+    parallaxDepthByScene?: Record<number, number>;
+    /** Per-scene particle effect: 'snow' | 'sparkles' | 'rain' | 'fireflies'. */
+    particlesByScene?: Record<number, string>;
+
+    // ── Output Control ──
+    /** Render multiple aspect ratios in one pass: ['9:16', '16:9', '1:1']. */
+    exportAspects?: ('9:16' | '16:9' | '1:1' | 'square')[];
+    /** Custom output filename (without extension). */
+    outputName?: string;
+    /** Output quality: 'low' | 'medium' | 'high' | 'lossless'. */
+    outputQuality?: 'low' | 'medium' | 'high' | 'lossless';
+    /** Render at half resolution for faster previews. */
+    halfResolution?: boolean;
+    /** Render at double resolution for high-DPI output. */
+    doubleResolution?: boolean;
+    /** Frame rate override (default 25). */
+    frameRate?: number;
+    /** Keyframe interval (seconds). Lower = better seeking, larger files. */
+    keyframeInterval?: number;
+    /** Enable hardware encoding (h264_nvenc on NVIDIA, h264_videotoolbox on Apple). */
+    hardwareEncode?: boolean;
+
+    // ── Watermark & Branding (Advanced) ──
+    /** Per-scene watermark: {image, x, y, width, height, opacity, position}. */
+    watermarkByScene?: Record<number, { image: string; x?: string; y?: string; width?: number; height?: number; opacity?: number; position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center' }>;
+    /** Watermark rotation (degrees). */
+    watermarkRotation?: number;
+    /** Watermark drop shadow: {x, y, blur, color}. */
+    watermarkShadow?: { x: number; y: number; blur: number; color: string };
+    /** Per-scene brand color tint (hex) applied as an overlay. */
+    brandTintByScene?: Record<number, string>;
+
+    // ── AI Verification (Advanced) ──
+    /** Verify each scene's visual matches its keywords (opt-in AI check). */
+    verifyScenes?: boolean;
+    /** Verify final render matches the script's intent (opt-in AI check). */
+    verifyFinal?: boolean;
+    /** Minimum AI confidence threshold (0–10) for asset approval. */
+    minConfidence?: number;
+    /** Custom verification prompt for the AI model. */
+    verifyPrompt?: string;
+
+    // ── Batch & Automation ──
+    /** Generate N variants of this job with different random seeds. */
+    variants?: number;
+    /** Random seed for reproducible variant generation. */
+    seed?: number;
+    /** Priority for batch scheduling: 'low' | 'normal' | 'high' | 'urgent'. */
+    priority?: 'low' | 'normal' | 'high' | 'urgent';
+    /** Auto-retry failed jobs N times. */
+    retryCount?: number;
+    /** Timeout (seconds) for this job's render. */
+    timeoutSec?: number;
+    /** Tags for organizing jobs (e.g. ["tiktok", "cinematic", "waveA"]). */
+    tags?: string[];
+    /** Description for documentation/organization. */
+    description?: string;
+    /** Version of the job spec format (for migration). */
+    specVersion?: string;
 }
 
 /**
@@ -347,5 +524,77 @@ export function buildPipelineRequest(job: AgenticCliJob, id: string, topic: stri
         personas: job.personas,
         defaultPersona: job.defaultPersona,
         scenePersonas: job.scenePersonas,
+        // Phase 2 — Advanced Editing Control
+        duckDepthByScene: job.duckDepthByScene,
+        duckDepth: job.duckDepth,
+        voiceVolumeByScene: job.voiceVolumeByScene,
+        voiceDelayByScene: job.voiceDelayByScene,
+        sceneDurationByScene: job.sceneDurationByScene,
+        minSceneDuration: job.minSceneDuration,
+        maxSceneDuration: job.maxSceneDuration,
+        crossfadeSec: job.crossfadeSec,
+        colorTempByScene: job.colorTempByScene,
+        contrastByScene: job.contrastByScene,
+        saturationByScene: job.saturationByScene,
+        brightnessByScene: job.brightnessByScene,
+        gammaByScene: job.gammaByScene,
+        rotateByScene: job.rotateByScene,
+        cropByScene: job.cropByScene,
+        scaleByScene: job.scaleByScene,
+        positionByScene: job.positionByScene,
+        opacityByScene: job.opacityByScene,
+        blendModeByScene: job.blendModeByScene,
+        mirrorByScene: job.mirrorByScene,
+        textOverlayByScene: job.textOverlayByScene,
+        imageOverlayByScene: job.imageOverlayByScene,
+        emojiOverlayByScene: job.emojiOverlayByScene,
+        animatedText: job.animatedText,
+        ctaButtonByScene: job.ctaButtonByScene,
+        transitionInByScene: job.transitionInByScene,
+        transitionOutByScene: job.transitionOutByScene,
+        transitionDurationByScene: job.transitionDurationByScene,
+        transitionCurve: job.transitionCurve,
+        audioFilterByScene: job.audioFilterByScene,
+        eqByScene: job.eqByScene,
+        compressorByScene: job.compressorByScene,
+        noiseReductionByScene: job.noiseReductionByScene,
+        reverbByScene: job.reverbByScene,
+        pitchShiftByScene: job.pitchShiftByScene,
+        tempoByScene: job.tempoByScene,
+        lutByScene: job.lutByScene,
+        toneCurveByScene: job.toneCurveByScene,
+        highlightsByScene: job.highlightsByScene,
+        shadowsByScene: job.shadowsByScene,
+        whitesByScene: job.whitesByScene,
+        blacksByScene: job.blacksByScene,
+        colorWheelsByScene: job.colorWheelsByScene,
+        zoomByScene: job.zoomByScene,
+        panByScene: job.panByScene,
+        parallaxDepthByScene: job.parallaxDepthByScene,
+        particlesByScene: job.particlesByScene,
+        exportAspects: job.exportAspects,
+        outputName: job.outputName,
+        outputQuality: job.outputQuality,
+        halfResolution: job.halfResolution,
+        doubleResolution: job.doubleResolution,
+        frameRate: job.frameRate,
+        keyframeInterval: job.keyframeInterval,
+        hardwareEncode: job.hardwareEncode,
+        watermarkByScene: job.watermarkByScene,
+        watermarkRotation: job.watermarkRotation,
+        watermarkShadow: job.watermarkShadow,
+        brandTintByScene: job.brandTintByScene,
+        verifyScenes: job.verifyScenes,
+        verifyFinal: job.verifyFinal,
+        minConfidence: job.minConfidence,
+        verifyPrompt: job.verifyPrompt,
+        variants: job.variants,
+        seed: job.seed,
+        priority: job.priority,
+        retryCount: job.retryCount,
+        timeoutSec: job.timeoutSec,
+        tags: job.tags,
+        description: job.description,
+        specVersion: job.specVersion,
     };
 }
