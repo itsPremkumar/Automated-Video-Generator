@@ -90,7 +90,13 @@ function buildCinematic(durationSec: number) {
             '[0:a][1:a]amix=inputs=2:duration=longest:normalize=0[base]',
             '[base]volume=0.06[basev]',
             '[basev][stringspad]amix=inputs=2:duration=longest:normalize=0[mix]',
-            '[mix]volume=0.15:eval=frame:enable=\'gte(t,0)\',volume=0.15*min(t/4,1):eval=frame:enable=\'lt(t,4)\'[swell]',
+            // Single volume filter with a time-ramped gain: silent-ish at t=0,
+            // swelling to full over the first 4s. The comma inside min() MUST be
+            // escaped (\,) or ffmpeg parses it as a filterchain separator
+            // (EINVAL). Previously this was two concatenated `volume=` filters
+            // with an unescaped comma, which ffmpeg always rejected — sending
+            // every cinematic render to the fallback ambient tone.
+            "[mix]volume=0.15*min(t/4\\,1):eval=frame[swell]",
             '[swell][4:a]amix=inputs=2:duration=longest:normalize=1[noise]',
             '[noise]alimiter=limit=0.55:asc=1:level=disabled[out]',
         ].join('; '),

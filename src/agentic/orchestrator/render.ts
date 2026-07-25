@@ -75,11 +75,13 @@ export function buildDuckExpression(
             const delta = (full - d).toFixed(3);
             // ffmpeg expression commas stay RAW — `between(t,a,b)` is a function
             // call, not a filterchain, so escaping the commas (e.g. `\,`) would
-            // make ffmpeg reject the expression. Each speech segment is gated by
-            // gt(between(t,s,e)) so volume = full when silent, full-delta when
-            // speaking. (Previously emitted via String.raw with `\\\\` which
-            // injected stray backslashes and dropped the gt() wrapper.)
-            return `${delta}*gt(between(t,${x.s.toFixed(3)},${x.e.toFixed(3)}))`;
+            // make ffmpeg reject the expression. `between(t,s,e)` already returns
+            // 1 while speaking and 0 while silent, so it is used DIRECTLY as the
+            // gate: volume = full when silent, full-delta when speaking. (An
+            // earlier revision wrapped it in gt(between(...)) — but gt() needs
+            // TWO args, so ffmpeg rejected the whole expression and the audio
+            // filter_complex failed on every ducked render.)
+            return `${delta}*between(t,${x.s.toFixed(3)},${x.e.toFixed(3)})`;
         })
         .filter(Boolean)
         .join('+');

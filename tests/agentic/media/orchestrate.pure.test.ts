@@ -24,12 +24,15 @@ test('buildDuckExpression returns null when no caption segments', () => {
     assert.strictEqual(buildDuckExpression([], 0.18, 0.06), null);
 });
 
-test('buildDuckExpression builds a summed between()*gt duck term', () => {
+test('buildDuckExpression builds a summed between() duck term (valid ffmpeg volume expr)', () => {
     const out = buildDuckExpression([{ durationSec: 4, captionSegments: [{ startMs: 0, endMs: 1000 }] }], 0.18, 0.06);
     assert.ok(out, 'expected a non-null expression');
-    // full - (full-duck)*gt(...)
-    assert.ok(out!.startsWith('0.18-0.120*gt('), `got: ${out}`);
-    assert.ok(out!.includes('between(t\\,0.000\\,1.000)'), `got: ${out}`);
+    // full - (full-duck)*between(t,s,e)  — commas RAW, no gt() wrapper.
+    assert.ok(out!.startsWith('0.18-0.120*between(t,'), `got: ${out}`);
+    assert.ok(out!.includes('between(t,0.000,1.000)'), `got: ${out}`);
+    // Regression guards: the two historical bugs must never come back.
+    assert.ok(!out!.includes('gt('), `gt() wrapper must be gone: ${out}`);
+    assert.ok(!out!.includes('\\,'), `commas must be raw, not escaped: ${out}`);
 });
 
 test('buildDuckExpression accumulates offsets across multiple scenes', () => {
@@ -43,7 +46,32 @@ test('buildDuckExpression accumulates offsets across multiple scenes', () => {
     );
     assert.ok(out, 'expected non-null');
     // second scene starts at t=4s, so its cue is at 4.5 .. 5.5
-    assert.ok(out!.includes('between(t\\,4.500\\,5.500)'), `got: ${out}`);
+    assert.ok(out!.includes('between(t,4.500,5.500)'), `got: ${out}`);
+});
+
+test('buildDuckExpression output is ACCEPTED by ffmpeg as a volume expression', async () => {
+    // Empirical guard: string-shape checks miss real ffmpeg parse rejections
+    // (this is exactly how the gt()-wrapper bug shipped). Feed the generated
+    // expression to a real ffmpeg volume filter and require exit 0.
+    const { spawnSync } = await import('node:child_process');
+    let ffmpeg: string;
+    try { ffmpeg = (await import('ffmpeg-static')).default as unknown as string; } catch { return; }
+    if (!ffmpeg) return;
+    const expr = buildDuckExpression(
+        [
+            { durationSec: 4, captionSegments: [{ startMs: 0, endMs: 1000 }, { startMs: 2000, endMs: 3000 }] },
+            { durationSec: 4, captionSegments: [{ startMs: 500, endMs: 1500 }] },
+        ],
+        0.18,
+        0.06,
+    );
+    assert.ok(expr, 'expected non-null expression');
+    const r = spawnSync(ffmpeg, [
+        '-f', 'lavfi', '-i', 'sine=f=440:d=2',
+        '-af', `volume=eval=frame:volume='${expr}'`,
+        '-f', 'null', '-',
+    ], { encoding: 'utf-8', timeout: 30_000 });
+    assert.strictEqual(r.status, 0, `ffmpeg rejected the duck expression:\n${(r.stderr || '').split('\n').filter((l) => /error|invalid|evaluat/i.test(l)).join('\n')}`);
 });
 
 // ── chunkCues ────────────────────────────────────────────────────────────────

@@ -18,6 +18,25 @@ import { cacheStats } from './asset-cache.js';
 import type { AgenticCliJob } from '../../adapters/cli/cli-job.js';
 import { buildPipelineRequest } from '../../adapters/cli/cli-job.js';
 
+/**
+ * Make a human title safe as a cross-platform FILENAME (no extension).
+ * Windows forbids \ / : * ? " < > | in filenames; a raw title like
+ * "WAVE A: zoomblur (landscape)" previously truncated at the colon and
+ * produced a 0-byte file. We keep it readable: strip/replace only the
+ * illegal characters, collapse whitespace, and cap length. Falls back to a
+ * provided id when the title sanitizes to empty.
+ */
+export function sanitizeVideoFilename(title: string | undefined, fallback = 'output'): string {
+    const cleaned = (title ?? '')
+        .replace(/[\\/:*?"<>|]/g, ' ') // illegal on Windows/macOS
+        .replace(/[\u0000-\u001f]/g, ' ') // control chars
+        .replace(/\s+/g, ' ')
+        .replace(/[. ]+$/, '') // no trailing dot/space (Windows strips them)
+        .trim()
+        .slice(0, 120);
+    return cleaned.length > 0 ? cleaned : fallback;
+}
+
 export interface WaveResult {
     jobId: string;
     title: string;
@@ -168,7 +187,7 @@ async function runSingleJob(job: AgenticCliJob): Promise<WaveResult> {
         fs.mkdirSync(outPath, { recursive: true });
 
         const finalMp4 = await renderAgenticSlideshow(result, {
-            outPath: path.join(outPath, `${job.title || 'output'}.mp4`),
+            outPath: path.join(outPath, `${sanitizeVideoFilename(job.title, id)}.mp4`),
             crossfadeSec: 0.3,
             burnCaptions: job.captions !== 'none',
             intro: job.intro,
