@@ -280,9 +280,17 @@ export async function resolveFreeBackgroundMusic(
                 return { localPath: cacheFile, track };
             }
 
-            // Download track (copied from old logic)
+            // Download track (copied from old logic). HARDENED: route through
+            // withSignal so a stalled ccmixter/arraybuffer stream can't hang
+            // the whole render forever (axios `timeout` only covers the connect
+            // phase, not a slow body). The 15s timer ALWAYS rejects.
             const axios = require('axios');
-            const res = await axios.get(track.downloadUrl, { responseType: 'arraybuffer', timeout: 15000 });
+            const { withSignal } = require('../music-system/providers/base');
+            const res = await withSignal(
+                (signal: AbortSignal) => axios.get(track.downloadUrl, { responseType: 'arraybuffer', timeout: 15000, signal }),
+                15000,
+                `download ${track.title}`,
+            );
             const buf = Buffer.from(res.data);
             if (!buf || buf.length < 1024) throw new Error(`Downloaded file too small for ${track.title}`);
             fs.mkdirSync(require('path').dirname(cacheFile), { recursive: true });
