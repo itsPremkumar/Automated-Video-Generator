@@ -1,0 +1,21 @@
+{
+  "jobId": "edit_07_white_center",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "edit_07_white_center",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_07_white_center",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_07_white_center\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_07_white_center\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_07_white_center\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_07_white_center\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_07_white_center\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_07_white_center\\audio"
+  },
+  "createdAt": "2026-07-23T08:17:13.796Z",
+  "updatedAt": "2026-07-23T08:17:42.612Z",
+  "topic": "editing tags",
+  "title": "Edit white center",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

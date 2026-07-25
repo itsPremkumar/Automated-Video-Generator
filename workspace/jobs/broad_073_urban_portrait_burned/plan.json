@@ -1,0 +1,42 @@
+{
+  "jobId": "broad_073_urban_portrait_burned",
+  "title": "Broad urban portrait burned",
+  "orientation": "portrait",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Scene one from urban view.",
+      "searchKeywords": [
+        "persp urban png",
+        "broad urban portrait",
+        "wild persp urban png",
+        "persp urban png nature",
+        "persp urban png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_urban.png",
+      "transition": "slide",
+      "grade": "vivid"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Scene two continues.",
+      "searchKeywords": [
+        "persp warm png",
+        "broad urban portrait",
+        "wild persp warm png",
+        "persp warm png nature",
+        "persp warm png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_warm.png",
+      "captionTheme": "bold",
+      "kineticText": true
+    }
+  ],
+  "totalDurationSec": 8
+}

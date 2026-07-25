@@ -1,0 +1,21 @@
+{
+  "jobId": "combo_029_grade_cool",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "combo_029_grade_cool",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\audio"
+  },
+  "createdAt": "2026-07-23T06:04:47.123Z",
+  "updatedAt": "2026-07-23T06:05:11.699Z",
+  "topic": "g",
+  "title": "Grade cool",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

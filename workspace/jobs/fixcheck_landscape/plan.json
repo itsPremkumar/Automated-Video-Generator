@@ -1,0 +1,42 @@
+{
+  "jobId": "fixcheck_landscape",
+  "title": "Fix Check Landscape",
+  "orientation": "landscape",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Landscape scene one.",
+      "searchKeywords": [
+        "persp aerial png",
+        "check landscape",
+        "wild persp aerial png",
+        "persp aerial png nature",
+        "persp aerial png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_aerial.png",
+      "transition": "fade",
+      "grade": "warm"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Landscape scene two.",
+      "searchKeywords": [
+        "persp wide png",
+        "check landscape",
+        "wild persp wide png",
+        "persp wide png nature",
+        "persp wide png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_wide.png",
+      "captionStyle": "top",
+      "captionColor": "yellow"
+    }
+  ],
+  "totalDurationSec": 8
+}

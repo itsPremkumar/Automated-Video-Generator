@@ -1,0 +1,44 @@
+{
+  "jobId": "edit_02_cyan_top",
+  "title": "Edit cyan top",
+  "orientation": "portrait",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Editing scene one.",
+      "searchKeywords": [
+        "persp closeup png",
+        "edit cyan",
+        "wild persp closeup png",
+        "persp closeup png nature",
+        "persp closeup png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_closeup.png",
+      "grade": "cool",
+      "captionStyle": "top",
+      "captionColor": "cyan"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Editing scene two.",
+      "searchKeywords": [
+        "persp warm png",
+        "edit cyan",
+        "wild persp warm png",
+        "persp warm png nature",
+        "persp warm png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_warm.png",
+      "transition": "slide",
+      "captionStyle": "top",
+      "sfx": true
+    }
+  ],
+  "totalDurationSec": 8
+}

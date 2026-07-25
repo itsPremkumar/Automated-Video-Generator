@@ -1,0 +1,41 @@
+{
+  "jobId": "fixcheck_square",
+  "title": "Fix Check Square",
+  "orientation": "square",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Square scene one.",
+      "searchKeywords": [
+        "persp nature png",
+        "check square",
+        "wild persp nature png",
+        "persp nature png nature",
+        "persp nature png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_nature.png",
+      "grade": "cinematic"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Square scene two.",
+      "searchKeywords": [
+        "persp urban png",
+        "check square",
+        "wild persp urban png",
+        "persp urban png nature",
+        "persp urban png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_urban.png",
+      "captionTheme": "bold",
+      "kineticText": true
+    }
+  ],
+  "totalDurationSec": 8
+}

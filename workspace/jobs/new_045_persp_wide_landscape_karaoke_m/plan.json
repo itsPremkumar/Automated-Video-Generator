@@ -1,0 +1,44 @@
+{
+  "jobId": "new_045_persp_wide_landscape_karaoke_m",
+  "title": "New persp_wide landscape karaoke music",
+  "orientation": "landscape",
+  "voice": "es-ES-AlvaroNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Perspective scene one.",
+      "searchKeywords": [
+        "persp wide png",
+        "persp wide landscape",
+        "wild persp wide png",
+        "persp wide png nature",
+        "persp wide png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_wide.png",
+      "transition": "zoomblur",
+      "grade": "cool"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Perspective scene two.",
+      "searchKeywords": [
+        "persp angle png",
+        "persp wide landscape",
+        "wild persp angle png",
+        "persp angle png nature",
+        "persp angle png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_angle.png",
+      "captionStyle": "center",
+      "captionColor": "white",
+      "fadeIn": 0.3,
+      "fadeOut": 0.3
+    }
+  ],
+  "totalDurationSec": 8
+}

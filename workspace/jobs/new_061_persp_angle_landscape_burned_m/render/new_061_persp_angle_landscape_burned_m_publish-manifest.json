@@ -1,0 +1,51 @@
+{
+  "jobId": "new_061_persp_angle_landscape_burned_m",
+  "topic": "New persp_angle landscape burned music",
+  "title": "New persp_angle landscape burned music",
+  "description": "Perspective scene one.\n\n• Perspective scene two.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspanglepng #perspanglelandscape #wildperspanglepng #perspanglepngnature #perspanglepngcloseup #persptoppng #wildpersptoppng #persptoppngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T06:36:53.162Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_061_persp_angle_landscape_burned_m/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_061_persp_angle_landscape_burned_m\\render\\_seg_new_061_persp_angle_landscape_burned_m_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_061_persp_angle_landscape_burned_m\\render\\_seg_new_061_persp_angle_landscape_burned_m_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_061_persp_angle_landscape_burned_m\\render\\_seg_new_061_persp_angle_landscape_burned_m_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_061_persp_angle_landscape_burned_m\\render\\_seg_new_061_persp_angle_landscape_burned_m_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_061_persp_angle_landscape_burned_m\\render\\_seg_new_061_persp_angle_landscape_burned_m_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_061_persp_angle_landscape_burned_m\\render\\new_061_persp_angle_landscape_burned_m_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

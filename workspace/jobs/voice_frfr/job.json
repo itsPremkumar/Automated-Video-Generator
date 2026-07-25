@@ -1,0 +1,21 @@
+{
+  "jobId": "voice_frfr",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "voice_frfr",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_frfr",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_frfr\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_frfr\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_frfr\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_frfr\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_frfr\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_frfr\\audio"
+  },
+  "createdAt": "2026-07-23T08:34:17.713Z",
+  "updatedAt": "2026-07-23T08:34:35.933Z",
+  "topic": "multilingual fr-FR",
+  "title": "Voice fr-FR",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

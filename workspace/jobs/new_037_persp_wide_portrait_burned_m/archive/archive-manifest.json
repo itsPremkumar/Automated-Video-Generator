@@ -1,0 +1,100 @@
+{
+  "jobId": "new_037_persp_wide_portrait_burned_m",
+  "archivedAt": "2026-07-23T06:33:03.843Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\archive",
+  "totalFiles": 13,
+  "totalBytes": 310974,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\render\\new_037_persp_wide_portrait_burned_m_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\archive\\new_037_persp_wide_portrait_burned_m_details.txt",
+      "sizeBytes": 311,
+      "sha1": "0ca0997baf0b6bd98d101a991ce307d5beac8ad3"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\render\\new_037_persp_wide_portrait_burned_m_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\archive\\new_037_persp_wide_portrait_burned_m_metadata.txt",
+      "sizeBytes": 458,
+      "sha1": "2f4ead78ac5fb0c85ff428418e207ad8806840cc"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\render\\new_037_persp_wide_portrait_burned_m_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\archive\\new_037_persp_wide_portrait_burned_m_subtitles.srt",
+      "sizeBytes": 110,
+      "sha1": "f5b68ff57ef4a535577c32a6e569bd080506831f"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\render\\new_037_persp_wide_portrait_burned_m_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\archive\\new_037_persp_wide_portrait_burned_m_subtitles.vtt",
+      "sizeBytes": 119,
+      "sha1": "222fcef550bcd18888bb711d86663f2f15a2104f"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\render\\new_037_persp_wide_portrait_burned_m_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\archive\\new_037_persp_wide_portrait_burned_m_thumbnail.jpg",
+      "sizeBytes": 14785,
+      "sha1": "9348b7aad4a800f82f5e2788de874f2701d3a182"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\render\\_captions_new_037_persp_wide_portrait_burned_m.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\archive\\_captions_new_037_persp_wide_portrait_burned_m.srt",
+      "sizeBytes": 243,
+      "sha1": "c11da88b12c744e995eeee5d480ef2848dde3718"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\render\\_seg_new_037_persp_wide_portrait_burned_m_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\archive\\_seg_new_037_persp_wide_portrait_burned_m_0.mp4",
+      "sizeBytes": 53843,
+      "sha1": "cce3471660ed7a08228437967ba7a50113e0abf3"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\render\\_seg_new_037_persp_wide_portrait_burned_m_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\archive\\_seg_new_037_persp_wide_portrait_burned_m_1.mp4",
+      "sizeBytes": 58024,
+      "sha1": "733c42ae653532783ce407fe7883343b5e4b2768"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\archive\\contact-sheet.png",
+      "sizeBytes": 60247,
+      "sha1": "af04e8389410902646c84109db7c799d6c262f51"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\archive\\subtitles.srt",
+      "sizeBytes": 110,
+      "sha1": "f5b68ff57ef4a535577c32a6e569bd080506831f"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\archive\\subtitles.vtt",
+      "sizeBytes": 119,
+      "sha1": "222fcef550bcd18888bb711d86663f2f15a2104f"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\archive\\candidate_1.png",
+      "sizeBytes": 58164,
+      "sha1": "f88605c5d86b70952f5aaf640d644d07a87cacfc"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_037_persp_wide_portrait_burned_m\\archive\\candidate_1.png",
+      "sizeBytes": 64441,
+      "sha1": "c3f5bd7b86530d1b4fe6d1f0d9473a60096e7bf1"
+    }
+  ]
+}

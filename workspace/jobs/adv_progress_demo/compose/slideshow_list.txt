@@ -1,0 +1,3 @@
+file 'C:\one\Automated-Video-Generator\workspace\jobs\adv_progress_demo\compose\scene_0.mp4'
+file 'C:\one\Automated-Video-Generator\workspace\jobs\adv_progress_demo\compose\scene_1.mp4'
+file 'C:\one\Automated-Video-Generator\workspace\jobs\adv_progress_demo\compose\scene_2.mp4'

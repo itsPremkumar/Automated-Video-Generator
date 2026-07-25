@@ -1,0 +1,100 @@
+{
+  "jobId": "broad_029_angle_portrait_karaoke",
+  "archivedAt": "2026-07-23T07:12:24.343Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\archive",
+  "totalFiles": 13,
+  "totalBytes": 317570,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\render\\broad_029_angle_portrait_karaoke_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\archive\\broad_029_angle_portrait_karaoke_details.txt",
+      "sizeBytes": 309,
+      "sha1": "bb55ed41e3ebbf2b1f5298468608a14951265abc"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\render\\broad_029_angle_portrait_karaoke_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\archive\\broad_029_angle_portrait_karaoke_metadata.txt",
+      "sizeBytes": 456,
+      "sha1": "a8f6c3f8eb779bcde4be7f687c5bc4a6acca4ff2"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\render\\broad_029_angle_portrait_karaoke_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\archive\\broad_029_angle_portrait_karaoke_subtitles.srt",
+      "sizeBytes": 112,
+      "sha1": "1fb824b879daea0d600fede52b566b2a337eaff8"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\render\\broad_029_angle_portrait_karaoke_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\archive\\broad_029_angle_portrait_karaoke_subtitles.vtt",
+      "sizeBytes": 121,
+      "sha1": "6c6547afca9f4bd1aa3f44ee61237f600a1a2614"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\render\\broad_029_angle_portrait_karaoke_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\archive\\broad_029_angle_portrait_karaoke_thumbnail.jpg",
+      "sizeBytes": 18682,
+      "sha1": "3920d95ce4fd8809ce7e37abb6547cb1a4602e6d"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\render\\_captions_broad_029_angle_portrait_karaoke.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\archive\\_captions_broad_029_angle_portrait_karaoke.srt",
+      "sizeBytes": 311,
+      "sha1": "cb0f8312e8afbe1d3e9022c4d00dcca2a27ae5ae"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\render\\_seg_broad_029_angle_portrait_karaoke_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\archive\\_seg_broad_029_angle_portrait_karaoke_0.mp4",
+      "sizeBytes": 66873,
+      "sha1": "6519dbc43d2d541ff562954af89cb051ea0576ec"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\render\\_seg_broad_029_angle_portrait_karaoke_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\archive\\_seg_broad_029_angle_portrait_karaoke_1.mp4",
+      "sizeBytes": 47466,
+      "sha1": "0a3fed838a1dc1fd8b7d7a78da1a9c9ec6f20042"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\archive\\contact-sheet.png",
+      "sizeBytes": 60402,
+      "sha1": "37234ea81ffba54212adadb94127bbd43e945b65"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\archive\\subtitles.srt",
+      "sizeBytes": 112,
+      "sha1": "1fb824b879daea0d600fede52b566b2a337eaff8"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\archive\\subtitles.vtt",
+      "sizeBytes": 121,
+      "sha1": "6c6547afca9f4bd1aa3f44ee61237f600a1a2614"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\archive\\candidate_1.png",
+      "sizeBytes": 64441,
+      "sha1": "c3f5bd7b86530d1b4fe6d1f0d9473a60096e7bf1"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_029_angle_portrait_karaoke\\archive\\candidate_1.png",
+      "sizeBytes": 58164,
+      "sha1": "f88605c5d86b70952f5aaf640d644d07a87cacfc"
+    }
+  ]
+}

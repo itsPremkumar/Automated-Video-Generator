@@ -1,0 +1,100 @@
+{
+  "jobId": "broad_065_cool_portrait_karaoke",
+  "archivedAt": "2026-07-23T07:21:33.950Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\archive",
+  "totalFiles": 13,
+  "totalBytes": 328110,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\render\\broad_065_cool_portrait_karaoke_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\archive\\broad_065_cool_portrait_karaoke_details.txt",
+      "sizeBytes": 303,
+      "sha1": "425e0d38124f037f720549dd42f5dd7292764bf4"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\render\\broad_065_cool_portrait_karaoke_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\archive\\broad_065_cool_portrait_karaoke_metadata.txt",
+      "sizeBytes": 450,
+      "sha1": "aa9eff0e095c2731ac9182d70a8886850f09380e"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\render\\broad_065_cool_portrait_karaoke_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\archive\\broad_065_cool_portrait_karaoke_subtitles.srt",
+      "sizeBytes": 111,
+      "sha1": "79a1f004ade9b8e4727e970b0fe3cebfd2c32214"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\render\\broad_065_cool_portrait_karaoke_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\archive\\broad_065_cool_portrait_karaoke_subtitles.vtt",
+      "sizeBytes": 120,
+      "sha1": "f4b7f56f8e0d8dd98df04b8efdfda0d29bca652d"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\render\\broad_065_cool_portrait_karaoke_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\archive\\broad_065_cool_portrait_karaoke_thumbnail.jpg",
+      "sizeBytes": 18725,
+      "sha1": "69da443d44702f0fb1dff05207230cbb9e27bbd2"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\render\\_captions_broad_065_cool_portrait_karaoke.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\archive\\_captions_broad_065_cool_portrait_karaoke.srt",
+      "sizeBytes": 310,
+      "sha1": "48b1ba914c82d8436432a23dc3d9df957bdc02c2"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\render\\_seg_broad_065_cool_portrait_karaoke_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\archive\\_seg_broad_065_cool_portrait_karaoke_0.mp4",
+      "sizeBytes": 61417,
+      "sha1": "b613413e001051a0b4ffbb7907e6b93f9231998e"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\render\\_seg_broad_065_cool_portrait_karaoke_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\archive\\_seg_broad_065_cool_portrait_karaoke_1.mp4",
+      "sizeBytes": 49917,
+      "sha1": "bdc580f9a76cd3fb99fc85efccf588889cc0b1b7"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\archive\\contact-sheet.png",
+      "sizeBytes": 62015,
+      "sha1": "e7f116dc565835879d2749db9d1eaf00596c71cd"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\archive\\subtitles.srt",
+      "sizeBytes": 111,
+      "sha1": "79a1f004ade9b8e4727e970b0fe3cebfd2c32214"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\archive\\subtitles.vtt",
+      "sizeBytes": 120,
+      "sha1": "f4b7f56f8e0d8dd98df04b8efdfda0d29bca652d"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\archive\\candidate_1.png",
+      "sizeBytes": 81318,
+      "sha1": "44d77ca789335d35350e7d0c2e83590f6a4f011e"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_065_cool_portrait_karaoke\\archive\\candidate_1.png",
+      "sizeBytes": 53193,
+      "sha1": "e68b55b504f9f6858eefb110d9084bd62a7b25ab"
+    }
+  ]
+}

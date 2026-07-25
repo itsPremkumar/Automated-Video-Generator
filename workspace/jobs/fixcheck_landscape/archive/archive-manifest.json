@@ -1,0 +1,100 @@
+{
+  "jobId": "fixcheck_landscape",
+  "archivedAt": "2026-07-23T06:53:01.278Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\archive",
+  "totalFiles": 13,
+  "totalBytes": 383232,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\render\\fixcheck_landscape_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\archive\\fixcheck_landscape_details.txt",
+      "sizeBytes": 290,
+      "sha1": "a326eff7123ffe9b9d4835ce68f3409543aeb3b0"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\render\\fixcheck_landscape_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\archive\\fixcheck_landscape_metadata.txt",
+      "sizeBytes": 441,
+      "sha1": "8ed9be18286989b03e3943b6a2b354aa92dcbfcb"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\render\\fixcheck_landscape_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\archive\\fixcheck_landscape_subtitles.srt",
+      "sizeBytes": 106,
+      "sha1": "3cab4a402d7764e0abf26d7217224c09055ad133"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\render\\fixcheck_landscape_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\archive\\fixcheck_landscape_subtitles.vtt",
+      "sizeBytes": 115,
+      "sha1": "a0d8b48846e039edbc9c81cb7cf83970819cb0ab"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\render\\fixcheck_landscape_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\archive\\fixcheck_landscape_thumbnail.jpg",
+      "sizeBytes": 22406,
+      "sha1": "81215760203841838e4e9407259a7773a7ad57a0"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\render\\_captions_fixcheck_landscape.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\archive\\_captions_fixcheck_landscape.srt",
+      "sizeBytes": 239,
+      "sha1": "b7ea53bfe6c771f15b0cb94853b43d28416a5dea"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\render\\_seg_fixcheck_landscape_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\archive\\_seg_fixcheck_landscape_0.mp4",
+      "sizeBytes": 78277,
+      "sha1": "1cc300f65fc5f29ac42183e4cc4ecd3e95fa4bca"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\render\\_seg_fixcheck_landscape_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\archive\\_seg_fixcheck_landscape_1.mp4",
+      "sizeBytes": 64895,
+      "sha1": "34c641de6fc92310301d5079c2f6b1ae40ea3be7"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\archive\\contact-sheet.png",
+      "sizeBytes": 72196,
+      "sha1": "13b7c1501e970100f85e7ee260861cf0568b469f"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\archive\\subtitles.srt",
+      "sizeBytes": 106,
+      "sha1": "3cab4a402d7764e0abf26d7217224c09055ad133"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\archive\\subtitles.vtt",
+      "sizeBytes": 115,
+      "sha1": "a0d8b48846e039edbc9c81cb7cf83970819cb0ab"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\archive\\candidate_1.png",
+      "sizeBytes": 85882,
+      "sha1": "0b21cec5a52e144d5922be045157561d1b6865af"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\archive\\candidate_1.png",
+      "sizeBytes": 58164,
+      "sha1": "f88605c5d86b70952f5aaf640d644d07a87cacfc"
+    }
+  ]
+}

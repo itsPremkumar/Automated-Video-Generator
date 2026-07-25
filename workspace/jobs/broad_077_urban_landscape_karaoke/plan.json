@@ -1,0 +1,42 @@
+{
+  "jobId": "broad_077_urban_landscape_karaoke",
+  "title": "Broad urban landscape karaoke",
+  "orientation": "landscape",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Scene one from urban view.",
+      "searchKeywords": [
+        "persp urban png",
+        "broad urban landscape",
+        "wild persp urban png",
+        "persp urban png nature",
+        "persp urban png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_urban.png",
+      "transition": "slide",
+      "grade": "cinematic"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Scene two continues.",
+      "searchKeywords": [
+        "persp aerial png",
+        "broad urban landscape",
+        "wild persp aerial png",
+        "persp aerial png nature",
+        "persp aerial png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_aerial.png",
+      "captionTheme": "bold",
+      "kineticText": true
+    }
+  ],
+  "totalDurationSec": 8
+}

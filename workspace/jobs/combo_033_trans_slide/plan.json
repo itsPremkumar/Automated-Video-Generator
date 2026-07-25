@@ -1,0 +1,42 @@
+{
+  "jobId": "combo_033_trans_slide",
+  "title": "Transition slide",
+  "orientation": "landscape",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Transition test slide.",
+      "searchKeywords": [
+        "logo automation png",
+        "transition slide",
+        "wild logo automation png",
+        "logo automation png nature",
+        "logo automation png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "logo-automation.png",
+      "transition": "slide"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Second transition.",
+      "searchKeywords": [
+        "github profile png",
+        "transition slide",
+        "wild github profile png",
+        "github profile png nature",
+        "github profile png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "github-profile.png",
+      "transition": "slide",
+      "trimStart": 0,
+      "trimEnd": 4
+    }
+  ],
+  "totalDurationSec": 8
+}

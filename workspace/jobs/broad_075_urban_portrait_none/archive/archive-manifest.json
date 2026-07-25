@@ -1,0 +1,93 @@
+{
+  "jobId": "broad_075_urban_portrait_none",
+  "archivedAt": "2026-07-23T07:24:02.447Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\archive",
+  "totalFiles": 12,
+  "totalBytes": 269327,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\render\\broad_075_urban_portrait_none_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\archive\\broad_075_urban_portrait_none_details.txt",
+      "sizeBytes": 308,
+      "sha1": "ea8eade1a5c91d33958b9cc6267830a9e8726456"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\render\\broad_075_urban_portrait_none_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\archive\\broad_075_urban_portrait_none_metadata.txt",
+      "sizeBytes": 349,
+      "sha1": "b8529b98b9127dfbbb82be44ddb599fdec587e8a"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\render\\broad_075_urban_portrait_none_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\archive\\broad_075_urban_portrait_none_subtitles.srt",
+      "sizeBytes": 112,
+      "sha1": "c8f785c9584c1604f80f4a93084c473f4aac18a4"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\render\\broad_075_urban_portrait_none_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\archive\\broad_075_urban_portrait_none_subtitles.vtt",
+      "sizeBytes": 121,
+      "sha1": "8f469138208d7b668052bf769626f465a6e74918"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\render\\broad_075_urban_portrait_none_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\archive\\broad_075_urban_portrait_none_thumbnail.jpg",
+      "sizeBytes": 10876,
+      "sha1": "22c54af3a16f854c0315bc5618ac2f52c3acb986"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\render\\_seg_broad_075_urban_portrait_none_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\archive\\_seg_broad_075_urban_portrait_none_0.mp4",
+      "sizeBytes": 59002,
+      "sha1": "8ed62b83fb6589eef2f6b0e50673983d7554eda1"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\render\\_seg_broad_075_urban_portrait_none_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\archive\\_seg_broad_075_urban_portrait_none_1.mp4",
+      "sizeBytes": 49364,
+      "sha1": "47ca55f7452ad6f96fdb899d57646d56cb103c21"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\archive\\contact-sheet.png",
+      "sizeBytes": 42576,
+      "sha1": "59658eaa12ccc6ace0c1276100c1392db59842da"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\archive\\subtitles.srt",
+      "sizeBytes": 112,
+      "sha1": "c8f785c9584c1604f80f4a93084c473f4aac18a4"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\archive\\subtitles.vtt",
+      "sizeBytes": 121,
+      "sha1": "8f469138208d7b668052bf769626f465a6e74918"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\archive\\candidate_1.png",
+      "sizeBytes": 53193,
+      "sha1": "e68b55b504f9f6858eefb110d9084bd62a7b25ab"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_075_urban_portrait_none\\archive\\candidate_1.png",
+      "sizeBytes": 53193,
+      "sha1": "e68b55b504f9f6858eefb110d9084bd62a7b25ab"
+    }
+  ]
+}

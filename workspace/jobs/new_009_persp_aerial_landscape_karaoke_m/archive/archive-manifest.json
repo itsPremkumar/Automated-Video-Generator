@@ -1,0 +1,100 @@
+{
+  "jobId": "new_009_persp_aerial_landscape_karaoke_m",
+  "archivedAt": "2026-07-23T06:28:38.673Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\archive",
+  "totalFiles": 13,
+  "totalBytes": 349876,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\render\\new_009_persp_aerial_landscape_karaoke_m_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\archive\\new_009_persp_aerial_landscape_karaoke_m_details.txt",
+      "sizeBytes": 333,
+      "sha1": "b03d2a26fdaa2ef3c73b6c6ce5c0473be6cb8be2"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\render\\new_009_persp_aerial_landscape_karaoke_m_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\archive\\new_009_persp_aerial_landscape_karaoke_m_metadata.txt",
+      "sizeBytes": 496,
+      "sha1": "67756ba5612f0a1398eea80180888a1055118cbe"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\render\\new_009_persp_aerial_landscape_karaoke_m_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\archive\\new_009_persp_aerial_landscape_karaoke_m_subtitles.srt",
+      "sizeBytes": 110,
+      "sha1": "f5b68ff57ef4a535577c32a6e569bd080506831f"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\render\\new_009_persp_aerial_landscape_karaoke_m_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\archive\\new_009_persp_aerial_landscape_karaoke_m_subtitles.vtt",
+      "sizeBytes": 119,
+      "sha1": "222fcef550bcd18888bb711d86663f2f15a2104f"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\render\\new_009_persp_aerial_landscape_karaoke_m_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\archive\\new_009_persp_aerial_landscape_karaoke_m_thumbnail.jpg",
+      "sizeBytes": 18647,
+      "sha1": "dd6f796ab22ea4c28cda39b3223da55e6e67664d"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\render\\_captions_new_009_persp_aerial_landscape_karaoke_m.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\archive\\_captions_new_009_persp_aerial_landscape_karaoke_m.srt",
+      "sizeBytes": 243,
+      "sha1": "c11da88b12c744e995eeee5d480ef2848dde3718"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\render\\_seg_new_009_persp_aerial_landscape_karaoke_m_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\archive\\_seg_new_009_persp_aerial_landscape_karaoke_m_0.mp4",
+      "sizeBytes": 57840,
+      "sha1": "a5823c1014abfc151add620b7c5d5c1d66a5159b"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\render\\_seg_new_009_persp_aerial_landscape_karaoke_m_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\archive\\_seg_new_009_persp_aerial_landscape_karaoke_m_1.mp4",
+      "sizeBytes": 57332,
+      "sha1": "9f31f549d8c00174eff560d6daf856f0ca94c5b2"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\archive\\contact-sheet.png",
+      "sizeBytes": 71223,
+      "sha1": "fa1a24ea754ff8e948e1a8e04e0cd18503abdab0"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\archive\\subtitles.srt",
+      "sizeBytes": 110,
+      "sha1": "f5b68ff57ef4a535577c32a6e569bd080506831f"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\archive\\subtitles.vtt",
+      "sizeBytes": 119,
+      "sha1": "222fcef550bcd18888bb711d86663f2f15a2104f"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\archive\\candidate_1.png",
+      "sizeBytes": 85882,
+      "sha1": "0b21cec5a52e144d5922be045157561d1b6865af"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\archive\\candidate_1.png",
+      "sizeBytes": 57422,
+      "sha1": "45d338789d813f3eb2f5f9760e0e7c60374fb26a"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "jobId": "fixcheck_landscape",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "fixcheck_landscape",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\audio"
+  },
+  "createdAt": "2026-07-23T06:52:36.890Z",
+  "updatedAt": "2026-07-23T06:52:56.035Z",
+  "topic": "orientation test",
+  "title": "Fix Check Landscape",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

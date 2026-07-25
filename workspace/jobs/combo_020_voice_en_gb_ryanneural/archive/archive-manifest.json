@@ -1,0 +1,100 @@
+{
+  "jobId": "combo_020_voice_en_gb_ryanneural",
+  "archivedAt": "2026-07-23T06:00:36.158Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\archive",
+  "totalFiles": 13,
+  "totalBytes": 1696815,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\render\\combo_020_voice_en_gb_ryanneural_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\archive\\combo_020_voice_en_gb_ryanneural_details.txt",
+      "sizeBytes": 338,
+      "sha1": "1d47a119e02cb4edf18daa9ff427f14d15a92089"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\render\\combo_020_voice_en_gb_ryanneural_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\archive\\combo_020_voice_en_gb_ryanneural_metadata.txt",
+      "sizeBytes": 517,
+      "sha1": "867213c312a0364f5733b1d60ae9e1343f003876"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\render\\combo_020_voice_en_gb_ryanneural_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\archive\\combo_020_voice_en_gb_ryanneural_subtitles.srt",
+      "sizeBytes": 131,
+      "sha1": "d8900f43fdf41dbacd96ddc8371edb69232269f9"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\render\\combo_020_voice_en_gb_ryanneural_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\archive\\combo_020_voice_en_gb_ryanneural_subtitles.vtt",
+      "sizeBytes": 140,
+      "sha1": "78f90456584ffd5f328d2419a62788419706f1c8"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\render\\combo_020_voice_en_gb_ryanneural_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\archive\\combo_020_voice_en_gb_ryanneural_thumbnail.jpg",
+      "sizeBytes": 48991,
+      "sha1": "359b2e9dacf6cb429b1672ca92078bf7ef1d3663"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\render\\_captions_combo_020_voice_en_gb_ryanneural.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\archive\\_captions_combo_020_voice_en_gb_ryanneural.srt",
+      "sizeBytes": 363,
+      "sha1": "2f301ee635711869cbffb0ddfa720248102f198a"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\render\\_seg_combo_020_voice_en_gb_ryanneural_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\archive\\_seg_combo_020_voice_en_gb_ryanneural_0.mp4",
+      "sizeBytes": 107972,
+      "sha1": "9e4f9651ad4a570221a0e0a2f7491c6f0ec54670"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\render\\_seg_combo_020_voice_en_gb_ryanneural_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\archive\\_seg_combo_020_voice_en_gb_ryanneural_1.mp4",
+      "sizeBytes": 84474,
+      "sha1": "5bf437255a10a3d64a1c3d8139c39b88e74e0c31"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\archive\\contact-sheet.png",
+      "sizeBytes": 259554,
+      "sha1": "c575caeef14b44e26abb56720b7f3f5a90195b57"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\archive\\subtitles.srt",
+      "sizeBytes": 131,
+      "sha1": "d8900f43fdf41dbacd96ddc8371edb69232269f9"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\archive\\subtitles.vtt",
+      "sizeBytes": 140,
+      "sha1": "78f90456584ffd5f328d2419a62788419706f1c8"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\archive\\candidate_1.png",
+      "sizeBytes": 486086,
+      "sha1": "a0eca093964909dcfb9fce869a6f4b670544e8b8"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_020_voice_en_gb_ryanneural\\archive\\candidate_1.png",
+      "sizeBytes": 707978,
+      "sha1": "52e8d8ee1b653856629c49ac5b97134f6a351036"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "jobId": "combo_026_voice_de_de_katjaneural",
+  "title": "Voice de-DE-KatjaNeural",
+  "orientation": "portrait",
+  "voice": "de-DE-KatjaNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "This is the german voice test.",
+      "searchKeywords": [
+        "github profile png",
+        "voice katjaneural",
+        "wild github profile png",
+        "github profile png nature",
+        "github profile png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "github-profile.png",
+      "grade": "warm"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Speaking clearly for verification.",
+      "searchKeywords": [
+        "logo automation png",
+        "voice katjaneural",
+        "wild logo automation png",
+        "logo automation png nature",
+        "logo automation png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "logo-automation.png",
+      "captionTheme": "neon",
+      "kineticText": true
+    }
+  ],
+  "totalDurationSec": 8
+}

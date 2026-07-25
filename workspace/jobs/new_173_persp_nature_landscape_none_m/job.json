@@ -1,0 +1,21 @@
+{
+  "jobId": "new_173_persp_nature_landscape_none_m",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "new_173_persp_nature_landscape_none_m",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_173_persp_nature_landscape_none_m",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_173_persp_nature_landscape_none_m\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_173_persp_nature_landscape_none_m\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_173_persp_nature_landscape_none_m\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_173_persp_nature_landscape_none_m\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_173_persp_nature_landscape_none_m\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_173_persp_nature_landscape_none_m\\audio"
+  },
+  "createdAt": "2026-07-23T06:44:10.980Z",
+  "updatedAt": "2026-07-23T06:44:23.957Z",
+  "topic": "perspective combination",
+  "title": "New persp_nature landscape none music",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

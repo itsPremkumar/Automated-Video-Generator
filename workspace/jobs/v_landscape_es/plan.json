@@ -1,0 +1,42 @@
+{
+  "jobId": "v_landscape_es",
+  "title": "Paisaje Espanol",
+  "orientation": "landscape",
+  "voice": "es-ES-AlvaroNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Empieza tu dia con energia.",
+      "searchKeywords": [
+        "github profile png",
+        "paisaje espanol",
+        "wild github profile png",
+        "github profile png nature",
+        "github profile png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "github-profile.png",
+      "grade": "warm",
+      "kineticText": true
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Construye habitos fuertes.",
+      "searchKeywords": [
+        "logo automation png",
+        "paisaje espanol",
+        "wild logo automation png",
+        "logo automation png nature",
+        "logo automation png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "logo-automation.png",
+      "captionTheme": "neon",
+      "jCutSec": 0.3
+    }
+  ],
+  "totalDurationSec": 8
+}

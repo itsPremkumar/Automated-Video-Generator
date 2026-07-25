@@ -1,0 +1,13 @@
+AGENTIC VIDEO — DECISION REPORT
+job: new_085_persp_top_square_burned_m | title: New persp_top square burned music | backend: heuristic
+decider: AGENT + vision backend
+gate: PASS
+
+Every image/video below was APPROVED by the agent. No human approval required.
+
+[✅ APPROVED] image scene#0 -> C:\one\Automated-Video-Generator\workspace\jobs\new_085_persp_top_square_burned_m\assets\videos\scene_01\candidate_1.png
+    decision by: agent | rationale: Visual passes at conf 6/10 (score 15.0): agent backend: signal-only; visual relevance not AI-scored
+[✅ APPROVED] image scene#1 -> C:\one\Automated-Video-Generator\workspace\jobs\new_085_persp_top_square_burned_m\assets\videos\scene_02\candidate_1.png
+    decision by: agent | rationale: Visual passes at conf 6/10 (score 10.0): agent backend: signal-only; visual relevance not AI-scored
+[✅ APPROVED] music scene#-1 -> C:\one\Automated-Video-Generator\workspace\cache\free-music\processed\bundled_j8w0qy_processed.mp3
+    decision by: agent | rationale: Music passed signal check (ffprobe unavailable; passed on size check only).

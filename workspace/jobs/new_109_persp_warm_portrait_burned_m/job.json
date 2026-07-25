@@ -1,0 +1,21 @@
+{
+  "jobId": "new_109_persp_warm_portrait_burned_m",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "new_109_persp_warm_portrait_burned_m",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_109_persp_warm_portrait_burned_m",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_109_persp_warm_portrait_burned_m\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_109_persp_warm_portrait_burned_m\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_109_persp_warm_portrait_burned_m\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_109_persp_warm_portrait_burned_m\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_109_persp_warm_portrait_burned_m\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_109_persp_warm_portrait_burned_m\\audio"
+  },
+  "createdAt": "2026-07-23T06:40:10.123Z",
+  "updatedAt": "2026-07-23T06:40:25.315Z",
+  "topic": "perspective combination",
+  "title": "New persp_warm portrait burned music",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

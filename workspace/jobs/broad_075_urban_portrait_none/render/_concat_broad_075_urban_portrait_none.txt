@@ -1,0 +1,2 @@
+file 'C:/one/Automated-Video-Generator/workspace/jobs/broad_075_urban_portrait_none/render/_seg_broad_075_urban_portrait_none_0.mp4'
+file 'C:/one/Automated-Video-Generator/workspace/jobs/broad_075_urban_portrait_none/render/_seg_broad_075_urban_portrait_none_1.mp4'

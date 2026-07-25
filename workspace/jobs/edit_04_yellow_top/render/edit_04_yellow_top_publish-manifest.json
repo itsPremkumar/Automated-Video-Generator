@@ -1,0 +1,51 @@
+{
+  "jobId": "edit_04_yellow_top",
+  "topic": "Edit yellow top",
+  "title": "Edit yellow top",
+  "description": "Editing scene one.\n\n• Editing scene two.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspanglepng #edityellow #wildperspanglepng #perspanglepngnature #perspanglepngcloseup #perspurbanpng #wildperspurbanpng #perspurbanpngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T08:15:32.903Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_04_yellow_top/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_04_yellow_top\\render\\_seg_edit_04_yellow_top_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_04_yellow_top\\render\\_seg_edit_04_yellow_top_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_04_yellow_top\\render\\_seg_edit_04_yellow_top_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_04_yellow_top\\render\\_seg_edit_04_yellow_top_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_04_yellow_top\\render\\_seg_edit_04_yellow_top_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_04_yellow_top\\render\\edit_04_yellow_top_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

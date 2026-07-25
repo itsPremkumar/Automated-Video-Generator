@@ -1,0 +1,42 @@
+{
+  "jobId": "combo_034_trans_zoomblur",
+  "title": "Transition zoomblur",
+  "orientation": "landscape",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Transition test zoomblur.",
+      "searchKeywords": [
+        "github profile png",
+        "transition zoomblur",
+        "wild github profile png",
+        "github profile png nature",
+        "github profile png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "github-profile.png",
+      "transition": "zoomblur"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Second transition.",
+      "searchKeywords": [
+        "logo automation png",
+        "transition zoomblur",
+        "wild logo automation png",
+        "logo automation png nature",
+        "logo automation png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "logo-automation.png",
+      "transition": "zoomblur",
+      "trimStart": 0,
+      "trimEnd": 4
+    }
+  ],
+  "totalDurationSec": 8
+}

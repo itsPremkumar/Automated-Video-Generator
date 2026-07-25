@@ -1,0 +1,11 @@
+[
+  {
+    "assetId": "image_s0_c1",
+    "kind": "image",
+    "sceneIndex": 0,
+    "decision": "rejected",
+    "rationale": "bad",
+    "decidedBy": "agent",
+    "fallbackUsed": false
+  }
+]

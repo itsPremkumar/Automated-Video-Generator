@@ -1,0 +1,21 @@
+{
+  "jobId": "combo_031_grade_vivid",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "combo_031_grade_vivid",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_031_grade_vivid",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_031_grade_vivid\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_031_grade_vivid\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_031_grade_vivid\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_031_grade_vivid\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_031_grade_vivid\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_031_grade_vivid\\audio"
+  },
+  "createdAt": "2026-07-23T06:05:52.347Z",
+  "updatedAt": "2026-07-23T06:06:11.479Z",
+  "topic": "g",
+  "title": "Grade vivid",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

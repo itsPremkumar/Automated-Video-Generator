@@ -1,0 +1,21 @@
+{
+  "jobId": "broad_073_urban_portrait_burned",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "broad_073_urban_portrait_burned",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_073_urban_portrait_burned",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_073_urban_portrait_burned\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_073_urban_portrait_burned\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_073_urban_portrait_burned\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_073_urban_portrait_burned\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_073_urban_portrait_burned\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_073_urban_portrait_burned\\audio"
+  },
+  "createdAt": "2026-07-23T07:23:10.069Z",
+  "updatedAt": "2026-07-23T07:23:27.579Z",
+  "topic": "perspective persp_urban",
+  "title": "Broad urban portrait burned",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

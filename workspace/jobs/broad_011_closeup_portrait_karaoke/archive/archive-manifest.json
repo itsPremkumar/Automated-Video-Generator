@@ -1,0 +1,100 @@
+{
+  "jobId": "broad_011_closeup_portrait_karaoke",
+  "archivedAt": "2026-07-23T07:08:14.581Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\archive",
+  "totalFiles": 13,
+  "totalBytes": 328738,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\render\\broad_011_closeup_portrait_karaoke_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\archive\\broad_011_closeup_portrait_karaoke_details.txt",
+      "sizeBytes": 323,
+      "sha1": "3f74aa3c3927471edf42cc42394851561dd5001e"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\render\\broad_011_closeup_portrait_karaoke_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\archive\\broad_011_closeup_portrait_karaoke_metadata.txt",
+      "sizeBytes": 474,
+      "sha1": "702a4f1c56ed9b77f7ba28cfddc4a7a10419ba73"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\render\\broad_011_closeup_portrait_karaoke_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\archive\\broad_011_closeup_portrait_karaoke_subtitles.srt",
+      "sizeBytes": 114,
+      "sha1": "e60d947f7f8ebfbc31bf727a59af0b5c342bc28d"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\render\\broad_011_closeup_portrait_karaoke_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\archive\\broad_011_closeup_portrait_karaoke_subtitles.vtt",
+      "sizeBytes": 123,
+      "sha1": "ef98fb8ecf4b56d1ef3eb4624bc5916ac3869288"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\render\\broad_011_closeup_portrait_karaoke_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\archive\\broad_011_closeup_portrait_karaoke_thumbnail.jpg",
+      "sizeBytes": 15709,
+      "sha1": "41593a84fb1d372c30f6aa6a9a5d5a164d5ff1cb"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\render\\_captions_broad_011_closeup_portrait_karaoke.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\archive\\_captions_broad_011_closeup_portrait_karaoke.srt",
+      "sizeBytes": 313,
+      "sha1": "64d7ae87d85d913b14b4a06f255e100fe7643c8d"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\render\\_seg_broad_011_closeup_portrait_karaoke_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\archive\\_seg_broad_011_closeup_portrait_karaoke_0.mp4",
+      "sizeBytes": 68821,
+      "sha1": "4460eb46478eb4e1f3527ab150e37aad80efff24"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\render\\_seg_broad_011_closeup_portrait_karaoke_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\archive\\_seg_broad_011_closeup_portrait_karaoke_1.mp4",
+      "sizeBytes": 55112,
+      "sha1": "faf3fbeb48b54b3f4cf1bbd97f43269e5c36ae73"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\archive\\contact-sheet.png",
+      "sizeBytes": 60900,
+      "sha1": "9648a54d905e3df67a43175388824536b3317b95"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\archive\\subtitles.srt",
+      "sizeBytes": 114,
+      "sha1": "e60d947f7f8ebfbc31bf727a59af0b5c342bc28d"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\archive\\subtitles.vtt",
+      "sizeBytes": 123,
+      "sha1": "ef98fb8ecf4b56d1ef3eb4624bc5916ac3869288"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\archive\\candidate_1.png",
+      "sizeBytes": 57422,
+      "sha1": "45d338789d813f3eb2f5f9760e0e7c60374fb26a"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_011_closeup_portrait_karaoke\\archive\\candidate_1.png",
+      "sizeBytes": 69190,
+      "sha1": "f3d2c6605cce49c496acd096774deecaaa4b941d"
+    }
+  ]
+}

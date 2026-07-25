@@ -1,0 +1,21 @@
+{
+  "jobId": "combo_025_voice_fr_fr_deniseneural",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "combo_025_voice_fr_fr_deniseneural",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_025_voice_fr_fr_deniseneural",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_025_voice_fr_fr_deniseneural\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_025_voice_fr_fr_deniseneural\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_025_voice_fr_fr_deniseneural\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_025_voice_fr_fr_deniseneural\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_025_voice_fr_fr_deniseneural\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_025_voice_fr_fr_deniseneural\\audio"
+  },
+  "createdAt": "2026-07-23T06:02:30.698Z",
+  "updatedAt": "2026-07-23T06:02:55.163Z",
+  "topic": "voice test",
+  "title": "Voice fr-FR-DeniseNeural",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

@@ -1,0 +1,44 @@
+{
+  "jobId": "v_portrait_nomusic",
+  "title": "Portrait NoMusic Variety",
+  "orientation": "portrait",
+  "voice": "en-US-JennyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Here is a fast tip for you.",
+      "searchKeywords": [
+        "github profile png",
+        "portrait nomusic variety",
+        "wild github profile png",
+        "github profile png nature",
+        "github profile png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "github-profile.png",
+      "transition": "fade",
+      "captionTheme": "minimal"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Apply it daily for results.",
+      "searchKeywords": [
+        "logo automation png",
+        "portrait nomusic variety",
+        "wild logo automation png",
+        "logo automation png nature",
+        "logo automation png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "logo-automation.png",
+      "trimStart": 0,
+      "trimEnd": 3,
+      "vignette": false,
+      "kineticText": true
+    }
+  ],
+  "totalDurationSec": 8
+}

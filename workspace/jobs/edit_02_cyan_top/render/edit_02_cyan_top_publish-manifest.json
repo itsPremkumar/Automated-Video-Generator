@@ -1,0 +1,51 @@
+{
+  "jobId": "edit_02_cyan_top",
+  "topic": "Edit cyan top",
+  "title": "Edit cyan top",
+  "description": "Editing scene one.\n\n• Editing scene two.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspcloseuppng #editcyan #wildperspcloseuppng #perspcloseuppngnature #perspcloseuppngcloseup #perspwarmpng #wildperspwarmpng #perspwarmpngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T08:14:27.559Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_02_cyan_top/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_02_cyan_top\\render\\_seg_edit_02_cyan_top_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_02_cyan_top\\render\\_seg_edit_02_cyan_top_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_02_cyan_top\\render\\_seg_edit_02_cyan_top_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_02_cyan_top\\render\\_seg_edit_02_cyan_top_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_02_cyan_top\\render\\_seg_edit_02_cyan_top_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_02_cyan_top\\render\\edit_02_cyan_top_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

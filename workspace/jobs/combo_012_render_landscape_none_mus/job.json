@@ -1,0 +1,21 @@
+{
+  "jobId": "combo_012_render_landscape_none_mus",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "combo_012_render_landscape_none_mus",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_012_render_landscape_none_mus",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_012_render_landscape_none_mus\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_012_render_landscape_none_mus\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_012_render_landscape_none_mus\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_012_render_landscape_none_mus\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_012_render_landscape_none_mus\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_012_render_landscape_none_mus\\audio"
+  },
+  "createdAt": "2026-07-23T05:55:30.213Z",
+  "updatedAt": "2026-07-23T05:55:47.981Z",
+  "topic": "combinatorial test",
+  "title": "Render landscape none music",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

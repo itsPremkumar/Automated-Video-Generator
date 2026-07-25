@@ -1,0 +1,80 @@
+{
+  "jobId": "v_landscape_es",
+  "title": "Paisaje Espanol",
+  "orientation": "landscape",
+  "voice": "es-ES-AlvaroNeural",
+  "musicQuery": "ambient lofi chill",
+  "assets": [
+    {
+      "kind": "image",
+      "sceneIndex": 0,
+      "localPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_es\\assets\\videos\\scene_01\\candidate_1.png",
+      "license": "User-supplied — owner attribution",
+      "licenseUrl": "",
+      "audioPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_es\\audio\\scene_1_voice.wav",
+      "durationSec": 3,
+      "captionSegments": [
+        {
+          "text": "Empieza",
+          "startMs": 0,
+          "endMs": 903
+        },
+        {
+          "text": "tu",
+          "startMs": 976,
+          "endMs": 1277
+        },
+        {
+          "text": "dia",
+          "startMs": 1350,
+          "endMs": 1651
+        },
+        {
+          "text": "con",
+          "startMs": 1724,
+          "endMs": 2025
+        },
+        {
+          "text": "energia.",
+          "startMs": 2098,
+          "endMs": 3001
+        }
+      ]
+    },
+    {
+      "kind": "image",
+      "sceneIndex": 1,
+      "localPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_es\\assets\\videos\\scene_02\\candidate_1.png",
+      "license": "User-supplied — owner attribution",
+      "licenseUrl": "",
+      "audioPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_es\\audio\\scene_2_voice.wav",
+      "durationSec": 3,
+      "captionSegments": [
+        {
+          "text": "Construye",
+          "startMs": 0,
+          "endMs": 802
+        },
+        {
+          "text": "habitos",
+          "startMs": 899,
+          "endMs": 2102
+        },
+        {
+          "text": "fuertes.",
+          "startMs": 2199,
+          "endMs": 3001
+        }
+      ]
+    },
+    {
+      "kind": "music",
+      "sceneIndex": -1,
+      "localPath": "C:\\one\\Automated-Video-Generator\\workspace\\cache\\free-music\\processed\\bundled_j8w0qy_processed.mp3",
+      "license": "CC0 1.0 Universal",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    }
+  ],
+  "generatedAt": "2026-07-23T05:36:57.394Z",
+  "voiceoverDriven": true
+}

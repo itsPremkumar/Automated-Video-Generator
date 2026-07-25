@@ -1,0 +1,2 @@
+file 'C:/one/Automated-Video-Generator/workspace/jobs/v_portrait_nomusic/render/_seg_v_portrait_nomusic_0.mp4'
+file 'C:/one/Automated-Video-Generator/workspace/jobs/v_portrait_nomusic/render/_seg_v_portrait_nomusic_1.mp4'

@@ -1,0 +1,21 @@
+{
+  "jobId": "new_085_persp_top_square_burned_m",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "new_085_persp_top_square_burned_m",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_085_persp_top_square_burned_m",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_085_persp_top_square_burned_m\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_085_persp_top_square_burned_m\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_085_persp_top_square_burned_m\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_085_persp_top_square_burned_m\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_085_persp_top_square_burned_m\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_085_persp_top_square_burned_m\\audio"
+  },
+  "createdAt": "2026-07-23T06:38:20.676Z",
+  "updatedAt": "2026-07-23T06:38:37.616Z",
+  "topic": "perspective combination",
+  "title": "New persp_top square burned music",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

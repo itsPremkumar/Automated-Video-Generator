@@ -1,0 +1,51 @@
+{
+  "jobId": "voice_tain",
+  "topic": "Voice ta-IN",
+  "title": "Voice ta-IN",
+  "description": "Voiceover scene one in ta-IN.\n\n• Voiceover scene two.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspwidepng #voice #wildperspwidepng #perspwidepngnature #perspwidepngcloseup #perspanglepng #wildperspanglepng #perspanglepngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T08:34:14.020Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_tain/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_tain\\render\\_seg_voice_tain_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_tain\\render\\_seg_voice_tain_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_tain\\render\\_seg_voice_tain_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_tain\\render\\_seg_voice_tain_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_tain\\render\\_seg_voice_tain_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_tain\\render\\voice_tain_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

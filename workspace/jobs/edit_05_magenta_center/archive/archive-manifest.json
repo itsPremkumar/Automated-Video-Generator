@@ -1,0 +1,100 @@
+{
+  "jobId": "edit_05_magenta_center",
+  "archivedAt": "2026-07-23T08:16:28.241Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\archive",
+  "totalFiles": 13,
+  "totalBytes": 331624,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\render\\edit_05_magenta_center_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\archive\\edit_05_magenta_center_details.txt",
+      "sizeBytes": 284,
+      "sha1": "ec94b8ead1faa8c2149166cfb95e6176cec700c0"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\render\\edit_05_magenta_center_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\archive\\edit_05_magenta_center_metadata.txt",
+      "sizeBytes": 431,
+      "sha1": "04bf370e943c2ee675f28ca479665e0380d162a7"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\render\\edit_05_magenta_center_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\archive\\edit_05_magenta_center_subtitles.srt",
+      "sizeBytes": 102,
+      "sha1": "5f611166a9698653a2ec26e23924a71d488f02e8"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\render\\edit_05_magenta_center_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\archive\\edit_05_magenta_center_subtitles.vtt",
+      "sizeBytes": 111,
+      "sha1": "9741d11034e2eae3540839e56a5514d30bc4bf01"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\render\\edit_05_magenta_center_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\archive\\edit_05_magenta_center_thumbnail.jpg",
+      "sizeBytes": 14477,
+      "sha1": "9e52307a7c45fe25e24377657b63e15f8f07ce48"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\render\\_captions_edit_05_magenta_center.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\archive\\_captions_edit_05_magenta_center.srt",
+      "sizeBytes": 235,
+      "sha1": "41c67bff76845a4d26de9388ddefdbc85a0adc61"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\render\\_seg_edit_05_magenta_center_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\archive\\_seg_edit_05_magenta_center_0.mp4",
+      "sizeBytes": 46214,
+      "sha1": "93ed23303868a9035d6fbad9370c8c9c50c64e45"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\render\\_seg_edit_05_magenta_center_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\archive\\_seg_edit_05_magenta_center_1.mp4",
+      "sizeBytes": 46556,
+      "sha1": "477ce9fa361fad9b36548bd067f6c3521a116ce6"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\archive\\contact-sheet.png",
+      "sizeBytes": 70040,
+      "sha1": "20d41243b0abc3cc9739193e34bef703280a1007"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\archive\\subtitles.srt",
+      "sizeBytes": 102,
+      "sha1": "5f611166a9698653a2ec26e23924a71d488f02e8"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\archive\\subtitles.vtt",
+      "sizeBytes": 111,
+      "sha1": "9741d11034e2eae3540839e56a5514d30bc4bf01"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\archive\\candidate_1.png",
+      "sizeBytes": 79228,
+      "sha1": "d310c41011787ef2f5c4d715b55a6f54abeb4919"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\archive\\candidate_1.png",
+      "sizeBytes": 73733,
+      "sha1": "81b2cf7244d9e92d340199fca1c2f4d777d8a576"
+    }
+  ]
+}

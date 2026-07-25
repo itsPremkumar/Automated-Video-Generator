@@ -1,0 +1,21 @@
+{
+  "jobId": "combo_014_render_square_burned_mus",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "combo_014_render_square_burned_mus",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_014_render_square_burned_mus",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_014_render_square_burned_mus\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_014_render_square_burned_mus\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_014_render_square_burned_mus\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_014_render_square_burned_mus\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_014_render_square_burned_mus\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_014_render_square_burned_mus\\audio"
+  },
+  "createdAt": "2026-07-23T05:56:33.964Z",
+  "updatedAt": "2026-07-23T05:56:54.305Z",
+  "topic": "combinatorial test",
+  "title": "Render square burned music",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

@@ -1,0 +1,21 @@
+{
+  "jobId": "new_021_persp_closeup_portrait_karaoke_m",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "new_021_persp_closeup_portrait_karaoke_m",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_021_persp_closeup_portrait_karaoke_m",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_021_persp_closeup_portrait_karaoke_m\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_021_persp_closeup_portrait_karaoke_m\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_021_persp_closeup_portrait_karaoke_m\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_021_persp_closeup_portrait_karaoke_m\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_021_persp_closeup_portrait_karaoke_m\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_021_persp_closeup_portrait_karaoke_m\\audio"
+  },
+  "createdAt": "2026-07-23T06:30:05.128Z",
+  "updatedAt": "2026-07-23T06:30:30.705Z",
+  "topic": "perspective combination",
+  "title": "New persp_closeup portrait karaoke music",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

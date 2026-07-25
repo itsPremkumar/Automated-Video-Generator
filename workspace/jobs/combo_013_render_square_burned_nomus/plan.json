@@ -1,0 +1,44 @@
+{
+  "jobId": "combo_013_render_square_burned_nomus",
+  "title": "Render square burned nomusic",
+  "orientation": "square",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "First scene of the test.",
+      "searchKeywords": [
+        "github profile png",
+        "render square burned",
+        "wild github profile png",
+        "github profile png nature",
+        "github profile png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "github-profile.png",
+      "transition": "slide",
+      "grade": "cinematic"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Second scene continues.",
+      "searchKeywords": [
+        "logo automation png",
+        "render square burned",
+        "wild logo automation png",
+        "logo automation png nature",
+        "logo automation png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "logo-automation.png",
+      "captionStyle": "bottom",
+      "captionColor": "yellow",
+      "fadeIn": 0.3,
+      "fadeOut": 0.3
+    }
+  ],
+  "totalDurationSec": 8
+}

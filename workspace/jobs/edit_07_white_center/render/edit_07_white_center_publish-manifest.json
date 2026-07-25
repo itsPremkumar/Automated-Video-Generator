@@ -1,0 +1,51 @@
+{
+  "jobId": "edit_07_white_center",
+  "topic": "Edit white center",
+  "title": "Edit white center",
+  "description": "Editing scene one.\n\n• Editing scene two.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspwarmpng #editwhitecenter #wildperspwarmpng #perspwarmpngnature #perspwarmpngcloseup #perspcloseuppng #wildperspcloseuppng #perspcloseuppngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T08:17:50.460Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_07_white_center/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_07_white_center\\render\\_seg_edit_07_white_center_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_07_white_center\\render\\_seg_edit_07_white_center_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_07_white_center\\render\\_seg_edit_07_white_center_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_07_white_center\\render\\_seg_edit_07_white_center_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_07_white_center\\render\\_seg_edit_07_white_center_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_07_white_center\\render\\edit_07_white_center_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

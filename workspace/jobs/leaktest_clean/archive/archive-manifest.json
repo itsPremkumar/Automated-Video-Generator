@@ -1,0 +1,100 @@
+{
+  "jobId": "leaktest_clean",
+  "archivedAt": "2026-07-23T07:36:12.403Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\archive",
+  "totalFiles": 13,
+  "totalBytes": 387196,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\render\\leaktest_clean_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\archive\\leaktest_clean_details.txt",
+      "sizeBytes": 274,
+      "sha1": "0499774ff0150e85820a4a1338170226757f8f15"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\render\\leaktest_clean_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\archive\\leaktest_clean_metadata.txt",
+      "sizeBytes": 315,
+      "sha1": "7e6141b12892f447ff0291d1c18fdf9f4558a335"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\render\\leaktest_clean_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\archive\\leaktest_clean_subtitles.srt",
+      "sizeBytes": 98,
+      "sha1": "31a28b5ab2ff65c1492efd091f7327a43d1802df"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\render\\leaktest_clean_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\archive\\leaktest_clean_subtitles.vtt",
+      "sizeBytes": 107,
+      "sha1": "663a4b1ee193f20892a391f8c8cf002ed662548b"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\render\\leaktest_clean_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\archive\\leaktest_clean_thumbnail.jpg",
+      "sizeBytes": 16120,
+      "sha1": "20903ba3a06fbb87d9b4c288652fa1e0fc2d3385"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\render\\_captions_leaktest_clean.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\archive\\_captions_leaktest_clean.srt",
+      "sizeBytes": 231,
+      "sha1": "33b10e9537929b4651c85ae19ba39876c579bcde"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\render\\_seg_leaktest_clean_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\archive\\_seg_leaktest_clean_0.mp4",
+      "sizeBytes": 69356,
+      "sha1": "3c7beda91eb9fbb73755fb6ce2cf4748e63480fe"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\render\\_seg_leaktest_clean_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\archive\\_seg_leaktest_clean_1.mp4",
+      "sizeBytes": 58744,
+      "sha1": "397f4a7f598b8f352cc24c8bf8629b5ef8d64121"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\archive\\contact-sheet.png",
+      "sizeBytes": 71616,
+      "sha1": "6926e1082e2b858f04591e3ef98ca18f78d250f7"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\archive\\subtitles.srt",
+      "sizeBytes": 98,
+      "sha1": "31a28b5ab2ff65c1492efd091f7327a43d1802df"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\archive\\subtitles.vtt",
+      "sizeBytes": 107,
+      "sha1": "663a4b1ee193f20892a391f8c8cf002ed662548b"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\archive\\candidate_1.png",
+      "sizeBytes": 85065,
+      "sha1": "6976981b8df1c55460628365643c0ac4f81d3511"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\archive\\candidate_1.png",
+      "sizeBytes": 85065,
+      "sha1": "6976981b8df1c55460628365643c0ac4f81d3511"
+    }
+  ]
+}

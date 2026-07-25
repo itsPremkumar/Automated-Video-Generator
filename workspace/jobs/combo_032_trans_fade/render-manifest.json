@@ -1,0 +1,65 @@
+{
+  "jobId": "combo_032_trans_fade",
+  "title": "Transition fade",
+  "orientation": "landscape",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "assets": [
+    {
+      "kind": "image",
+      "sceneIndex": 0,
+      "localPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_032_trans_fade\\assets\\videos\\scene_01\\candidate_1.png",
+      "license": "User-supplied — owner attribution",
+      "licenseUrl": "",
+      "audioPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_032_trans_fade\\audio\\scene_1_voice.wav",
+      "durationSec": 3,
+      "captionSegments": [
+        {
+          "text": "Transition",
+          "startMs": 0,
+          "endMs": 1388
+        },
+        {
+          "text": "test",
+          "startMs": 1500,
+          "endMs": 1963
+        },
+        {
+          "text": "fade.",
+          "startMs": 2075,
+          "endMs": 3000
+        }
+      ]
+    },
+    {
+      "kind": "image",
+      "sceneIndex": 1,
+      "localPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_032_trans_fade\\assets\\videos\\scene_02\\candidate_1.png",
+      "license": "User-supplied — owner attribution",
+      "licenseUrl": "",
+      "audioPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_032_trans_fade\\audio\\scene_2_voice.wav",
+      "durationSec": 3,
+      "captionSegments": [
+        {
+          "text": "Second",
+          "startMs": 0,
+          "endMs": 1145
+        },
+        {
+          "text": "transition.",
+          "startMs": 1284,
+          "endMs": 3000
+        }
+      ]
+    },
+    {
+      "kind": "music",
+      "sceneIndex": -1,
+      "localPath": "C:\\one\\Automated-Video-Generator\\workspace\\cache\\free-music\\processed\\bundled_j8w0qy_processed.mp3",
+      "license": "CC0 1.0 Universal",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    }
+  ],
+  "generatedAt": "2026-07-23T06:06:22.436Z",
+  "voiceoverDriven": true
+}

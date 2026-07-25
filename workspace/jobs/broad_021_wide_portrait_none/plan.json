@@ -1,0 +1,42 @@
+{
+  "jobId": "broad_021_wide_portrait_none",
+  "title": "Broad wide portrait none",
+  "orientation": "portrait",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Scene one from wide view.",
+      "searchKeywords": [
+        "persp wide png",
+        "broad wide portrait",
+        "wild persp wide png",
+        "persp wide png nature",
+        "persp wide png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_wide.png",
+      "transition": "slide",
+      "grade": "cool"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Scene two continues.",
+      "searchKeywords": [
+        "persp top png",
+        "broad wide portrait",
+        "wild persp top png",
+        "persp top png nature",
+        "persp top png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_top.png",
+      "captionTheme": "neon",
+      "kineticText": true
+    }
+  ],
+  "totalDurationSec": 8
+}

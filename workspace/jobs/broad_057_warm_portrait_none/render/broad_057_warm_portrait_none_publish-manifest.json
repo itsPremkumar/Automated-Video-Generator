@@ -1,0 +1,51 @@
+{
+  "jobId": "broad_057_warm_portrait_none",
+  "topic": "Broad warm portrait none",
+  "title": "Broad warm portrait none",
+  "description": "Scene one from warm view.\n\n• Scene two continues.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspwarmpng #broadwarmportrait #wildperspwarmpng #perspwarmpngnature #perspwarmpngcloseup #perspaerialpng #wildperspaerialpng #perspaerialpngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T07:19:33.144Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_057_warm_portrait_none/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_057_warm_portrait_none\\render\\_seg_broad_057_warm_portrait_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_057_warm_portrait_none\\render\\_seg_broad_057_warm_portrait_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_057_warm_portrait_none\\render\\_seg_broad_057_warm_portrait_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_057_warm_portrait_none\\render\\_seg_broad_057_warm_portrait_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_057_warm_portrait_none\\render\\_seg_broad_057_warm_portrait_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_057_warm_portrait_none\\render\\broad_057_warm_portrait_none_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

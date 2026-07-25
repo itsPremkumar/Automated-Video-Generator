@@ -1,0 +1,51 @@
+{
+  "jobId": "combo_028_grade_warm",
+  "topic": "Grade warm",
+  "title": "Grade warm",
+  "description": "Grade test warm.\n\n• Second grade scene.\n\n#Shorts #AI #facts",
+  "hashtags": "#logoautomationpng #gradewarm #wildlogoautomationpng #logoautomationpngnature #logoautomationpngcloseup #githubprofilepng #wildgithubprofilepng #githubprofilepngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T06:04:43.589Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_028_grade_warm/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_028_grade_warm\\render\\_seg_combo_028_grade_warm_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_028_grade_warm\\render\\_seg_combo_028_grade_warm_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_028_grade_warm\\render\\_seg_combo_028_grade_warm_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_028_grade_warm\\render\\_seg_combo_028_grade_warm_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_028_grade_warm\\render\\_seg_combo_028_grade_warm_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_028_grade_warm\\render\\combo_028_grade_warm_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

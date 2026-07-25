@@ -1,0 +1,41 @@
+{
+  "jobId": "combo_028_grade_warm",
+  "title": "Grade warm",
+  "orientation": "portrait",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Grade test warm.",
+      "searchKeywords": [
+        "logo automation png",
+        "grade warm",
+        "wild logo automation png",
+        "logo automation png nature",
+        "logo automation png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "logo-automation.png",
+      "grade": "warm"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Second grade scene.",
+      "searchKeywords": [
+        "github profile png",
+        "grade warm",
+        "wild github profile png",
+        "github profile png nature",
+        "github profile png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "github-profile.png",
+      "transition": "slide",
+      "grade": "warm"
+    }
+  ],
+  "totalDurationSec": 8
+}

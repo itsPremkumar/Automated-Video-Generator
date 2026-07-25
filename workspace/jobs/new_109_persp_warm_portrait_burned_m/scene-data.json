@@ -1,0 +1,138 @@
+{
+  "jobId": "new_109_persp_warm_portrait_burned_m",
+  "title": "New persp_warm portrait burned music",
+  "backend": "heuristic",
+  "voiceoverDriven": true,
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Perspective scene one.",
+      "searchKeywords": [
+        "persp warm png",
+        "persp warm portrait",
+        "wild persp warm png",
+        "persp warm png nature",
+        "persp warm png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3.5,
+      "voiceover": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_109_persp_warm_portrait_burned_m\\audio\\scene_1_voice.wav",
+      "captionSegments": [
+        {
+          "text": "Perspective",
+          "startMs": 0,
+          "endMs": 1567
+        },
+        {
+          "text": "scene",
+          "startMs": 1671,
+          "endMs": 2533
+        },
+        {
+          "text": "one.",
+          "startMs": 2637,
+          "endMs": 3500
+        }
+      ]
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Perspective scene two.",
+      "searchKeywords": [
+        "persp cool png",
+        "persp warm portrait",
+        "wild persp cool png",
+        "persp cool png nature",
+        "persp cool png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3.5,
+      "voiceover": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_109_persp_warm_portrait_burned_m\\audio\\scene_2_voice.wav",
+      "captionSegments": [
+        {
+          "text": "Perspective",
+          "startMs": 0,
+          "endMs": 1787
+        },
+        {
+          "text": "scene",
+          "startMs": 1906,
+          "endMs": 2889
+        },
+        {
+          "text": "two.",
+          "startMs": 3008,
+          "endMs": 3500
+        }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "assetId": "image_s0_c1",
+      "kind": "image",
+      "sceneIndex": 0,
+      "decision": "approved",
+      "rationale": "Visual passes at conf 6/10 (score 15.0): agent backend: signal-only; visual relevance not AI-scored",
+      "decidedBy": "agent",
+      "fallbackUsed": false
+    },
+    {
+      "assetId": "image_s1_c1",
+      "kind": "image",
+      "sceneIndex": 1,
+      "decision": "approved",
+      "rationale": "Visual passes at conf 6/10 (score 15.0): agent backend: signal-only; visual relevance not AI-scored",
+      "decidedBy": "agent",
+      "fallbackUsed": false
+    },
+    {
+      "assetId": "music_s-1_c1",
+      "kind": "music",
+      "sceneIndex": -1,
+      "decision": "approved",
+      "rationale": "Music passed signal check (ffprobe unavailable; passed on size check only).",
+      "decidedBy": "agent",
+      "fallbackUsed": false
+    }
+  ],
+  "gate": [
+    {
+      "id": "X3",
+      "label": "No unresolved decisions",
+      "pass": true,
+      "detail": "every asset has a decision"
+    },
+    {
+      "id": "X2",
+      "label": "Every scene has an approved visual",
+      "pass": true,
+      "detail": "all scenes covered"
+    },
+    {
+      "id": "X1",
+      "label": "Duration alignment",
+      "pass": true,
+      "detail": "approved visuals=2/2"
+    },
+    {
+      "id": "X5",
+      "label": "Runtime within limit",
+      "pass": true,
+      "detail": "8s <= 60s"
+    },
+    {
+      "id": "X6",
+      "label": "Attribution completeness",
+      "pass": true,
+      "detail": "all approved assets carry a license"
+    },
+    {
+      "id": "X4",
+      "label": "Caption sync",
+      "pass": true,
+      "detail": "render manifest present"
+    }
+  ],
+  "generatedAt": "2026-07-23T06:40:25.314Z"
+}

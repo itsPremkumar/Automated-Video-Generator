@@ -1,0 +1,21 @@
+{
+  "jobId": "voice_hiin",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "voice_hiin",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_hiin",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_hiin\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_hiin\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_hiin\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_hiin\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_hiin\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_hiin\\audio"
+  },
+  "createdAt": "2026-07-23T08:33:14.148Z",
+  "updatedAt": "2026-07-23T08:33:36.110Z",
+  "topic": "multilingual hi-IN",
+  "title": "Voice hi-IN",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

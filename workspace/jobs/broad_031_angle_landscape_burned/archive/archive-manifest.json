@@ -1,0 +1,100 @@
+{
+  "jobId": "broad_031_angle_landscape_burned",
+  "archivedAt": "2026-07-23T07:12:50.146Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\archive",
+  "totalFiles": 13,
+  "totalBytes": 411141,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\render\\broad_031_angle_landscape_burned_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\archive\\broad_031_angle_landscape_burned_details.txt",
+      "sizeBytes": 309,
+      "sha1": "f296de63f41b49590d491c645eea5b9690320ced"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\render\\broad_031_angle_landscape_burned_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\archive\\broad_031_angle_landscape_burned_metadata.txt",
+      "sizeBytes": 452,
+      "sha1": "b8d94f11acc3144f7e6dd1db00d13ce49ed2a010"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\render\\broad_031_angle_landscape_burned_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\archive\\broad_031_angle_landscape_burned_subtitles.srt",
+      "sizeBytes": 112,
+      "sha1": "1fb824b879daea0d600fede52b566b2a337eaff8"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\render\\broad_031_angle_landscape_burned_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\archive\\broad_031_angle_landscape_burned_subtitles.vtt",
+      "sizeBytes": 121,
+      "sha1": "6c6547afca9f4bd1aa3f44ee61237f600a1a2614"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\render\\broad_031_angle_landscape_burned_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\archive\\broad_031_angle_landscape_burned_thumbnail.jpg",
+      "sizeBytes": 20872,
+      "sha1": "dab87fcb43c8cbdde574ada2b5b16e98bea3f467"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\render\\_captions_broad_031_angle_landscape_burned.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\archive\\_captions_broad_031_angle_landscape_burned.srt",
+      "sizeBytes": 311,
+      "sha1": "cb0f8312e8afbe1d3e9022c4d00dcca2a27ae5ae"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\render\\_seg_broad_031_angle_landscape_burned_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\archive\\_seg_broad_031_angle_landscape_burned_0.mp4",
+      "sizeBytes": 92986,
+      "sha1": "42e86a78fa8ffd2ae306fae766fa138a2f761890"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\render\\_seg_broad_031_angle_landscape_burned_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\archive\\_seg_broad_031_angle_landscape_burned_1.mp4",
+      "sizeBytes": 90748,
+      "sha1": "918ec49f6d8cae246a0d22b9357cebc460e0f052"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\archive\\contact-sheet.png",
+      "sizeBytes": 71366,
+      "sha1": "7b1a2de88b54bab048fb178952f7e47502a1b3c8"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\archive\\subtitles.srt",
+      "sizeBytes": 112,
+      "sha1": "1fb824b879daea0d600fede52b566b2a337eaff8"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\archive\\subtitles.vtt",
+      "sizeBytes": 121,
+      "sha1": "6c6547afca9f4bd1aa3f44ee61237f600a1a2614"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\archive\\candidate_1.png",
+      "sizeBytes": 64441,
+      "sha1": "c3f5bd7b86530d1b4fe6d1f0d9473a60096e7bf1"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_031_angle_landscape_burned\\archive\\candidate_1.png",
+      "sizeBytes": 69190,
+      "sha1": "f3d2c6605cce49c496acd096774deecaaa4b941d"
+    }
+  ]
+}

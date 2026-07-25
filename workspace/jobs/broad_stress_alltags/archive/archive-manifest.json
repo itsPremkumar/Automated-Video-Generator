@@ -1,0 +1,100 @@
+{
+  "jobId": "broad_stress_alltags",
+  "archivedAt": "2026-07-23T07:28:06.571Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\archive",
+  "totalFiles": 13,
+  "totalBytes": 305272,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\render\\broad_stress_alltags_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\archive\\broad_stress_alltags_details.txt",
+      "sizeBytes": 284,
+      "sha1": "1d1e62c14fa6b5d533b7f6ddba8044e71ffc628d"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\render\\broad_stress_alltags_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\archive\\broad_stress_alltags_metadata.txt",
+      "sizeBytes": 435,
+      "sha1": "c5badd3299ee095b808490ae668349b7a3a97eef"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\render\\broad_stress_alltags_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\archive\\broad_stress_alltags_subtitles.srt",
+      "sizeBytes": 100,
+      "sha1": "5678733ad496254becd1657c0b04d6e9cf5abaae"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\render\\broad_stress_alltags_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\archive\\broad_stress_alltags_subtitles.vtt",
+      "sizeBytes": 109,
+      "sha1": "6e14dbb6a3bd695b415512d1f77b6e5c9a2762d3"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\render\\broad_stress_alltags_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\archive\\broad_stress_alltags_thumbnail.jpg",
+      "sizeBytes": 15126,
+      "sha1": "39ff9c2719ab342755ff5593e5fc45a383e4d00a"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\render\\_captions_broad_stress_alltags.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\archive\\_captions_broad_stress_alltags.srt",
+      "sizeBytes": 233,
+      "sha1": "bb765cf6faebd416f2d66f76634e4d093e3d259f"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\render\\_seg_broad_stress_alltags_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\archive\\_seg_broad_stress_alltags_0.mp4",
+      "sizeBytes": 42366,
+      "sha1": "16293221154cca129d66b21e61acc942ca394ff2"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\render\\_seg_broad_stress_alltags_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\archive\\_seg_broad_stress_alltags_1.mp4",
+      "sizeBytes": 43720,
+      "sha1": "cb7887263b46e7cb0f0474e63a99c9c63da9b0f6"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\archive\\contact-sheet.png",
+      "sizeBytes": 63729,
+      "sha1": "54d1ff3d55e8fdf00f14dce10fac639e6cc83508"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\archive\\subtitles.srt",
+      "sizeBytes": 100,
+      "sha1": "5678733ad496254becd1657c0b04d6e9cf5abaae"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\archive\\subtitles.vtt",
+      "sizeBytes": 109,
+      "sha1": "6e14dbb6a3bd695b415512d1f77b6e5c9a2762d3"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\archive\\candidate_1.png",
+      "sizeBytes": 58164,
+      "sha1": "f88605c5d86b70952f5aaf640d644d07a87cacfc"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_stress_alltags\\archive\\candidate_1.png",
+      "sizeBytes": 80797,
+      "sha1": "b3653a2ff512efdc40d7c3cc741f82d96c577211"
+    }
+  ]
+}

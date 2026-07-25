@@ -1,0 +1,42 @@
+{
+  "jobId": "broad_065_cool_portrait_karaoke",
+  "title": "Broad cool portrait karaoke",
+  "orientation": "portrait",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Scene one from cool view.",
+      "searchKeywords": [
+        "persp cool png",
+        "broad cool portrait",
+        "wild persp cool png",
+        "persp cool png nature",
+        "persp cool png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_cool.png",
+      "transition": "slide",
+      "grade": "warm"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Scene two continues.",
+      "searchKeywords": [
+        "persp urban png",
+        "broad cool portrait",
+        "wild persp urban png",
+        "persp urban png nature",
+        "persp urban png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_urban.png",
+      "captionTheme": "bold",
+      "kineticText": true
+    }
+  ],
+  "totalDurationSec": 8
+}

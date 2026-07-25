@@ -1,0 +1,51 @@
+{
+  "jobId": "combo_039_tags_full",
+  "title": "All Inline Tags",
+  "orientation": "portrait",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Caption neon and calm music.",
+      "searchKeywords": [
+        "github profile png",
+        "inline tags",
+        "wild github profile png",
+        "github profile png nature",
+        "github profile png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "github-profile.png",
+      "captionTheme": "neon",
+      "sfx": true,
+      "jCutSec": 0.3,
+      "vignette": true,
+      "kineticText": true,
+      "musicIntensity": "calm"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Caption bold and energetic.",
+      "searchKeywords": [
+        "logo automation png",
+        "inline tags",
+        "wild logo automation png",
+        "logo automation png nature",
+        "logo automation png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "logo-automation.png",
+      "trimStart": 0,
+      "trimEnd": 4,
+      "captionTheme": "bold",
+      "sfx": false,
+      "vignette": false,
+      "kineticText": false,
+      "musicIntensity": "energetic"
+    }
+  ],
+  "totalDurationSec": 8
+}

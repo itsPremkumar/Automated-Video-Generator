@@ -1,0 +1,100 @@
+{
+  "jobId": "combo_029_grade_cool",
+  "archivedAt": "2026-07-23T06:05:19.186Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\archive",
+  "totalFiles": 13,
+  "totalBytes": 1650203,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\render\\combo_029_grade_cool_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\archive\\combo_029_grade_cool_details.txt",
+      "sizeBytes": 284,
+      "sha1": "1c5cf91730e50cd36dcb2da07eadc6117b5d0780"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\render\\combo_029_grade_cool_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\archive\\combo_029_grade_cool_metadata.txt",
+      "sizeBytes": 463,
+      "sha1": "ee844d3c4b395b6356f32635ed000a8f1fe7143d"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\render\\combo_029_grade_cool_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\archive\\combo_029_grade_cool_subtitles.srt",
+      "sizeBytes": 101,
+      "sha1": "cdc513477baa592bc521afa7bbc4f973fb105f29"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\render\\combo_029_grade_cool_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\archive\\combo_029_grade_cool_subtitles.vtt",
+      "sizeBytes": 110,
+      "sha1": "c2760d5e92fd635d72484f7c25971c5829791698"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\render\\combo_029_grade_cool_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\archive\\combo_029_grade_cool_thumbnail.jpg",
+      "sizeBytes": 45602,
+      "sha1": "ba32f72ba4dcfed3915624cf2efefbe20e778bd7"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\render\\_captions_combo_029_grade_cool.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\archive\\_captions_combo_029_grade_cool.srt",
+      "sizeBytes": 234,
+      "sha1": "9ce65263f2782a28e154471e7a56f93864498b9e"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\render\\_seg_combo_029_grade_cool_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\archive\\_seg_combo_029_grade_cool_0.mp4",
+      "sizeBytes": 85463,
+      "sha1": "fc7771b05c128d7393df78cfccd4ade8617eeea1"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\render\\_seg_combo_029_grade_cool_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\archive\\_seg_combo_029_grade_cool_1.mp4",
+      "sizeBytes": 64117,
+      "sha1": "99938f656d7ab44ee72c4c572a85eb66a4aa749d"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\archive\\contact-sheet.png",
+      "sizeBytes": 259554,
+      "sha1": "c575caeef14b44e26abb56720b7f3f5a90195b57"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\archive\\subtitles.srt",
+      "sizeBytes": 101,
+      "sha1": "cdc513477baa592bc521afa7bbc4f973fb105f29"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\archive\\subtitles.vtt",
+      "sizeBytes": 110,
+      "sha1": "c2760d5e92fd635d72484f7c25971c5829791698"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\archive\\candidate_1.png",
+      "sizeBytes": 486086,
+      "sha1": "a0eca093964909dcfb9fce869a6f4b670544e8b8"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_029_grade_cool\\archive\\candidate_1.png",
+      "sizeBytes": 707978,
+      "sha1": "52e8d8ee1b653856629c49ac5b97134f6a351036"
+    }
+  ]
+}

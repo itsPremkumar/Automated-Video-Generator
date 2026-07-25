@@ -1,0 +1,41 @@
+{
+  "jobId": "broad_019_wide_portrait_burned",
+  "title": "Broad wide portrait burned",
+  "orientation": "portrait",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Scene one from wide view.",
+      "searchKeywords": [
+        "persp wide png",
+        "broad wide portrait",
+        "wild persp wide png",
+        "persp wide png nature",
+        "persp wide png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_wide.png",
+      "grade": "neutral"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Scene two continues.",
+      "searchKeywords": [
+        "persp wide png",
+        "broad wide portrait",
+        "wild persp wide png",
+        "persp wide png nature",
+        "persp wide png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_wide.png",
+      "captionTheme": "vivid",
+      "kineticText": true
+    }
+  ],
+  "totalDurationSec": 8
+}

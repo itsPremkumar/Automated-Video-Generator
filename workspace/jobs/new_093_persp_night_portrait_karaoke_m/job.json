@@ -1,0 +1,21 @@
+{
+  "jobId": "new_093_persp_night_portrait_karaoke_m",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "new_093_persp_night_portrait_karaoke_m",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_093_persp_night_portrait_karaoke_m",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_093_persp_night_portrait_karaoke_m\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_093_persp_night_portrait_karaoke_m\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_093_persp_night_portrait_karaoke_m\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_093_persp_night_portrait_karaoke_m\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_093_persp_night_portrait_karaoke_m\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_093_persp_night_portrait_karaoke_m\\audio"
+  },
+  "createdAt": "2026-07-23T06:38:59.611Z",
+  "updatedAt": "2026-07-23T06:39:15.166Z",
+  "topic": "perspective combination",
+  "title": "New persp_night portrait karaoke music",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

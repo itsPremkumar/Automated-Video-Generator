@@ -1,0 +1,51 @@
+{
+  "jobId": "voice_dede",
+  "topic": "Voice de-DE",
+  "title": "Voice de-DE",
+  "description": "Voiceover scene one in de-DE.\n\n• Voiceover scene two.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspwarmpng #voice #wildperspwarmpng #perspwarmpngnature #perspwarmpngcloseup #perspcoolpng #wildperspcoolpng #perspcoolpngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T08:35:16.856Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_dede/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_dede\\render\\_seg_voice_dede_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_dede\\render\\_seg_voice_dede_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_dede\\render\\_seg_voice_dede_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_dede\\render\\_seg_voice_dede_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_dede\\render\\_seg_voice_dede_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_dede\\render\\voice_dede_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

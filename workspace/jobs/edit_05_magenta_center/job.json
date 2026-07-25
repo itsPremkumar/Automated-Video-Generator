@@ -1,0 +1,21 @@
+{
+  "jobId": "edit_05_magenta_center",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "edit_05_magenta_center",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_05_magenta_center\\audio"
+  },
+  "createdAt": "2026-07-23T08:15:40.074Z",
+  "updatedAt": "2026-07-23T08:16:19.075Z",
+  "topic": "editing tags",
+  "title": "Edit magenta center",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

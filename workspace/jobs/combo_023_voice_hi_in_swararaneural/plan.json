@@ -1,0 +1,41 @@
+{
+  "jobId": "combo_023_voice_hi_in_swararaneural",
+  "title": "Voice hi-IN-SwararaNeural",
+  "orientation": "portrait",
+  "voice": "hi-IN-SwararaNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "This is the hindi voice test.",
+      "searchKeywords": [
+        "github profile png",
+        "voice swararaneural",
+        "wild github profile png",
+        "github profile png nature",
+        "github profile png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "github-profile.png",
+      "grade": "warm"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Speaking clearly for verification.",
+      "searchKeywords": [
+        "logo automation png",
+        "voice swararaneural",
+        "wild logo automation png",
+        "logo automation png nature",
+        "logo automation png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "logo-automation.png",
+      "captionTheme": "neon",
+      "kineticText": true
+    }
+  ],
+  "totalDurationSec": 8
+}

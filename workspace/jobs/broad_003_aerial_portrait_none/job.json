@@ -1,0 +1,21 @@
+{
+  "jobId": "broad_003_aerial_portrait_none",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "broad_003_aerial_portrait_none",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_003_aerial_portrait_none",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_003_aerial_portrait_none\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_003_aerial_portrait_none\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_003_aerial_portrait_none\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_003_aerial_portrait_none\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_003_aerial_portrait_none\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_003_aerial_portrait_none\\audio"
+  },
+  "createdAt": "2026-07-23T07:06:07.272Z",
+  "updatedAt": "2026-07-23T07:06:24.635Z",
+  "topic": "perspective persp_aerial",
+  "title": "Broad aerial portrait none",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

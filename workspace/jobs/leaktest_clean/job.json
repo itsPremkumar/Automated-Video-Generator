@@ -1,0 +1,21 @@
+{
+  "jobId": "leaktest_clean",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "leaktest_clean",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\audio"
+  },
+  "createdAt": "2026-07-23T07:35:43.157Z",
+  "updatedAt": "2026-07-23T07:36:06.325Z",
+  "topic": "isolation test",
+  "title": "Leak Test Clean",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

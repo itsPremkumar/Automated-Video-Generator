@@ -1,0 +1,51 @@
+{
+  "jobId": "combo_035_trans_cut",
+  "topic": "Transition cut",
+  "title": "Transition cut",
+  "description": "Transition test cut.\n\n• Second transition.\n\n#Shorts #AI #facts",
+  "hashtags": "#logoautomationpng #transition #wildlogoautomationpng #logoautomationpngnature #logoautomationpngcloseup #githubprofilepng #wildgithubprofilepng #githubprofilepngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T06:08:29.027Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_035_trans_cut/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_035_trans_cut\\render\\_seg_combo_035_trans_cut_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_035_trans_cut\\render\\_seg_combo_035_trans_cut_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_035_trans_cut\\render\\_seg_combo_035_trans_cut_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_035_trans_cut\\render\\_seg_combo_035_trans_cut_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_035_trans_cut\\render\\_seg_combo_035_trans_cut_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_035_trans_cut\\render\\combo_035_trans_cut_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "jobId": "fixcheck_landscape",
+  "topic": "Fix Check Landscape",
+  "title": "Fix Check Landscape",
+  "description": "Landscape scene one.\n\n• Landscape scene two.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspaerialpng #checklandscape #wildperspaerialpng #perspaerialpngnature #perspaerialpngcloseup #perspwidepng #wildperspwidepng #perspwidepngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T06:53:01.260Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\render\\_seg_fixcheck_landscape_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\render\\_seg_fixcheck_landscape_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\render\\_seg_fixcheck_landscape_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\render\\_seg_fixcheck_landscape_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\render\\_seg_fixcheck_landscape_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\render\\fixcheck_landscape_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

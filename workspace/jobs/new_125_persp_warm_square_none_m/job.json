@@ -1,0 +1,21 @@
+{
+  "jobId": "new_125_persp_warm_square_none_m",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "new_125_persp_warm_square_none_m",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_125_persp_warm_square_none_m",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_125_persp_warm_square_none_m\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_125_persp_warm_square_none_m\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_125_persp_warm_square_none_m\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_125_persp_warm_square_none_m\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_125_persp_warm_square_none_m\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_125_persp_warm_square_none_m\\audio"
+  },
+  "createdAt": "2026-07-23T06:41:11.456Z",
+  "updatedAt": "2026-07-23T06:41:26.633Z",
+  "topic": "perspective combination",
+  "title": "New persp_warm square none music",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

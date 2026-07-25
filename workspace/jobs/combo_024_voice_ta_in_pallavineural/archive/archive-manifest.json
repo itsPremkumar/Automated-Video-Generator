@@ -1,0 +1,100 @@
+{
+  "jobId": "combo_024_voice_ta_in_pallavineural",
+  "archivedAt": "2026-07-23T06:02:27.927Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\archive",
+  "totalFiles": 13,
+  "totalBytes": 1692736,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\render\\combo_024_voice_ta_in_pallavineural_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\archive\\combo_024_voice_ta_in_pallavineural_details.txt",
+      "sizeBytes": 345,
+      "sha1": "930abf687c20adabc1d45d05724bf06c51c1319b"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\render\\combo_024_voice_ta_in_pallavineural_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\archive\\combo_024_voice_ta_in_pallavineural_metadata.txt",
+      "sizeBytes": 524,
+      "sha1": "c3dfd0f8823216beedb0e8541d007fc276dbc875"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\render\\combo_024_voice_ta_in_pallavineural_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\archive\\combo_024_voice_ta_in_pallavineural_subtitles.srt",
+      "sizeBytes": 129,
+      "sha1": "534c51bb9a17bc810cd93f5c755400399bae23c7"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\render\\combo_024_voice_ta_in_pallavineural_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\archive\\combo_024_voice_ta_in_pallavineural_subtitles.vtt",
+      "sizeBytes": 138,
+      "sha1": "3f4ba560a9dae803e7666ba5db08b73720416a6c"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\render\\combo_024_voice_ta_in_pallavineural_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\archive\\combo_024_voice_ta_in_pallavineural_thumbnail.jpg",
+      "sizeBytes": 48260,
+      "sha1": "11338a200c89cb22334eaf7e656ad94139c9479f"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\render\\_captions_combo_024_voice_ta_in_pallavineural.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\archive\\_captions_combo_024_voice_ta_in_pallavineural.srt",
+      "sizeBytes": 361,
+      "sha1": "16f6774c5649cf3a3584f5b1ea0e74baee6a0895"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\render\\_seg_combo_024_voice_ta_in_pallavineural_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\archive\\_seg_combo_024_voice_ta_in_pallavineural_0.mp4",
+      "sizeBytes": 107297,
+      "sha1": "fa02f2dbb016259cd138fd8cd5a48e3a61c192b0"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\render\\_seg_combo_024_voice_ta_in_pallavineural_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\archive\\_seg_combo_024_voice_ta_in_pallavineural_1.mp4",
+      "sizeBytes": 81797,
+      "sha1": "92cc942c8219f649e29fd2ab7a448823935c4b68"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\archive\\contact-sheet.png",
+      "sizeBytes": 259554,
+      "sha1": "c575caeef14b44e26abb56720b7f3f5a90195b57"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\archive\\subtitles.srt",
+      "sizeBytes": 129,
+      "sha1": "534c51bb9a17bc810cd93f5c755400399bae23c7"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\archive\\subtitles.vtt",
+      "sizeBytes": 138,
+      "sha1": "3f4ba560a9dae803e7666ba5db08b73720416a6c"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\archive\\candidate_1.png",
+      "sizeBytes": 486086,
+      "sha1": "a0eca093964909dcfb9fce869a6f4b670544e8b8"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_024_voice_ta_in_pallavineural\\archive\\candidate_1.png",
+      "sizeBytes": 707978,
+      "sha1": "52e8d8ee1b653856629c49ac5b97134f6a351036"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "jobId": "broad_081_urban_square_none",
+  "title": "Broad urban square none",
+  "orientation": "square",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Scene one from urban view.",
+      "searchKeywords": [
+        "persp urban png",
+        "broad urban square",
+        "wild persp urban png",
+        "persp urban png nature",
+        "persp urban png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_urban.png",
+      "transition": "slide",
+      "grade": "cool"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Scene two continues.",
+      "searchKeywords": [
+        "persp top png",
+        "broad urban square",
+        "wild persp top png",
+        "persp top png nature",
+        "persp top png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_top.png",
+      "captionTheme": "neon",
+      "kineticText": true
+    }
+  ],
+  "totalDurationSec": 8
+}

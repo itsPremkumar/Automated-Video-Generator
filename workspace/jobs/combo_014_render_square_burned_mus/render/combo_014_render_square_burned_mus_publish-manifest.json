@@ -1,0 +1,51 @@
+{
+  "jobId": "combo_014_render_square_burned_mus",
+  "topic": "Render square burned music",
+  "title": "Render square burned music",
+  "description": "First scene of the test.\n\n• Second scene continues.\n\n#Shorts #AI #facts",
+  "hashtags": "#githubprofilepng #rendersquareburned #wildgithubprofilepng #githubprofilepngnature #githubprofilepngcloseup #logoautomationpng #wildlogoautomationpng #logoautomationpngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T05:57:06.477Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_014_render_square_burned_mus/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_014_render_square_burned_mus\\render\\_seg_combo_014_render_square_burned_mus_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_014_render_square_burned_mus\\render\\_seg_combo_014_render_square_burned_mus_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_014_render_square_burned_mus\\render\\_seg_combo_014_render_square_burned_mus_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_014_render_square_burned_mus\\render\\_seg_combo_014_render_square_burned_mus_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_014_render_square_burned_mus\\render\\_seg_combo_014_render_square_burned_mus_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_014_render_square_burned_mus\\render\\combo_014_render_square_burned_mus_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

@@ -1,0 +1,3 @@
+file 'C:\one\Automated-Video-Generator\workspace\jobs\adv_progress_demo\audio\scene_1_voice.wav'
+file 'C:\one\Automated-Video-Generator\workspace\jobs\adv_progress_demo\audio\scene_2_voice.wav'
+file 'C:\one\Automated-Video-Generator\workspace\jobs\adv_progress_demo\audio\scene_3_voice.wav'

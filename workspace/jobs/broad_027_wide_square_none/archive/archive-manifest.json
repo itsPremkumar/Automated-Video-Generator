@@ -1,0 +1,93 @@
+{
+  "jobId": "broad_027_wide_square_none",
+  "archivedAt": "2026-07-23T07:11:58.322Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\archive",
+  "totalFiles": 12,
+  "totalBytes": 365539,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\render\\broad_027_wide_square_none_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\archive\\broad_027_wide_square_none_details.txt",
+      "sizeBytes": 296,
+      "sha1": "6ed047015db4808d3a4b0c85f6849c5b9f043bd9"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\render\\broad_027_wide_square_none_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\archive\\broad_027_wide_square_none_metadata.txt",
+      "sizeBytes": 447,
+      "sha1": "1df1804436e1cc7a313e4bad6f32aa29eba4f579"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\render\\broad_027_wide_square_none_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\archive\\broad_027_wide_square_none_subtitles.srt",
+      "sizeBytes": 111,
+      "sha1": "31a20880624fec49579b434e19e12997a1cf3aee"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\render\\broad_027_wide_square_none_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\archive\\broad_027_wide_square_none_subtitles.vtt",
+      "sizeBytes": 120,
+      "sha1": "06f3da17fb68ce6890ea290754ce60e913d6709e"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\render\\broad_027_wide_square_none_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\archive\\broad_027_wide_square_none_thumbnail.jpg",
+      "sizeBytes": 14292,
+      "sha1": "4c2ce2155aa079648774d7d7dd078d6bf4098a12"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\render\\_seg_broad_027_wide_square_none_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\archive\\_seg_broad_027_wide_square_none_0.mp4",
+      "sizeBytes": 63646,
+      "sha1": "5b22e3ba44458af7f558a954d35ab409a9e9a388"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\render\\_seg_broad_027_wide_square_none_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\archive\\_seg_broad_027_wide_square_none_1.mp4",
+      "sizeBytes": 70521,
+      "sha1": "1fad94f091411b4ab94461de2ce7e07d0325bfb8"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\archive\\contact-sheet.png",
+      "sizeBytes": 71829,
+      "sha1": "0c03969deef7bf3a44e83c142e845d92a049774f"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\archive\\subtitles.srt",
+      "sizeBytes": 111,
+      "sha1": "31a20880624fec49579b434e19e12997a1cf3aee"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\archive\\subtitles.vtt",
+      "sizeBytes": 120,
+      "sha1": "06f3da17fb68ce6890ea290754ce60e913d6709e"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\archive\\candidate_1.png",
+      "sizeBytes": 58164,
+      "sha1": "f88605c5d86b70952f5aaf640d644d07a87cacfc"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_027_wide_square_none\\archive\\candidate_1.png",
+      "sizeBytes": 85882,
+      "sha1": "0b21cec5a52e144d5922be045157561d1b6865af"
+    }
+  ]
+}

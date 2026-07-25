@@ -1,0 +1,21 @@
+{
+  "jobId": "new_001_persp_aerial_portrait_burned_m",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "new_001_persp_aerial_portrait_burned_m",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_001_persp_aerial_portrait_burned_m",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_001_persp_aerial_portrait_burned_m\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_001_persp_aerial_portrait_burned_m\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_001_persp_aerial_portrait_burned_m\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_001_persp_aerial_portrait_burned_m\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_001_persp_aerial_portrait_burned_m\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_001_persp_aerial_portrait_burned_m\\audio"
+  },
+  "createdAt": "2026-07-23T06:26:48.732Z",
+  "updatedAt": "2026-07-23T06:27:15.913Z",
+  "topic": "perspective combination",
+  "title": "New persp_aerial portrait burned music",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

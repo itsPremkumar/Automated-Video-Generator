@@ -1,0 +1,100 @@
+{
+  "jobId": "broad_023_wide_landscape_karaoke",
+  "archivedAt": "2026-07-23T07:11:05.289Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\archive",
+  "totalFiles": 13,
+  "totalBytes": 381334,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\render\\broad_023_wide_landscape_karaoke_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\archive\\broad_023_wide_landscape_karaoke_details.txt",
+      "sizeBytes": 304,
+      "sha1": "7a8bd0c9a69ed1f987572cb44233028638ca103a"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\render\\broad_023_wide_landscape_karaoke_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\archive\\broad_023_wide_landscape_karaoke_metadata.txt",
+      "sizeBytes": 447,
+      "sha1": "10d3d00ee55c4fa10048e2046acbeb08eebecbf8"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\render\\broad_023_wide_landscape_karaoke_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\archive\\broad_023_wide_landscape_karaoke_subtitles.srt",
+      "sizeBytes": 111,
+      "sha1": "31a20880624fec49579b434e19e12997a1cf3aee"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\render\\broad_023_wide_landscape_karaoke_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\archive\\broad_023_wide_landscape_karaoke_subtitles.vtt",
+      "sizeBytes": 120,
+      "sha1": "06f3da17fb68ce6890ea290754ce60e913d6709e"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\render\\broad_023_wide_landscape_karaoke_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\archive\\broad_023_wide_landscape_karaoke_thumbnail.jpg",
+      "sizeBytes": 16676,
+      "sha1": "fec12313c613a5e594f5b0107d119d795fd84147"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\render\\_captions_broad_023_wide_landscape_karaoke.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\archive\\_captions_broad_023_wide_landscape_karaoke.srt",
+      "sizeBytes": 310,
+      "sha1": "ebd56e8e7f54282690bac80039906b964d64c0b5"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\render\\_seg_broad_023_wide_landscape_karaoke_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\archive\\_seg_broad_023_wide_landscape_karaoke_0.mp4",
+      "sizeBytes": 85724,
+      "sha1": "55d8293c34cdc7de137df4319a9cb160d5de02b9"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\render\\_seg_broad_023_wide_landscape_karaoke_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\archive\\_seg_broad_023_wide_landscape_karaoke_1.mp4",
+      "sizeBytes": 84236,
+      "sha1": "6440972071cd75e5d0a54be856e9128d9c321e55"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\archive\\contact-sheet.png",
+      "sizeBytes": 65181,
+      "sha1": "991bdae823b7ce3a5b3398d443e9c1b6adf3298d"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\archive\\subtitles.srt",
+      "sizeBytes": 111,
+      "sha1": "31a20880624fec49579b434e19e12997a1cf3aee"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\archive\\subtitles.vtt",
+      "sizeBytes": 120,
+      "sha1": "06f3da17fb68ce6890ea290754ce60e913d6709e"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\archive\\candidate_1.png",
+      "sizeBytes": 58164,
+      "sha1": "f88605c5d86b70952f5aaf640d644d07a87cacfc"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\archive\\candidate_1.png",
+      "sizeBytes": 69830,
+      "sha1": "a47b21c6342e1465a0a2a757291364b8138e3418"
+    }
+  ]
+}

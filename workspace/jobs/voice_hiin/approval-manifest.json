@@ -1,0 +1,29 @@
+[
+  {
+    "assetId": "image_s0_c1",
+    "kind": "image",
+    "sceneIndex": 0,
+    "decision": "approved",
+    "rationale": "Scene already has an approved visual; this is an extra candidate (alternate).",
+    "decidedBy": "agent",
+    "fallbackUsed": false
+  },
+  {
+    "assetId": "image_s1_c1",
+    "kind": "image",
+    "sceneIndex": 1,
+    "decision": "approved",
+    "rationale": "Scene already has an approved visual; this is an extra candidate (alternate).",
+    "decidedBy": "agent",
+    "fallbackUsed": false
+  },
+  {
+    "assetId": "music_s-1_c1",
+    "kind": "music",
+    "sceneIndex": -1,
+    "decision": "approved",
+    "rationale": "Music passed signal check (OK (60.0s, 192kbps)).",
+    "decidedBy": "agent",
+    "fallbackUsed": false
+  }
+]

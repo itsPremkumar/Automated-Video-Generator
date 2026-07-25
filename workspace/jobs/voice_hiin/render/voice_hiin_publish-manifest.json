@@ -1,0 +1,51 @@
+{
+  "jobId": "voice_hiin",
+  "topic": "Voice hi-IN",
+  "title": "Voice hi-IN",
+  "description": "Voiceover scene one in hi-IN.\n\n• Voiceover scene two.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspaerialpng #voice #wildperspaerialpng #perspaerialpngnature #perspaerialpngcloseup #perspcloseuppng #wildperspcloseuppng #perspcloseuppngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T08:33:43.749Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_hiin/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_hiin\\render\\_seg_voice_hiin_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_hiin\\render\\_seg_voice_hiin_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_hiin\\render\\_seg_voice_hiin_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_hiin\\render\\_seg_voice_hiin_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_hiin\\render\\_seg_voice_hiin_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_hiin\\render\\voice_hiin_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

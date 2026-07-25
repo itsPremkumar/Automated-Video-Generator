@@ -1,0 +1,21 @@
+{
+  "jobId": "broad_005_aerial_landscape_karaoke",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "broad_005_aerial_landscape_karaoke",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_005_aerial_landscape_karaoke",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_005_aerial_landscape_karaoke\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_005_aerial_landscape_karaoke\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_005_aerial_landscape_karaoke\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_005_aerial_landscape_karaoke\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_005_aerial_landscape_karaoke\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_005_aerial_landscape_karaoke\\audio"
+  },
+  "createdAt": "2026-07-23T07:06:32.973Z",
+  "updatedAt": "2026-07-23T07:06:50.422Z",
+  "topic": "perspective persp_aerial",
+  "title": "Broad aerial landscape karaoke",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

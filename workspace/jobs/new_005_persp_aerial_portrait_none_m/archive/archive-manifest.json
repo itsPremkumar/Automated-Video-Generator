@@ -1,0 +1,93 @@
+{
+  "jobId": "new_005_persp_aerial_portrait_none_m",
+  "archivedAt": "2026-07-23T06:28:02.775Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\archive",
+  "totalFiles": 12,
+  "totalBytes": 341578,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\render\\new_005_persp_aerial_portrait_none_m_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\archive\\new_005_persp_aerial_portrait_none_m_details.txt",
+      "sizeBytes": 327,
+      "sha1": "ada037e124786b6173e57df5742ad6a986bc543d"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\render\\new_005_persp_aerial_portrait_none_m_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\archive\\new_005_persp_aerial_portrait_none_m_metadata.txt",
+      "sizeBytes": 490,
+      "sha1": "2d4d2e7a400ac6d15089a7f315142d2ae172c7d0"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\render\\new_005_persp_aerial_portrait_none_m_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\archive\\new_005_persp_aerial_portrait_none_m_subtitles.srt",
+      "sizeBytes": 110,
+      "sha1": "f5b68ff57ef4a535577c32a6e569bd080506831f"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\render\\new_005_persp_aerial_portrait_none_m_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\archive\\new_005_persp_aerial_portrait_none_m_subtitles.vtt",
+      "sizeBytes": 119,
+      "sha1": "222fcef550bcd18888bb711d86663f2f15a2104f"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\render\\new_005_persp_aerial_portrait_none_m_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\archive\\new_005_persp_aerial_portrait_none_m_thumbnail.jpg",
+      "sizeBytes": 15785,
+      "sha1": "c47eac0345776f0d6c702d86606752418d44c553"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\render\\_seg_new_005_persp_aerial_portrait_none_m_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\archive\\_seg_new_005_persp_aerial_portrait_none_m_0.mp4",
+      "sizeBytes": 55108,
+      "sha1": "f3cd69dc20fb76a5cd00a223924ebcf701f8f285"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\render\\_seg_new_005_persp_aerial_portrait_none_m_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\archive\\_seg_new_005_persp_aerial_portrait_none_m_1.mp4",
+      "sizeBytes": 54883,
+      "sha1": "ef9cc74d75020008689275c0ffe7d17fe6d345ca"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\archive\\contact-sheet.png",
+      "sizeBytes": 71223,
+      "sha1": "fa1a24ea754ff8e948e1a8e04e0cd18503abdab0"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\archive\\subtitles.srt",
+      "sizeBytes": 110,
+      "sha1": "f5b68ff57ef4a535577c32a6e569bd080506831f"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\archive\\subtitles.vtt",
+      "sizeBytes": 119,
+      "sha1": "222fcef550bcd18888bb711d86663f2f15a2104f"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\archive\\candidate_1.png",
+      "sizeBytes": 85882,
+      "sha1": "0b21cec5a52e144d5922be045157561d1b6865af"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_005_persp_aerial_portrait_none_m\\archive\\candidate_1.png",
+      "sizeBytes": 57422,
+      "sha1": "45d338789d813f3eb2f5f9760e0e7c60374fb26a"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "jobId": "combo_025_voice_fr_fr_deniseneural",
+  "title": "Voice fr-FR-DeniseNeural",
+  "orientation": "portrait",
+  "voice": "fr-FR-DeniseNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "This is the french voice test.",
+      "searchKeywords": [
+        "github profile png",
+        "voice deniseneural",
+        "wild github profile png",
+        "github profile png nature",
+        "github profile png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "github-profile.png",
+      "grade": "warm"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Speaking clearly for verification.",
+      "searchKeywords": [
+        "logo automation png",
+        "voice deniseneural",
+        "wild logo automation png",
+        "logo automation png nature",
+        "logo automation png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "logo-automation.png",
+      "captionTheme": "neon",
+      "kineticText": true
+    }
+  ],
+  "totalDurationSec": 8
+}

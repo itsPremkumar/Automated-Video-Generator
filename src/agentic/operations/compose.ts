@@ -123,8 +123,11 @@ function resolveEmojiFont(): string {
 }
 
 /** Rasterize an emoji to a transparent PNG sticker via ffmpeg, so it can
- *  be composited with the `overlay` filter (drawtext can't render color
- *  emoji on Windows). Returns the PNG path, or undefined on failure. */
+ *  be composited with the `overlay` filter. On Windows the Segoe UI
+ *  Emoji font renders the COLOR glyph when `fontcolor` is set (without
+ *  it, drawtext emits a monochrome box). A `fontcolor` is required
+ *  for a correct colored sticker. Returns the PNG path, or undefined on
+ *  failure. */
 function renderEmojiSticker(emoji: string, size: number, outDir: string): string | undefined {
     const png = path.join(outDir, `sticker_${Buffer.from(emoji).toString('hex')}.png`);
     if (fs.existsSync(png)) return png;
@@ -135,7 +138,7 @@ function renderEmojiSticker(emoji: string, size: number, outDir: string): string
             '-y', '-f', 'lavfi', '-i',
             `color=c=black@0:s=${size}x${size},format=rgba,format=yuva420p`,
             '-frames:v', '1', '-vf',
-            `drawtext=fontfile='${resolveEmojiFont()}':text='${emoji.replace(/'/g, "'\\''")}':fontsize=${Math.round(size * 0.8)}:x=(w-text_w)/2:y=(h-text_h)/2`,
+            `drawtext=fontfile='${resolveEmojiFont()}':text='${emoji.replace(/'/g, "'\\''")}':fontsize=${Math.round(size * 0.8)}:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2`,
             png,
         ], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 30000 });
         return fs.existsSync(png) && fs.statSync(png).size > 0 ? png : undefined;
@@ -327,9 +330,9 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
         if (overlay.outro.showSubscribe) vf.push(txt('SUBSCRIBE', '(w-text_w)/2', 'H-th-30', 28, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: 400, enable: oEnable }));
         if (overlay.outro.hashtags?.length) vf.push(txt(overlay.outro.hashtags.join(' '), '(w-text_w)/2', 'h-40', 24, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: 400, enable: oEnable }));
     }
-    // Emoji stickers: ffmpeg drawtext can't composite color emoji on
-    // Windows (libFreetype renders them blank), so we rasterize each emoji
-    // to a transparent PNG sticker via ffmpeg, then overlay it.
+    // Emoji stickers: rasterize each emoji to a transparent PNG (with
+    // fontcolor so Segoe UI Emoji renders the COLOR glyph on Windows),
+    // then overlay it at its scene window.
     const stickerOverlays: { png: string; x: number; y: number; start: number; end: number }[] = [];
     for (const [idx, emoji] of Object.entries(overlay.emojiByScene)) {
         const si = Number(idx);

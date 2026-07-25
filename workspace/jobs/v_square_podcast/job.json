@@ -1,0 +1,21 @@
+{
+  "jobId": "v_square_podcast",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "v_square_podcast",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_square_podcast",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_square_podcast\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_square_podcast\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_square_podcast\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_square_podcast\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_square_podcast\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_square_podcast\\audio"
+  },
+  "createdAt": "2026-07-23T05:36:25.802Z",
+  "updatedAt": "2026-07-23T05:36:44.268Z",
+  "topic": "tech talk",
+  "title": "Square Podcast Variety",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

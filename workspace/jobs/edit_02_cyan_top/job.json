@@ -1,0 +1,21 @@
+{
+  "jobId": "edit_02_cyan_top",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "edit_02_cyan_top",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_02_cyan_top",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_02_cyan_top\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_02_cyan_top\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_02_cyan_top\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_02_cyan_top\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_02_cyan_top\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_02_cyan_top\\audio"
+  },
+  "createdAt": "2026-07-23T08:14:02.645Z",
+  "updatedAt": "2026-07-23T08:14:21.632Z",
+  "topic": "editing tags",
+  "title": "Edit cyan top",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

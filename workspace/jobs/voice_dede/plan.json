@@ -1,0 +1,40 @@
+{
+  "jobId": "voice_dede",
+  "title": "Voice de-DE",
+  "orientation": "landscape",
+  "voice": "de-DE-KatjaNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Voiceover scene one in de-DE.",
+      "searchKeywords": [
+        "persp warm png",
+        "voice",
+        "wild persp warm png",
+        "persp warm png nature",
+        "persp warm png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_warm.png",
+      "grade": "cinematic"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Voiceover scene two.",
+      "searchKeywords": [
+        "persp cool png",
+        "voice",
+        "wild persp cool png",
+        "persp cool png nature",
+        "persp cool png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_cool.png",
+      "captionTheme": "bold"
+    }
+  ],
+  "totalDurationSec": 8
+}

@@ -1,0 +1,44 @@
+{
+  "jobId": "new_009_persp_aerial_landscape_karaoke_m",
+  "title": "New persp_aerial landscape karaoke music",
+  "orientation": "landscape",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Perspective scene one.",
+      "searchKeywords": [
+        "persp aerial png",
+        "persp aerial landscape",
+        "wild persp aerial png",
+        "persp aerial png nature",
+        "persp aerial png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_aerial.png",
+      "transition": "fade",
+      "grade": "neutral"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Perspective scene two.",
+      "searchKeywords": [
+        "persp closeup png",
+        "persp aerial landscape",
+        "wild persp closeup png",
+        "persp closeup png nature",
+        "persp closeup png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_closeup.png",
+      "captionStyle": "top",
+      "captionColor": "white",
+      "fadeIn": 0.3,
+      "fadeOut": 0.3
+    }
+  ],
+  "totalDurationSec": 8
+}

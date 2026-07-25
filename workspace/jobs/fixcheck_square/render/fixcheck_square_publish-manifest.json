@@ -1,0 +1,51 @@
+{
+  "jobId": "fixcheck_square",
+  "topic": "Fix Check Square",
+  "title": "Fix Check Square",
+  "description": "Square scene one.\n\n• Square scene two.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspnaturepng #checksquare #wildperspnaturepng #perspnaturepngnature #perspnaturepngcloseup #perspurbanpng #wildperspurbanpng #perspurbanpngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T06:53:25.748Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_square/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_square\\render\\_seg_fixcheck_square_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_square\\render\\_seg_fixcheck_square_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_square\\render\\_seg_fixcheck_square_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_square\\render\\_seg_fixcheck_square_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_square\\render\\_seg_fixcheck_square_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_square\\render\\fixcheck_square_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

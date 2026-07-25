@@ -1,0 +1,2 @@
+file 'C:/one/Automated-Video-Generator/workspace/jobs/broad_065_cool_portrait_karaoke/render/_seg_broad_065_cool_portrait_karaoke_0.mp4'
+file 'C:/one/Automated-Video-Generator/workspace/jobs/broad_065_cool_portrait_karaoke/render/_seg_broad_065_cool_portrait_karaoke_1.mp4'

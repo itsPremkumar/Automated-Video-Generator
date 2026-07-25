@@ -1,0 +1,148 @@
+{
+  "jobId": "voice_frfr",
+  "title": "Voice fr-FR",
+  "backend": "heuristic",
+  "voiceoverDriven": true,
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Voiceover scene one in fr-FR.",
+      "searchKeywords": [
+        "persp top png",
+        "voice",
+        "wild persp top png",
+        "persp top png nature",
+        "persp top png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 4,
+      "voiceover": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_frfr\\audio\\scene_1_voice.wav",
+      "captionSegments": [
+        {
+          "text": "Voiceover",
+          "startMs": 0,
+          "endMs": 1204
+        },
+        {
+          "text": "scene",
+          "startMs": 1301,
+          "endMs": 2104
+        },
+        {
+          "text": "one",
+          "startMs": 2201,
+          "endMs": 3004
+        },
+        {
+          "text": "in",
+          "startMs": 3101,
+          "endMs": 3502
+        },
+        {
+          "text": "fr-FR.",
+          "startMs": 3599,
+          "endMs": 4000
+        }
+      ]
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Voiceover scene two.",
+      "searchKeywords": [
+        "persp night png",
+        "voice",
+        "wild persp night png",
+        "persp night png nature",
+        "persp night png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "voiceover": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_frfr\\audio\\scene_2_voice.wav",
+      "captionSegments": [
+        {
+          "text": "Voiceover",
+          "startMs": 0,
+          "endMs": 1388
+        },
+        {
+          "text": "scene",
+          "startMs": 1500,
+          "endMs": 2425
+        },
+        {
+          "text": "two.",
+          "startMs": 2537,
+          "endMs": 3000
+        }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "assetId": "image_s0_c1",
+      "kind": "image",
+      "sceneIndex": 0,
+      "decision": "approved",
+      "rationale": "Scene already has an approved visual; this is an extra candidate (alternate).",
+      "decidedBy": "agent",
+      "fallbackUsed": false
+    },
+    {
+      "assetId": "image_s1_c1",
+      "kind": "image",
+      "sceneIndex": 1,
+      "decision": "approved",
+      "rationale": "Scene already has an approved visual; this is an extra candidate (alternate).",
+      "decidedBy": "agent",
+      "fallbackUsed": false
+    },
+    {
+      "assetId": "music_s-1_c1",
+      "kind": "music",
+      "sceneIndex": -1,
+      "decision": "approved",
+      "rationale": "Music passed signal check (OK (60.0s, 192kbps)).",
+      "decidedBy": "agent",
+      "fallbackUsed": false
+    }
+  ],
+  "gate": [
+    {
+      "id": "X3",
+      "label": "No unresolved decisions",
+      "pass": true,
+      "detail": "every asset has a decision"
+    },
+    {
+      "id": "X2",
+      "label": "Every scene has an approved visual",
+      "pass": true,
+      "detail": "all scenes covered"
+    },
+    {
+      "id": "X1",
+      "label": "Duration alignment",
+      "pass": true,
+      "detail": "approved visuals=2/2"
+    },
+    {
+      "id": "X5",
+      "label": "Runtime within limit",
+      "pass": true,
+      "detail": "8s <= 60s"
+    },
+    {
+      "id": "X6",
+      "label": "Attribution completeness",
+      "pass": true,
+      "detail": "all approved assets carry a license"
+    },
+    {
+      "id": "X4",
+      "label": "Caption sync",
+      "pass": true,
+      "detail": "render manifest present"
+    }
+  ],
+  "generatedAt": "2026-07-23T08:34:35.933Z"
+}

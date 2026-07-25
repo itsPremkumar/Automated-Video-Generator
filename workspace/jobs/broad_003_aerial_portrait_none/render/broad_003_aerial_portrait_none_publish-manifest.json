@@ -1,0 +1,51 @@
+{
+  "jobId": "broad_003_aerial_portrait_none",
+  "topic": "Broad aerial portrait none",
+  "title": "Broad aerial portrait none",
+  "description": "Scene one from aerial view.\n\n• Scene two continues.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspaerialpng #broadaerialportrait #wildperspaerialpng #perspaerialpngnature #perspaerialpngcloseup #perspwarmpng #wildperspwarmpng #perspwarmpngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T07:06:30.175Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_003_aerial_portrait_none/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_003_aerial_portrait_none\\render\\_seg_broad_003_aerial_portrait_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_003_aerial_portrait_none\\render\\_seg_broad_003_aerial_portrait_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_003_aerial_portrait_none\\render\\_seg_broad_003_aerial_portrait_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_003_aerial_portrait_none\\render\\_seg_broad_003_aerial_portrait_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_003_aerial_portrait_none\\render\\_seg_broad_003_aerial_portrait_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_003_aerial_portrait_none\\render\\broad_003_aerial_portrait_none_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

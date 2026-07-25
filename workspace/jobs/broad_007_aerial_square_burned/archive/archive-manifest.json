@@ -1,0 +1,100 @@
+{
+  "jobId": "broad_007_aerial_square_burned",
+  "archivedAt": "2026-07-23T07:07:22.136Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\archive",
+  "totalFiles": 13,
+  "totalBytes": 439710,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\render\\broad_007_aerial_square_burned_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\archive\\broad_007_aerial_square_burned_details.txt",
+      "sizeBytes": 314,
+      "sha1": "856212857851ccd992445a45795f08bd2b2f9680"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\render\\broad_007_aerial_square_burned_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\archive\\broad_007_aerial_square_burned_metadata.txt",
+      "sizeBytes": 357,
+      "sha1": "d0938748d958eb7279198646b87a8afe0642e2cd"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\render\\broad_007_aerial_square_burned_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\archive\\broad_007_aerial_square_burned_subtitles.srt",
+      "sizeBytes": 113,
+      "sha1": "fbb7e15d167afb2c29a2c61a9d1b711137e02c89"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\render\\broad_007_aerial_square_burned_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\archive\\broad_007_aerial_square_burned_subtitles.vtt",
+      "sizeBytes": 122,
+      "sha1": "690a3c60002fce876332c0388e6265b59c46c76b"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\render\\broad_007_aerial_square_burned_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\archive\\broad_007_aerial_square_burned_thumbnail.jpg",
+      "sizeBytes": 24138,
+      "sha1": "7a5423098deb363551cfd73848627d8b7935cfd5"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\render\\_captions_broad_007_aerial_square_burned.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\archive\\_captions_broad_007_aerial_square_burned.srt",
+      "sizeBytes": 312,
+      "sha1": "cfaf3b68d3a1c11484876860d6baab5dbef5f052"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\render\\_seg_broad_007_aerial_square_burned_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\archive\\_seg_broad_007_aerial_square_burned_0.mp4",
+      "sizeBytes": 80902,
+      "sha1": "5608187462d542f9b5b5a3bc7a9edf01d20223b8"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\render\\_seg_broad_007_aerial_square_burned_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\archive\\_seg_broad_007_aerial_square_burned_1.mp4",
+      "sizeBytes": 69312,
+      "sha1": "6d892240551fd9737739d8ed8523c0c66bb627e3"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\archive\\contact-sheet.png",
+      "sizeBytes": 92141,
+      "sha1": "dbbe7cb891f48976469e99f64a8e89c3b293e57a"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\archive\\subtitles.srt",
+      "sizeBytes": 113,
+      "sha1": "fbb7e15d167afb2c29a2c61a9d1b711137e02c89"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\archive\\subtitles.vtt",
+      "sizeBytes": 122,
+      "sha1": "690a3c60002fce876332c0388e6265b59c46c76b"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\archive\\candidate_1.png",
+      "sizeBytes": 85882,
+      "sha1": "0b21cec5a52e144d5922be045157561d1b6865af"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_007_aerial_square_burned\\archive\\candidate_1.png",
+      "sizeBytes": 85882,
+      "sha1": "0b21cec5a52e144d5922be045157561d1b6865af"
+    }
+  ]
+}

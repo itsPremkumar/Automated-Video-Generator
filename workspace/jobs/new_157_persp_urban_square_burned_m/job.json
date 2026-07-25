@@ -1,0 +1,21 @@
+{
+  "jobId": "new_157_persp_urban_square_burned_m",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "new_157_persp_urban_square_burned_m",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_157_persp_urban_square_burned_m",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_157_persp_urban_square_burned_m\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_157_persp_urban_square_burned_m\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_157_persp_urban_square_burned_m\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_157_persp_urban_square_burned_m\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_157_persp_urban_square_burned_m\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_157_persp_urban_square_burned_m\\audio"
+  },
+  "createdAt": "2026-07-23T06:43:15.409Z",
+  "updatedAt": "2026-07-23T06:43:30.758Z",
+  "topic": "perspective combination",
+  "title": "New persp_urban square burned music",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

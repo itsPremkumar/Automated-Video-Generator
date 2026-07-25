@@ -1,0 +1,51 @@
+{
+  "jobId": "broad_015_closeup_landscape_none",
+  "topic": "Broad closeup landscape none",
+  "title": "Broad closeup landscape none",
+  "description": "Scene one from closeup view.\n\n• Scene two continues.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspcloseuppng #broadcloseuplandscape #wildperspcloseuppng #perspcloseuppngnature #perspcloseuppngcloseup #perspurbanpng #wildperspurbanpng #perspurbanpngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T07:09:06.657Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_015_closeup_landscape_none/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_015_closeup_landscape_none\\render\\_seg_broad_015_closeup_landscape_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_015_closeup_landscape_none\\render\\_seg_broad_015_closeup_landscape_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_015_closeup_landscape_none\\render\\_seg_broad_015_closeup_landscape_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_015_closeup_landscape_none\\render\\_seg_broad_015_closeup_landscape_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_015_closeup_landscape_none\\render\\_seg_broad_015_closeup_landscape_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_015_closeup_landscape_none\\render\\broad_015_closeup_landscape_none_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

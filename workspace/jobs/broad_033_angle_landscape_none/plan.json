@@ -1,0 +1,42 @@
+{
+  "jobId": "broad_033_angle_landscape_none",
+  "title": "Broad angle landscape none",
+  "orientation": "landscape",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Scene one from angle view.",
+      "searchKeywords": [
+        "persp angle png",
+        "broad angle landscape",
+        "wild persp angle png",
+        "persp angle png nature",
+        "persp angle png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_angle.png",
+      "transition": "slide",
+      "grade": "vivid"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Scene two continues.",
+      "searchKeywords": [
+        "persp warm png",
+        "broad angle landscape",
+        "wild persp warm png",
+        "persp warm png nature",
+        "persp warm png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_warm.png",
+      "captionTheme": "neon",
+      "kineticText": true
+    }
+  ],
+  "totalDurationSec": 8
+}

@@ -1,0 +1,51 @@
+{
+  "jobId": "fixcheck_brand",
+  "topic": "Fix Check Brand Watermark",
+  "title": "Fix Check Brand Watermark",
+  "description": "Brand scene one.\n\n• Brand scene two.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspanglepng #checkbrandwatermark #wildperspanglepng #perspanglepngnature #perspanglepngcloseup #perspnightpng #wildperspnightpng #perspnightpngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T06:54:51.226Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_brand/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_brand\\render\\_seg_fixcheck_brand_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_brand\\render\\_seg_fixcheck_brand_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_brand\\render\\_seg_fixcheck_brand_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_brand\\render\\_seg_fixcheck_brand_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_brand\\render\\_seg_fixcheck_brand_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_brand\\render\\fixcheck_brand_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

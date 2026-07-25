@@ -1,0 +1,51 @@
+{
+  "jobId": "broad_009_aerial_square_none",
+  "topic": "Broad aerial square none",
+  "title": "Broad aerial square none",
+  "description": "Scene one from aerial view.\n\n• Scene two continues.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspaerialpng #broadaerialsquare #wildperspaerialpng #perspaerialpngnature #perspaerialpngcloseup #perspwidepng #wildperspwidepng #perspwidepngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T07:07:48.481Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_009_aerial_square_none/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_009_aerial_square_none\\render\\_seg_broad_009_aerial_square_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_009_aerial_square_none\\render\\_seg_broad_009_aerial_square_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_009_aerial_square_none\\render\\_seg_broad_009_aerial_square_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_009_aerial_square_none\\render\\_seg_broad_009_aerial_square_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_009_aerial_square_none\\render\\_seg_broad_009_aerial_square_none_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_009_aerial_square_none\\render\\broad_009_aerial_square_none_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

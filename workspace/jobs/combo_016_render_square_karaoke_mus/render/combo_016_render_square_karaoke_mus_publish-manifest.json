@@ -1,0 +1,51 @@
+{
+  "jobId": "combo_016_render_square_karaoke_mus",
+  "topic": "Render square karaoke music",
+  "title": "Render square karaoke music",
+  "description": "First scene of the test.\n\n• Second scene continues.\n\n#Shorts #AI #facts",
+  "hashtags": "#githubprofilepng #rendersquarekaraoke #wildgithubprofilepng #githubprofilepngnature #githubprofilepngcloseup #logoautomationpng #wildlogoautomationpng #logoautomationpngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T05:58:35.278Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_016_render_square_karaoke_mus/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_016_render_square_karaoke_mus\\render\\_seg_combo_016_render_square_karaoke_mus_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_016_render_square_karaoke_mus\\render\\_seg_combo_016_render_square_karaoke_mus_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_016_render_square_karaoke_mus\\render\\_seg_combo_016_render_square_karaoke_mus_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_016_render_square_karaoke_mus\\render\\_seg_combo_016_render_square_karaoke_mus_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_016_render_square_karaoke_mus\\render\\_seg_combo_016_render_square_karaoke_mus_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_016_render_square_karaoke_mus\\render\\combo_016_render_square_karaoke_mus_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "jobId": "combo_038_style_center",
+  "title": "Style center",
+  "orientation": "square",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Style test center.",
+      "searchKeywords": [
+        "github profile png",
+        "style center",
+        "wild github profile png",
+        "github profile png nature",
+        "github profile png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "github-profile.png",
+      "captionStyle": "center",
+      "captionColor": "white"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Second style.",
+      "searchKeywords": [
+        "logo automation png",
+        "style center",
+        "wild logo automation png",
+        "logo automation png nature",
+        "logo automation png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "logo-automation.png",
+      "captionStyle": "center",
+      "captionColor": "yellow"
+    }
+  ],
+  "totalDurationSec": 8
+}

@@ -1,0 +1,95 @@
+{
+  "jobId": "diag_music",
+  "title": "Diag Music",
+  "orientation": "portrait",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "assets": [
+    {
+      "kind": "image",
+      "sceneIndex": 0,
+      "localPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\diag_music\\assets\\videos\\scene_01\\candidate_1.png",
+      "license": "User-supplied — owner attribution",
+      "licenseUrl": "",
+      "audioPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\diag_music\\audio\\scene_1_voice.wav",
+      "durationSec": 3,
+      "captionSegments": [
+        {
+          "text": "First",
+          "startMs": 0,
+          "endMs": 294
+        },
+        {
+          "text": "scene",
+          "startMs": 365,
+          "endMs": 953
+        },
+        {
+          "text": "with",
+          "startMs": 1024,
+          "endMs": 1318
+        },
+        {
+          "text": "music",
+          "startMs": 1389,
+          "endMs": 1977
+        },
+        {
+          "text": "and",
+          "startMs": 2048,
+          "endMs": 2342
+        },
+        {
+          "text": "captions.",
+          "startMs": 2413,
+          "endMs": 3001
+        }
+      ]
+    },
+    {
+      "kind": "image",
+      "sceneIndex": 1,
+      "localPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\diag_music\\assets\\videos\\scene_02\\candidate_1.png",
+      "license": "User-supplied — owner attribution",
+      "licenseUrl": "",
+      "audioPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\diag_music\\audio\\scene_2_voice.wav",
+      "durationSec": 3,
+      "captionSegments": [
+        {
+          "text": "Second",
+          "startMs": 0,
+          "endMs": 602
+        },
+        {
+          "text": "scene",
+          "startMs": 675,
+          "endMs": 1277
+        },
+        {
+          "text": "kinetic",
+          "startMs": 1350,
+          "endMs": 2253
+        },
+        {
+          "text": "and",
+          "startMs": 2326,
+          "endMs": 2627
+        },
+        {
+          "text": "jcut.",
+          "startMs": 2700,
+          "endMs": 3001
+        }
+      ]
+    },
+    {
+      "kind": "music",
+      "sceneIndex": -1,
+      "localPath": "C:\\one\\Automated-Video-Generator\\workspace\\cache\\free-music\\processed\\bundled_j8w0qy_processed.mp3",
+      "license": "CC0 1.0 Universal",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    }
+  ],
+  "generatedAt": "2026-07-23T05:32:01.328Z",
+  "voiceoverDriven": true
+}

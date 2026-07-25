@@ -1,0 +1,21 @@
+{
+  "jobId": "broad_023_wide_landscape_karaoke",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "broad_023_wide_landscape_karaoke",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_023_wide_landscape_karaoke\\audio"
+  },
+  "createdAt": "2026-07-23T07:10:42.081Z",
+  "updatedAt": "2026-07-23T07:10:59.582Z",
+  "topic": "perspective persp_wide",
+  "title": "Broad wide landscape karaoke",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

@@ -1,0 +1,2 @@
+file 'C:/one/Automated-Video-Generator/workspace/jobs/combo_009_render_landscape_karaoke_nomus/render/_seg_combo_009_render_landscape_karaoke_nomus_0.mp4'
+file 'C:/one/Automated-Video-Generator/workspace/jobs/combo_009_render_landscape_karaoke_nomus/render/_seg_combo_009_render_landscape_karaoke_nomus_1.mp4'

@@ -1,0 +1,50 @@
+[
+  {
+    "assetId": "image_s0_c1",
+    "kind": "image",
+    "sceneIndex": 0,
+    "passes": true,
+    "confidence": 6,
+    "reason": "agent backend: signal-only; visual relevance not AI-scored",
+    "metrics": {
+      "sourceChecks": [
+        {
+          "id": "I4",
+          "label": "Min image resolution",
+          "pass": true,
+          "detail": "1280x720"
+        },
+        {
+          "id": "I5",
+          "label": "Aspect ratio match",
+          "pass": false,
+          "detail": "asset 1.778 vs target 0.563"
+        }
+      ]
+    }
+  },
+  {
+    "assetId": "image_s1_c1",
+    "kind": "image",
+    "sceneIndex": 1,
+    "passes": true,
+    "confidence": 6,
+    "reason": "agent backend: signal-only; visual relevance not AI-scored",
+    "metrics": {
+      "sourceChecks": [
+        {
+          "id": "I4",
+          "label": "Min image resolution",
+          "pass": true,
+          "detail": "1280x720"
+        },
+        {
+          "id": "I5",
+          "label": "Aspect ratio match",
+          "pass": false,
+          "detail": "asset 1.778 vs target 0.563"
+        }
+      ]
+    }
+  }
+]

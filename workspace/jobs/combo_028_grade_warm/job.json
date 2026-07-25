@@ -1,0 +1,21 @@
+{
+  "jobId": "combo_028_grade_warm",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "combo_028_grade_warm",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_028_grade_warm",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_028_grade_warm\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_028_grade_warm\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_028_grade_warm\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_028_grade_warm\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_028_grade_warm\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_028_grade_warm\\audio"
+  },
+  "createdAt": "2026-07-23T06:04:16.811Z",
+  "updatedAt": "2026-07-23T06:04:36.005Z",
+  "topic": "g",
+  "title": "Grade warm",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

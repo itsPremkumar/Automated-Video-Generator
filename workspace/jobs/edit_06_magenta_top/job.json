@@ -1,0 +1,21 @@
+{
+  "jobId": "edit_06_magenta_top",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "edit_06_magenta_top",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_06_magenta_top",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_06_magenta_top\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_06_magenta_top\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_06_magenta_top\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_06_magenta_top\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_06_magenta_top\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_06_magenta_top\\audio"
+  },
+  "createdAt": "2026-07-23T08:16:33.704Z",
+  "updatedAt": "2026-07-23T08:17:00.135Z",
+  "topic": "editing tags",
+  "title": "Edit magenta top",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

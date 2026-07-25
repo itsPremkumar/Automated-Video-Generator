@@ -1,0 +1,21 @@
+{
+  "jobId": "combo_004_render_portrait_karaoke_mus",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "combo_004_render_portrait_karaoke_mus",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_004_render_portrait_karaoke_mus",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_004_render_portrait_karaoke_mus\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_004_render_portrait_karaoke_mus\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_004_render_portrait_karaoke_mus\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_004_render_portrait_karaoke_mus\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_004_render_portrait_karaoke_mus\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_004_render_portrait_karaoke_mus\\audio"
+  },
+  "createdAt": "2026-07-23T05:51:10.222Z",
+  "updatedAt": "2026-07-23T05:51:29.391Z",
+  "topic": "combinatorial test",
+  "title": "Render portrait karaoke music",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

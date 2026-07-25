@@ -1,0 +1,51 @@
+{
+  "jobId": "edit_08_white_top",
+  "topic": "Edit white top",
+  "title": "Edit white top",
+  "description": "Editing scene one.\n\n• Editing scene two.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspcoolpng #editwhite #wildperspcoolpng #perspcoolpngnature #perspcoolpngcloseup #perspwidepng #wildperspwidepng #perspwidepngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T08:18:25.874Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_08_white_top/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_08_white_top\\render\\_seg_edit_08_white_top_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_08_white_top\\render\\_seg_edit_08_white_top_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_08_white_top\\render\\_seg_edit_08_white_top_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_08_white_top\\render\\_seg_edit_08_white_top_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_08_white_top\\render\\_seg_edit_08_white_top_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\edit_08_white_top\\render\\edit_08_white_top_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

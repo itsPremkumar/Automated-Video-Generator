@@ -1,0 +1,21 @@
+{
+  "jobId": "fixcheck_square",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "fixcheck_square",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_square",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_square\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_square\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_square\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_square\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_square\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_square\\audio"
+  },
+  "createdAt": "2026-07-23T06:53:04.180Z",
+  "updatedAt": "2026-07-23T06:53:20.976Z",
+  "topic": "orientation test",
+  "title": "Fix Check Square",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

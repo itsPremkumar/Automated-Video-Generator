@@ -1,0 +1,21 @@
+{
+  "jobId": "broad_071_cool_square_karaoke",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "broad_071_cool_square_karaoke",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_071_cool_square_karaoke",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_071_cool_square_karaoke\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_071_cool_square_karaoke\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_071_cool_square_karaoke\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_071_cool_square_karaoke\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_071_cool_square_karaoke\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_071_cool_square_karaoke\\audio"
+  },
+  "createdAt": "2026-07-23T07:22:36.273Z",
+  "updatedAt": "2026-07-23T07:22:59.156Z",
+  "topic": "perspective persp_cool",
+  "title": "Broad cool square karaoke",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

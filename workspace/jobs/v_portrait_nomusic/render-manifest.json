@@ -1,0 +1,100 @@
+{
+  "jobId": "v_portrait_nomusic",
+  "title": "Portrait NoMusic Variety",
+  "orientation": "portrait",
+  "voice": "en-US-JennyNeural",
+  "musicQuery": "ambient lofi chill",
+  "assets": [
+    {
+      "kind": "image",
+      "sceneIndex": 0,
+      "localPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_portrait_nomusic\\assets\\videos\\scene_01\\candidate_1.png",
+      "license": "User-supplied — owner attribution",
+      "licenseUrl": "",
+      "audioPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_portrait_nomusic\\audio\\scene_1_voice.wav",
+      "durationSec": 3,
+      "captionSegments": [
+        {
+          "text": "Here",
+          "startMs": 0,
+          "endMs": 635
+        },
+        {
+          "text": "is",
+          "startMs": 712,
+          "endMs": 1029
+        },
+        {
+          "text": "a",
+          "startMs": 1106,
+          "endMs": 1423
+        },
+        {
+          "text": "fast",
+          "startMs": 1500,
+          "endMs": 1817
+        },
+        {
+          "text": "tip",
+          "startMs": 1894,
+          "endMs": 2211
+        },
+        {
+          "text": "for",
+          "startMs": 2288,
+          "endMs": 2605
+        },
+        {
+          "text": "you.",
+          "startMs": 2682,
+          "endMs": 3000
+        }
+      ]
+    },
+    {
+      "kind": "image",
+      "sceneIndex": 1,
+      "localPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_portrait_nomusic\\assets\\videos\\scene_02\\candidate_1.png",
+      "license": "User-supplied — owner attribution",
+      "licenseUrl": "",
+      "audioPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_portrait_nomusic\\audio\\scene_2_voice.wav",
+      "durationSec": 3,
+      "captionSegments": [
+        {
+          "text": "Apply",
+          "startMs": 0,
+          "endMs": 669
+        },
+        {
+          "text": "it",
+          "startMs": 750,
+          "endMs": 1085
+        },
+        {
+          "text": "daily",
+          "startMs": 1166,
+          "endMs": 1835
+        },
+        {
+          "text": "for",
+          "startMs": 1916,
+          "endMs": 2251
+        },
+        {
+          "text": "results.",
+          "startMs": 2332,
+          "endMs": 3001
+        }
+      ]
+    },
+    {
+      "kind": "music",
+      "sceneIndex": -1,
+      "localPath": "C:\\one\\Automated-Video-Generator\\workspace\\cache\\free-music\\processed\\bundled_j8w0qy_processed.mp3",
+      "license": "CC0 1.0 Universal",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    }
+  ],
+  "generatedAt": "2026-07-23T05:37:33.353Z",
+  "voiceoverDriven": true
+}

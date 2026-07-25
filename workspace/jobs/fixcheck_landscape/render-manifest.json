@@ -1,0 +1,70 @@
+{
+  "jobId": "fixcheck_landscape",
+  "title": "Fix Check Landscape",
+  "orientation": "landscape",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "assets": [
+    {
+      "kind": "image",
+      "sceneIndex": 0,
+      "localPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\assets\\videos\\scene_01\\candidate_1.png",
+      "license": "User-supplied — owner attribution",
+      "licenseUrl": "",
+      "audioPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\audio\\scene_1_voice.wav",
+      "durationSec": 3,
+      "captionSegments": [
+        {
+          "text": "Landscape",
+          "startMs": 0,
+          "endMs": 1202
+        },
+        {
+          "text": "scene",
+          "startMs": 1299,
+          "endMs": 2101
+        },
+        {
+          "text": "one.",
+          "startMs": 2198,
+          "endMs": 3000
+        }
+      ]
+    },
+    {
+      "kind": "image",
+      "sceneIndex": 1,
+      "localPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\assets\\videos\\scene_02\\candidate_1.png",
+      "license": "User-supplied — owner attribution",
+      "licenseUrl": "",
+      "audioPath": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\fixcheck_landscape\\audio\\scene_2_voice.wav",
+      "durationSec": 2,
+      "captionSegments": [
+        {
+          "text": "Landscape",
+          "startMs": 0,
+          "endMs": 925
+        },
+        {
+          "text": "scene",
+          "startMs": 1000,
+          "endMs": 1617
+        },
+        {
+          "text": "two.",
+          "startMs": 1692,
+          "endMs": 2000
+        }
+      ]
+    },
+    {
+      "kind": "music",
+      "sceneIndex": -1,
+      "localPath": "C:\\one\\Automated-Video-Generator\\workspace\\cache\\free-music\\processed\\bundled_j8w0qy_processed.mp3",
+      "license": "CC0 1.0 Universal",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/"
+    }
+  ],
+  "generatedAt": "2026-07-23T06:52:36.988Z",
+  "voiceoverDriven": true
+}

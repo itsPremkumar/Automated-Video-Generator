@@ -1,0 +1,44 @@
+{
+  "jobId": "edit_05_magenta_center",
+  "title": "Edit magenta center",
+  "orientation": "portrait",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Editing scene one.",
+      "searchKeywords": [
+        "persp top png",
+        "edit magenta center",
+        "wild persp top png",
+        "persp top png nature",
+        "persp top png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_top.png",
+      "grade": "neutral",
+      "captionStyle": "center",
+      "captionColor": "magenta"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Editing scene two.",
+      "searchKeywords": [
+        "persp nature png",
+        "edit magenta center",
+        "wild persp nature png",
+        "persp nature png nature",
+        "persp nature png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_nature.png",
+      "transition": "slide",
+      "captionStyle": "center",
+      "sfx": true
+    }
+  ],
+  "totalDurationSec": 8
+}

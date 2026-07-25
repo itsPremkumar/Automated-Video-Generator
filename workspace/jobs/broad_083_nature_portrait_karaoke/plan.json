@@ -1,0 +1,41 @@
+{
+  "jobId": "broad_083_nature_portrait_karaoke",
+  "title": "Broad nature portrait karaoke",
+  "orientation": "portrait",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Scene one from nature view.",
+      "searchKeywords": [
+        "persp nature png",
+        "broad nature portrait",
+        "wild persp nature png",
+        "persp nature png nature",
+        "persp nature png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_nature.png",
+      "grade": "vivid"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Scene two continues.",
+      "searchKeywords": [
+        "persp warm png",
+        "broad nature portrait",
+        "wild persp warm png",
+        "persp warm png nature",
+        "persp warm png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_warm.png",
+      "captionTheme": "vivid",
+      "kineticText": true
+    }
+  ],
+  "totalDurationSec": 8
+}

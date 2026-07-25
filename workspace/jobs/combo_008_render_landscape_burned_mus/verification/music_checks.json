@@ -1,0 +1,18 @@
+[
+  {
+    "assetId": "music_s-1_c1",
+    "kind": "music",
+    "sceneIndex": -1,
+    "passes": true,
+    "confidence": 8,
+    "reason": "OK (60.0s, 192kbps)",
+    "metrics": {
+      "exists": true,
+      "durationSec": 60.024,
+      "bitrateKbps": 192,
+      "hasAudioStream": true,
+      "estimatedSilenceSec": null,
+      "license": "CC0 1.0 Universal"
+    }
+  }
+]

@@ -1,0 +1,51 @@
+{
+  "jobId": "v_portrait_nomusic",
+  "topic": "Portrait NoMusic Variety",
+  "title": "Portrait NoMusic Variety",
+  "description": "Here is a fast tip for you.\n\n• Apply it daily for results.\n\n#Shorts #AI #facts",
+  "hashtags": "#githubprofilepng #portraitnomusicvariety #wildgithubprofilepng #githubprofilepngnature #githubprofilepngcloseup #logoautomationpng #wildlogoautomationpng #logoautomationpngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T05:38:00.684Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_portrait_nomusic/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_portrait_nomusic\\render\\_seg_v_portrait_nomusic_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_portrait_nomusic\\render\\_seg_v_portrait_nomusic_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_portrait_nomusic\\render\\_seg_v_portrait_nomusic_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_portrait_nomusic\\render\\_seg_v_portrait_nomusic_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_portrait_nomusic\\render\\_seg_v_portrait_nomusic_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_portrait_nomusic\\render\\v_portrait_nomusic_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

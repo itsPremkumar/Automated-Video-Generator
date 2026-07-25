@@ -1,0 +1,21 @@
+{
+  "jobId": "combo_007_render_landscape_burned_nomus",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "combo_007_render_landscape_burned_nomus",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_007_render_landscape_burned_nomus",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_007_render_landscape_burned_nomus\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_007_render_landscape_burned_nomus\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_007_render_landscape_burned_nomus\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_007_render_landscape_burned_nomus\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_007_render_landscape_burned_nomus\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_007_render_landscape_burned_nomus\\audio"
+  },
+  "createdAt": "2026-07-23T05:52:58.331Z",
+  "updatedAt": "2026-07-23T05:53:23.915Z",
+  "topic": "combinatorial test",
+  "title": "Render landscape burned nomusic",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

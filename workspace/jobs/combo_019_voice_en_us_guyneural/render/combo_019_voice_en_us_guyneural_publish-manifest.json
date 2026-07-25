@@ -1,0 +1,51 @@
+{
+  "jobId": "combo_019_voice_en_us_guyneural",
+  "topic": "Voice en-US-GuyNeural",
+  "title": "Voice en-US-GuyNeural",
+  "description": "This is the english voice test.\n\n• Speaking clearly for verification.\n\n#Shorts #AI #facts",
+  "hashtags": "#githubprofilepng #voiceguyneural #wildgithubprofilepng #githubprofilepngnature #githubprofilepngcloseup #logoautomationpng #wildlogoautomationpng #logoautomationpngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T06:00:08.074Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_019_voice_en_us_guyneural/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_019_voice_en_us_guyneural\\render\\_seg_combo_019_voice_en_us_guyneural_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_019_voice_en_us_guyneural\\render\\_seg_combo_019_voice_en_us_guyneural_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_019_voice_en_us_guyneural\\render\\_seg_combo_019_voice_en_us_guyneural_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_019_voice_en_us_guyneural\\render\\_seg_combo_019_voice_en_us_guyneural_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_019_voice_en_us_guyneural\\render\\_seg_combo_019_voice_en_us_guyneural_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_019_voice_en_us_guyneural\\render\\combo_019_voice_en_us_guyneural_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

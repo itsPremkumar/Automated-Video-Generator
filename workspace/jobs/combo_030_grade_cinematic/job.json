@@ -1,0 +1,21 @@
+{
+  "jobId": "combo_030_grade_cinematic",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "combo_030_grade_cinematic",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_030_grade_cinematic",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_030_grade_cinematic\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_030_grade_cinematic\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_030_grade_cinematic\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_030_grade_cinematic\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_030_grade_cinematic\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_030_grade_cinematic\\audio"
+  },
+  "createdAt": "2026-07-23T06:05:22.562Z",
+  "updatedAt": "2026-07-23T06:05:40.683Z",
+  "topic": "g",
+  "title": "Grade cinematic",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

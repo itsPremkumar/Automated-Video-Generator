@@ -1,0 +1,21 @@
+{
+  "jobId": "voice_dede",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "voice_dede",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_dede",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_dede\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_dede\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_dede\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_dede\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_dede\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\voice_dede\\audio"
+  },
+  "createdAt": "2026-07-23T08:34:49.564Z",
+  "updatedAt": "2026-07-23T08:35:08.980Z",
+  "topic": "multilingual de-DE",
+  "title": "Voice de-DE",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

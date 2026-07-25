@@ -1,0 +1,44 @@
+{
+  "jobId": "edit_04_yellow_top",
+  "title": "Edit yellow top",
+  "orientation": "portrait",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Editing scene one.",
+      "searchKeywords": [
+        "persp angle png",
+        "edit yellow",
+        "wild persp angle png",
+        "persp angle png nature",
+        "persp angle png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_angle.png",
+      "grade": "vivid",
+      "captionStyle": "top",
+      "captionColor": "yellow"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Editing scene two.",
+      "searchKeywords": [
+        "persp urban png",
+        "edit yellow",
+        "wild persp urban png",
+        "persp urban png nature",
+        "persp urban png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_urban.png",
+      "transition": "slide",
+      "captionStyle": "top",
+      "sfx": true
+    }
+  ],
+  "totalDurationSec": 8
+}

@@ -1,0 +1,44 @@
+{
+  "jobId": "edit_08_white_top",
+  "title": "Edit white top",
+  "orientation": "portrait",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Editing scene one.",
+      "searchKeywords": [
+        "persp cool png",
+        "edit white",
+        "wild persp cool png",
+        "persp cool png nature",
+        "persp cool png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_cool.png",
+      "grade": "cinematic",
+      "captionStyle": "top",
+      "captionColor": "white"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Editing scene two.",
+      "searchKeywords": [
+        "persp wide png",
+        "edit white",
+        "wild persp wide png",
+        "persp wide png nature",
+        "persp wide png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_wide.png",
+      "transition": "slide",
+      "captionStyle": "top",
+      "sfx": true
+    }
+  ],
+  "totalDurationSec": 8
+}

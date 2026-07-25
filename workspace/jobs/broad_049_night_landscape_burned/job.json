@@ -1,0 +1,21 @@
+{
+  "jobId": "broad_049_night_landscape_burned",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "broad_049_night_landscape_burned",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_049_night_landscape_burned",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_049_night_landscape_burned\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_049_night_landscape_burned\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_049_night_landscape_burned\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_049_night_landscape_burned\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_049_night_landscape_burned\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_049_night_landscape_burned\\audio"
+  },
+  "createdAt": "2026-07-23T07:17:08.520Z",
+  "updatedAt": "2026-07-23T07:17:28.646Z",
+  "topic": "perspective persp_night",
+  "title": "Broad night landscape burned",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

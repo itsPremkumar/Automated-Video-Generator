@@ -1,0 +1,51 @@
+{
+  "jobId": "leaktest_clean",
+  "topic": "Leak Test Clean",
+  "title": "Leak Test Clean",
+  "description": "Clean scene one.\n\n• Clean scene two.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspcleanpng #leaktestclean #wildperspcleanpng #perspcleanpngnature #perspcleanpngcloseup #ai #shorts #viral",
+  "generatedAt": "2026-07-23T07:36:12.346Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\render\\_seg_leaktest_clean_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\render\\_seg_leaktest_clean_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\render\\_seg_leaktest_clean_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\render\\_seg_leaktest_clean_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\render\\_seg_leaktest_clean_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\leaktest_clean\\render\\leaktest_clean_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

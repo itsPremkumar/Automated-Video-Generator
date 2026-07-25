@@ -1,0 +1,21 @@
+{
+  "jobId": "combo_023_voice_hi_in_swararaneural",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "combo_023_voice_hi_in_swararaneural",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_023_voice_hi_in_swararaneural",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_023_voice_hi_in_swararaneural\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_023_voice_hi_in_swararaneural\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_023_voice_hi_in_swararaneural\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_023_voice_hi_in_swararaneural\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_023_voice_hi_in_swararaneural\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_023_voice_hi_in_swararaneural\\audio"
+  },
+  "createdAt": "2026-07-23T06:01:34.354Z",
+  "updatedAt": "2026-07-23T06:01:51.789Z",
+  "topic": "voice test",
+  "title": "Voice hi-IN-SwararaNeural",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

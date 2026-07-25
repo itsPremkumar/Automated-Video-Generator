@@ -1,0 +1,2 @@
+file 'C:/one/Automated-Video-Generator/workspace/jobs/combo_038_style_center/render/_seg_combo_038_style_center_0.mp4'
+file 'C:/one/Automated-Video-Generator/workspace/jobs/combo_038_style_center/render/_seg_combo_038_style_center_1.mp4'

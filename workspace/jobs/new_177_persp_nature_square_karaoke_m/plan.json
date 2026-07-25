@@ -1,0 +1,44 @@
+{
+  "jobId": "new_177_persp_nature_square_karaoke_m",
+  "title": "New persp_nature square karaoke music",
+  "orientation": "square",
+  "voice": "en-GB-RyanNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Perspective scene one.",
+      "searchKeywords": [
+        "persp nature png",
+        "persp nature square",
+        "wild persp nature png",
+        "persp nature png nature",
+        "persp nature png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_nature.png",
+      "transition": "slide",
+      "grade": "vivid"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Perspective scene two.",
+      "searchKeywords": [
+        "persp aerial png",
+        "persp nature square",
+        "wild persp aerial png",
+        "persp aerial png nature",
+        "persp aerial png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_aerial.png",
+      "captionStyle": "top",
+      "captionColor": "yellow",
+      "fadeIn": 0.3,
+      "fadeOut": 0.3
+    }
+  ],
+  "totalDurationSec": 8
+}

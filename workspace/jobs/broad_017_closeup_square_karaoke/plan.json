@@ -1,0 +1,42 @@
+{
+  "jobId": "broad_017_closeup_square_karaoke",
+  "title": "Broad closeup square karaoke",
+  "orientation": "square",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Scene one from closeup view.",
+      "searchKeywords": [
+        "persp closeup png",
+        "broad closeup square",
+        "wild persp closeup png",
+        "persp closeup png nature",
+        "persp closeup png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_closeup.png",
+      "transition": "slide",
+      "grade": "cinematic"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Scene two continues.",
+      "searchKeywords": [
+        "persp aerial png",
+        "broad closeup square",
+        "wild persp aerial png",
+        "persp aerial png nature",
+        "persp aerial png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_aerial.png",
+      "captionTheme": "bold",
+      "kineticText": true
+    }
+  ],
+  "totalDurationSec": 8
+}

@@ -1,0 +1,44 @@
+{
+  "jobId": "new_033_persp_closeup_square_karaoke_m",
+  "title": "New persp_closeup square karaoke music",
+  "orientation": "square",
+  "voice": "en-GB-RyanNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Perspective scene one.",
+      "searchKeywords": [
+        "persp closeup png",
+        "persp closeup square",
+        "wild persp closeup png",
+        "persp closeup png nature",
+        "persp closeup png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_closeup.png",
+      "transition": "slide",
+      "grade": "warm"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Perspective scene two.",
+      "searchKeywords": [
+        "persp wide png",
+        "persp closeup square",
+        "wild persp wide png",
+        "persp wide png nature",
+        "persp wide png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_wide.png",
+      "captionStyle": "bottom",
+      "captionColor": "yellow",
+      "fadeIn": 0.3,
+      "fadeOut": 0.3
+    }
+  ],
+  "totalDurationSec": 8
+}

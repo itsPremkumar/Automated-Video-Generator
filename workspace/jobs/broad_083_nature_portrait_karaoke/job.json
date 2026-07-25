@@ -1,0 +1,21 @@
+{
+  "jobId": "broad_083_nature_portrait_karaoke",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "broad_083_nature_portrait_karaoke",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_083_nature_portrait_karaoke",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_083_nature_portrait_karaoke\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_083_nature_portrait_karaoke\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_083_nature_portrait_karaoke\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_083_nature_portrait_karaoke\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_083_nature_portrait_karaoke\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_083_nature_portrait_karaoke\\audio"
+  },
+  "createdAt": "2026-07-23T07:25:37.478Z",
+  "updatedAt": "2026-07-23T07:25:57.257Z",
+  "topic": "perspective persp_nature",
+  "title": "Broad nature portrait karaoke",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

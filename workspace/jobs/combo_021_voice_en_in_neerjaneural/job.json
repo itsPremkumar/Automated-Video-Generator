@@ -1,0 +1,21 @@
+{
+  "jobId": "combo_021_voice_en_in_neerjaneural",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "combo_021_voice_en_in_neerjaneural",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_021_voice_en_in_neerjaneural",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_021_voice_en_in_neerjaneural\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_021_voice_en_in_neerjaneural\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_021_voice_en_in_neerjaneural\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_021_voice_en_in_neerjaneural\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_021_voice_en_in_neerjaneural\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_021_voice_en_in_neerjaneural\\audio"
+  },
+  "createdAt": "2026-07-23T06:00:39.040Z",
+  "updatedAt": "2026-07-23T06:00:56.487Z",
+  "topic": "voice test",
+  "title": "Voice en-IN-NeerjaNeural",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

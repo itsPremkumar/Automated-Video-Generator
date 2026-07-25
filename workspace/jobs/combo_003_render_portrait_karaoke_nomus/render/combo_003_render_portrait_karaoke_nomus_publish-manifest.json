@@ -1,0 +1,51 @@
+{
+  "jobId": "combo_003_render_portrait_karaoke_nomus",
+  "topic": "Render portrait karaoke nomusic",
+  "title": "Render portrait karaoke nomusic",
+  "description": "First scene of the test.\n\n• Second scene continues.\n\n#Shorts #AI #facts",
+  "hashtags": "#githubprofilepng #renderportraitkaraoke #wildgithubprofilepng #githubprofilepngnature #githubprofilepngcloseup #logoautomationpng #wildlogoautomationpng #logoautomationpngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T05:51:06.749Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_003_render_portrait_karaoke_nomus/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_003_render_portrait_karaoke_nomus\\render\\_seg_combo_003_render_portrait_karaoke_nomus_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_003_render_portrait_karaoke_nomus\\render\\_seg_combo_003_render_portrait_karaoke_nomus_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_003_render_portrait_karaoke_nomus\\render\\_seg_combo_003_render_portrait_karaoke_nomus_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_003_render_portrait_karaoke_nomus\\render\\_seg_combo_003_render_portrait_karaoke_nomus_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_003_render_portrait_karaoke_nomus\\render\\_seg_combo_003_render_portrait_karaoke_nomus_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_003_render_portrait_karaoke_nomus\\render\\combo_003_render_portrait_karaoke_nomus_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

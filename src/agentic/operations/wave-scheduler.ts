@@ -13,7 +13,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { runAgenticPipeline } from '../orchestrator/pipeline.js';
-import { renderAgenticSlideshow } from '../orchestrator/render.js';
+import { composeVideo } from './compose.js';
 import { cacheStats } from './asset-cache.js';
 import type { AgenticCliJob } from '../../adapters/cli/cli-job.js';
 import { buildPipelineRequest } from '../../adapters/cli/cli-job.js';
@@ -186,26 +186,34 @@ async function runSingleJob(job: AgenticCliJob): Promise<WaveResult> {
         const outPath = path.resolve(process.cwd(), 'output', id);
         fs.mkdirSync(outPath, { recursive: true });
 
-        const finalMp4 = await renderAgenticSlideshow(result, {
-            outPath: path.join(outPath, `${sanitizeVideoFilename(job.title, id)}.mp4`),
-            crossfadeSec: 0.3,
-            burnCaptions: job.captions !== 'none',
-            intro: job.intro,
-            outro: job.outro,
-            sfx: job.sfx,
-            captions: job.captions,
-            captionTheme: job.captionTheme,
-            kinetic: job.kineticText,
-            kenBurns: job.kenBurns,
-            preset: job.preset,
-            jCutSec: job.jCutSec,
-            vignette: job.vignette,
-            // Honor the job's requested frame size (square/landscape/portrait)
-            // so the canonical output matches orientation/aspect — previously
-            // ignored, every job rendered 720x1280 portrait.
-            orientation: job.orientation,
-            aspect: job.aspect,
+        // Route through composeVideo — the full-featured ffmpeg composer that
+        // bakes EVERY advanced signal (emoji stickers, progress bar, kinetic
+        // captions, palette grade, FX, lower-third, CTA/outro). The legacy
+        // renderAgenticSlideshow path silently dropped emoji/progress/kinetic,
+        // so a job requesting them produced textless/bare clips. composeVideo
+        // is what the single-feature/demo path already uses successfully.
+        const assets = result.manifest!.assets;
+        const sceneCount = result.plan.scenes.length;
+        const sceneVisuals: string[] = [];
+        const sceneAudio: string[] = [];
+        for (let i = 0; i < sceneCount; i++) {
+            const a = assets.find((x) => x.kind !== 'music' && x.sceneIndex === i)
+                ?? assets.find((x) => x.kind !== 'music');
+            sceneVisuals.push(a?.localPath ?? '');
+            sceneAudio.push(a?.audioPath ?? '');
+        }
+        const musicAsset = assets.find((x) => x.kind === 'music');
+        const composeOut = path.join(outPath, `${sanitizeVideoFilename(job.title, id)}.mp4`);
+        const composeRes = await composeVideo({
+            job,
+            sceneVisuals,
+            sceneAudio,
+            music: musicAsset?.localPath,
+            outDir: path.join(outPath, '_compose'),
+            inputDir: path.resolve('input', 'visuals'),
+            scenes: result.plan.scenes as any,
         });
+        const finalMp4 = composeRes.video ?? composeOut;
 
         if (fs.existsSync(finalMp4)) {
             const sizeKb = Math.round(fs.statSync(finalMp4).size / 1024);

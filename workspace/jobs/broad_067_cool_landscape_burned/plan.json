@@ -1,0 +1,41 @@
+{
+  "jobId": "broad_067_cool_landscape_burned",
+  "title": "Broad cool landscape burned",
+  "orientation": "landscape",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Scene one from cool view.",
+      "searchKeywords": [
+        "persp cool png",
+        "broad cool landscape",
+        "wild persp cool png",
+        "persp cool png nature",
+        "persp cool png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_cool.png",
+      "grade": "cinematic"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Scene two continues.",
+      "searchKeywords": [
+        "persp aerial png",
+        "broad cool landscape",
+        "wild persp aerial png",
+        "persp aerial png nature",
+        "persp aerial png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_aerial.png",
+      "captionTheme": "vivid",
+      "kineticText": true
+    }
+  ],
+  "totalDurationSec": 8
+}

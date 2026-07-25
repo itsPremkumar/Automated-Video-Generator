@@ -1,0 +1,51 @@
+{
+  "jobId": "broad_083_nature_portrait_karaoke",
+  "topic": "Broad nature portrait karaoke",
+  "title": "Broad nature portrait karaoke",
+  "description": "Scene one from nature view.\n\n• Scene two continues.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspnaturepng #broadnatureportrait #wildperspnaturepng #perspnaturepngnature #perspnaturepngcloseup #perspwarmpng #wildperspwarmpng #perspwarmpngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T07:26:05.433Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_083_nature_portrait_karaoke/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_083_nature_portrait_karaoke\\render\\_seg_broad_083_nature_portrait_karaoke_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_083_nature_portrait_karaoke\\render\\_seg_broad_083_nature_portrait_karaoke_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_083_nature_portrait_karaoke\\render\\_seg_broad_083_nature_portrait_karaoke_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_083_nature_portrait_karaoke\\render\\_seg_broad_083_nature_portrait_karaoke_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_083_nature_portrait_karaoke\\render\\_seg_broad_083_nature_portrait_karaoke_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_083_nature_portrait_karaoke\\render\\broad_083_nature_portrait_karaoke_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

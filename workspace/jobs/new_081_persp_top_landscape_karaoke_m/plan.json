@@ -1,0 +1,44 @@
+{
+  "jobId": "new_081_persp_top_landscape_karaoke_m",
+  "title": "New persp_top landscape karaoke music",
+  "orientation": "landscape",
+  "voice": "en-US-GuyNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Perspective scene one.",
+      "searchKeywords": [
+        "persp top png",
+        "persp landscape karaoke",
+        "wild persp top png",
+        "persp top png nature",
+        "persp top png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_top.png",
+      "transition": "fade",
+      "grade": "vivid"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Perspective scene two.",
+      "searchKeywords": [
+        "persp night png",
+        "persp landscape karaoke",
+        "wild persp night png",
+        "persp night png nature",
+        "persp night png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_night.png",
+      "captionStyle": "bottom",
+      "captionColor": "white",
+      "fadeIn": 0.3,
+      "fadeOut": 0.3
+    }
+  ],
+  "totalDurationSec": 8
+}

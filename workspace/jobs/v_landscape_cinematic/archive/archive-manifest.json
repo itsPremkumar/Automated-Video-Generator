@@ -1,0 +1,100 @@
+{
+  "jobId": "v_landscape_cinematic",
+  "archivedAt": "2026-07-23T05:36:22.331Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\archive",
+  "totalFiles": 13,
+  "totalBytes": 1683719,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\render\\v_landscape_cinematic_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\archive\\v_landscape_cinematic_details.txt",
+      "sizeBytes": 351,
+      "sha1": "254a71b54f9f6ce54c7d6101b958324cc7f174a7"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\render\\v_landscape_cinematic_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\archive\\v_landscape_cinematic_metadata.txt",
+      "sizeBytes": 530,
+      "sha1": "bbe3a85b92eda8c361b36296a83a05d4c2b32ff9"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\render\\v_landscape_cinematic_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\archive\\v_landscape_cinematic_subtitles.srt",
+      "sizeBytes": 119,
+      "sha1": "44b57acfd74bc6b38d451bd740c914c6ffcf40e6"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\render\\v_landscape_cinematic_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\archive\\v_landscape_cinematic_subtitles.vtt",
+      "sizeBytes": 128,
+      "sha1": "ee7a90d382b7cb3da70c69e17d6d1cb6a7d71d3a"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\render\\v_landscape_cinematic_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\archive\\v_landscape_cinematic_thumbnail.jpg",
+      "sizeBytes": 47630,
+      "sha1": "34b6ac08637361b4b9be78d580f08bb279875232"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\render\\_captions_v_landscape_cinematic.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\archive\\_captions_v_landscape_cinematic.srt",
+      "sizeBytes": 318,
+      "sha1": "fc2bb178458b2011532030adc2745c482b310c93"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\render\\_seg_v_landscape_cinematic_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\archive\\_seg_v_landscape_cinematic_0.mp4",
+      "sizeBytes": 109210,
+      "sha1": "46877a0507587045b2072d5a178c8c3522a4c034"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\render\\_seg_v_landscape_cinematic_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\archive\\_seg_v_landscape_cinematic_1.mp4",
+      "sizeBytes": 71568,
+      "sha1": "645e871e85cfc5ff09dd406eb8857ab94eba1503"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\archive\\contact-sheet.png",
+      "sizeBytes": 259554,
+      "sha1": "c575caeef14b44e26abb56720b7f3f5a90195b57"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\archive\\subtitles.srt",
+      "sizeBytes": 119,
+      "sha1": "44b57acfd74bc6b38d451bd740c914c6ffcf40e6"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\archive\\subtitles.vtt",
+      "sizeBytes": 128,
+      "sha1": "ee7a90d382b7cb3da70c69e17d6d1cb6a7d71d3a"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\archive\\candidate_1.png",
+      "sizeBytes": 486086,
+      "sha1": "a0eca093964909dcfb9fce869a6f4b670544e8b8"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\archive\\candidate_1.png",
+      "sizeBytes": 707978,
+      "sha1": "52e8d8ee1b653856629c49ac5b97134f6a351036"
+    }
+  ]
+}

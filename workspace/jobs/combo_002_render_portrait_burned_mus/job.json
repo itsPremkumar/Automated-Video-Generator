@@ -1,0 +1,21 @@
+{
+  "jobId": "combo_002_render_portrait_burned_mus",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "combo_002_render_portrait_burned_mus",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_002_render_portrait_burned_mus",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_002_render_portrait_burned_mus\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_002_render_portrait_burned_mus\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_002_render_portrait_burned_mus\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_002_render_portrait_burned_mus\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_002_render_portrait_burned_mus\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_002_render_portrait_burned_mus\\audio"
+  },
+  "createdAt": "2026-07-23T05:50:07.252Z",
+  "updatedAt": "2026-07-23T05:50:26.351Z",
+  "topic": "combinatorial test",
+  "title": "Render portrait burned music",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

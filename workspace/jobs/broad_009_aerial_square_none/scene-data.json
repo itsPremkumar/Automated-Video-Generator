@@ -1,0 +1,148 @@
+{
+  "jobId": "broad_009_aerial_square_none",
+  "title": "Broad aerial square none",
+  "backend": "heuristic",
+  "voiceoverDriven": true,
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Scene one from aerial view.",
+      "searchKeywords": [
+        "persp aerial png",
+        "broad aerial square",
+        "wild persp aerial png",
+        "persp aerial png nature",
+        "persp aerial png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "voiceover": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_009_aerial_square_none\\audio\\scene_1_voice.wav",
+      "captionSegments": [
+        {
+          "text": "Scene",
+          "startMs": 0,
+          "endMs": 669
+        },
+        {
+          "text": "one",
+          "startMs": 750,
+          "endMs": 1419
+        },
+        {
+          "text": "from",
+          "startMs": 1500,
+          "endMs": 1835
+        },
+        {
+          "text": "aerial",
+          "startMs": 1916,
+          "endMs": 2585
+        },
+        {
+          "text": "view.",
+          "startMs": 2666,
+          "endMs": 3001
+        }
+      ]
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Scene two continues.",
+      "searchKeywords": [
+        "persp wide png",
+        "broad aerial square",
+        "wild persp wide png",
+        "persp wide png nature",
+        "persp wide png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "voiceover": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_009_aerial_square_none\\audio\\scene_2_voice.wav",
+      "captionSegments": [
+        {
+          "text": "Scene",
+          "startMs": 0,
+          "endMs": 925
+        },
+        {
+          "text": "two",
+          "startMs": 1037,
+          "endMs": 1500
+        },
+        {
+          "text": "continues.",
+          "startMs": 1612,
+          "endMs": 3000
+        }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "assetId": "image_s0_c1",
+      "kind": "image",
+      "sceneIndex": 0,
+      "decision": "approved",
+      "rationale": "Visual passes at conf 6/10 (score 15.0): agent backend: signal-only; visual relevance not AI-scored",
+      "decidedBy": "agent",
+      "fallbackUsed": false
+    },
+    {
+      "assetId": "image_s1_c1",
+      "kind": "image",
+      "sceneIndex": 1,
+      "decision": "approved",
+      "rationale": "Visual passes at conf 6/10 (score 15.0): agent backend: signal-only; visual relevance not AI-scored",
+      "decidedBy": "agent",
+      "fallbackUsed": false
+    },
+    {
+      "assetId": "music_s-1_c1",
+      "kind": "music",
+      "sceneIndex": -1,
+      "decision": "approved",
+      "rationale": "Music passed signal check (OK (60.0s, 192kbps)).",
+      "decidedBy": "agent",
+      "fallbackUsed": false
+    }
+  ],
+  "gate": [
+    {
+      "id": "X3",
+      "label": "No unresolved decisions",
+      "pass": true,
+      "detail": "every asset has a decision"
+    },
+    {
+      "id": "X2",
+      "label": "Every scene has an approved visual",
+      "pass": true,
+      "detail": "all scenes covered"
+    },
+    {
+      "id": "X1",
+      "label": "Duration alignment",
+      "pass": true,
+      "detail": "approved visuals=2/2"
+    },
+    {
+      "id": "X5",
+      "label": "Runtime within limit",
+      "pass": true,
+      "detail": "8s <= 60s"
+    },
+    {
+      "id": "X6",
+      "label": "Attribution completeness",
+      "pass": true,
+      "detail": "all approved assets carry a license"
+    },
+    {
+      "id": "X4",
+      "label": "Caption sync",
+      "pass": true,
+      "detail": "render manifest present"
+    }
+  ],
+  "generatedAt": "2026-07-23T07:07:42.487Z"
+}

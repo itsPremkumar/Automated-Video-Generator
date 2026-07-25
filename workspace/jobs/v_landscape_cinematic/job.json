@@ -1,0 +1,21 @@
+{
+  "jobId": "v_landscape_cinematic",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "v_landscape_cinematic",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\v_landscape_cinematic\\audio"
+  },
+  "createdAt": "2026-07-23T05:35:53.051Z",
+  "updatedAt": "2026-07-23T05:36:13.618Z",
+  "topic": "travel montage",
+  "title": "Landscape Cinematic Variety",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

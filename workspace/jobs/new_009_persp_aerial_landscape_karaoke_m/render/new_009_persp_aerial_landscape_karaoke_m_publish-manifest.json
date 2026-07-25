@@ -1,0 +1,51 @@
+{
+  "jobId": "new_009_persp_aerial_landscape_karaoke_m",
+  "topic": "New persp_aerial landscape karaoke music",
+  "title": "New persp_aerial landscape karaoke music",
+  "description": "Perspective scene one.\n\n• Perspective scene two.\n\n#Shorts #AI #facts",
+  "hashtags": "#perspaerialpng #perspaeriallandscape #wildperspaerialpng #perspaerialpngnature #perspaerialpngcloseup #perspcloseuppng #wildperspcloseuppng #perspcloseuppngnature #ai #shorts #viral",
+  "generatedAt": "2026-07-23T06:28:38.656Z",
+  "deliverablesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m/render",
+  "targets": [
+    {
+      "platform": "youtube",
+      "aspect": "16:9",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\render\\_seg_new_009_persp_aerial_landscape_karaoke_m_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "tiktok",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\render\\_seg_new_009_persp_aerial_landscape_karaoke_m_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "instagram",
+      "aspect": "1:1",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\render\\_seg_new_009_persp_aerial_landscape_karaoke_m_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "reels",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\render\\_seg_new_009_persp_aerial_landscape_karaoke_m_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    },
+    {
+      "platform": "local",
+      "aspect": "9:16",
+      "file": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\render\\_seg_new_009_persp_aerial_landscape_karaoke_m_0.mp4",
+      "subtitles": [],
+      "uploaded": false
+    }
+  ],
+  "youtube": {
+    "draft": true,
+    "uploadScript": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\new_009_persp_aerial_landscape_karaoke_m\\render\\new_009_persp_aerial_landscape_karaoke_m_youtube_upload.sh",
+    "note": "No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run."
+  }
+}

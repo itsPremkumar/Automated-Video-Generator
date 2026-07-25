@@ -1,0 +1,21 @@
+{
+  "jobId": "combo_016_render_square_karaoke_mus",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "combo_016_render_square_karaoke_mus",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_016_render_square_karaoke_mus",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_016_render_square_karaoke_mus\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_016_render_square_karaoke_mus\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_016_render_square_karaoke_mus\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_016_render_square_karaoke_mus\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_016_render_square_karaoke_mus\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_016_render_square_karaoke_mus\\audio"
+  },
+  "createdAt": "2026-07-23T05:57:54.121Z",
+  "updatedAt": "2026-07-23T05:58:20.627Z",
+  "topic": "combinatorial test",
+  "title": "Render square karaoke music",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

@@ -1,0 +1,100 @@
+{
+  "jobId": "combo_001_render_portrait_burned_nomus",
+  "archivedAt": "2026-07-23T05:50:03.428Z",
+  "archiveDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\archive",
+  "totalFiles": 13,
+  "totalBytes": 1676705,
+  "files": [
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\render\\combo_001_render_portrait_burned_nomus_details.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\archive\\combo_001_render_portrait_burned_nomus_details.txt",
+      "sizeBytes": 338,
+      "sha1": "c964364f7a71d86fa90db2dfe9151033f2fd8c00"
+    },
+    {
+      "role": "audit",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\render\\combo_001_render_portrait_burned_nomus_metadata.txt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\archive\\combo_001_render_portrait_burned_nomus_metadata.txt",
+      "sizeBytes": 517,
+      "sha1": "e3715a31fd31b51fa799c2eb565126ee95865d2c"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\render\\combo_001_render_portrait_burned_nomus_subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\archive\\combo_001_render_portrait_burned_nomus_subtitles.srt",
+      "sizeBytes": 113,
+      "sha1": "3df9df23b1ca67d797a756dcb7d33d8e4d736ab1"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\render\\combo_001_render_portrait_burned_nomus_subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\archive\\combo_001_render_portrait_burned_nomus_subtitles.vtt",
+      "sizeBytes": 122,
+      "sha1": "51999e77872ffe0c2961193cdccad960a4bccb7c"
+    },
+    {
+      "role": "thumbnail",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\render\\combo_001_render_portrait_burned_nomus_thumbnail.jpg",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\archive\\combo_001_render_portrait_burned_nomus_thumbnail.jpg",
+      "sizeBytes": 48740,
+      "sha1": "9c53bc56f1431b62fecb4a47d8083be1a4eaaf1f"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\render\\_captions_combo_001_render_portrait_burned_nomus.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\archive\\_captions_combo_001_render_portrait_burned_nomus.srt",
+      "sizeBytes": 279,
+      "sha1": "7b47e369199d11da2e7ec5192e88bf6071fd50af"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\render\\_seg_combo_001_render_portrait_burned_nomus_0.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\archive\\_seg_combo_001_render_portrait_burned_nomus_0.mp4",
+      "sizeBytes": 99307,
+      "sha1": "ebb6535a5d8c6345dfd6e9f4929ff2cf63ee06af"
+    },
+    {
+      "role": "multi_aspect",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\render\\_seg_combo_001_render_portrait_burned_nomus_1.mp4",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\archive\\_seg_combo_001_render_portrait_burned_nomus_1.mp4",
+      "sizeBytes": 73436,
+      "sha1": "ac6caf856b072c98ed65352a09bb03458850b94a"
+    },
+    {
+      "role": "contact_sheet",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\contact-sheet.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\archive\\contact-sheet.png",
+      "sizeBytes": 259554,
+      "sha1": "c575caeef14b44e26abb56720b7f3f5a90195b57"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\audio\\subtitles.srt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\archive\\subtitles.srt",
+      "sizeBytes": 113,
+      "sha1": "3df9df23b1ca67d797a756dcb7d33d8e4d736ab1"
+    },
+    {
+      "role": "subtitles",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\audio\\subtitles.vtt",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\archive\\subtitles.vtt",
+      "sizeBytes": 122,
+      "sha1": "51999e77872ffe0c2961193cdccad960a4bccb7c"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\assets\\videos\\scene_01\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\archive\\candidate_1.png",
+      "sizeBytes": 486086,
+      "sha1": "a0eca093964909dcfb9fce869a6f4b670544e8b8"
+    },
+    {
+      "role": "source_asset",
+      "src": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\assets\\videos\\scene_02\\candidate_1.png",
+      "dest": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\combo_001_render_portrait_burned_nomus\\archive\\candidate_1.png",
+      "sizeBytes": 707978,
+      "sha1": "52e8d8ee1b653856629c49ac5b97134f6a351036"
+    }
+  ]
+}

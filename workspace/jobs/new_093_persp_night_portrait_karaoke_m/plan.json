@@ -1,0 +1,44 @@
+{
+  "jobId": "new_093_persp_night_portrait_karaoke_m",
+  "title": "New persp_night portrait karaoke music",
+  "orientation": "portrait",
+  "voice": "en-GB-RyanNeural",
+  "musicQuery": "ambient lofi chill",
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Perspective scene one.",
+      "searchKeywords": [
+        "persp night png",
+        "persp night portrait",
+        "wild persp night png",
+        "persp night png nature",
+        "persp night png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "localAsset": "persp_night.png",
+      "transition": "slide",
+      "grade": "neutral"
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Perspective scene two.",
+      "searchKeywords": [
+        "persp warm png",
+        "persp night portrait",
+        "wild persp warm png",
+        "persp warm png nature",
+        "persp warm png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 5,
+      "localAsset": "persp_warm.png",
+      "captionStyle": "center",
+      "captionColor": "yellow",
+      "fadeIn": 0.3,
+      "fadeOut": 0.3
+    }
+  ],
+  "totalDurationSec": 8
+}

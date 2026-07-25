@@ -1,0 +1,21 @@
+{
+  "jobId": "broad_039_top_portrait_none",
+  "state": "awaiting_review",
+  "workspace": {
+    "jobId": "broad_039_top_portrait_none",
+    "root": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_039_top_portrait_none",
+    "assetsDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_039_top_portrait_none\\assets",
+    "imagesDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_039_top_portrait_none\\assets\\images",
+    "videosDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_039_top_portrait_none\\assets\\videos",
+    "musicDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_039_top_portrait_none\\assets\\music",
+    "verificationDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_039_top_portrait_none\\verification",
+    "audioDir": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_039_top_portrait_none\\audio"
+  },
+  "createdAt": "2026-07-23T07:14:29.599Z",
+  "updatedAt": "2026-07-23T07:14:48.868Z",
+  "topic": "perspective persp_top",
+  "title": "Broad top portrait none",
+  "backend": "heuristic",
+  "gatePass": true,
+  "voiceoverDriven": true
+}

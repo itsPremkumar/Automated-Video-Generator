@@ -1,0 +1,2 @@
+file 'C:/one/Automated-Video-Generator/workspace/jobs/combo_022_voice_es_es_alvaroneural/render/_seg_combo_022_voice_es_es_alvaroneural_0.mp4'
+file 'C:/one/Automated-Video-Generator/workspace/jobs/combo_022_voice_es_es_alvaroneural/render/_seg_combo_022_voice_es_es_alvaroneural_1.mp4'

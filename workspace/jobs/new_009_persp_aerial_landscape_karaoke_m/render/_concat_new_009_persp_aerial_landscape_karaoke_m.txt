@@ -1,0 +1,2 @@
+file 'C:/one/Automated-Video-Generator/workspace/jobs/new_009_persp_aerial_landscape_karaoke_m/render/_seg_new_009_persp_aerial_landscape_karaoke_m_0.mp4'
+file 'C:/one/Automated-Video-Generator/workspace/jobs/new_009_persp_aerial_landscape_karaoke_m/render/_seg_new_009_persp_aerial_landscape_karaoke_m_1.mp4'

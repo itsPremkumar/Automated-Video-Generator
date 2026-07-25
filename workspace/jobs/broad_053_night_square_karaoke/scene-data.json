@@ -1,0 +1,148 @@
+{
+  "jobId": "broad_053_night_square_karaoke",
+  "title": "Broad night square karaoke",
+  "backend": "heuristic",
+  "voiceoverDriven": true,
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "voiceoverText": "Scene one from night view.",
+      "searchKeywords": [
+        "persp night png",
+        "broad night square",
+        "wild persp night png",
+        "persp night png nature",
+        "persp night png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "voiceover": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_053_night_square_karaoke\\audio\\scene_1_voice.wav",
+      "captionSegments": [
+        {
+          "text": "Scene",
+          "startMs": 0,
+          "endMs": 753
+        },
+        {
+          "text": "one",
+          "startMs": 844,
+          "endMs": 1597
+        },
+        {
+          "text": "from",
+          "startMs": 1688,
+          "endMs": 2065
+        },
+        {
+          "text": "night",
+          "startMs": 2156,
+          "endMs": 2533
+        },
+        {
+          "text": "view.",
+          "startMs": 2624,
+          "endMs": 3001
+        }
+      ]
+    },
+    {
+      "sceneNumber": 2,
+      "voiceoverText": "Scene two continues.",
+      "searchKeywords": [
+        "persp warm png",
+        "broad night square",
+        "wild persp warm png",
+        "persp warm png nature",
+        "persp warm png close up"
+      ],
+      "visualPreference": "video",
+      "durationSec": 3,
+      "voiceover": "C:\\one\\Automated-Video-Generator\\workspace\\jobs\\broad_053_night_square_karaoke\\audio\\scene_2_voice.wav",
+      "captionSegments": [
+        {
+          "text": "Scene",
+          "startMs": 0,
+          "endMs": 925
+        },
+        {
+          "text": "two",
+          "startMs": 1037,
+          "endMs": 1500
+        },
+        {
+          "text": "continues.",
+          "startMs": 1612,
+          "endMs": 3000
+        }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "assetId": "image_s0_c1",
+      "kind": "image",
+      "sceneIndex": 0,
+      "decision": "approved",
+      "rationale": "Visual passes at conf 6/10 (score 10.0): agent backend: signal-only; visual relevance not AI-scored",
+      "decidedBy": "agent",
+      "fallbackUsed": false
+    },
+    {
+      "assetId": "image_s1_c1",
+      "kind": "image",
+      "sceneIndex": 1,
+      "decision": "approved",
+      "rationale": "Visual passes at conf 6/10 (score 15.0): agent backend: signal-only; visual relevance not AI-scored",
+      "decidedBy": "agent",
+      "fallbackUsed": false
+    },
+    {
+      "assetId": "music_s-1_c1",
+      "kind": "music",
+      "sceneIndex": -1,
+      "decision": "approved",
+      "rationale": "Music passed signal check (OK (60.0s, 192kbps)).",
+      "decidedBy": "agent",
+      "fallbackUsed": false
+    }
+  ],
+  "gate": [
+    {
+      "id": "X3",
+      "label": "No unresolved decisions",
+      "pass": true,
+      "detail": "every asset has a decision"
+    },
+    {
+      "id": "X2",
+      "label": "Every scene has an approved visual",
+      "pass": true,
+      "detail": "all scenes covered"
+    },
+    {
+      "id": "X1",
+      "label": "Duration alignment",
+      "pass": true,
+      "detail": "approved visuals=2/2"
+    },
+    {
+      "id": "X5",
+      "label": "Runtime within limit",
+      "pass": true,
+      "detail": "8s <= 60s"
+    },
+    {
+      "id": "X6",
+      "label": "Attribution completeness",
+      "pass": true,
+      "detail": "all approved assets carry a license"
+    },
+    {
+      "id": "X4",
+      "label": "Caption sync",
+      "pass": true,
+      "detail": "render manifest present"
+    }
+  ],
+  "generatedAt": "2026-07-23T07:18:27.517Z"
+}

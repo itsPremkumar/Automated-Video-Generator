@@ -1,0 +1,47 @@
+[
+  {
+    "filename": "ambient_piano.mp3",
+    "title": "Ambient Piano",
+    "creator": "Procedural",
+    "genre": "ambient",
+    "mood": ["calm", "meditation", "relaxing"],
+    "durationSec": 60,
+    "format": "mp3"
+  },
+  {
+    "filename": "lofi_chill.mp3",
+    "title": "Lo-Fi Chill",
+    "creator": "Procedural",
+    "genre": "lofi",
+    "mood": ["nostalgic", "chill", "study"],
+    "durationSec": 60,
+    "format": "mp3"
+  },
+  {
+    "filename": "cinematic_drone.mp3",
+    "title": "Cinematic Drone",
+    "creator": "Procedural",
+    "genre": "cinematic",
+    "mood": ["dramatic", "dark", "epic"],
+    "durationSec": 60,
+    "format": "mp3"
+  },
+  {
+    "filename": "upbeat_electronic.mp3",
+    "title": "Upbeat Electronic",
+    "creator": "Procedural",
+    "genre": "electronic",
+    "mood": ["upbeat", "energetic", "happy"],
+    "durationSec": 60,
+    "format": "mp3"
+  },
+  {
+    "filename": "ambient_nature.mp3",
+    "title": "Ambient Nature",
+    "creator": "Procedural",
+    "genre": "nature",
+    "mood": ["calm", "professional", "background"],
+    "durationSec": 60,
+    "format": "mp3"
+  }
+]
