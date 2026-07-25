@@ -200,6 +200,11 @@ async function runSingleJob(job: AgenticCliJob): Promise<WaveResult> {
             preset: job.preset,
             jCutSec: job.jCutSec,
             vignette: job.vignette,
+            // Honor the job's requested frame size (square/landscape/portrait)
+            // so the canonical output matches orientation/aspect — previously
+            // ignored, every job rendered 720x1280 portrait.
+            orientation: job.orientation,
+            aspect: job.aspect,
         });
 
         if (fs.existsSync(finalMp4)) {

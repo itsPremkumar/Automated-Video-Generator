@@ -14,6 +14,27 @@ import type { PipelineResult } from './types.js';
 import { AGENTIC_OUTPUT_DIR } from '../management/workspace.js';
 import { logInfo, logWarn, logError } from '../../shared/logging/runtime-logging.js';
 
+/**
+ * Resolve the canonical output W×H for the agentic slideshow renderer.
+ * Mirrors compose.ts `resolveOutputSize` so the agentic batch path honors
+ * `aspect`/`orientation` instead of always falling back to 720×1280
+ * (portrait). Precedence: explicit aspect > explicit orientation > portrait.
+ */
+export function resolveRenderDims(
+    orientation: 'portrait' | 'landscape' | 'square' | undefined,
+    aspect: '9:16' | '1:1' | '16:9' | 'square' | undefined,
+): { w: number; h: number } {
+    const PORT = 720;
+    const LAND = 1280;
+    const asp = aspect ?? (orientation ? undefined : undefined);
+    if (asp === '1:1' || asp === 'square') return { w: PORT, h: PORT };
+    if (asp === '16:9') return { w: LAND, h: Math.round(LAND * 9 / 16) };
+    if (asp === '9:16') return { w: PORT, h: Math.round(PORT * 16 / 9) };
+    if (orientation === 'square') return { w: PORT, h: PORT };
+    if (orientation === 'landscape') return { w: LAND, h: Math.round(LAND * 9 / 16) };
+    return { w: PORT, h: Math.round(PORT * 16 / 9) };
+}
+
 /** Title card at the start of the video. */
 export interface IntroCard { title: string; subtitle?: string; durationSec?: number; }
 /** CTA card at the end of the video. */
@@ -293,6 +314,13 @@ export async function renderAgenticSlideshow(
         languages?: string[];
         vignette?: boolean;
         brand?: { watermark?: string; accent?: string };
+        /** Orientation/aspect HINTS for the output frame size. When
+         *  `dimensions` is omitted, these drive the canonical W×H so a
+         *  `square`/`landscape` job actually renders square/landscape
+         *  instead of the legacy 720×1280 portrait default. Precedence
+         *  mirrors compose.ts: aspect > orientation > portrait default. */
+        orientation?: 'portrait' | 'landscape' | 'square';
+        aspect?: '9:16' | '1:1' | '16:9' | 'square';
     } = {},
 ): Promise<string> {
     const ffmpeg: string = require('ffmpeg-static');
@@ -325,7 +353,9 @@ export async function renderAgenticSlideshow(
     const music = res.manifest.assets.find((a) => a.kind === 'music');
     if (visuals.length === 0) throw new Error('No approved visuals to render.');
 
-    const CARD_W = opts.dimensions?.w ?? 720, CARD_H = opts.dimensions?.h ?? 1280;
+    const dims = opts.dimensions
+        ?? resolveRenderDims(opts.orientation ?? (res.plan as any)?.orientation, opts.aspect);
+    const CARD_W = dims.w, CARD_H = dims.h;
     const introClip = opts.intro ? outDir + '/_intro_' + res.workspace.jobId + '.mp4' : null;
     const outroClip = opts.outro ? outDir + '/_outro_' + res.workspace.jobId + '.mp4' : null;
     const makeCard = async (
@@ -427,7 +457,7 @@ export async function renderAgenticSlideshow(
         }
     }
 
-    const W = opts.dimensions?.w ?? 720, H = opts.dimensions?.h ?? 1280;
+    const W = dims.w, H = dims.h;
     const sceneFilters = visuals.map((a, i) => {
         const dur = a.durationSec ?? 4;
         const sceneKb = res.plan.scenes[i]?.kenBurns;
