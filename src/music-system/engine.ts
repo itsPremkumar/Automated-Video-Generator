@@ -128,10 +128,19 @@ export class MusicEngine {
             }
         }
 
-        // If we have candidates, download + process the best one
+        // If we have candidates, download + process the best one. Downloding a
+        // network track can fail OR hang (aborted by withSignal) — never let that
+        // kill the whole pipeline; fall through to the procedural fallback instead.
         if (candidates.length > 0) {
             const best = candidates[0];
-            return this.downloadAndProcess(best.track, best.provider, query, startTime);
+            try {
+                return await this.downloadAndProcess(best.track, best.provider, query, startTime);
+            } catch (err: any) {
+                this.eventBus.emit({
+                    type: 'engine:fallback',
+                    error: `download failed for ${best.provider.name}: ${err.message}`,
+                });
+            }
         }
 
         // Last resort: procedural generator (always works)

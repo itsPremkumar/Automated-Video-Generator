@@ -65,26 +65,29 @@ export function runFfmpeg(args: string[], timeoutMs = 30_000): Promise<{ code: n
     });
 }
 
-/** Wired timeout: passes AbortSignal to axios for clean cancellation */
+/** Hardened timeout: An AbortController that ALSO guarantees rejection via a
+ *  racing timer promise. The plain AbortSignal listener can be skipped when a
+ *  streaming axios request (responseType:arraybuffer) never flushes and never
+ *  fires 'abort' — that left the whole render hung on a slow/blocked music
+ *  host for 9+ minutes. Here the timer promise ALWAYS rejects, so the
+ *  outer await can never hang. */
 export async function withSignal<T>(
     factory: (signal: AbortSignal) => Promise<T>,
     timeoutMs: number,
     label: string,
 ): Promise<T> {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-
+    let timer: NodeJS.Timeout | undefined;
+    const hardTimer = new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+            controller.abort();
+            reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+    });
     try {
-        return await Promise.race([
-            factory(controller.signal),
-            new Promise<T>((_, reject) => {
-                controller.signal.addEventListener('abort', () => {
-                    reject(new Error(`${label} timed out after ${timeoutMs}ms`));
-                }, { once: true });
-            }),
-        ]);
+        return await Promise.race([factory(controller.signal), hardTimer]);
     } finally {
-        clearTimeout(timer);
+        if (timer) clearTimeout(timer);
     }
 }
 
