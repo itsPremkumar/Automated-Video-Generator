@@ -922,3 +922,147 @@ Set the `"mode"` field to run ONLY one stage of the pipeline.
 | 25 | Kitchen sink | `sink_*` | Every feature stacked together |
 
 See `input/scripts/agentic-scripts.json` for runnable examples of every category.
+
+---
+
+## 22. Operational Notes & Gotchas (verified against the source)
+
+These fill the gaps the field tables above don't cover — learned from real runs of
+this exact repo. Read this before your first render.
+
+### 22.1 Running a dedicated job file (don't edit the big JSON)
+
+`npm run agentic:modular` and `npm run agentic:batch` **both default to
+`input/scripts/agentic-scripts.json`** and run *every* job in it. To run just one
+job (or a small custom file) without touching that big array, pass `--file`:
+
+```bash
+# Modular stages, single dedicated file:
+npx tsx src/adapters/cli/agentic-modular.ts pipeline --file input/scripts/my-reel-job.json
+
+# Or individual stages against the same file:
+npx tsx src/adapters/cli/agentic-modular.ts voice  --file input/scripts/my-reel-job.json
+npx tsx src/adapters/cli/agentic-modular.ts render --file input/scripts/my-reel-job.json
+```
+
+> `agentic:modular` reads `--file` (relative or absolute). `agentic:batch` does **not**
+> take `--file` — it always reads `agentic-scripts.json`. Use the modular CLI for
+> single-file jobs.
+
+### 22.2 Output location & filename
+
+- Output folder = `output/{id}/`  ← uses the job `id`, not the title.
+- Output **file** = `{title}.mp4`  ← uses the job `title`.
+  (Section 3's "`{Title}.mp4`" is correct; just note the *folder* uses `id`.)
+- Multi-aspect / poster / contact-sheet / sidecar `.srt`/`.vtt` are written alongside it.
+
+### 22.3 `[Visual: ...]` is NOT a hard local-asset lock
+
+This is the most common surprise. Inline `[Visual: name]` behaves as follows:
+
+- If `input/visuals/name` **exists** → used as a local asset (image or video by extension).
+- If it does **NOT** exist → the text is treated as a **stock search keyword** and the
+  pipeline fetches from Pexels → Openverse/Wikimedia. So `[Visual: career-tools.png]`
+  only binds your screenshot if that file is actually present in `input/visuals/`.
+
+The same applies to the top-level `localAssets` / `videoClips` arrays: filenames there
+are resolved against `input/visuals/` and fall back to stock keywords when missing.
+
+### 22.4 Re-binding assets for a re-render (render stage reads the manifest, not plan.json)
+
+The `render` subcommand does **not** re-read `plan.json` `localAsset` bindings. It
+reads `workspace/jobs/{id}/render-manifest.json` (and falls back to `scene-data.json`).
+So if you edited `plan.json` to point a scene at a local screenshot but the render still
+shows stock footage, patch the manifest instead:
+
+```jsonc
+// workspace/jobs/{id}/render-manifest.json  →  assets[] entries
+{ "sceneIndex": 2, "kind": "image",
+  "localPath": "C:\\one\\Automated-Video-Generator\\input\\visuals\\interview-experiences.png",
+  "license": "User-supplied — owner attribution" }
+```
+
+Then re-run `render` (or `render --file …`). The per-scene `visualPreference` should be
+`"image"` for stills and `"video"` for clips.
+
+### 22.5 Background music path is `input/bgm/`, not `input/visuals/`
+
+`backgroundMusic: "lofi.mp3"` resolves against **`input/bgm/`** (see `src/lib/path-safety.ts`
+→ `inputBgmPath`). If you drop the file in `input/visuals/` it will not be found.
+(Stock music via `musicQuery` needs no file — it auto-fetches free tracks.)
+
+### 22.6 Voice: local Kokoro backend (zero API key)
+
+- `voice` (Edge-TTS keys like `en-US-GuyNeural`) works offline via the bundled backend.
+- `kokoroVoice` (e.g. `af_heart`, `am_michael`) uses the self-contained
+  **`src/speech`** Python backend (the repo `venv/Scripts/python.exe`). On first use it
+  lazily loads the Kokoro model (one-time download, then cached).
+- Cloned voices (`cloneVoiceFrom` / `useClonedVoiceId`) need a real reference clip in
+  `input/voices/`.
+- `TTS_PROVIDER` defaults to `voicebox`; Kokoro still runs through the same bundled
+  backend. No external API key is required for any of these.
+
+### 22.7 Pipeline can hang at the gateway/verify stage — run stages separately
+
+On constrained machines the monolithic `pipeline` run has been observed to **stall**
+between the visuals stage and voice generation (the gateway/verification step blocks,
+not the download). Symptom: log shows `✅ Acquired N candidates` then no further
+progress for minutes. Workaround — drive the stages yourself; they reuse the same
+workspace:
+
+```bash
+npx tsx src/adapters/cli/agentic-modular.ts plan   --file <job>.json   # 1
+npx tsx src/adapters/cli/agentic-modular.ts voice  --file <job>.json   # 2 (Kokoro per scene)
+npx tsx src/adapters/cli/agentic-modular.ts render --file <job>.json   # 3
+```
+
+Voice generation is **per-scene and somewhat slow** (a few seconds each on CPU); a
+12-scene reel takes a couple of minutes end-to-end. Audio is cached per scene, so a
+re-run of `voice` is fast.
+
+### 22.8 AI verification (`aiVerify`) is OPT-IN and off by default
+
+`aiVerify` does nothing unless `enabled: true` **and** a verification model is
+configured (local Ollama / Gemini). It is **not** enabled by default in `.env`.
+Without it, assets flow straight to editing unverified. Turning it on via the JSON job
+is sufficient; no `.env` change needed for the JSON path.
+
+### 22.9 Editing a single scene after render
+
+```bash
+npx tsx src/adapters/cli/agentic-modular.ts edit --scene 3 --visual "career-tools.png" --grade warm
+npx tsx src/adapters/cli/agentic-modular.ts list          # inspect current scene state
+npx tsx src/adapters/cli/agentic-modular.ts critique      # director's critique (aspect/black frames)
+npx tsx src/adapters/cli/agentic-modular.ts revise --auto # self-heal from critique
+```
+
+### 22.10 Captions are stripped from speech
+
+Everything inside `[…]` inline tags is removed from both the spoken narration and the
+burned/karaoke subtitles — only the plain sentence text is voiced.
+
+### 22.11 Minimal verified working example (career-platform reel shape)
+
+```json
+[
+  {
+    "id": "career_platform_reel",
+    "title": "SkillForge — Free Career Platform for Students",
+    "script": "90+ free tools. [Visual: career-tools.png] [Grade: cool]\nReal interview experiences from Amazon, Google, Microsoft. [Visual: interview-experiences.png] [Grade: cinematic]",
+    "orientation": "portrait",
+    "aspect": "9:16",
+    "kokoroVoice": "af_heart",
+    "captions": "burned",
+    "captionTheme": "neon",
+    "kineticText": true,
+    "vignette": true,
+    "musicQuery": "upbeat corporate technology",
+    "defaultVisual": "hero.png",
+    "intro": { "title": "SkillForge", "subtitle": "Free for students", "durationSec": 2 },
+    "outro": { "ctaText": "Search SkillForge", "durationSec": 2 }
+  }
+]
+```
+
+Run it with: `npx tsx src/adapters/cli/agentic-modular.ts pipeline --file input/scripts/my-reel-job.json`
+(Place `career-tools.png`, `interview-experiences.png`, `hero.png` in `input/visuals/` first — see §22.3.)
