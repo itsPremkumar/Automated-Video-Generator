@@ -1,0 +1,10 @@
+[
+  {
+    "id": "var_square_slide",
+    "title": "Variety Square Slide",
+    "orientation": "square",
+    "transition": "slide",
+    "captions": true,
+    "script": "Square format scene one slides. [Visual: techclip.mp4]\nSquare format scene two slides in. [Visual: brand_cover.jpg]"
+  }
+]

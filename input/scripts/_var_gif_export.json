@@ -1,0 +1,10 @@
+[
+  {
+    "id": "var_gif_export",
+    "title": "Variety GIF Export",
+    "orientation": "portrait",
+    "exportFormat": "gif",
+    "captions": false,
+    "script": "A short looping clip. [Visual: cityclip.mp4]\nAnother short clip. [Visual: techclip.mp4]"
+  }
+]

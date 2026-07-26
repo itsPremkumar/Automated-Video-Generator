@@ -1,0 +1,11 @@
+[
+  {
+    "id": "var_portrait_fade",
+    "title": "Variety Portrait Fade",
+    "orientation": "portrait",
+    "transition": "fade",
+    "captions": true,
+    "vignette": true,
+    "script": "First scene in portrait mode. [Visual: techclip.mp4]\nSecond scene fades in smoothly. [Visual: cityclip.mp4]\nThird scene closes the story. [Visual: brand_cover.jpg]"
+  }
+]

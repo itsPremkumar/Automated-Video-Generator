@@ -565,6 +565,21 @@ async function runRender(cliArgs: CliArgs) {
         if (finalMp4 && fs.existsSync(finalMp4)) {
             const size = fs.statSync(finalMp4).size;
             console.log(`  ✅ Rendered: ${finalMp4} (${(size / 1024).toFixed(0)} KB)`);
+
+            // Post-render export formats (gif/webm) + inspection artifacts.
+            const exportFormat = job.exportFormat || meta.exportFormat;
+            if (exportFormat === 'gif' || exportFormat === 'webm') {
+                const { transcode } = await import('../../agentic/operations/export-fx.js');
+                const converted = transcode(finalMp4, exportFormat, outputDir);
+                if (converted) console.log(`  ✅ Exported ${exportFormat}: ${converted} (${(fs.statSync(converted).size / 1024).toFixed(0)} KB)`);
+                else console.error(`  ✖ ${exportFormat} export failed.`);
+            }
+            const contactSheet = job.contactSheet ?? meta.contactSheet;
+            if (contactSheet) {
+                const { exportContactSheet } = await import('../../agentic/operations/export-fx.js');
+                const sheet = exportContactSheet(finalMp4, outputDir);
+                if (sheet) console.log(`  ✅ Contact sheet: ${sheet}`);
+            }
         } else {
             console.error(`  ✖ Render failed — no output produced.`);
         }
