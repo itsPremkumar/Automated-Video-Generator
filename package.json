@@ -102,6 +102,7 @@
     "agentic:list": "tsx src/adapters/cli/agentic-modular.ts list",
     "agentic:modular": "tsx src/adapters/cli/agentic-modular.ts",
     "agentic:editor": "tsx src/adapters/cli/agentic-editor.ts",
+    "agentic:image": "tsx src/adapters/cli/agentic-image.ts",
     "agentic:revise": "tsx src/adapters/cli/agentic-modular.ts revise",
     "agentic:critique": "tsx src/adapters/cli/agentic-modular.ts critique",
     "agentic:reorder": "tsx src/adapters/cli/agentic-modular.ts reorder",

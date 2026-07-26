@@ -1166,3 +1166,61 @@ npx tsx src/adapters/cli/agentic-batch.ts --mode download-images --broadcast "li
 ```
 
 `--broadcast "field:value"` mutates that field on every matched job before dispatch.
+
+### 22.13 Single-Image Toolbox (`agentic:image`)
+
+The video editor (`agentic:editor.ts`) only accepts **video** inputs. For still images
+there is a dedicated **image toolbox** — `src/adapters/cli/agentic-image.ts`, run via
+`npm run agentic:image`. Every advanced edit you'd expect on a lone image is here,
+plus the three image-only operations the pipeline previously lacked.
+
+```bash
+npm run agentic:image <command> -- --input <image> [options]
+# or directly:
+npx tsx src/adapters/cli/agentic-image.ts <command> --input <image> [options]
+```
+
+| Command | What it does | Key options |
+| :------ | :---------- | :---------- |
+| `convert` | **Image format conversion** (png→jpg/webp/tiff/bmp/gif) | `--output out.webp`, `--quality 90` |
+| `resize` | Scale to w×h (aspect-kept, padded) | `--w 1080 --h 1080` |
+| `crop` | Crop region | `--w 1080 --h 1920 --x 100 --y 200` |
+| `rotate` | 90/180/270/`hflip`/`vflip`/free° | `--angle 90` |
+| `flip` | hflip / vflip convenience | `--dir h` |
+| `adjust` | brightness/contrast/saturation/gamma | `--brightness 0.05 --contrast 1.2 --saturation 1.3` |
+| `blur` | Whole or region `w:h:x:y` | `--strength 8 --region 200:200:100:100` |
+| `text` | **Burn text onto the image** (sharp+SVG) | `--text "Free for students" --color white --size 90` |
+| `emoji` | **Burn an emoji/sticker** (sharp+SVG, Segoe UI Emoji) | `--emoji "🔥" --size 260` |
+| `watermark` | Overlay a logo image (corner + opacity) | `--image logo.png --position bottom-right --scale 0.15 --opacity 0.8` |
+| `tint` | Brand color tint overlay | `--color #7C3AED --alpha 0.2` |
+| `vignette` | Edge darkening | `--amount PI/5` |
+| `border` | Colored border/padding | `--size 40 --color white` |
+| `enhance` | Denoise + sharpen + deblock | `--denoise --sharpen` |
+| `info` | Show image metadata (dims/format/size) | — |
+| `to-video` | **Image → video** (Ken Burns zoom + optional text + music) | `--duration 5 --w 1080 --h 1920 --kenburns --text "..." [--music track.mp3]` |
+| `gif` | Image → animated GIF (Ken Burns loop) | `--duration 3 --fps 15` |
+| `contact-sheet` | Stack N images into one sheet (sharp) | `--files "a.png,b.png,c.png" --w 480 --gap 12` |
+
+**Notes (verified during build):**
+- `convert`, `crop`, `resize`, `rotate`, `adjust`, `blur`, `tint`, `vignette`, `border`,
+  `enhance`, `watermark`, `to-video`, `gif` are ffmpeg (`ffmpeg-static`) wrappers.
+- `text` and `emoji` use **sharp + SVG** (not ffmpeg `drawtext`) because the bundled
+  ffmpeg build can't render color emoji — sharp renders them via Segoe UI Emoji.
+- `contact-sheet` uses **sharp** compositing (the bundled ffmpeg's `vstack` is broken).
+- `to-video` outputs a real 9:16/16:9/etc. MP4 (e.g. `--w 1080 --h 1920`) with a slow
+  Ken Burns zoom and optional burned caption — this is the "image into video" conversion
+  that previously only existed inside the full pipeline.
+
+**Examples:**
+```bash
+# Convert a screenshot to JPG (smaller file)
+npm run agentic:image convert -- --input shot.png --output shot.jpg
+
+# Turn one screenshot into a 5s Ken Burns reel clip with a caption
+npm run agentic:image to-video -- --input shot.png --duration 5 --w 1080 --h 1920 \
+  --kenburns --text "Built by students, for students" --output clip.mp4
+
+# Burn a promo line + emoji onto a poster
+npm run agentic:image text  -- --input poster.png --text "Free forever" --size 100 --output poster_txt.png
+npm run agentic:image emoji -- --input poster_txt.png --emoji "🚀" --size 220 --output poster_done.png
+```
