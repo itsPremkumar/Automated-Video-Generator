@@ -163,6 +163,7 @@ async function runPlan(cliArgs: CliArgs) {
                 dialogueVoices: job.dialogueVoices,
                 sceneDialogue: job.sceneDialogue,
                 defaultPersona: job.defaultPersona,
+                advancedByScene: job.advanced,
             },
             parseScript,
         );

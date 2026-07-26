@@ -80,6 +80,24 @@ export interface ScenePlan {
     kineticText?: boolean;
     /** Background music ducking depth for this scene. */
     musicIntensity?: 'calm' | 'mid' | 'energetic';
+    /** ═══ Advanced editing (per-scene, additive) ═══
+     *  These mirror the job-level advanced-FX arrays but are written inline
+     *  per scene in agentic-scripts.json. buildPlan collects them into
+     *  Plan.advanced, and render.ts injects the matching ffmpeg filter
+     *  segments. All are OPTIONAL and default to no-op (today's behaviour). */
+    /** Green-screen / chroma-key this scene's clip (colorkey green removal). */
+    chromaKey?: boolean;
+    /** Playback speed multiplier for this scene's visual (0.5 = half/slow-mo, 2 = timelapse). */
+    speed?: number;
+    /** Stabilize this scene's clip (vidstab two-pass). Best for shaky captures. */
+    stabilize?: boolean;
+    /** Color filter for this scene: 'bw' | 'vintage' | 'sepia'. */
+    filter?: 'bw' | 'vintage' | 'sepia';
+    /** Box-blur this scene's clip (depth/background effect). */
+    blur?: boolean;
+    /** Multi-point zoom path: keyframes at times t (sec) with zoom z.
+     *  e.g. [{t:0,z:1.0},{t:2,z:1.2},{t:4,z:1.1}]. Linear-interpolated zoompan. */
+    keyframes?: { t: number; z: number; x?: number; y?: number }[];
 }
 
 export interface Plan {

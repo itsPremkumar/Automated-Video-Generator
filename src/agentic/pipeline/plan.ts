@@ -27,6 +27,17 @@ export interface PlanOptions {
     dialogueVoices?: [string, string];
     /** Per-scene in-scene dialogue (back-and-forth, each turn its own voice). */
     sceneDialogue?: Record<number, { speaker: string; text: string }[]>;
+    /** ═══ Advanced editing (per-scene, from agentic-scripts.json) ═══
+     *  Map of scene index → advanced FX (chromaKey/speed/stabilize/filter/
+     *  blur/keyframes). Collected into Plan.advanced for render.ts. */
+    advancedByScene?: Record<number, {
+        chromaKey?: boolean;
+        speed?: number;
+        stabilize?: boolean;
+        filter?: 'bw' | 'vintage' | 'sepia';
+        blur?: boolean;
+        keyframes?: { t: number; z: number; x?: number; y?: number }[];
+    }>;
 }
 
 export type Parser = (script: string) => Promise<ParsedScript> | ParsedScript;
@@ -81,6 +92,18 @@ export async function buildPlan(script: string, opts: PlanOptions, parser: Parse
         if (persona) s.voicePersona = persona;
         const dlg = opts.sceneDialogue?.[i];
         if (dlg && dlg.length > 0) s.dialogue = dlg;
+        // ═══ Advanced editing: attach per-scene FX from agentic-scripts.json ═══
+        // JSON object keys are strings; normalize to numeric indices.
+        const advRaw = opts.advancedByScene as Record<string, any> | undefined;
+        const adv = advRaw ? advRaw[i] ?? advRaw[String(i)] : undefined;
+        if (adv) {
+            if (adv.chromaKey !== undefined) s.chromaKey = adv.chromaKey;
+            if (adv.speed !== undefined) s.speed = adv.speed;
+            if (adv.stabilize !== undefined) s.stabilize = adv.stabilize;
+            if (adv.filter !== undefined) s.filter = adv.filter;
+            if (adv.blur !== undefined) s.blur = adv.blur;
+            if (adv.keyframes !== undefined) s.keyframes = adv.keyframes;
+        }
     });
     const defaultMusic = opts.musicQuery?.trim() || (await deriveMusicQueryAdvanced(scenes, opts.title));
     return {

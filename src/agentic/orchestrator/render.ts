@@ -462,10 +462,33 @@ export async function renderAgenticSlideshow(
         const dur = a.durationSec ?? 4;
         const sceneKb = res.plan.scenes[i]?.kenBurns;
         const doZoom = a.kind === 'image' && (sceneKb !== false ? opts.kenBurns !== false : false);
-        const zoom = doZoom ? `,zoompan=z=min(zoom+0.0008\\\\,1.04):d=1:s=${W}x${H}` : '';
+        const zoom = doZoom ? `,zoompan=z=min(zoom+0.0008\\\\\\\\,1.04):d=1:s=${W}x${H}` : '';
         const grade = gradeFilter(stylePlan.scenes[i]?.grade ?? 'neutral');
         const tag = '[' + i + ':v]';
-        return `${tag}scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=25,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom},${grade},format=yuv420p[v${i}]`;
+        // ═══ Advanced editing (per-scene, additive) — mirrors visual-fx.ts ═══
+        const adv: string[] = [];
+        const sp = res.plan.scenes[i];
+        if (sp) {
+            if (sp.speed && sp.speed !== 1) adv.push(`setpts=${1 / sp.speed}*PTS`);
+            if (sp.chromaKey) adv.push('colorkey=0x00FF00:0.5:0.2');
+            if (sp.filter === 'bw') adv.push('format=gray');
+            else if (sp.filter === 'vintage') adv.push('curves=vintage,saturation=1.2');
+            else if (sp.filter === 'sepia') adv.push('sepia=0.8');
+            if (sp.blur) adv.push('boxblur=10');
+            if (sp.keyframes && sp.keyframes.length >= 2) {
+                // Build a piecewise-linear zoom expr over time (ffmpeg eval).
+                // e.g. keyframes [{t:0,z:1},{t:2,z:1.2},{t:4,z:1.1}]
+                //   -> if(lte(t,0),1,if(lte(t,2),1.2,1.1))  (nested ifs)
+                const sorted = [...sp.keyframes].sort((a, b) => a.t - b.t);
+                let expr = `${sorted[sorted.length - 1].z}`;
+                for (let k = sorted.length - 1; k >= 0; k--) {
+                    expr = `if(lte(t\\,${sorted[k].t})\\,${sorted[k].z}\\,${expr})`;
+                }
+                adv.push(`zoompan=z='${expr}':d=${Math.round(dur * 25)}:s=${W}x${H}:fps=25`);
+            }
+        }
+        const advStr = adv.length ? ',' + adv.join(',') : '';
+        return `${tag}scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=25,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${advStr},${grade},format=yuv420p[v${i}]`;
     });
 
     if (introClip)
@@ -679,8 +702,26 @@ else vfArgs.push(`${videoMap}null[vig]`);
                     kin.push(`drawtext=${FONT_ARG}text='${safe}':fontcolor=${cue.kind === 'wordpop' ? 'yellow' : 'white'}:fontsize=${cue.kind === 'wordpop' ? 64 : 34}:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=${cue.kind === 'wordpop' ? '(h-text_h)/2' : 'h-text_h-90'}:enable='between(t\\,${start},${end})'`);
                 }
             }
-            const doVignette = opts.vignette !== false;
-const vfChain = `[0:v]tpad=stop_mode=clone:stop_duration=${dur},fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${grade ? ',' + grade : ''},format=yuv420p${doVignette ? ',vignette=PI/5' : ''}${segCaptionArg.length ? ',' + segCaptionArg.join(',') : ''}${kin.length ? ',' + kin.join(',') : ''}[v]`;
+            // ═══ Advanced editing (per-scene, additive) — segment branch ═══
+            const sp = clip.kind === 'scene' ? res.plan.scenes[clip.idx] : undefined;
+            const doVignette = opts.vignette !== false && !sp?.chromaKey;
+            const segAdv: string[] = [];
+            if (sp) {
+                if (sp.speed && sp.speed !== 1) segAdv.push(`setpts=${1 / sp.speed}*PTS`);
+                if (sp.chromaKey) segAdv.push('colorkey=0x00FF00:0.5:0.2');
+                if (sp.filter === 'bw') segAdv.push('format=gray');
+                else if (sp.filter === 'vintage') segAdv.push('curves=vintage,saturation=1.2');
+                else if (sp.filter === 'sepia') segAdv.push('sepia=0.8');
+                if (sp.blur) segAdv.push('boxblur=10');
+                if (sp.keyframes && sp.keyframes.length >= 2) {
+                    const sorted = [...sp.keyframes].sort((a, b) => a.t - b.t);
+                    let expr = `${sorted[sorted.length - 1].z}`;
+                    for (let k = sorted.length - 1; k >= 0; k--) expr = `if(lte(t\\,${sorted[k].t})\\,${sorted[k].z}\\,${expr})`;
+                    segAdv.push(`zoompan=z='${expr}':d=${Math.round(dur * 25)}:s=${W}x${H}:fps=25`);
+                }
+            }
+            const segAdvStr = segAdv.length ? ',' + segAdv.join(',') : '';
+const vfChain = `[0:v]tpad=stop_mode=clone:stop_duration=${dur},fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${doVignette ? ',vignette=PI/5' : ''}${segAdvStr}${grade ? ',' + grade : ''},format=yuv420p${segCaptionArg.length ? ',' + segCaptionArg.join(',') : ''}${kin.length ? ',' + kin.join(',') : ''}[v]`;
             const voPath = clip.kind === 'scene' ? res.voiceovers?.scenes[clip.idx]?.audioPath : undefined;
             const hasVo = !!voPath && fs.existsSync(voPath);
             const inputs: string[] = ['-i', clip.file];
