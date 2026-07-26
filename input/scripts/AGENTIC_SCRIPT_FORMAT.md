@@ -1224,3 +1224,59 @@ npm run agentic:image to-video -- --input shot.png --duration 5 --w 1080 --h 192
 npm run agentic:image text  -- --input poster.png --text "Free forever" --size 100 --output poster_txt.png
 npm run agentic:image emoji -- --input poster_txt.png --emoji "🚀" --size 220 --output poster_done.png
 ```
+
+### 22.14 Single-Video Editor (`agentic:editor`)
+
+For editing an **existing video file** (not the pipeline), use `agentic-editor.ts`:
+`npm run agentic:editor <command> -- --input <video> [options]`
+(or `npx tsx src/adapters/cli/agentic-editor.ts <command> --input <video>`).
+
+| Command | What it does | Key options |
+| :------ | :---------- | :---------- |
+| `trim` | Cut by start/end/duration | `--start 00:05 --end 00:15` |
+| `split` | Split at timestamp | `--at 00:10` |
+| `split-scenes` | Auto scene-detect + split | `--threshold 0.3` |
+| `concat-scene` | Extract one scene from a rendered job | `--job <id> --scene 3` |
+| `crop` | Crop region | `--w 720 --h 720 --x 0 --y 0` |
+| `resize` | Scale to w×h | `--w 1920 --h 1080` |
+| `rotate` | 90/180/270/flip/free° | `--angle 90` |
+| `speed` | Playback speed 0.25×–4× | `--rate 2.0` |
+| `overlay-text` | Burn caption onto video | `--text "Hello" --color white` |
+| `overlay-image` | Basic logo overlay | `--image logo.png` |
+| `watermark` | **Logo overlay w/ rotation+shadow+opacity+scale** | `--image logo.png --rotation 12 --opacity 0.8 --shadow --scale 0.2` |
+| `pip` | Picture-in-picture overlay | `--overlay clip.mp4 --position bottom-right` |
+| `mute` | **Remove the entire audio track** | — |
+| `extract-audio` | Save audio as MP3/WAV | `--output a.mp3` |
+| `replace-audio` | Swap in a different audio file | `--audio track.mp3` |
+| `audio-filter` | Noise/EQ/reverb/volume on audio | `--noise 0.3 --volume 1.2` |
+| `noise` | Audio FX (reverb/robot/echo…) | `--type reverb` |
+| `adjust` | Brightness/contrast/saturation | `--brightness 0.05 --contrast 1.2` |
+| `blur` | Blur whole/region | `--strength 8 --region 200:200:100:100` |
+| `enhance` | Denoise + sharpen + deblock | — |
+| `fade` | Fade in/out (video + audio) | `--fade-in 0.5 --fade-out 0.5` |
+| `freeze` | Freeze a frame for N seconds | `--at 00:03 --duration 2` |
+| `reverse` | Reverse playback | — |
+| `stabilize` | Video stabilization (2-pass) | — |
+| `chroma-key` | Green/blue screen → transparent/replace | `--color green --background bg.png` |
+| `loop` | Loop clip N times | `--n 3` |
+| `merge` | Join multiple videos | `--files "a.mp4,b.mp4"` |
+| `convert` | **Container/codec conversion** (mp4↔webm↔mov↔mkv↔avi; mp3/wav/ogg/m4a audio) | `--output out.webm` |
+| `stem-split` | **Best-effort voice/BGM split** (center-channel) | `--mode voice` (or `bgm`) |
+| `gif` | Video → animated GIF | `--fps 10 --w 480` |
+| `thumbnail` | Poster frame | `--at 00:01 --w 320` |
+| `extract-frame` | Single frame as PNG/JPG | `--at 00:02` |
+| `info` | Show metadata | — |
+
+**On audio separation (important):** `mute` removes ALL audio. True
+**voice-only / music-only** separation from a mixed track requires an ML stem-splitter
+(Demucs/Spleeter), which is **not installed** in this zero-cost build. `stem-split` is a
+best-effort **center-channel** trick (`pan` filter): it removes/keeps the centered signal,
+which only works when vocals are hard-centered and instruments are side-panned. For a
+normal mixed stereo track it will **not** cleanly isolate voice or BGM — it merely
+attenuates the center. If you need real separation, install Demucs separately (outside
+this project's scope) and feed its output voice/bgm files back via `replace-audio`.
+
+**Format conversion note:** `convert` wraps `ffmpeg-static` (libx264 / libvpx-vp9 /
+libopus / aac) — no external encoder needed. WebM/VP9 is slower than MP4; allow time for
+long clips.
+

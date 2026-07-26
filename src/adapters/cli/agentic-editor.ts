@@ -737,6 +737,66 @@ COMMANDS['noise'] = (args) => {
     runFfmpeg(ff, `Audio effect: ${type}`);
 };
 
+// 31. CONVERT — change container/codec (mp4/webm/mov/mkv/avi + audio mp3/wav/ogg/m4a)
+COMMANDS['convert'] = (args) => {
+  const input = resolveInput(args.input);
+  const output = resolveOutput(args.output, `conv_${Date.now()}${path.extname(input) || '.mp4'}`);
+  const ext = path.extname(output).replace(/^\./, '').toLowerCase();
+  const isAudio = ['mp3', 'wav', 'ogg', 'm4a'].includes(ext);
+  const vcodec = ext === 'webm' ? 'libvpx-vp9' : ext === 'gif' ? 'gif' : 'libx264';
+  const acodec = ext === 'webm' ? 'libopus' : ext === 'm4a' ? 'aac' : ext === 'wav' ? 'pcm_s16le' : ext === 'ogg' ? 'libopus' : 'aac';
+  const ff: string[] = isAudio
+    ? ['-i', input, '-vn', '-c:a', acodec, output, '-y']
+    : ['-i', input, '-c:v', vcodec, '-c:a', acodec, output, '-y'];
+  runFfmpeg(ff, `Converted → ${ext.toUpperCase()}`);
+};
+
+// 32. WATERMARK — logo overlay with rotation / shadow / opacity / scale
+COMMANDS['watermark'] = (args) => {
+  const input = resolveInput(args.input);
+  const image = resolveInput(args.image || args.logo || args.watermark);
+  const output = resolveOutput(args.output, `wm_${path.basename(input)}`);
+  const position = args.position || 'bottom-right';
+  let posFilter: string;
+  switch (position) {
+    case 'top-left': posFilter = '10:10'; break;
+    case 'top-right': posFilter = 'W-w-10:10'; break;
+    case 'bottom-left': posFilter = '10:H-h-10'; break;
+    case 'center': posFilter = '(W-w)/2:(H-h)/2'; break;
+    default: posFilter = 'W-w-10:H-h-10'; break;
+  }
+  const rot = args.rotation || args.angle || '0';
+  const opacity = args.opacity || '1.0';
+  const scale = args.scale || '0.18';
+  const shadow = args.shadow ? `,drawbox=x=6:y=6:w=iw:h=ih:color=black@0.35:t=fill` : '';
+  const ff: string[] = [
+    '-i', input, '-i', image,
+    '-filter_complex',
+    `[1:v]scale=iw*${scale}:-1,rotate=${rot}*(PI/180)${shadow},format=rgba,colorchannelmixer=aa=${opacity}[w];` +
+    `[0:v][w]overlay=${posFilter}[v]`,
+    '-map', '[v]', '-map', '0:a?',
+    '-c:v', 'libx264', '-c:a', 'copy',
+    output, '-y',
+  ];
+  runFfmpeg(ff, `Watermark ${path.basename(image)} (rot=${rot}° opacity=${opacity})`);
+};
+
+// 33. STEM-SPLIT — best-effort vocal extraction via center-channel cancellation.
+// NOTE: true voice/BGM isolation needs an ML model (Demucs/Spleeter) which is NOT
+// available in this zero-cost build. This uses the classic "vocal remover" trick:
+// subtract the mid (center) from a stereo mix. Works ONLY when vocals are centered
+// and instruments are side. For already-mixed mono/single-track audio it will NOT
+// cleanly separate — it simply attenuates the center. Labeled honestly.
+COMMANDS['stem-split'] = (args) => {
+  const input = resolveInput(args.input);
+  const mode = args.mode || 'voice'; // 'voice' = remove center (keep instruments), 'bgm' = keep center (remove instruments)
+  const output = resolveOutput(args.output, `${mode}_${path.basename(input)}`);
+  const ff: string[] = mode === 'voice'
+    ? ['-i', input, '-af', 'pan=stereo|c0=c0-c1|c1=c1-c0', '-c:v', 'copy', output, '-y']
+    : ['-i', input, '-af', 'pan=mono|c0=0.5*c0+0.5*c1', '-c:v', 'copy', output, '-y'];
+  console.log('  ⚠ Best-effort only: real stem separation needs Demucs (not installed).');
+  runFfmpeg(ff, `Stem-split (${mode}) — center-channel ${mode === 'voice' ? 'removed' : 'kept'}`);
+};
 
 // ─── Main ────────────────────────────────────────────────────────────────────
 
