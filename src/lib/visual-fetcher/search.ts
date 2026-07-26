@@ -529,16 +529,14 @@ export async function fetchVisualsForScene(
                 } catch { /* next source */ }
             } else {
                 // ── FREE IMAGE SOURCES (last resort fallback) ──────────────
-                const freeImages = await searchFreeImages(q, 5);
-                if (freeImages.length > 0) {
-                    const pickIndex = Math.min(resultIndex, freeImages.length - 1);
-                    const pick = freeImages[pickIndex];
-                    if (pick && pick.url) {
-                        console.log(`  ⚡ FALLBACK [Free Image] Selected candidate #${pickIndex + 1} for "${q}"`);
-                        cache[cacheKey] = pick;
-                        saveCache(cache);
-                        return pick;
-                    }
+                // Use searchAndDownloadFirst so a throttled source (Wikimedia
+                // 429) fails over to the next candidate (Archive, etc.).
+                const freeAsset = await freeImageAdapter.searchAndDownloadFirst(q, resolveProjectPath('workspace', 'cache', 'free-images'), { count: 5, orientation: orientation === 'none' ? 'landscape' : (orientation as 'portrait' | 'landscape' | 'square') });
+                if (freeAsset && freeAsset.url) {
+                    console.log(`  ⚡ FALLBACK [Free Image] Downloaded candidate for "${q}"`);
+                    cache[cacheKey] = freeAsset;
+                    saveCache(cache);
+                    return freeAsset;
                 }
             }
         } catch (e) {

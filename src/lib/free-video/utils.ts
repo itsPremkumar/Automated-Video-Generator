@@ -44,7 +44,7 @@ export async function getExistingFileSize(filePath: string): Promise<number> {
 
 export async function withRetry<T>(
     fn: () => Promise<T>,
-    options: { retries: number; baseDelayMs: number; label?: string },
+    options: { retries: number; baseDelayMs: number; label?: string; shouldRetry?: (err: unknown) => boolean },
 ): Promise<T> {
     let lastError: unknown;
     for (let attempt = 0; attempt <= options.retries; attempt++) {
@@ -52,10 +52,10 @@ export async function withRetry<T>(
             return await fn();
         } catch (err) {
             lastError = err;
-            if (attempt < options.retries) {
-                const delay = options.baseDelayMs * Math.pow(2, attempt);
-                await new Promise((r) => setTimeout(r, delay));
-            }
+            const retryable = options.shouldRetry ? options.shouldRetry(err) : true;
+            if (!retryable || attempt >= options.retries) break;
+            const delay = options.baseDelayMs * Math.pow(2, attempt);
+            await new Promise((r) => setTimeout(r, delay));
         }
     }
     throw lastError;

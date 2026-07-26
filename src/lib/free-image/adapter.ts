@@ -1,4 +1,5 @@
 import { ImageResult, ImageSearchOptions } from './models.js';
+import { MediaAsset } from '../visual-fetcher.js';
 import { WikimediaImageProvider } from './providers/wikimedia.js';
 import { ArchiveOrgImageProvider } from './providers/archive.js';
 import { NasaImageProvider } from './providers/nasa.js';
@@ -151,5 +152,55 @@ export class FreeImageAdapter {
         });
 
         return sorted[0] ?? null;
+    }
+
+    /**
+     * Search + download the best on-topic image, failing over through the
+     * ranked candidate list so a single throttled source (Wikimedia HTTP 429
+     * under burst) does not block the whole batch. Mirrors FreeVideoAdapter's
+     * searchAndDownloadFirst. Returns a MediaAsset with a localPath, or null.
+     */
+    async searchAndDownloadFirst(
+        keyword: string,
+        outputDir: string,
+        options?: {
+            count?: number;
+            orientation?: 'portrait' | 'landscape' | 'square';
+        },
+    ): Promise<MediaAsset | null> {
+        const sources = await this.searchAll(keyword, options);
+        if (sources.length === 0) return null;
+
+        const sorted = sources
+            .flatMap((s) => s.results)
+            .sort((a, b) => {
+                const aOn = FreeImageAdapter.isOnTopic(keyword, a.title) ? 1 : 0;
+                const bOn = FreeImageAdapter.isOnTopic(keyword, b.title) ? 1 : 0;
+                if (aOn !== bOn) return bOn - aOn;
+                return ((a.width ?? 0) * (a.height ?? 0)) - ((b.width ?? 0) * (b.height ?? 0));
+            });
+
+        const { downloadMedia } = await import('../visual-fetcher/download.js');
+        for (const cand of sorted) {
+            if (!cand.downloadUrl) continue;
+            try {
+                const safeName = `${(cand.id || 'img').replace(/[^a-z0-9]+/gi, '_').slice(0, 48)}.jpg`;
+                const res = await downloadMedia(cand.downloadUrl, outputDir, safeName);
+                if (res.path) {
+                    return {
+                        type: 'image',
+                        url: res.path,
+                        width: cand.width ?? 0,
+                        height: cand.height ?? 0,
+                        photographer: cand.creator,
+                        localPath: res.path,
+                    } as MediaAsset;
+                }
+            } catch {
+                // throttled/offline for this candidate → try the next one
+                continue;
+            }
+        }
+        return null;
     }
 }

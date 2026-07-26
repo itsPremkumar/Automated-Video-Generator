@@ -40,7 +40,7 @@ export class FreeDownloadManager {
         this.retryBaseDelayMs = options?.retryBaseDelayMs ?? 2000;
         this.stallTimeoutMs =
             options?.stallTimeoutMs ??
-            Math.max(15000, Number.parseInt(process.env.FREE_VIDEO_DOWNLOAD_STALL_TIMEOUT_MS || '', 10) || 30000);
+            Math.max(60000, Number.parseInt(process.env.FREE_VIDEO_DOWNLOAD_STALL_TIMEOUT_MS || '', 10) || 90000);
     }
 
     public async downloadAll(videos: VideoResult[], outputDir: string): Promise<DownloadResult[]> {
@@ -105,6 +105,13 @@ export class FreeDownloadManager {
                 retries: this.retryCount,
                 baseDelayMs: this.retryBaseDelayMs,
                 label: `download:${baseName}`,
+                shouldRetry: (err: unknown) => {
+                    const e = err as { status?: number; response?: { status?: number } };
+                    const status = Number(e?.status ?? e?.response?.status ?? 0);
+                    // 4xx client errors (except 429) are permanent — don't retry.
+                    if (status >= 400 && status < 500 && status !== 429) return false;
+                    return true;
+                },
             });
 
             if (fs.existsSync(partPath)) {
