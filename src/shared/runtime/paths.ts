@@ -36,7 +36,17 @@ function normalizeRelativeSegments(segments: string[]): string[] {
     const normalized: string[] = [];
 
     for (const rawSegment of segments) {
-        for (const segment of rawSegment.split(/[\\/]+/)) {
+        if (rawSegment === null || rawSegment === undefined) {
+            continue;
+        }
+        let rawStr: string;
+        if (typeof rawSegment === 'string') {
+            rawStr = rawSegment;
+        } else {
+            console.warn('[paths] non-string path segment coerced:', typeof rawSegment, JSON.stringify(rawSegment).slice(0, 120));
+            rawStr = String(rawSegment);
+        }
+        for (const segment of rawStr.split(/[\\/]+/)) {
             if (!segment || segment === '.') {
                 continue;
             }

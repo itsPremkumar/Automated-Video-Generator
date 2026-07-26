@@ -1,0 +1,19 @@
+[
+  {
+    "id": "youtube_explainer",
+    "title": "How YouTube Works And How To Grow",
+    "orientation": "landscape",
+    "captions": true,
+    "captionTheme": "bold",
+    "transition": "fade",
+    "vignette": true,
+    "backgroundMusic": true,
+    "musicIntensity": "chill",
+    "musicVolume": 0.12,
+    "kenBurns": true,
+    "hookFirst": true,
+    "videoType": "tutorial",
+    "platform": "youtube",
+    "script": "YouTube is the world's largest video platform, with over two billion people watching every month. [Visual: cityclip.mp4]\nThe secret to growth is a strong hook in the first five seconds that stops the scroll. [Visual: techclip.mp4]\nConsistency matters more than perfection. Upload on a regular schedule your audience can rely on. [Visual: brand_cover.jpg]\nGreat thumbnails and titles decide whether people click. Make them clear, bold, and curious. [Visual: github-profile.png]\nWatch time and audience retention are what the algorithm rewards most. Keep viewers hooked. [Visual: logo-automation.png]\nEngage with your community, reply to comments, and build real connection. Start today and keep improving. [Visual: greenscreen_pure.mp4]"
+  }
+]
