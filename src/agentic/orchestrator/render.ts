@@ -470,15 +470,12 @@ export async function renderAgenticSlideshow(
         const sp = res.plan.scenes[i];
         if (sp) {
             if (sp.speed && sp.speed !== 1) adv.push(`setpts=${1 / sp.speed}*PTS`);
-            if (sp.chromaKey) adv.push('colorkey=0x00FF00:0.5:0.2');
             if (sp.filter === 'bw') adv.push('format=gray');
             else if (sp.filter === 'vintage') adv.push('curves=vintage,saturation=1.2');
             else if (sp.filter === 'sepia') adv.push('sepia=0.8');
             if (sp.blur) adv.push('boxblur=10');
             if (sp.keyframes && sp.keyframes.length >= 2) {
                 // Build a piecewise-linear zoom expr over time (ffmpeg eval).
-                // e.g. keyframes [{t:0,z:1},{t:2,z:1.2},{t:4,z:1.1}]
-                //   -> if(lte(t,0),1,if(lte(t,2),1.2,1.1))  (nested ifs)
                 const sorted = [...sp.keyframes].sort((a, b) => a.t - b.t);
                 let expr = `${sorted[sorted.length - 1].z}`;
                 for (let k = sorted.length - 1; k >= 0; k--) {
@@ -487,8 +484,11 @@ export async function renderAgenticSlideshow(
                 adv.push(`zoompan=z='${expr}':d=${Math.round(dur * 25)}:s=${W}x${H}:fps=25`);
             }
         }
+        // Chroma key runs LAST so later passes (captions/vignette) can't
+        // re-inject the keyed-out green.
+        const chromaStr = sp?.chromaKey ? ',colorkey=0x00FF00:0.5:0.2,format=yuv420p' : '';
         const advStr = adv.length ? ',' + adv.join(',') : '';
-        return `${tag}scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=25,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${advStr},${grade},format=yuv420p[v${i}]`;
+        return `${tag}scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=25,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${advStr},${grade},format=yuv420p${chromaStr}[v${i}]`;
     });
 
     if (introClip)
@@ -708,7 +708,6 @@ else vfArgs.push(`${videoMap}null[vig]`);
             const segAdv: string[] = [];
             if (sp) {
                 if (sp.speed && sp.speed !== 1) segAdv.push(`setpts=${1 / sp.speed}*PTS`);
-                if (sp.chromaKey) segAdv.push('colorkey=0x00FF00:0.5:0.2');
                 if (sp.filter === 'bw') segAdv.push('format=gray');
                 else if (sp.filter === 'vintage') segAdv.push('curves=vintage,saturation=1.2');
                 else if (sp.filter === 'sepia') segAdv.push('sepia=0.8');
@@ -721,7 +720,19 @@ else vfArgs.push(`${videoMap}null[vig]`);
                 }
             }
             const segAdvStr = segAdv.length ? ',' + segAdv.join(',') : '';
-const vfChain = `[0:v]tpad=stop_mode=clone:stop_duration=${dur},fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${doVignette ? ',vignette=PI/5' : ''}${segAdvStr}${grade ? ',' + grade : ''},format=yuv420p${segCaptionArg.length ? ',' + segCaptionArg.join(',') : ''}${kin.length ? ',' + kin.join(',') : ''}[v]`;
+            const capStr = segCaptionArg.length ? ',' + segCaptionArg.join(',') : '';
+            const kinStr = kin.length ? ',' + kin.join(',') : '';
+            const gradeStr = grade ? ',' + grade : '';
+            let vfChain: string;
+            if (sp?.chromaKey) {
+                // Chroma key: key the scene to TRANSPARENT (rgba) then composite over
+                // a black background via overlay. Just discarding alpha with
+                // format=yuv420p would reveal the original green underneath.
+                const base = `[0:v]tpad=stop_mode=clone:stop_duration=${dur},fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${segAdvStr}${gradeStr},format=rgba,colorkey=0x00FF00:0.3:0.2[fg]`;
+                vfChain = `color=c=black:s=${W}x${H}:r=25:d=${dur},settb=1/25[bg];${base};[bg][fg]overlay=shortest=1,format=yuv420p${capStr}${kinStr}[v]`;
+            } else {
+                vfChain = `[0:v]tpad=stop_mode=clone:stop_duration=${dur},fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${doVignette ? ',vignette=PI/5' : ''}${segAdvStr}${gradeStr},format=yuv420p${capStr}${kinStr}[v]`;
+            }
             const voPath = clip.kind === 'scene' ? res.voiceovers?.scenes[clip.idx]?.audioPath : undefined;
             const hasVo = !!voPath && fs.existsSync(voPath);
             const inputs: string[] = ['-i', clip.file];
