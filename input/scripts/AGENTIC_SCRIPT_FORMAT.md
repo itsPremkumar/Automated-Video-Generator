@@ -1280,3 +1280,102 @@ this project's scope) and feed its output voice/bgm files back via `replace-audi
 libopus / aac) — no external encoder needed. WebM/VP9 is slower than MP4; allow time for
 long clips.
 
+### 22.15 Audio-only generation & voice cloning
+
+You can generate a **real human-like voice audio file (WAV/MP3) without making a video**,
+and clone a voice from a reference clip. All audio runs through the bundled speech
+backend (`src/speech`), which currently uses **Kokoro** (verified working in this repo's
+venv — `kokoro OK`).
+
+**A) Voice generation (Kokoro) — audio only, no video**
+The pipeline's voice stage writes standalone per-scene WAVs. To get audio without a
+render, run the `plan` + `voice` stages on a job JSON:
+
+```bash
+# 1) Plan (builds the scene plan from the script)
+npx tsx src/adapters/cli/agentic-modular.ts plan --file input/scripts/my-job.json
+# 2) Voice only (Kokoro generates a .wav per scene → workspace/jobs/<id>/audio/)
+npx tsx src/adapters/cli/agentic-modular.ts voice --file <job>.json
+```
+Output: `workspace/jobs/<id>/audio/scene_N_voice.wav` (24 kHz PCM, real neural voice).
+Verified: a 2-line test job produced `scene_1_voice.wav` (1.95 s, 24 kHz mono) end-to-end.
+Batch equivalent: `npm run agentic:batch -- --file <job>.json --mode generate-voice-voicebox`.
+
+Voice presets (engine `kokoro`): `af_heart`, `af_bella`, `am_michael`, `am_liam`, … (see
+§22.6 for the full Kokoro list and `kokoroVoice` field).
+
+**B) Voice cloning from a reference clip**
+- **Chatterbox backend** (`src/speech/backends/chatterbox_backend.py`, ResembleAI) is the
+  real zero-shot **voice-clone** engine: `generate(text, voice_prompt)` takes `ref_audio`
+  (your clip) and synthesizes speech in that cloned voice. It is wired in code.
+- **`clone-voice` mode** (`npm run agentic:batch -- --mode clone-voice`) scans
+  `input/voices/<clip>` and **saves a clone-profile JSON** for reuse in the pipeline
+  (`useClonedVoiceId` in the job JSON). ⚠️ It does **NOT** output a standalone audio file
+  by itself — it's "clone a profile to reuse," not "give me a WAV in my voice."
+- **Limitation / honest caveat:** Chatterbox needs a model download + ML runtime and is
+  **NOT verified to load in this zero-cost venv** (Kokoro is the verified path). There is
+  currently **no `clone-speak`/`speak` one-liner** that takes `ref_clip + text → wav`.
+  If you need true cloned-audio files, either (a) install Chatterbox separately and feed
+  its output via `replace-audio`, or (b) ask to have a `clone-speak` command added
+  (reference clip + text → standalone WAV, falling back to Kokoro when Chatterbox is
+  unavailable).
+
+**Summary**
+
+| Capability | Status |
+| :--------- | :----- |
+| Human-like voice → WAV/MP3 (no video) | ✅ Kokoro (verified) |
+| Clone voice FROM an audio file (engine) | ⚠️ Chatterbox present in code, unverified in env |
+| Standalone cloned-audio file (ref + text → wav) | ❌ No command yet (`clone-voice` saves profile only) |
+| Reuse cloned voice inside the video pipeline | ✅ via `useClonedVoiceId` |
+
+### 22.16 Standalone Audio Editor (`agentic:audio`) + Video gaps
+
+The speech backend only **generates** voice — it had no editor for existing audio
+files. That gap is now closed by a dedicated **audio toolbox** (`src/adapters/cli/
+agentic-audio.ts`, `npm run agentic:audio`), plus three missing video-editor
+commands. All verified against the bundled `ffmpeg-static`.
+
+**Audio toolbox — `npm run agentic:audio <command> -- --input <file>`**
+
+| Command | What it does | Key options |
+| :------ | :---------- | :---------- |
+| `trim` | Cut a segment | `--start 0 --duration 1.5` (or `--end 2`) |
+| `merge` | Join N audio files | `--files "a.wav,b.wav"` |
+| `fade` | Fade in/out | `--fade-in 0.5 --fade-out 0.5 --end <total>s` |
+| `normalize` | Loudness normalize (loudnorm) | `--lufs -14` |
+| `noise` | Noise reduction (anlmdn) | `--amount 8` |
+| `speed` | Playback speed (0.25×–4×+, atempo) | `--rate 1.5` |
+| `pitch` | Pitch shift w/o tempo change (rubberband) | `--semitones 3` |
+| `info` | Show audio metadata | — |
+
+**Video-editor additions (`npm run agentic:editor`)**
+
+| Command | What it does | Key options |
+| :------ | :---------- | :---------- |
+| `subtitle` | **Burn an `.srt`/`.ass` file** onto video | `--file subs.srt --style "FontSize=24,..."` |
+| `transition` | **Cross-fade between two clips** (xfade+acrossfade) | `--a c1.mp4 --b c2.mp4 --type fade --duration 0.8 --offset 1.2` |
+| `normalize-audio` | Loudness-normalize a video's audio track | `--lufs -14` |
+
+**Notes (verified):** `transition` requires both clips share resolution/codec-ish
+properties; it re-encodes to H.264/AAC. `subtitle` style uses ASS `force_style`
+syntax. `pitch` auto-falls back to `asetrate`+`aresample` if `rubberband` isn't in
+the ffmpeg build (tempo shifts slightly in fallback mode). All commands are pure
+ffmpeg wrappers — no external deps, zero-cost.
+
+```bash
+# Standalone audio editing examples
+npm run agentic:audio trim   --input vo.wav --start 0 --duration 5 --output clip.wav
+npm run agentic:audio merge  --files "intro.wav,main.wav,outro.wav" --output full.wav
+npm run agentic:audio fade   --input vo.wav --fade-in 0.5 --fade-out 1 --end 8 --output vf.wav
+npm run agentic:audio normalize --input vo.wav --lufs -14 --output norm.wav
+npm run agentic:audio noise  --input vo.wav --amount 10 --output clean.wav
+npm run agentic:audio speed  --input vo.wav --rate 0.8 --output slow.wav
+npm run agentic:audio pitch  --input vo.wav --semitones -2 --output lower.wav
+
+# Video gap fills
+npm run agentic:editor subtitle --input reel.mp4 --file captions.srt --output reel_sub.mp4
+npm run agentic:editor transition --a a.mp4 --b b.mp4 --type fade --duration 1 --offset 2 --output joined.mp4
+npm run agentic:editor normalize-audio --input reel.mp4 --lufs -14 --output reel_norm.mp4
+```
+

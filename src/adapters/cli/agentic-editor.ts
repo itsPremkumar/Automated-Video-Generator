@@ -798,11 +798,73 @@ COMMANDS['stem-split'] = (args) => {
   runFfmpeg(ff, `Stem-split (${mode}) — center-channel ${mode === 'voice' ? 'removed' : 'kept'}`);
 };
 
+// 34. SUBTITLE — burn an .srt/.ass subtitle file onto the video
+COMMANDS['subtitle'] = (args) => {
+    const input = resolveInput(args.input);
+    const subFile = args.file || args.subs || args.srt;
+    if (!subFile) {
+        console.error('  ✖ --file <subs.srt|subs.ass> is required');
+        return;
+    }
+    if (!fs.existsSync(subFile)) {
+        console.error(`  ✖ Subtitle file not found: ${subFile}`);
+        return;
+    }
+    const output = resolveOutput(args.output, `subtitled_${path.basename(input)}`);
+    const escaped = subFile.replace(/:/g, '\\:').replace(/'/g, "'\\''");
+    const style = args.style || 'FontSize=24,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2';
+    const ff: string[] = [
+        '-i', input,
+        '-vf', `subtitles=${escaped}:force_style='${style}'`,
+        '-c:v', 'libx264', '-c:a', 'copy',
+        output, '-y',
+    ];
+    runFfmpeg(ff, `Burned subtitles: ${path.basename(subFile)}`);
+};
+
+// 35. TRANSITION — cross-fade / dissolve between two clips (xfade)
+COMMANDS['transition'] = (args) => {
+    const a = resolveInput(args.a || args.input);
+    const b = resolveInput(args.b || args.input2);
+    if (!b) {
+        console.error('  ✖ Provide two clips: --a clip1.mp4 --b clip2.mp4');
+        return;
+    }
+    const output = resolveOutput(args.output, `transition_${Date.now()}.mp4`);
+    const type = args.type || args.t || 'fade';
+    const dur = args.duration || args.d || '1';
+    const offset = args.offset || '0';
+    const ff: string[] = [
+        '-i', a, '-i', b,
+        '-filter_complex',
+        `[0:v][1:v]xfade=transition=${type}:duration=${dur}:offset=${offset}[v];` +
+        `[0:a][1:a]acrossfade=d=${dur}[a]`,
+        '-map', '[v]', '-map', '[a]',
+        '-c:v', 'libx264', '-c:a', 'aac',
+        output, '-y',
+    ];
+    runFfmpeg(ff, `Transition ${type} (${dur}s) between two clips`);
+};
+
+// 36. NORMALIZE-AUDIO — loudness-normalize the audio track of a video (loudnorm)
+COMMANDS['normalize-audio'] = (args) => {
+    const input = resolveInput(args.input);
+    const output = resolveOutput(args.output, `normaudio_${path.basename(input)}`);
+    const lufs = args.lufs || args.target || '-14';
+    const ff: string[] = [
+        '-i', input,
+        '-af', `loudnorm=I=${lufs}:TP=-1.5:LRA=11`,
+        '-c:v', 'copy',
+        output, '-y',
+    ];
+    runFfmpeg(ff, `Normalized audio to ${lufs} LUFS`);
+};
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 function main() {
     const args = parseArgs(process.argv);
-    const subcommand = process.argv[2] || 'info';
+    const subcommand = process.argv[2] || '';
 
     console.log(`\n  ✂️  AVS Video Editor`);
     console.log(`  ─────────────────\n`);
