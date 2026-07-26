@@ -441,7 +441,10 @@
     "exportFormat": "gif",
     "posterScene": 0,
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "variety-matrix"
+    ]
   },
   {
     "id": "var_w1_landscape_grade",
@@ -459,7 +462,10 @@
     "exportFormat": "gif",
     "posterScene": 0,
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "variety-matrix"
+    ]
   },
   {
     "id": "var_w1_square_speed",
@@ -481,7 +487,10 @@
     "titleCard": {
       "title": "Blue World"
     },
-    "exportFormat": "gif"
+    "exportFormat": "gif",
+    "tags": [
+      "variety-matrix"
+    ]
   },
   {
     "id": "var_w2_slowmo_story",
@@ -500,7 +509,10 @@
     "endCta": "Subscribe!",
     "posterScene": 0,
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "variety-matrix"
+    ]
   },
   {
     "id": "var_w2_bw_kinetics",
@@ -519,7 +531,10 @@
     "musicIntensity": "energetic",
     "endCta": "Try it now!",
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "variety-matrix"
+    ]
   },
   {
     "id": "var_w2_landscape_nature",
@@ -537,7 +552,10 @@
     "endCta": "Explore more.",
     "exportFormat": "gif",
     "posterScene": 0,
-    "contactSheet": true
+    "contactSheet": true,
+    "tags": [
+      "variety-matrix"
+    ]
   },
   {
     "id": "waveA_xfade_fade_neon",
@@ -557,7 +575,10 @@
     },
     "posterScene": 0,
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveA-matrix"
+    ]
   },
   {
     "id": "waveA_slide_softcard",
@@ -571,7 +592,10 @@
     "kineticText": true,
     "endCta": "Try it now",
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveA-matrix"
+    ]
   },
   {
     "id": "waveA_zoomblur_highcontrast",
@@ -586,7 +610,10 @@
     "endCta": "Explore more",
     "posterScene": 0,
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveA-matrix"
+    ]
   },
   {
     "id": "waveA_mixed_cut_minimal",
@@ -600,7 +627,10 @@
     "progressBar": true,
     "endCta": "Peace",
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveA-matrix"
+    ]
   },
   {
     "id": "waveB_caption_kinetic",
@@ -619,7 +649,10 @@
     },
     "posterScene": 0,
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveB-matrix"
+    ]
   },
   {
     "id": "waveB_caption_static_loop",
@@ -634,7 +667,10 @@
     "progressBar": true,
     "endCta": "Peace",
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveB-matrix"
+    ]
   },
   {
     "id": "waveB_caption_themed_landscape",
@@ -649,7 +685,10 @@
     "endCta": "Explore more",
     "posterScene": 0,
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveB-matrix"
+    ]
   },
   {
     "id": "waveB_caption_emoji_mixed",
@@ -665,7 +704,10 @@
     },
     "endCta": "Try it now",
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveB-matrix"
+    ]
   },
   {
     "id": "waveC_palette_blue_kinetic",
@@ -685,7 +727,10 @@
     },
     "posterScene": 0,
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveC-matrix"
+    ]
   },
   {
     "id": "waveC_palette_teal_landscape",
@@ -701,7 +746,10 @@
     "endCta": "Explore more",
     "posterScene": 0,
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveC-matrix"
+    ]
   },
   {
     "id": "waveC_palette_cinematic_emoji",
@@ -719,7 +767,10 @@
     },
     "endCta": "Feel it",
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveC-matrix"
+    ]
   },
   {
     "id": "waveC_palette_warm_loop",
@@ -734,7 +785,10 @@
     "progressBar": true,
     "endCta": "Slow down",
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveC-matrix"
+    ]
   },
   {
     "id": "waveD_jcut_doc",
@@ -749,7 +803,10 @@
     "endCta": "Watch nature",
     "posterScene": 0,
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveD-matrix"
+    ]
   },
   {
     "id": "waveD_jcut_stack",
@@ -766,7 +823,10 @@
     "progressBar": true,
     "endCta": "Feel it",
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveD-matrix"
+    ]
   },
   {
     "id": "waveD_jcut_portrait_kinetic",
@@ -784,7 +844,10 @@
     },
     "endCta": "Slow down",
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveD-matrix"
+    ]
   },
   {
     "id": "waveE_title_sub",
@@ -804,7 +867,10 @@
     "endCta": "Build with AI",
     "posterScene": 0,
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveE-matrix"
+    ]
   },
   {
     "id": "waveE_speed_dialogue",
@@ -825,7 +891,10 @@
       "subtitle": "a daily ritual"
     },
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveE-matrix"
+    ]
   },
   {
     "id": "waveE_speed_landscape",
@@ -841,7 +910,10 @@
     "endCta": "Explore more",
     "posterScene": 0,
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveE-matrix"
+    ]
   },
   {
     "id": "waveF_sfx_timed",
@@ -864,7 +936,10 @@
       "subtitle": "hands-on"
     },
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveF-matrix"
+    ]
   },
   {
     "id": "waveF_sepia_grade",
@@ -878,7 +953,10 @@
     "transition": "fade",
     "endCta": "Wander more",
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveF-matrix"
+    ]
   },
   {
     "id": "waveF_outro_card",
@@ -901,7 +979,10 @@
       "durationSec": 3
     },
     "contactSheet": true,
-    "licenseFilter": "cc0"
+    "licenseFilter": "cc0",
+    "tags": [
+      "waveF-matrix"
+    ]
   },
   {
     "id": "waveH_kitchen_sink",
@@ -940,7 +1021,10 @@
     },
     "progressBar": true,
     "lowerThird": "Hosted by Prem",
-    "loopVideo": false
+    "loopVideo": false,
+    "tags": [
+      "waveH-matrix"
+    ]
   },
   {
     "id": "waveH_square_stack",
@@ -959,7 +1043,10 @@
     },
     "paletteFilter": "warm",
     "voiceSpeed": 0.95,
-    "progressBar": true
+    "progressBar": true,
+    "tags": [
+      "waveH-matrix"
+    ]
   },
   {
     "id": "waveH_portrait_mix",
@@ -981,7 +1068,10 @@
       ],
       "durationSec": 3
     },
-    "progressBar": true
+    "progressBar": true,
+    "tags": [
+      "waveH-matrix"
+    ]
   },
   {
     "id": "waveI_youtube_landscape",
@@ -1007,7 +1097,10 @@
         "#facts"
       ]
     },
-    "transition": "zoomblur"
+    "transition": "zoomblur",
+    "tags": [
+      "waveI-matrix"
+    ]
   },
   {
     "id": "waveI_tiktok_portrait",
@@ -1028,7 +1121,10 @@
         "#hack"
       ]
     },
-    "transition": "slide"
+    "transition": "slide",
+    "tags": [
+      "waveI-matrix"
+    ]
   },
   {
     "id": "waveK_brand_accent",
