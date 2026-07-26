@@ -85,7 +85,7 @@ export async function ensureBackend(): Promise<boolean> {
         detached: true,
         stdio: ['ignore', 'pipe', 'pipe'],
         windowsHide: true,
-        env: { ...process.env, PYTHONPATH: '' },
+        env: { ...process.env },
     });
     backendProc.stdout?.on('data', (d) => console.log(String(d).trim()));
     backendProc.stderr?.on('data', (d) => console.warn(String(d).trim()));

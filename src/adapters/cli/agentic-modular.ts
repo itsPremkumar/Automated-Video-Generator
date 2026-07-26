@@ -49,6 +49,7 @@
 import 'dotenv/config';
 import * as fs from 'fs';
 import * as path from 'path';
+import { execFileSync } from 'child_process';
 import { estimateAudioDurationSafe } from '../../agentic/orchestrator/ffmpeg.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -146,6 +147,9 @@ async function runPlan(cliArgs: CliArgs) {
 
         // Build plan from script or topic
         const script = job.script || `[Visual: ${topic}] ${title}`;
+        // Bridge agentic-scripts.json -> Plan: pass the full real-voice cast
+        // (personas, per-scene persona, in-scene dialogue, default persona)
+        // straight into buildPlan so the voice stage can drive src/speech.
         const plan = await buildPlan(
             script,
             {
@@ -154,6 +158,11 @@ async function runPlan(cliArgs: CliArgs) {
                 orientation: job.orientation ?? 'portrait',
                 voice: job.voice ?? 'en-US-JennyNeural',
                 musicQuery: job.musicQuery,
+                personas: job.personas,
+                scenePersonas: job.scenePersonas,
+                dialogueVoices: job.dialogueVoices,
+                sceneDialogue: job.sceneDialogue,
+                defaultPersona: job.defaultPersona,
             },
             parseScript,
         );
@@ -370,9 +379,41 @@ async function runVoice(cliArgs: CliArgs) {
             verificationDir: ws.verificationDir,
             audioDir: ws.audioDir,
         } as any;
+        // ── Bridge: real-voice controls from the JSON job -> src/speech ──
+        // 1) cloneVoiceFrom: auto-clone a REAL voice profile from a clip in
+        //    input/voices/ and use that profile id for the whole job.
+        let clonedProfileId: string | undefined;
+        if (job.cloneVoiceFrom) {
+            const clip = path.resolve(process.cwd(), 'input', 'voices', job.cloneVoiceFrom);
+            if (fs.existsSync(clip)) {
+                try {
+                    const { cloneFromVoicesDir } = await import('../../agentic/media/voice-controller.js');
+                    const r = await cloneFromVoicesDir(clip, path.join(ws.root, 'cache', 'voicebox-profile.json'));
+                    clonedProfileId = r.id;
+                    console.log(`  🎙 cloned real voice (${job.cloneVoiceFrom}) -> profile ${r.id}`);
+                } catch (e: any) {
+                    console.warn(`  ⚠ cloneVoiceFrom failed (${e?.message}); using default`);
+                }
+            } else {
+                console.warn(`  ⚠ cloneVoiceFrom clip not found: ${clip}`);
+            }
+        }
+        // 2) kokoroVoice: pick a named kokoro preset (e.g. af_heart, af_bella).
+        if (job.kokoroVoice) {
+            process.env.VOICEBOX_PRESET_VOICE = job.kokoroVoice;
+            console.log(`  🎙 kokoro preset voice: ${job.kokoroVoice}`);
+        }
+        // 3) voicesByScene: forward per-scene VoiceBox/kokoro id (not Edge).
+        if (job.voicesByScene) {
+            for (const [k, v] of Object.entries(job.voicesByScene as Record<string, string>)) {
+                const sc = plan.scenes.find((s: any) => String(s.sceneNumber) === String(k));
+                if (sc && !/Neural$/.test(String(v))) sc.voiceOverride = String(v);
+            }
+        }
+
         let voiceovers;
         try {
-            const vres = await runVoiceStageSafe(plan, rootWs, job.voice);
+            const vres = await runVoiceStageSafe(plan, rootWs, job.voice, undefined, clonedProfileId);
             // Generate real word-timed caption segments (same as orchestrator path).
             voiceovers = {
                 voiceoverDriven: vres.voiceoverDriven,
@@ -398,6 +439,36 @@ async function runVoice(cliArgs: CliArgs) {
                 sceneCount: voiceovers.scenes.length,
                 fallbackUsed: voiceovers.fallbackUsed,
             });
+        }
+
+        // ── Bridge: apply voiceSpeed / voicePitchSemitones to real audio ──
+        // ffmpeg atempo for speed, asetrate for pitch (keeps tempo). When both
+        // are set, pitch-shift first then time-stretch so neither is lost.
+        const speed = job.voiceSpeed ? Number(job.voiceSpeed) : undefined;
+        const pitch = job.voicePitchSemitones ? Number(job.voicePitchSemitones) : undefined;
+        if ((speed && speed !== 1) || (pitch && pitch !== 0)) {
+            const ffmpegBin: string = require('ffmpeg-static');
+            const filterParts: string[] = [];
+            if (pitch && pitch !== 0) {
+                const rate = Math.pow(2, pitch / 12); // semitones -> sample-rate factor
+                filterParts.push(`asetrate=44100*${rate.toFixed(4)}`);
+            }
+            if (speed && speed !== 1) filterParts.push(`atempo=${speed}`);
+            const filter = filterParts.join(',');
+            let applied = 0;
+            for (const v of voiceovers.scenes) {
+                const src = v.audioPath;
+                if (!src || !fs.existsSync(src)) continue;
+                const tmp = src + '.pitched.wav';
+                try {
+                    execFileSync(ffmpegBin, ['-y', '-i', src, '-af', filter, '-ar', '44100', tmp], { stdio: 'ignore' });
+                    if (fs.existsSync(tmp) && fs.statSync(tmp).size > 1000) {
+                        fs.renameSync(tmp, src);
+                        applied++;
+                    }
+                } catch { /* leave original on ffmpeg failure */ }
+            }
+            if (applied > 0) console.log(`  🎚 applied voice fx (speed=${speed ?? 1}, pitch=${pitch ?? 0} semi) to ${applied} scene(s)`);
         }
 
         console.log(`  ✅ Voiceover ${voiceovers.voiceoverDriven ? 'generated' : 'fallback'} — ${voiceovers.scenes.length} scene(s)`);
