@@ -13,13 +13,17 @@
 
 Yes — from a single `agentic-scripts.json` job you already get: **script → auto-downloaded
 images/videos/BGM → vision-verified assets → per-scene agent editing → full tag control →
-real voice (Kokoro) → multi-aspect render.** The only step not yet auto-triggered from the
-JSON is **website logo/screenshot capture** (today Hermes performs it via desktop/browser
-tools; an auto-capture stage is proposed in §7).
+real voice (Kokoro) → multi-aspect render.** The website logo/screenshot/screen-recording
+capture is performed by **Hermes using its own tools** (browser/computer_use) and works for
+**any website or topic** — not just sproutern. See STAGE 2.
 
 ---
 
-## 1. End-to-end scenario (user wants a "sproutern" video)
+## 1. End-to-end scenario (works for ANY website or topic)
+
+The flow below uses **sproutern.com** as a concrete example, but it applies to **any
+website, brand, product, or topic** — Hermes can capture any publicly reachable URL, and
+the stock downloader fills any visual not satisfied by a captured/local asset.
 
 ```
 USER: "Make a reel about sproutern — its interview-prep tool."
@@ -55,11 +59,18 @@ USER: "Make a reel about sproutern — its interview-prep tool."
         ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │ STAGE 4  VISION VERIFY       ✅ automatic (media-verifier)       │
-│   • Each downloaded/collected asset is vision-checked for:       │
-│     relevance to script, no text-overlap problems, usable quality │
-│   • Fails → re-fetch / fall back to stock                         │
-│   • (Today: pass/fail gate. 🔲 proposed: rank-and-PICK from a     │
-│     candidate pool — see §7)                                      │
+│   • EVERY asset is vision-checked — both IMAGES and VIDEOS:        │
+│     - downloaded stock images + videos (Pexels/Pixabay/Openverse)  │
+│     - captured assets (Hermes screenshots + screen-recordings)    │
+│     - local files referenced via [Visual: file.png]               │
+│   • For VIDEOS, a frame is extracted (ffmpeg) and verified as an   │
+│     image, so motion clips are checked too — not just stills.     │
+│   • Checks: relevance to script, no text-overlap problems, usable  │
+│     quality. Fails → that asset is RE-FETCHED (or re-captured).    │
+│   • ⚠ OPT-IN: verification runs only when `aiVerify.verifyOnAcquire`│
+│     is enabled in config/.env. Recommended ON for the full         │
+│     "every image and video verified" guarantee. Without it, assets │
+│     skip the check and flow straight to editing.                  │
 └─────────────────────────────────────────────────────────────────┘
         ▼
 ┌─────────────────────────────────────────────────────────────────┐
@@ -75,8 +86,8 @@ USER: "Make a reel about sproutern — its interview-prep tool."
 │   • transition / grade / kenBurns / jCutSec / captionTheme        │
 │   • musicOverride / musicIntensity / volumeOverride               │
 │   • voice: kokoroVoice / personas / dialogue / voiceSpeed / pitch │
-│   • (🔲 proposed advanced: chromaKey, speed, inSec/outSec,         │
-│     keyframes, composite — see §7)                                │
+│   • (Not yet wired to scenes: chromaKey, speed, inSec/outSec,      │
+│     keyframes, composite — advanced compositing, see repo plugins) │
 └─────────────────────────────────────────────────────────────────┘
         ▼
 ┌─────────────────────────────────────────────────────────────────┐
@@ -107,7 +118,7 @@ USER: "Make a reel about sproutern — its interview-prep tool."
 | Hook-first script + scene split | `src/agentic/ai/brain.ts`, `buildPlan` | no |
 | Auto-download images/videos per scene | `src/lib/visual-fetcher/` (Pexels/Pixabay/Openverse) | keys set in `.env` (works keyless via Openverse) |
 | Auto-download BGM | `src/lib/free-music.ts` + `music-system` | **no key** |
-| Vision verification of assets | `src/lib/media-verifier.ts` | no (local Ollama/Gemini) |
+| Vision verification of assets (images + videos) | `src/lib/media-verifier.ts`, `acquire.ts` (aiVerifyAsset) | no (local Ollama/Gemini); **opt-in** via `aiVerify.verifyOnAcquire` |
 | Per-scene edit one-by-one | `src/agentic/media/scene-edit.ts` | no |
 | Visual/grade/transition/Ken-Burns/J-cut/caption tags | `src/agentic/types.ts`, `render.ts` | no |
 | Per-scene + global music control | `types.ts` musicOverride/Intensity/volume | no |
@@ -148,7 +159,11 @@ ls output/sproutern_reel/
 
 ---
 
-## 4. Sample job (sproutern) — all working fields
+## 4. Sample job — all working fields (sproutern shown; works for any site)
+
+The job below is for sproutern, but the same shape works for **any website or topic**:
+replace the `[Visual: …]` tags with your captured assets (or plain keywords for stock),
+and set `musicQuery` / `kokoroVoice` to taste.
 
 ```json
 [
@@ -178,10 +193,10 @@ ls output/sproutern_reel/
 | Gap | Why | Fix (proposed) |
 |---|---|---|
 | Vision = pass/fail, not rank-and-pick | verify-only by design | `vision-select.ts` rank pool |
-| No green-screen / speed-ramp / trim / keyframe bound to scenes | signals absent | Phase 1 signals (§7) |
-| No split-screen / PiP per scene | scenes are 1 asset | `composite` scene type |
+| No green-screen / speed-ramp / trim / keyframe bound to scenes | signals absent | add ffmpeg-native scene signals (`chromaKey`, `speed`, `inSec/outSec`, `keyframes`) |
+| No split-screen / PiP per scene | scenes are 1 asset | `composite` scene type (hstack/vstack/overlay) |
 | No stabilization | `libvidstab` not wired | dep-check + `stabilize` signal |
-| No agent-authored Remotion codegen | static compositions | sandbox codegen (§7) |
+| No agent-authored Remotion codegen | static compositions | sandbox-authored `.tsx` w/ tsc validation + fallback |
 | Cloned voice needs GPU | chatterbox 500 on CPU | CUDA/ROCm Voicebox variant |
 | No semantic/narrative critique | metric-only gates | LLM frame review |
 
@@ -206,7 +221,11 @@ ls output/sproutern_reel/
   `input/visuals/`. The pipeline then binds them automatically via `[Visual: file.png]`.
   No JSON field needed — the agent does the capture. This is supported and working today.
 
-- **"Visually verify every collected image/video?"** → ✅ Yes, `media-verifier`.
+- **"Visually verify every collected image/video?"** → ✅ Yes — **every** asset
+  (downloaded stock images + videos, Hermes-captured screenshots + screen-recordings,
+  and local `[Visual: …]` files) is vision-checked, including a frame-extracted check
+  for videos. It is **opt-in**: enable `aiVerify.verifyOnAcquire` (config/.env) so no
+  unverified asset reaches editing; failures are re-fetched/re-captured.
 
 - **"Edit images/video one-by-one, verify, finally select everything?"** → ✅ Yes,
   `scene-edit.ts` + `agentic:edit` + critique/revise.
