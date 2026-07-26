@@ -1066,3 +1066,83 @@ burned/karaoke subtitles — only the plain sentence text is voiced.
 
 Run it with: `npx tsx src/adapters/cli/agentic-modular.ts pipeline --file input/scripts/my-reel-job.json`
 (Place `career-tools.png`, `interview-experiences.png`, `hero.png` in `input/visuals/` first — see §22.3.)
+
+### 22.12 Download options — single-asset AND bulk
+
+The pipeline can fetch assets two ways: **(A) only what a script needs**, or
+**(B) bulk packs of N distinct images/videos/music** for a subject. Both are driven by
+`src/adapters/cli/agentic-batch.ts` (the `agentic:batch` CLI). Verified against source.
+
+#### A) Download ONLY the assets a job requires
+
+Use the single-feature `--mode` flags. These download just images / videos / music for
+the scenes in your job (no render):
+
+```bash
+# From agentic-scripts.json, only fetch the visuals a job needs:
+npx tsx src/adapters/cli/agentic-batch.ts --mode download-images   # images only
+npx tsx src/adapters/cli/agentic-batch.ts --mode download-videos   # videos only
+npx tsx src/adapters/cli/agentic-batch.ts --mode download-music    # music only
+npx tsx src/adapters/cli/agentic-batch.ts --mode download-sfx      # sound effects only
+npx tsx src/adapters/cli/agentic-batch.ts --mode download-url      # from a direct URL
+
+# Or scope to ONE job by id (useful in a big array):
+npx tsx src/adapters/cli/agentic-batch.ts --mode download-images --job career_platform_reel
+```
+
+Equivalent JSON `mode` values (set on the job): `"download-images"`, `"download-videos"`,
+`"download-music"`, `"download-sfx"`, `"download-url"` (see §3 and §18).
+
+#### B) Bulk download — N distinct assets for a subject
+
+Two ways to pull a *pack* of unrelated clips/images (e.g. a stock b-roll library):
+
+**1. Ad-hoc CLI (no JSON editing needed):** the `--search` / `--count` flags.
+
+```bash
+# 10 eagle images, no job file required:
+npx tsx src/adapters/cli/agentic-batch.ts --search "eagle" --count 10
+
+# 5 ocean-wave VIDEOS:
+npx tsx src/adapters/cli/agentic-batch.ts --search "ocean waves" --count 5 --kind video
+
+# optional orientation filter (portrait/landscape/square):
+npx tsx src/adapters/cli/agentic-batch.ts --search "city skyline" --count 8 --kind video --orientation portrait
+```
+
+Files land in `workspace/bulk/{images|videos}/<search-slug>/`.
+
+**2. From a job in `agentic-scripts.json`** (the batch "bulk" path):
+
+```json
+{
+  "id": "bulk-eagle-pack",
+  "title": "Eagle Reference Pack",
+  "mode": "download-images",
+  "searchQuery": "eagle flying",
+  "downloadCount": 10,
+  "orientation": "landscape",
+  "licenseFilter": "cc0",
+  "paletteFilter": "blue"
+}
+```
+
+> **Important:** on the bulk job path the pipeline **ignores your `script`** and instead
+> pulls `downloadCount` distinct assets of `searchQuery` (filtered by `licenseFilter` /
+> `paletteFilter`). It is a stock-library builder, not a scene fetcher.
+
+#### Same for music
+
+`--mode download-music` fetches free tracks by `musicQuery` into the per-job workspace
+(or set `mode: "download-music"` + `musicQuery` on the job). Bulk image/video fetch
+supports `--kind video`; music bulk fetch uses the dedicated mode.
+
+#### Apply one setting to every job (broadcast)
+
+```bash
+# Re-grade / re-export ALL jobs in one command:
+npx tsx src/adapters/cli/agentic-batch.ts --mode render --broadcast "grade:cinematic"
+npx tsx src/adapters/cli/agentic-batch.ts --mode download-images --broadcast "licenseFilter:cc0"
+```
+
+`--broadcast "field:value"` mutates that field on every matched job before dispatch.
