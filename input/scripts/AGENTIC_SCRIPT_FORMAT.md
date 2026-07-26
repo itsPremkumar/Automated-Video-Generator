@@ -1131,11 +1131,31 @@ Files land in `workspace/bulk/{images|videos}/<search-slug>/`.
 > pulls `downloadCount` distinct assets of `searchQuery` (filtered by `licenseFilter` /
 > `paletteFilter`). It is a stock-library builder, not a scene fetcher.
 
-#### Same for music
+#### BGM / background music download
 
-`--mode download-music` fetches free tracks by `musicQuery` into the per-job workspace
-(or set `mode: "download-music"` + `musicQuery` on the job). Bulk image/video fetch
-supports `--kind video`; music bulk fetch uses the dedicated mode.
+Music has its own dedicated download path (no `--kind music` flag needed):
+
+```bash
+# Fetch only the free background-music tracks a job needs:
+npx tsx src/adapters/cli/agentic-batch.ts --mode download-music
+
+# Scoped to one job:
+npx tsx src/adapters/cli/agentic-batch.ts --mode download-music --job career_platform_reel
+```
+
+- Source: `resolveFreeBackgroundMusic` (see `src/agentic/operations/single-feature.ts`).
+- **Query:** `musicQuery` on the job (falls back to `topic`/`title` if unset).
+  JSON form: `{ "mode": "download-music", "musicQuery": "upbeat corporate technology" }`.
+- **Where files land:** `workspace/jobs/{id}/download-music/`.
+- **Bulk music pack:** `bulk-fetch` supports `kind: "music"` too, so you can pull a
+  pack of N tracks for a subject the same way as images/videos:
+  ```json
+  { "id": "bulk-lofi-pack", "mode": "download-music",
+    "searchQuery": "lofi chill", "downloadCount": 8 }
+  ```
+- **Local file instead of fetch:** drop a track in `input/bgm/` and set
+  `backgroundMusic: "your-track.mp3"` (see §22.5). Fetched tracks are auto-used when
+  `musicQuery` is set and no local file is supplied.
 
 #### Apply one setting to every job (broadcast)
 
