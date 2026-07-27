@@ -2,6 +2,12 @@
 
 This file helps AI coding agents work effectively with this project.
 
+> **IMPORTANT — READ FIRST:** `AGENT_EXECUTION_GUIDE.md` (project root)
+> contains the complete step-by-step execution plan for the AI agent
+> to generate videos using this project's code. Every phase, code
+> reference, and one-by-one verification rule is documented there.
+> Agent-only phases are clearly separated from code-execution phases.
+
 ## Project Overview
 
 Automated Video Generator is a free, open-source, self-hosted AI text-to-video pipeline. It converts text scripts into MP4 videos using Remotion for rendering, Edge-TTS for voice synthesis, and multiple stock media sources for visuals.
