@@ -1,0 +1,19 @@
+[
+  {
+    "id": "mixed-media-agentic-demo",
+    "title": "Mixed Media Pipeline Demo",
+    "topic": "all four visual source types in one agentic video",
+    "script": "Real stock footage downloaded automatically. [Visual: v0.mp4] [Transition: fade]\nGenerated motion graphics, coded by the agent. [GenMotion: dark analytics dashboard with animated bar chart, purple and cyan palette] [Transition: slide]\nLive website screenshots, straight from the browser. [Visual: s0.png] [Transition: fade]\nBeautiful photos, fetched and ken-burned. [Visual: i0.jpg] [Transition: slide]\nAnother real clip from the stock library. [Visual: v2.mp4] [Transition: fade]\nAnd a second generated motion scene to close. [GenMotion: futuristic HUD radar with SYSTEM ONLINE status text, cyan on dark] [Transition: fade]",
+    "orientation": "landscape",
+    "voice": "en-US-GuyNeural",
+    "language": "english",
+    "backend": "agent",
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "kenBurns": true,
+    "transition": "fade",
+    "grade": "neutral",
+    "renderer": "ffmpeg",
+    "maxAttempts": 3
+  }
+]

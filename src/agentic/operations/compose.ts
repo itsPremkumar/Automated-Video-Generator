@@ -619,7 +619,10 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     }
     // Phase 2: honor outputName
     if (fs.existsSync(finalVideo)) {
-        const named = resolveOutputName(job, finalVideo);
+        // Pass the BASE NAME, not the full path: resolveOutputName returns its
+        // 2nd arg unchanged when job.outputName is unset, and joining a full
+        // path onto outDir produced a broken doubled path (ENOENT on copyfile).
+        const named = resolveOutputName(job, 'final.mp4');
         if (named !== 'final.mp4') {
             const dst = path.join(outDir, named);
             if (dst !== finalVideo) { fs.copyFileSync(finalVideo, dst); result.video = dst; }
