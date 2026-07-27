@@ -214,10 +214,14 @@ async function runDownloadMusic(job: AgenticCliJob, id: string): Promise<SingleF
     fs.mkdirSync(outDir, { recursive: true });
     const outputs: string[] = [];
     const query = job.musicQuery ?? job.topic ?? job.title;
+    const usedTrackIds = new Set<string>();
     for (let c = 0; c < (job.candidatesPerAsset ?? 4); c++) {
         try {
             const m = await resolveFreeBackgroundMusic({ query, enabled: true });
             if (m?.localPath && fs.existsSync(m.localPath)) {
+                const trackId = m.track?.id ?? m.localPath;
+                if (usedTrackIds.has(trackId)) continue; // skip duplicates
+                usedTrackIds.add(trackId);
                 const ext = path.extname(m.localPath) || '.mp3';
                 const dest = path.join(outDir, `music_cand_${c + 1}${ext}`);
                 fs.copyFileSync(m.localPath, dest);

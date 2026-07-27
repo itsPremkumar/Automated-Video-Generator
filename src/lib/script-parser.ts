@@ -168,11 +168,22 @@ function parseScriptLocally(script: string): ParsedScript {
             // tag attached to the sentence it belongs to (e.g. "Do X? [Visual: default.mp4]"
             // must stay one unit so the visual cue is not dropped). Only split when the
             // following char is not an opening bracket.
+            // FIX: When splitting orphans a [Visual:] tag onto only the LAST fragment,
+            // propagate all tags to every fragment so they get the keywords too.
+            const allVisualTags = [...line.matchAll(/\[Visual:?\s*.*?\]/gis)].map(m => m[0]);
+            const allOtherTags = [...line.matchAll(/\[(?:Transition|Grade|KenBurns|Text|Style|Color|FadeIn|FadeOut|Voice|Music|Volume|CaptionTheme|Sfx|JCut|Vignette|Kinetic|MusicIntensity):?\s*.*?\]/gis)].map(m => m[0]);
+            const allTags = [...allVisualTags, ...allOtherTags];
             const sentences = line.split(/(?<=[.?!])\s+(?!\[)/);
-            for (const sentence of sentences) {
-                const trimmed = sentence.trim();
-                if (trimmed.length > 0) {
-                    rawLines.push(trimmed);
+            for (let si = 0; si < sentences.length; si++) {
+                let sentence = sentences[si].trim();
+                // Propagate tags to fragments that don't have their own
+                if (allTags.length > 0 && si < sentences.length - 1 && !sentence.match(/\[Visual:/i) && !sentences.slice(si + 1).some(s => s.match(/\[Visual:/i))) {
+                    const lastTagLine = sentences[sentences.length - 1];
+                    const tagsFromEnd = allTags.filter(t => lastTagLine.includes(t));
+                    sentence += ' ' + tagsFromEnd.join(' ');
+                }
+                if (sentence.length > 0) {
+                    rawLines.push(sentence);
                 }
             }
         }

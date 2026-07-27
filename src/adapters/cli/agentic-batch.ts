@@ -61,11 +61,16 @@ function parseArgv(argv: string[]): { [key: string]: string | boolean | number }
 }
 
 function readJobJson(): any[] {
-    if (!fs.existsSync(SCRIPTS_FILE)) {
-        console.error(`✖ No job file at ${SCRIPTS_FILE}`);
+    const filePath = (() => {
+        const i = process.argv.indexOf('--file');
+        return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : null;
+    })();
+    const target = filePath ? path.resolve(filePath) : SCRIPTS_FILE;
+    if (!fs.existsSync(target)) {
+        console.error(`✖ No job file at ${target}`);
         process.exit(1);
     }
-    return JSON.parse(fs.readFileSync(SCRIPTS_FILE, 'utf-8'));
+    return JSON.parse(fs.readFileSync(target, 'utf-8'));
 }
 
 async function main() {
