@@ -71,20 +71,21 @@ This phase is 100% agent-driven and complete.
 
 ---
 
-# Phase 3 – Generate the Script
+# Phase 3 – Generate the Script (fully handled by the AI agent)
 
-Driven by `src/agentic/pipeline/plan.ts` (the `plan` stage). Produces title, hook,
-intro, scene-by-scene narration, ending, CTA. Optimized for retention/storytelling/
-transitions. Emits both a full narration and a scene list.
+The AI agent generates the full narration script using its LLM (hook → story arc →
+scenes → CTA), optimized for retention, storytelling, and transitions. The agent
+produces both a full narration and a scene list, then reviews for flow, hooks, and
+closing before proceeding.
 
 ---
 
-# Phase 4 – Scene Breakdown
+# Phase 4 – Scene Breakdown (fully handled by the AI agent)
 
-`plan.ts` outputs structured `Plan.scenes`, each with: sceneNumber, durationSec,
+The AI agent splits the script into numbered scenes, each with: durationSec,
 voiceoverText, searchKeywords, visualPreference (`video` | `image` | `motion`),
-and motion/transition hints. Camera movement & icon/logo overlays are declared in the
-script via inline tags (`[Visual:]`, `[Motion:]`, `[Transition:]`, `[Color:]`, …).
+and motion/transition hints. Camera movement & icon/logo overlays are declared via
+inline tags (`[Visual:]`, `[Motion:]`, `[Transition:]`, `[Color:]`, …).
 
 ---
 
