@@ -106,7 +106,7 @@ Search/download entry point is `src/lib/visual-fetcher/search.ts` (`searchImages
 - **Pexels** (API key) — used directly in `search.ts` via REST API
 - **Openverse** — `src/lib/openverse-fetcher.ts` (CC images, no API key)
 - **Wikimedia** — `src/lib/free-{image,video}/providers/wikimedia.ts`
-- **Pixabay** — `src/music-system/providers/pixabay.ts` (music only, not video)
+- **Pixabay** — video via `searchPixabayVideos` (`search.ts`), music via `PixabayProvider` (`src/music-system/providers/pixabay.ts`)
 
 NOT present in code: Unsplash, Freepik. Downloads land in **`input/visuals/`** (single
 folder — not `input/images/`, `input/videos/`, etc.). Search uses multiple keywords;
@@ -126,7 +126,7 @@ free-text description (`[GenMotion: ...]`) or a kind (`infographic` | `hud` |
 `renderStillClip` (PNG). The agent verifies every output with `vision_analyze`.
 
 **Important:** The ffmpeg-based compose path (`compose.ts`) uses `xfade` transitions
-(fade/slide/zoomIn) — not CSS. Shader-based transitions (glitch, morph-cut, whip-pan)
+(fade/slide/zoomblur/cut) — not CSS. Shader-based transitions (glitch, morph-cut, whip-pan)
 are available as plugins in `src/agentic/plugins/transitions/`. **Write + render is real.**
 
 Supported motion kinds (extend the list from the real `kinds` map, not the original
@@ -272,7 +272,7 @@ validates the JSON structure against that schema before proceeding.
 `src/agentic/operations/compose.ts` assembles each scene from image/video/motion/
 screenshot + voice + music + sfx + text overlays + captions, synced to narration.
 Lower-thirds/progress bars are applied via `advanced-fx.ts` where declared. Uses
-ffmpeg `xfade` transitions (fade/slide/zoomIn) with per-scene duration and curve.
+ffmpeg `xfade` transitions (fade/slide/zoomblur/cut) with per-scene duration and curve.
 
 ---
 
@@ -316,7 +316,8 @@ Issues auto-route back to the responsible stage (regenerate/re-fetch/re-render).
 or per `orientation`) and can emit **multi-aspect** variants via `exportAspects`
 (`9:16`, `16:9`, `1:1`, **`4K`**). **4K is now supported** — add `exportAspects: ["4K"]`
 to the job spec and it renders a 3840×2160 variant alongside the primary output.
-Real outputs: primary MP4 + requested aspect variants + thumbnail/poster (`exportPoster`) +
+Note: this is an **upscale** of the base render (e.g. 1280×720 → 3840×2160), not native
+4K source rendering. Real outputs: primary MP4 + requested aspect variants + thumbnail/poster (`exportPoster`) +
 contact sheet + captions + chapters where declared.
 
 ---
@@ -339,7 +340,7 @@ The completed system should function as a fully autonomous AI video production p
 3. Write high-quality script (fully handled by the AI agent)
 4. Break into scenes (fully handled by the AI agent)
 5. Collect website screenshots + browser captures (agent captures → `input/visuals/`)
-6. Download images/videos (Pexels, Openverse, Wikimedia)
+6. Download images/videos (Pexels, Pixabay, Openverse, Wikimedia)
 7. Generate missing visuals via Remotion (`runRemotionController`)
 8. Image pixel-editing toolbox (29 commands in `agentic-image.ts`; only object-removal/shadow/brand-match missing)
 9. Select + sync realistic AI voice (`src/speech/backends/`)
