@@ -150,3 +150,7 @@ venv/
 .ruff_cache/
 
 
+
+# Autonomous Remotion codegen (generated, regenerable)
+remotion-generation/
+workspace/remotion-generation/

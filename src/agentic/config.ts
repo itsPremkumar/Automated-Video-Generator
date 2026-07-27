@@ -299,6 +299,18 @@ export interface AgenticConfig {
     motionLibrary?: Record<string, string>;
     /** Per-scene composition id (or `name@library`). Overrides planner choice. */
     motionByScene?: Record<number, string>;
+    /** AUTONOMOUS REMOTION CODEGEN (Hermes-controlled, no limits).
+     *  When true (or when a scene carries `[GenMotion:]`), the Hermes agent
+     *  authors a NEW Remotion .tsx per scene from scratch (full Remotion
+     *  capacity), renders it, vision-verifies, self-fixes, and integrates the
+     *  clip into input/visuals/ as a normal [Visual:] asset. Falls back to
+     *  stock/user asset if generation fails after `motionMaxRetries`. */
+    autonomousMotion?: boolean;
+    /** Max self-fix retries per generated scene (default 5). */
+    motionMaxRetries?: number;
+    /** Let the agent auto-classify scenes as MOTION even without a tag
+     *  (default false — explicit [GenMotion:]/[Motion:] tag required). */
+    motionAutoDecide?: boolean;
 
     /** ── Pro-edit (human-feel) toggles ── */
     /** Lead with the most intriguing scene instead of a flat list order. */

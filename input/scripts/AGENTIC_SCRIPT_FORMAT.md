@@ -62,6 +62,7 @@ These tags are parsed from the script text. Each applies to the sentence/scene i
 | :-- | :----- | :------ |
 | `[Visual: keyword or file]` | Search keyword or filename in `input/visuals/` | `[Visual: mountain sunset]` |
 | `[Motion: comp]` or `[Motion: comp@library]` | **Code-only Remotion motion graphic** (no download). `comp` = composition id (e.g. `NeuralNetwork`); optional `@library` targets a named Remotion folder (see §4.5) | `[Motion: BarChartInfographic]` · `[Motion: NeuralNetwork@create]` |
+| `[GenMotion: description]` | **Autonomous Hermes codegen** — the agent authors a NEW Remotion `.tsx` from scratch for this scene (full capacity, no preset limits), renders + vision-verifies + self-fixes, then integrates the clip into `input/visuals/` as a `[Visual:]` asset. Description is free text (e.g. `neural network diagram`, `bar chart of quarterly sales`) | `[GenMotion: animated HUD radar with contacts]` |
 | `[Text: on\|off]` | Enable/disable on-screen text | `[Text: on]` |
 | `[Kinetic: on\|off\|custom]` | Kinetic word animation | `[Kinetic: on]` |
 
@@ -152,6 +153,44 @@ Libraries are declared in config (`motionLibrary`) as `name -> relative folder`:
 can be the user's downloaded clip, scene 1 a Remotion bar chart, scene 2 a user
 image, scene 3 a Remotion HUD — all concatenated into one final video. User
 assets always win over generated motion when both are supplied for the same scene.
+
+#### 4.5.1 Autonomous codegen mode (`[GenMotion:]` + `autonomousMotion`)
+
+For **unlimited, full-capacity** motion graphics, use `[GenMotion: <free description>]`
+or set `autonomousMotion: true`. The Hermes agent then:
+
+1. **Decides** which scenes need motion (explicit `[GenMotion:]` tag, or
+   `motionAutoDecide: true` for auto-classification).
+2. **Authors a NEW Remotion `.tsx` from scratch** for each scene — not a preset.
+   Any category is possible: kinetic text, infographics, HUD/radar, explainer
+   diagrams, UI/app demos, maps, timelines, particle systems, procedural art
+   (fractals/Perlin), logo reveals, audio-reactive spectrum, abstract loops.
+3. **Renders** it via `@remotion/bundler` + `@remotion/renderer` into
+   `workspace/remotion-generation/<job>/`.
+4. **Verifies** each clip — signal-level (ffprobe) + optional vision frame
+   check (the agent confirms the frame matches the intended subject).
+5. **Self-fixes** — if verification fails, the agent rewrites the `.tsx` and
+   re-renders (up to `motionMaxRetries`, default 5).
+6. **Falls back** to stock / the user's own asset if generation keeps failing
+   (the video is never broken).
+7. **Integrates** the verified clip into `input/visuals/<job>_s<n>.mp4` and the
+   script's scene tag becomes `[Visual: <job>_s<n>.mp4]`, so it flows through
+   the existing visual-tag resolver into the final timeline with everything
+   else (downloaded/edited images + user video).
+
+Safety: generated `.tsx` is gated by `assertSafeImports()` — only
+`remotion` / `react` / `@remotion/*` / local helpers may be imported (no
+`fs`/`child_process`/network). Code lands in `workspace/remotion-generation/`
+(project root only, gitignored, regenerable — AVS containment, no system TEMP).
+
+```json
+{ "autonomousMotion": true, "motionMaxRetries": 5, "motionAutoDecide": false }
+```
+
+```text
+We visualize how neural networks learn. [GenMotion: neural network diagram]
+Our growth was strong. [GenMotion: bar chart of quarterly sales]
+```
 
 ---
 
