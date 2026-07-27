@@ -101,11 +101,11 @@ stay readable inside the 1920×1080 frame. (See `docs/MIXED_MEDIA_WORKFLOW.md`.)
 
 # Phase 6 – Asset Collection (corrected provider list)
 
-Real providers in `src/lib/visual-fetcher/` are:
-- **Pexels** (`searchImages` / `searchVideos`) — requires `PEXELS_API_KEY` in `.env`
-- **Pixabay** (video fallback)
-- **Openverse** (free image fallback)
-- **Wikimedia** (via `freeImageAdapter`)
+Search/download entry point is `src/lib/visual-fetcher/search.ts` (`searchImages` / `searchVideos`). Underlying providers:
+- **Pexels** (API key) — used directly in `search.ts` via REST API
+- **Openverse** — `src/lib/openverse-fetcher.ts` (CC images, no API key)
+- **Wikimedia** — `src/lib/free-{image,video}/providers/wikimedia.ts`
+- **Pixabay** — `src/music-system/providers/pixabay.ts` (music only, not video)
 
 NOT present in code: Unsplash, Freepik. Downloads land in **`input/visuals/`** (single
 folder — not `input/images/`, `input/videos/`, etc.). Search uses multiple keywords;
@@ -146,7 +146,7 @@ relevance. Failed assets are regenerated or re-fetched (gateway loop). This is w
 
 `src/lib/free-music.ts` selects royalty-free tracks (procedural + ccMixter + Internet
 Archive sources), matched by mood/genre/energy. `music-verifier.ts` checks
-quality/length/loudness/licensing; `loopAudioToDuration` loops to fit.
+quality/length/loudness/licensing; audio can be looped to fit via `loopAudioToDuration` (`src/agentic/operations/sfx.ts`).
 (No paid/freepik music.)
 
 ---
@@ -163,9 +163,9 @@ is synced to scenes by the voice stage.
 
 # Phase 11 – Image Editing
 
-A full single-image editing toolbox exists at `src/adapters/cli/agentic-image.ts` (22 commands):
+A full single-image editing toolbox exists at `src/adapters/cli/agentic-image.ts` (29 commands):
 - `npm run agentic:image convert/resize/crop/rotate/adjust/blur/text/emoji/watermark/tint/vignette/border/enhance/flip/info/to-video/contact-sheet/gif/grayscale/sepia/pixelate/slideshow/remove-bg`
- (19 via ffmpeg-static, 3 via sharp — zero cost, no API keys).
+ (via ffmpeg-static + sharp — zero cost, no API keys).
 - **Background removal** — `remove-bg` command via `tools/remove_bg.py` (rembg, on-device AI, offline).
 - Programmatic API: `src/agentic/operations/remove-bg.ts:removeBackground()`.
 - Slideshow/video conversion: `src/agentic/operations/image-video.ts` (`imagesToVideo`, `videoToImages`).
