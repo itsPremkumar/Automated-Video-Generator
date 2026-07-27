@@ -1,0 +1,3 @@
+# Rendered video artifacts (regenerable)
+out/
+*.mp4

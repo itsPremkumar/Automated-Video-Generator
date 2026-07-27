@@ -1,0 +1,12 @@
+{
+  "name": "remotion-creation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Experimental code-only motion graphics with Remotion (no external images/video/audio). Reuses the root project's node_modules.",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio index.ts",
+    "render": "remotion render index.ts",
+    "list": "remotion compositions index.ts"
+  }
+}
