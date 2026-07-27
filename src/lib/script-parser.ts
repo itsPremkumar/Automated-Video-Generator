@@ -173,6 +173,15 @@ function parseScriptLocally(script: string): ParsedScript {
             const allVisualTags = [...line.matchAll(/\[Visual:?\s*.*?\]/gis)].map(m => m[0]);
             const allOtherTags = [...line.matchAll(/\[(?:Transition|Grade|KenBurns|Text|Style|Color|FadeIn|FadeOut|Voice|Music|Volume|CaptionTheme|Sfx|JCut|Vignette|Kinetic|MusicIntensity):?\s*.*?\]/gis)].map(m => m[0]);
             const allTags = [...allVisualTags, ...allOtherTags];
+            // B1: if the line carries an explicit local-asset binding ([Visual: file]),
+            // treat the whole line as ONE scene unit — do not sentence-split it. This
+            // preserves author intent (1 line = 1 scene) and keeps the local binding
+            // attached to exactly one scene instead of exploding into many.
+            if (allVisualTags.length > 0) {
+                const whole = line.trim();
+                if (whole.length > 0) rawLines.push(whole);
+                continue;
+            }
             const sentences = line.split(/(?<=[.?!])\s+(?!\[)/);
             for (let si = 0; si < sentences.length; si++) {
                 let sentence = sentences[si].trim();

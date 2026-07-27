@@ -166,7 +166,10 @@ export async function applyProEdits(
     if (scenes.length === 0) return plan;
 
     // 1. Hook-first: prefer the brain's B3 pick; fall back to pattern+length.
-    if (opts.hookFirst) {
+    // B3: if scenes carry explicit local-asset bindings, the author already chose
+    // the order (1 line = 1 scene) — respect it and skip the heuristic reorder.
+    const hasLocalAssets = scenes.some((s) => (s as any).localAsset);
+    if (opts.hookFirst && !hasLocalAssets) {
         let bestIdx = 0;
         if (opts.brain) {
             const picked = await opts.brain.hookScene(scenes.map((s) => s.voiceoverText));

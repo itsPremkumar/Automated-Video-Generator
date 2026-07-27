@@ -235,6 +235,52 @@ async function runVisuals(cliArgs: CliArgs) {
         console.log(`  [VISUALS] ${job.title || id}`);
         console.log(`═══════════════════════════════════════════`);
 
+        // B2: --no-acquire — all visuals are pre-supplied locally via [Visual: file]
+        // bindings in the script. Skip the network acquire/gateway stage entirely and
+        // synthesize the render-manifest directly from plan.json localAssets + music.
+        if (cliArgs['no-acquire'] === true) {
+            const { resolveFreeBackgroundMusic } = await import('../../lib/free-music.js');
+            const { inputAssetPath } = await import('../../lib/path-safety.js');
+            const assets: any[] = [];
+            for (const s of plan.scenes) {
+                const la = s.localAsset;
+                if (!la) {
+                    console.warn(`  ⚠ scene ${s.sceneNumber} has no localAsset — skipping in manifest`);
+                    continue;
+                }
+                const localPath = path.isAbsolute(la) ? la : path.join(process.cwd(), 'input', 'visuals', la);
+                const kind = /\.(mp4|mov|webm|mkv)$/i.test(la) ? 'video' : 'image';
+                assets.push({
+                    kind,
+                    sceneIndex: (s.sceneNumber ?? 1) - 1,
+                    localPath,
+                    license: 'User-supplied local asset',
+                });
+            }
+            // Resolve background music (explicit file or query)
+            let musicPath = '';
+            if (job.backgroundMusic) {
+                const bp = inputAssetPath(job.backgroundMusic);
+                musicPath = fs.existsSync(bp) ? bp : '';
+            }
+            if (!musicPath) {
+                const m = await resolveFreeBackgroundMusic({ query: job.musicQuery || 'background music', enabled: true });
+                musicPath = m?.localPath && fs.existsSync(m.localPath) ? m.localPath : '';
+            }
+            if (musicPath) {
+                assets.push({ kind: 'music', sceneIndex: -1, localPath: musicPath, license: 'User-supplied / free music' });
+            }
+            const manifest = { jobId: id, title: job.title, orientation: job.orientation ?? 'landscape', voice: job.voice, musicQuery: job.musicQuery, assets, generatedAt: new Date().toISOString() };
+            writeJson(ws.root, 'render-manifest.json', manifest);
+            writeJson(ws.root, 'scene-data.json', {
+                jobId: id, title: job.title,
+                scenes: plan.scenes.map((s: any) => ({ sceneNumber: s.sceneNumber, voiceoverText: s.voiceoverText, searchKeywords: s.searchKeywords, visualPreference: s.visualPreference, durationSec: s.durationSec, localAsset: s.localAsset, personalAudio: s.personalAudio })),
+                generatedAt: new Date().toISOString(),
+            });
+            console.log(`  ✅ --no-acquire: manifest with ${assets.length} local asset(s) (no network acquire)`);
+            continue;
+        }
+
         // Reconstruct minimal request to reuse acquireAssets
         const req: any = {
             jobId: id,

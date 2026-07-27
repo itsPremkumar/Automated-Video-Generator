@@ -71,3 +71,27 @@ test('parseScript boolean tags accept off/false', async () => {
     assert.equal(s.kineticText, false);
     assert.equal(s.sfx, false);
 });
+
+test('B1: multi-clause line with [Visual:] stays ONE scene (no sentence split)', async () => {
+    const result = await parseScript(
+        'Meet AVS — an open-source agentic AI video generator — fully autonomous, zero cost, MIT licensed. [Visual: avs_s1_github.png] [Transition: slide] [Grade: cinematic]',
+    );
+    assert.equal(result.scenes.length, 1, 'em-dash multi-clause line must not explode into scenes');
+    const s = result.scenes[0];
+    // avs_s1_github.png exists in input/visuals, so the parser binds localAsset to it
+    assert.equal(s.localAsset, 'avs_s1_github.png', 'localAsset binding must be preserved on the single scene');
+    assert.ok(s.voiceoverText.includes('Meet AVS'), 'full narration retained, not truncated');
+});
+
+test('B1: several [Visual:] lines each become exactly one scene in author order', async () => {
+    const result = await parseScript(
+        'Hook question here. [Visual: avs_showcase_s0.mp4] [Transition: slide]\n' +
+        'Middle scene with detail. [Visual: avs_s1_github.png] [Grade: cinematic]\n' +
+        'Closing CTA. [Visual: avs_showcase_s7.mp4] [Transition: fade]',
+    );
+    assert.equal(result.scenes.length, 3, '3 tagged lines -> exactly 3 scenes');
+    assert.equal(result.scenes[0].localAsset, 'avs_showcase_s0.mp4');
+    assert.equal(result.scenes[1].localAsset, 'avs_s1_github.png');
+    assert.equal(result.scenes[2].localAsset, 'avs_showcase_s7.mp4');
+});
+
