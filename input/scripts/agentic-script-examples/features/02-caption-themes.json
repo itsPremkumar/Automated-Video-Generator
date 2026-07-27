@@ -1,0 +1,17 @@
+[
+  {
+    "id": "feat-caption-themes",
+    "title": "Caption Themes Demo",
+    "description": "Demonstrates all 7 caption themes. Each scene uses a different caption style: minimal, bold, highContrast, softCard, centerPop, topTag, and neon.",
+    "script": "Minimal captions - clean and simple. [Visual: text typography minimal] [Transition: fade] [CaptionTheme: minimal]\nBold captions - thicker font for impact. [Visual: bold typography statement] [Transition: slide] [CaptionTheme: bold]\nHigh contrast - yellow on dark. [Visual: contrast lighting dark] [Transition: fade] [CaptionTheme: highContrast]\nSoft card - white on subtle background. [Visual: soft gradient background] [Transition: slide] [CaptionTheme: softCard]\nCenter pop - captions in the middle. [Visual: centered composition design] [Transition: fade] [CaptionTheme: centerPop]\nTop tag - captions at the top edge. [Visual: top down perspective] [Transition: slide] [CaptionTheme: topTag]\nNeon - glowing cyan on dark box. [Visual: neon lights city night] [Transition: fade] [CaptionTheme: neon]",
+    "orientation": "portrait",
+    "voice": "en-US-JennyNeural",
+    "captions": "burned",
+    "kenBurns": false,
+    "vignette": false,
+    "kineticText": false,
+    "preset": "neutral",
+    "renderer": "ffmpeg",
+    "backend": "agent"
+  }
+]

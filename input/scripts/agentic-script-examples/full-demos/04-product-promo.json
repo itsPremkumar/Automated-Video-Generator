@@ -1,0 +1,41 @@
+[
+  {
+    "id": "demo-product-promo",
+    "title": "Product Showcase",
+    "description": "Product promotional video with slide transitions, vivid grading, energetic music, and brand watermark. Showcases a hypothetical product with benefit-focused copy.",
+    "script": "Introducing the next generation of smart headphones. [Visual: modern wireless headphones] [Transition: slide] [Grade: vivid]\nActive noise cancellation that adapts to your environment. [Visual: person wearing headphones city] [Transition: slide] [Grade: vivid]\nForty hours of battery life on a single charge. [Visual: charging dock headphones] [Transition: slide]\nUltra-comfortable memory foam ear cushions. [Visual: closeup ear cushion detail] [Transition: slide]\nPremium sound with spatial audio support. [Visual: sound wave audio visualization] [Transition: slide] [Kinetic: on]\nAvailable now in three colors. [Visual: product display shelf] [Transition: slide]\nUpgrade your listening experience today. [Visual: happy customer smiling] [Transition: fade] [Grade: warm]",
+    "orientation": "portrait",
+    "platform": "instagram",
+    "videoType": "product",
+    "voice": "en-US-GuyNeural",
+    "preset": "neutral",
+    "transition": "slide",
+    "grade": "vivid",
+    "kenBurns": false,
+    "vignette": true,
+    "kineticText": true,
+    "captions": "burned",
+    "captionTheme": "bold",
+    "sfx": true,
+    "sfxOnCut": true,
+    "musicIntensity": "energetic",
+    "musicQuery": "upbeat energetic product commercial",
+    "brand": { "watermark": "logo.png", "accent": "#00BCD4" },
+    "watermark": "logo.png",
+    "watermarkRotation": 0,
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "maxAttempts": 2,
+    "intro": {
+      "title": "Product Name",
+      "subtitle": "Launching Soon",
+      "durationSec": 2
+    },
+    "outro": {
+      "ctaText": "Pre-order Now",
+      "showSubscribe": false,
+      "hashtags": ["#newproduct", "#launch", "#tech"],
+      "durationSec": 3
+    }
+  }
+]

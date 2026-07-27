@@ -1,0 +1,15 @@
+[
+  {
+    "id": "ex-download-music",
+    "title": "Download Music Example",
+    "topic": "background music for video",
+    "description": "Downloads background music tracks from free-music providers (ccMixter, Internet Archive). Matched by mood/genre query. Saves to workspace for later use.",
+    "mode": "download-music",
+    "script": "Background music for a calm nature documentary.",
+    "musicQuery": "calm ambient relaxing piano",
+    "musicIntensity": "calm",
+    "orientation": "landscape",
+    "backend": "agent",
+    "downloadCount": 3
+  }
+]

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "feat-per-scene-filters",
+    "title": "Per-Scene Filters Demo",
+    "description": "Demonstrates per-scene visual filters: black & white, vintage, sepia, stabilize, chroma key, blur, and mirror. Each scene index maps to a filter type via filterByScene and other per-scene arrays.",
+    "script": "Black and white dramatic scene. [Visual: dramatic portrait mono] [Transition: fade]\nVintage retro film look. [Visual: retro film camera old] [Transition: slide]\nSepia toned historical feel. [Visual: old historical photograph] [Transition: fade]\nSoft blurred background effect. [Visual: bokeh lights background] [Transition: fade]\nHorizontal mirror reflection. [Visual: symmetrical reflection water] [Transition: slide]",
+    "orientation": "portrait",
+    "voice": "en-US-JennyNeural",
+    "filterByScene": { "0": "bw", "1": "vintage", "2": "sepia", "3": "bw" },
+    "blurScenes": [3],
+    "mirrorByScene": { "4": "horizontal" },
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "renderer": "ffmpeg",
+    "backend": "agent"
+  }
+]

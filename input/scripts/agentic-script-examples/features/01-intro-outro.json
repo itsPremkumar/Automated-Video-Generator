@@ -1,0 +1,29 @@
+[
+  {
+    "id": "feat-intro-outro",
+    "title": "Intro & Outro Cards Demo",
+    "description": "Demonstrates title card intro and outro CTA with hashtags. Intro plays for 3 seconds before the first scene. Outro shows after the last scene with subscribe prompt.",
+    "script": "This is the first scene of the video. [Visual: intro scene placeholder] [Transition: fade]\nMiddle scene with content. [Visual: middle scene content] [Transition: slide]\nFinal scene before the outro. [Visual: closing scene final] [Transition: fade]",
+    "orientation": "portrait",
+    "voice": "en-US-JennyNeural",
+    "preset": "cinematic",
+    "transition": "fade",
+    "grade": "cinematic",
+    "kenBurns": true,
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "intro": {
+      "title": "Intro & Outro Demo",
+      "subtitle": "Feature Showcase",
+      "durationSec": 3
+    },
+    "outro": {
+      "ctaText": "Subscribe for more content",
+      "showSubscribe": true,
+      "hashtags": ["#tutorial", "#demo", "#video"],
+      "durationSec": 4
+    },
+    "backend": "agent",
+    "renderer": "ffmpeg"
+  }
+]

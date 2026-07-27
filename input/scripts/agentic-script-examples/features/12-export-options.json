@@ -1,0 +1,22 @@
+[
+  {
+    "id": "feat-export-options",
+    "title": "Export Options Demo",
+    "description": "Demonstrates multi-aspect export and output quality settings. Renders primary MP4 plus all requested aspect variants. Also generates thumbnail poster and contact sheet.",
+    "script": "This video will be exported in multiple aspect ratios. [Visual: export format demonstration] [Transition: fade]\n9:16 for Reels, 16:9 for YouTube, 1:1 for Instagram. [Visual: social media platforms icons] [Transition: slide]\nEach variant is scaled and padded automatically. [Visual: video editing export settings] [Transition: fade]",
+    "orientation": "portrait",
+    "voice": "en-US-JennyNeural",
+    "exportFormat": "mp4",
+    "exportAspects": ["9:16", "16:9", "1:1"],
+    "outputQuality": "high",
+    "hardwareEncode": false,
+    "frameRate": 30,
+    "posterScene": 0,
+    "contactSheet": true,
+    "loopVideo": 1,
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "renderer": "ffmpeg",
+    "backend": "agent"
+  }
+]

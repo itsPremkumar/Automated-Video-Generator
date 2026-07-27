@@ -1,0 +1,15 @@
+[
+  {
+    "id": "ex-download-sfx",
+    "title": "Download Sound Effects Example",
+    "topic": "sound effects for transitions",
+    "description": "Downloads sound effects for scene transitions. Each scene gets a whoosh/ding based on transition type. No images, music, voice, or render.",
+    "mode": "download-sfx",
+    "script": "Introduction scene with a whoosh. [Transition: slide]\nKey point revealed with a ding. [Transition: fade]\nClosing with a gentle fade. [Transition: fade]",
+    "sfx": true,
+    "sfxOnCut": true,
+    "sfxByScene": { "0": "whoosh", "1": "ding", "2": "fade" },
+    "orientation": "portrait",
+    "backend": "agent"
+  }
+]

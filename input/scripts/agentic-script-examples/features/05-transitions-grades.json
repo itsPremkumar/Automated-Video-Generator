@@ -1,0 +1,16 @@
+[
+  {
+    "id": "feat-transitions-grades",
+    "title": "Transitions & Color Grades Demo",
+    "description": "Demonstrates all transition types (fade, slide, zoomblur, cut) combined with color grades (neutral, warm, cool, cinematic, vivid, sepia). Use per-scene [Transition:] and [Grade:] inline tags.",
+    "script": "Fade transition with warm golden tones. [Visual: golden hour sunset field] [Transition: fade] [Grade: warm]\nSlide transition with cool blue tones. [Visual: blue ocean waves coast] [Transition: slide] [Grade: cool]\nZoomblur transition with cinematic look. [Visual: cinematic film movie set] [Transition: zoomblur] [Grade: cinematic]\nHard cut with vivid colors. [Visual: vibrant colorful festival] [Transition: cut] [Grade: vivid]\nSoft fade with sepia vintage feel. [Visual: vintage old photograph] [Transition: fade] [Grade: sepia]",
+    "orientation": "portrait",
+    "voice": "en-US-JennyNeural",
+    "kenBurns": true,
+    "vignette": true,
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "renderer": "ffmpeg",
+    "backend": "agent"
+  }
+]

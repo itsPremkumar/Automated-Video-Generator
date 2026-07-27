@@ -1,0 +1,13 @@
+[
+  {
+    "id": "ex-plan-only",
+    "title": "Plan Only Example",
+    "topic": "space exploration facts",
+    "description": "Builds the plan only — parses the script, extracts scenes with keywords/tags, calculates durations. No network calls, no downloads, no render. Use to preview how the script will be interpreted.",
+    "mode": "plan",
+    "script": "Did you know the sun is 93 million miles away? [Visual: sun solar flare] [Transition: fade] [Grade: warm]\nLight from the sun takes 8 minutes to reach Earth. [Visual: earth from space] [Transition: slide] [Grade: cool]\nA teaspoon of neutron star weighs 6 billion tons. [Visual: neutron star space] [Transition: zoomblur] [Grade: cinematic] [Kinetic: on]",
+    "orientation": "landscape",
+    "voice": "en-US-JennyNeural",
+    "backend": "agent"
+  }
+]

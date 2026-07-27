@@ -1,0 +1,19 @@
+[
+  {
+    "id": "feat-motion-graphics",
+    "title": "Motion Graphics Demo",
+    "description": "Demonstrates animated zoom, pan, parallax depth, and particle effects per scene. Use zoomByScene for Ken Burns-style push-in, panByScene for lateral movement, parallaxDepth for 2.5D, and particlesByScene for atmospheric effects.",
+    "script": "Gentle zoom in on this beautiful landscape. [Visual: mountain valley landscape] [Transition: fade]\nPanning across a city skyline. [Visual: city skyline panoramic] [Transition: slide]\nDeep parallax effect on layered forest. [Visual: forest depth layers trees] [Transition: fade]\nSparkle particles over a magical scene. [Visual: magical starry night sky] [Transition: fade]",
+    "orientation": "portrait",
+    "voice": "en-US-JennyNeural",
+    "kenBurns": true,
+    "zoomByScene": { "0": { "start": 1.0, "end": 1.3 } },
+    "panByScene": { "1": { "startX": 0, "startY": 0, "endX": 80, "endY": 0 } },
+    "parallaxDepthByScene": { "2": 5 },
+    "particlesByScene": { "3": "sparkles" },
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "renderer": "ffmpeg",
+    "backend": "agent"
+  }
+]

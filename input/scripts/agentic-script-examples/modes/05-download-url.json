@@ -1,0 +1,13 @@
+[
+  {
+    "id": "ex-download-url",
+    "title": "Download URL Example",
+    "topic": "direct url file download",
+    "description": "Downloads a single file from a direct URL. Use downloadUrl for the source and downloadUrlKind to specify the media type (image/video/audio/sfx).",
+    "mode": "download-url",
+    "downloadUrl": "https://images.pexels.com/photos/123456/example-photo.jpg",
+    "downloadUrlKind": "image",
+    "orientation": "landscape",
+    "backend": "agent"
+  }
+]

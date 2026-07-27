@@ -1,0 +1,22 @@
+[
+  {
+    "id": "ex-render-only",
+    "title": "Render Only Example",
+    "topic": "compose video from existing workspace",
+    "description": "Renders the final MP4 from an existing workspace (must have run plan + visuals + voice first). Skips all acquisition and voice generation. Useful for tweaking render settings without re-fetching assets.",
+    "mode": "render",
+    "script": "This script was already processed. Re-rendering with new settings.",
+    "orientation": "portrait",
+    "preset": "reels",
+    "transition": "fade",
+    "grade": "cinematic",
+    "kenBurns": true,
+    "vignette": true,
+    "kineticText": true,
+    "captions": "burned",
+    "captionTheme": "softCard",
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "outputQuality": "high"
+  }
+]

@@ -1,0 +1,15 @@
+[
+  {
+    "id": "ex-voice-edgetts",
+    "title": "Edge-TTS Voice Generation Example",
+    "topic": "voiceover generation via Edge-TTS",
+    "description": "Generates voiceover audio only using Microsoft Edge-TTS. No visuals, music, or render. Requires internet for first use (Edge-TTS connects to Microsoft servers).",
+    "mode": "generate-voice-edgetts",
+    "script": "This is an example of voiceover generation using Edge-TTS.\nYou can choose from over four hundred voices in more than one hundred languages.\nThe voice is generated locally with no cloud API key needed.",
+    "voice": "en-US-ChristopherNeural",
+    "voiceSpeed": 1.0,
+    "ttsStyle": "friendly",
+    "orientation": "portrait",
+    "backend": "agent"
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "demo-motivational-reel",
+    "title": "Human Resilience",
+    "description": "Full Instagram Reel about human resilience. 30-second inspirational short with per-scene visuals, transitions, cinematic grading, and kinetic captions. Ready to render.",
+    "script": "What makes humans truly extraordinary? [Visual: diverse crowd people celebration] [Transition: fade] [Grade: cinematic]\nIt's not our strength. It's not our intelligence. [Visual: person climbing mountain determination] [Transition: slide] [Grade: warm]\nIt's our ability to rise after every fall. [Visual: person standing up after falling resilience] [Transition: fade] [Kinetic: on]\nThe human spirit is unbreakable. [Visual: sunset achievement celebration success] [Transition: zoomblur] [Grade: warm]\nYou've survived everything life has thrown at you so far. [Visual: hopeful sunrise dawn nature] [Transition: slide]\nKeep going. Your story isn't over yet. [Visual: open road journey path forward] [Transition: fade] [Text: on]",
+    "orientation": "portrait",
+    "platform": "reels",
+    "videoType": "motivational",
+    "voice": "en-US-ChristopherNeural",
+    "preset": "reels",
+    "transition": "mixed",
+    "grade": "cinematic",
+    "kineticText": true,
+    "kenBurns": true,
+    "vignette": true,
+    "captions": "burned",
+    "captionTheme": "softCard",
+    "sfx": true,
+    "musicIntensity": "mid",
+    "musicQuery": "uplifting cinematic inspirational",
+    "jCutSec": 0.2,
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "maxAttempts": 3,
+    "intro": {
+      "title": "Human Resilience",
+      "subtitle": "Keep Going",
+      "durationSec": 2
+    },
+    "outro": {
+      "ctaText": "Share this with someone who needs to hear it",
+      "showSubscribe": true,
+      "hashtags": ["#resilience", "#motivation", "#keepgoing", "#inspiration"],
+      "durationSec": 3
+    }
+  }
+]

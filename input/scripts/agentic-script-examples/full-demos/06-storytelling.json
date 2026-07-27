@@ -1,0 +1,37 @@
+[
+  {
+    "id": "demo-storytelling",
+    "title": "The Last Lighthouse",
+    "description": "Narrative storytelling video with warm grade, fade transitions, calm music, and multi-persona dialogue for narrator and character voices.",
+    "script": "On the edge of a stormy sea stood the last lighthouse keeper. [Visual: lighthouse stormy sea coast] [Transition: fade] [Grade: warm]\nEvery night he climbed the spiral stairs to light the lamp. [Visual: spiral staircase lighthouse interior] [Transition: fade] [Grade: warm]\nThe ships depended on his light to find safe harbor. [Visual: ship ocean night lighthouse beam] [Transition: fade]\nOne evening a terrible storm cut all power to the island. [Visual: dark storm clouds lightning] [Transition: fade] [Grade: cool]\nHe lit the lamp by hand, as keepers did a century ago. [Visual: hands lighting lantern flame] [Transition: fade] [Grade: warm]\nThe ships saw the light and navigated safely to shore. [Visual: ship arriving harbor sunrise] [Transition: fade] [Grade: warm]\nSometimes the oldest ways are still the most reliable. [Visual: keeper looking at sunrise] [Transition: fade] [Kinetic: on]",
+    "orientation": "landscape",
+    "platform": "youtube",
+    "videoType": "story",
+    "voice": "en-US-GuyNeural",
+    "preset": "cinematic",
+    "transition": "fade",
+    "grade": "warm",
+    "kenBurns": true,
+    "vignette": true,
+    "kineticText": true,
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "musicIntensity": "calm",
+    "musicQuery": "cinematic ambient storytelling piano",
+    "sfx": true,
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "maxAttempts": 2,
+    "intro": {
+      "title": "The Last Lighthouse",
+      "subtitle": "A Short Story",
+      "durationSec": 3
+    },
+    "outro": {
+      "ctaText": "Subscribe for more stories",
+      "showSubscribe": true,
+      "hashtags": ["#storytelling", "#lighthouse", "#shortstory"],
+      "durationSec": 3
+    }
+  }
+]

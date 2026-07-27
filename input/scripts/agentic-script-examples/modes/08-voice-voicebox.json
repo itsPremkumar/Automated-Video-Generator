@@ -1,0 +1,15 @@
+[
+  {
+    "id": "ex-voice-voicebox",
+    "title": "Voicebox/Kokoro Voice Generation Example",
+    "topic": "voiceover via local AI voice model",
+    "description": "Generates voiceover using the local Voicebox/Kokoro model. Fully offline, no internet needed. Choose a preset kokoro voice (af_heart, af_bella, am_michael, etc.).",
+    "mode": "generate-voice-voicebox",
+    "script": "This voice is generated entirely on your own machine.\nNo cloud services, no API keys, no internet required.\nKokoro provides natural-sounding speech in multiple accents.",
+    "voice": "en-US-JennyNeural",
+    "kokoroVoice": "af_heart",
+    "voiceSpeed": 1.0,
+    "orientation": "portrait",
+    "backend": "agent"
+  }
+]

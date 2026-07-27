@@ -1,0 +1,24 @@
+[
+  {
+    "id": "ex-compose-full",
+    "title": "Full Compose Example",
+    "topic": "complete video from topic to MP4",
+    "description": "Full compose mode: builds the plan, downloads per-scene visuals, generates voiceover, fetches music, applies all effects, and renders the final MP4. This is the all-in-one production pipeline.",
+    "mode": "compose",
+    "script": "Welcome to the full compose pipeline. [Visual: futuristic technology abstract] [Transition: fade] [Grade: cinematic]\nEverything is handled automatically. [Visual: ai robotics automation] [Transition: slide] [Grade: cool]\nFrom script to finished video in one command. [Visual: video editing software timeline] [Transition: zoomblur] [Kinetic: on]",
+    "orientation": "portrait",
+    "voice": "en-US-ChristopherNeural",
+    "musicQuery": "uplifting cinematic technology",
+    "musicIntensity": "mid",
+    "preset": "cinematic",
+    "kenBurns": true,
+    "vignette": true,
+    "kineticText": true,
+    "captions": "burned",
+    "captionTheme": "bold",
+    "sfx": true,
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "maxAttempts": 3
+  }
+]

@@ -1,0 +1,27 @@
+[
+  {
+    "id": "ex-apply-advanced",
+    "title": "Apply Advanced FX Example",
+    "topic": "verify all advanced configuration signals",
+    "description": "Proof mode: applies every advanced config signal (reorder, delete, loop, voice configs, overlays, sfx plan) to the plan and returns a detailed report. No network, no ffmpeg — pure config validation.",
+    "mode": "apply-advanced",
+    "script": "Scene one with standard visual. [Visual: first scene placeholder]\nScene two gets a warm grade. [Visual: second scene example] [Grade: warm]\nScene three is the deleted one. [Visual: third scene example]\nScene four is the new second scene after delete. [Visual: fourth scene demo]",
+    "orientation": "portrait",
+    "voice": "en-US-GuyNeural",
+    "deleteScenes": [2],
+    "sceneOrder": [0, 3, 1],
+    "clipSpeedByScene": { "0": 0.75, "1": 1.5 },
+    "filterByScene": { "0": "vintage", "1": "bw" },
+    "stabilizeScenes": [0],
+    "emojiByScene": { "0": "🎬", "1": "✨" },
+    "lowerThird": "Host — Example Name",
+    "watermark": "logo.png",
+    "posterScene": 0,
+    "contactSheet": true,
+    "exportFormat": "mp4",
+    "normalizeLufs": -14,
+    "loopMusic": true,
+    "sfxOnCut": true,
+    "backend": "agent"
+  }
+]

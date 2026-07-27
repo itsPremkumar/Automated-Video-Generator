@@ -1,0 +1,29 @@
+[
+  {
+    "id": "feat-ai-verify",
+    "title": "AI Verification Demo",
+    "description": "Enables AI vision-based quality gates. When enabled, the pipeline checks every asset for subject relevance, watermark presence, and safety before approving. finalMode:'vision' samples multiple frames from the final MP4.",
+    "script": "This video will be verified by AI vision checks. [Visual: ai artificial intelligence brain] [Transition: fade]\nEvery asset is checked for quality and relevance. [Visual: quality check verification] [Transition: slide]\nFailed assets are auto-rejected and regenerated. [Visual: automated robot process] [Transition: fade]",
+    "orientation": "portrait",
+    "voice": "en-US-JennyNeural",
+    "aiVerify": {
+      "enabled": true,
+      "minConfidence": 6,
+      "verifyOnAcquire": true,
+      "verifyOnApprove": true,
+      "verifyOnEdit": true,
+      "verifyOnRender": true,
+      "finalMode": "vision",
+      "checkSubjectMatch": true,
+      "checkWatermark": true,
+      "checkSafety": true,
+      "checkMusicMood": false,
+      "checkSpeechClarity": false,
+      "checkBackgroundNoise": false
+    },
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "renderer": "ffmpeg",
+    "backend": "agent"
+  }
+]

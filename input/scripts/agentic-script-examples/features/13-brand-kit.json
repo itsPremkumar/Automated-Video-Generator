@@ -1,0 +1,29 @@
+[
+  {
+    "id": "feat-brand-kit",
+    "title": "Brand Kit Demo",
+    "description": "Demonstrates brand identity settings: watermark logo, accent color, font customization, and lower-third name tag. The watermark is overlaid on every scene, and the brand accent color tints overlays.",
+    "script": "Branded video with watermark overlay throughout. [Visual: branding design identity] [Transition: fade]\nAccent color used in captions and overlays. [Visual: color palette swatches] [Transition: slide]\nCustom fonts for a professional look. [Visual: typography font design] [Transition: fade]",
+    "orientation": "portrait",
+    "voice": "en-US-JennyNeural",
+    "brand": {
+      "watermark": "logo.png",
+      "accent": "#FF6B35"
+    },
+    "watermark": "logo.png",
+    "watermarkRotation": 0,
+    "watermarkShadow": { "x": 2, "y": 2, "blur": 4, "color": "rgba(0,0,0,0.5)" },
+    "watermarkByScene": {
+      "0": { "position": "bottom-right", "scale": 0.15 },
+      "1": { "position": "top-left", "scale": 0.1 }
+    },
+    "fontFamily": "Arial, sans-serif",
+    "fontColor": "#FFFFFF",
+    "fontWeight": 700,
+    "lowerThird": "Brand Name — Tagline",
+    "captions": "burned",
+    "captionTheme": "bold",
+    "renderer": "ffmpeg",
+    "backend": "agent"
+  }
+]

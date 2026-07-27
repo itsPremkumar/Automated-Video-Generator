@@ -1,0 +1,21 @@
+[
+  {
+    "id": "feat-audio-processing",
+    "title": "Audio Processing Demo",
+    "description": "Demonstrates per-scene audio processing: parametric EQ, compressor, reverb, noise reduction, pitch shift, and tempo. Each scene can have independent audio treatment.",
+    "script": "Scene with bass boost for impact. [Visual: bass speaker audio] [Transition: fade]\nVoice with cathedral reverb effect. [Visual: cathedral architecture large] [Transition: slide]\nPitch shifted higher for energy. [Visual: energetic dance crowd] [Transition: fade]\nNoise reduced for clean dialogue. [Visual: microphone recording studio] [Transition: fade]",
+    "orientation": "portrait",
+    "voice": "en-US-JennyNeural",
+    "audioFilterByScene": { "0": "bass_boost" },
+    "reverbByScene": { "1": "cathedral" },
+    "pitchShiftByScene": { "2": 3 },
+    "noiseReductionByScene": { "3": 0.5 },
+    "eqByScene": { "0": { "low": 3, "mid": 0, "high": 1 } },
+    "compressorByScene": { "0": { "threshold": -20, "ratio": 4, "knee": 6, "attack": 3, "release": 100 } },
+    "normalizeLufs": -14,
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "renderer": "ffmpeg",
+    "backend": "agent"
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "demo-facts-educational",
+    "title": "Amazing Space Facts",
+    "description": "Educational landscape video about space facts. Uses documentary preset with cool grade, calm music, and high-contrast captions. Perfect for YouTube or educational content.",
+    "script": "Did you know the sun is 93 million miles from Earth? [Visual: sun solar flare corona] [Transition: fade] [Grade: warm]\nLight takes eight minutes to reach us from the sun. [Visual: earth from space blue] [Transition: slide] [Grade: cool]\nA teaspoon of neutron star weighs six billion tons. [Visual: neutron star pulsar] [Transition: fade] [Kinetic: on]\nThere are more stars than grains of sand on Earth. [Visual: milky way galaxy stars] [Transition: slide] [Grade: cool]\nThe largest known star is 1,700 times bigger than our sun. [Visual: red supergiant star] [Transition: fade] [Grade: cinematic]\nSpace is completely silent — there's no atmosphere for sound. [Visual: astronaut space silence] [Transition: fade]\nEvery atom in your body came from a star explosion. [Visual: supernova explosion cosmic] [Transition: zoomblur] [Grade: cinematic]",
+    "orientation": "landscape",
+    "platform": "youtube",
+    "videoType": "facts",
+    "voice": "en-US-JennyNeural",
+    "preset": "documentary",
+    "transition": "fade",
+    "grade": "cool",
+    "kenBurns": true,
+    "vignette": true,
+    "kineticText": true,
+    "captions": "burned",
+    "captionTheme": "highContrast",
+    "sfx": true,
+    "musicIntensity": "calm",
+    "musicQuery": "ambient space atmospheric documentary",
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "maxAttempts": 2
+  }
+]

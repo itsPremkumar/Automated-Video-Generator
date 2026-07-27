@@ -1,0 +1,22 @@
+[
+  {
+    "id": "feat-color-grading-advanced",
+    "title": "Advanced Color Grading Demo",
+    "description": "Demonstrates advanced color grading per scene: LUT files, tone curves (S-curve, high-contrast), color wheels (shadows/midtones/highlights), and per-channel contrast/saturation/brightness/gamma adjustments.",
+    "script": "Scene with an S-curve cinematic grade. [Visual: cinematic film scene] [Transition: fade] [Grade: cinematic]\nHigh contrast dramatic look. [Visual: dramatic lighting contrast] [Transition: slide]\nWarm golden shadows with cyan highlights. [Visual: gold cyan color palette] [Transition: fade]",
+    "orientation": "portrait",
+    "voice": "en-US-GuyNeural",
+    "grade": "cinematic",
+    "toneCurveByScene": { "0": "s-curve", "1": "high-contrast" },
+    "colorWheelsByScene": { "2": { "shadows": "#FF6B35", "midtones": "#FFFFFF", "highlights": "#00BCD4" } },
+    "contrastByScene": { "0": 0.3, "1": 0.8 },
+    "saturationByScene": { "0": 1.1, "2": 1.4 },
+    "brightnessByScene": { "1": 0.1 },
+    "gammaByScene": { "0": 0.9, "2": 1.1 },
+    "colorTempByScene": { "2": 6500 },
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "renderer": "ffmpeg",
+    "backend": "agent"
+  }
+]

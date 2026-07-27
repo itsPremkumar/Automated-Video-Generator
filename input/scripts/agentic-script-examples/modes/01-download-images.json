@@ -1,0 +1,13 @@
+[
+  {
+    "id": "ex-download-images",
+    "title": "Download Images Example",
+    "topic": "mountain landscape nature photography",
+    "description": "Downloads only image assets (no videos, no music, no voice, no render). Uses the script's [Visual: keyword] tags to fetch per-scene images from Pexels/Openverse.",
+    "mode": "download-images",
+    "script": "High mountain peaks at sunrise. [Visual: mountain peak sunrise snow]\nCrystal clear alpine lake reflection. [Visual: alpine lake reflection forest]\nWildflowers in a summer meadow. [Visual: wildflower meadow summer]",
+    "orientation": "landscape",
+    "backend": "agent",
+    "candidatesPerAsset": 3
+  }
+]

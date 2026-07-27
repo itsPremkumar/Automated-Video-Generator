@@ -1,0 +1,13 @@
+[
+  {
+    "id": "ex-download-videos",
+    "title": "Download Videos Example",
+    "topic": "city life and urban motion",
+    "description": "Downloads only video assets (no images, no music, no voice, no render). Uses the script's [Visual: keyword] tags to fetch per-scene video clips from Pexels.",
+    "mode": "download-videos",
+    "script": "Busy city street traffic at golden hour. [Visual: city street traffic cars]\nPeople walking through a modern plaza. [Visual: people walking urban plaza]\nAerial drone shot of the skyline. [Visual: aerial drone city skyline]",
+    "orientation": "portrait",
+    "backend": "agent",
+    "candidatesPerAsset": 2
+  }
+]

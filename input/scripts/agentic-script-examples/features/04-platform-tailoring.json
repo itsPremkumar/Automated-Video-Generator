@@ -1,0 +1,21 @@
+[
+  {
+    "id": "feat-platform-tailoring",
+    "title": "Platform Tailoring Demo",
+    "description": "Shows platform-specific output settings. Use platform: 'tiktok', 'instagram', 'reels', or 'youtube'. Each optimizes aspect ratio, transition style, caption theme, and energy level automatically.",
+    "script": "This video is optimized for YouTube. [Visual: youtube studio workspace] [Transition: fade] [Grade: cinematic]\nLandscape format with documentary style. [Visual: documentary nature footage] [Transition: slide] [Grade: neutral]\nDesigned for long-form viewing on desktop. [Visual: person watching laptop] [Transition: fade] [Grade: warm]",
+    "orientation": "landscape",
+    "voice": "en-US-JennyNeural",
+    "platform": "youtube",
+    "videoType": "documentary",
+    "preset": "documentary",
+    "transition": "fade",
+    "grade": "neutral",
+    "kenBurns": true,
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "musicIntensity": "calm",
+    "renderer": "ffmpeg",
+    "backend": "agent"
+  }
+]

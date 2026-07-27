@@ -1,0 +1,12 @@
+[
+  {
+    "id": "ex-clone-voice",
+    "title": "Clone Voice Example",
+    "topic": "voice cloning from reference audio",
+    "description": "Clones a specific person's voice from a reference WAV/MP3 file in input/voices/. The cloned profile is saved to the workspace and can be reused in later jobs via useClonedVoiceId.",
+    "mode": "clone-voice",
+    "cloneVoiceFrom": "my-reference-recording.wav",
+    "orientation": "portrait",
+    "backend": "agent"
+  }
+]

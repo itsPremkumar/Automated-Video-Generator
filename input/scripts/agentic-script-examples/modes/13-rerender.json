@@ -1,0 +1,19 @@
+[
+  {
+    "id": "ex-rerender",
+    "title": "Re-render Example",
+    "topic": "re-render with different settings from cache",
+    "description": "Re-renders an existing job from cached assets with new render settings. Does not re-fetch visuals or regenerate voice — uses the previous workspace artifacts and just changes render parameters.",
+    "mode": "rerender",
+    "script": "Re-rendering with new style settings.",
+    "orientation": "portrait",
+    "preset": "cinematic",
+    "transition": "slide",
+    "grade": "vivid",
+    "kenBurns": true,
+    "outputQuality": "medium",
+    "exportAspects": ["9:16", "16:9", "1:1"],
+    "renderer": "ffmpeg",
+    "backend": "agent"
+  }
+]

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "feat-local-assets",
+    "title": "Local Assets Demo",
+    "description": "Uses your own images/videos from input/visuals/ instead of fetching from stock providers. Files are distributed round-robin across scenes. Use localAssets to specify exact files or autoLocalAssets to use everything in input/visuals/.",
+    "script": "First scene using my own image or video. [Visual: local-first-scene]\nSecond scene with another local file. [Visual: local-second-file]\nThird scene falls back to this description if no local file. [Visual: local fallback scene]",
+    "orientation": "portrait",
+    "voice": "en-US-JennyNeural",
+    "localAssets": ["my-photo.jpg", "my-clip.mp4", "brand-logo.png"],
+    "autoLocalAssets": false,
+    "defaultVisual": "default.jpg",
+    "videoClips": ["intro-broll.mp4", "main-content.mp4", "cta-end.mp4"],
+    "personalAudio": ["my-voiceover.wav"],
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "kenBurns": true,
+    "renderer": "ffmpeg",
+    "backend": "agent"
+  }
+]

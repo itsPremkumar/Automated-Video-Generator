@@ -1,0 +1,12 @@
+[
+  {
+    "id": "demo-minimal",
+    "title": "Minimal Example",
+    "description": "Shortest possible working config. Only title and script required. Everything else uses defaults. Great for testing the pipeline is working.",
+    "script": "This is the shortest video config possible.\nOnly title and script are required.\nEverything else gets sensible defaults.",
+    "orientation": "portrait",
+    "voice": "en-US-GuyNeural",
+    "backend": "agent",
+    "renderer": "ffmpeg"
+  }
+]

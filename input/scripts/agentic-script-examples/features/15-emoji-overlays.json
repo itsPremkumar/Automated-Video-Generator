@@ -1,0 +1,28 @@
+[
+  {
+    "id": "feat-emoji-overlays",
+    "title": "Emoji & Text Overlays Demo",
+    "description": "Demonstrates emoji overlays, custom text overlays per scene, image overlays, and CTA buttons. Each overlay can be positioned and styled independently per scene.",
+    "script": "First scene with emoji overlay. [Visual: first scene emoji demo] [Transition: fade]\nScene with custom text overlay. [Visual: text overlay example scene] [Transition: slide]\nScene with CTA button. [Visual: call to action button] [Transition: fade]\nMultiple overlays combined. [Visual: layered overlay composition] [Transition: fade]",
+    "orientation": "portrait",
+    "voice": "en-US-JennyNeural",
+    "emojiByScene": { "0": "🔥", "1": "💡", "2": "🎯", "3": "🚀" },
+    "emojiOverlayByScene": {
+      "0": { "emoji": "🔥", "x": 100, "y": 200, "size": 80 },
+      "3": { "emoji": "✨", "x": "center", "y": 100, "size": 60 }
+    },
+    "textOverlayByScene": {
+      "1": { "text": "Custom Text", "x": "center", "y": 800, "fontSize": 48, "color": "#FFFFFF" }
+    },
+    "ctaButtonByScene": {
+      "2": { "text": "Learn More", "x": "center", "y": 900, "width": 300, "height": 60, "color": "#FF6B35", "textColor": "#FFFFFF" }
+    },
+    "imageOverlayByScene": {
+      "3": { "path": "overlay-frame.png", "x": 0, "y": 0, "width": 720, "height": 1280 }
+    },
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "renderer": "ffmpeg",
+    "backend": "agent"
+  }
+]

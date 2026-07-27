@@ -1,0 +1,31 @@
+[
+  {
+    "id": "demo-multi-aspect-4k",
+    "title": "Multi-Aspect 4K Export",
+    "description": "Renders the primary video plus 4K upscale and all three aspect variants (9:16, 16:9, 1:1). The base render is 720×1280, then 4K variant upscales to 3840×2160. Also generates poster thumbnail and contact sheet.",
+    "script": "This video is exported in multiple formats. [Visual: export settings configuration] [Transition: fade]\nA 4K upscale variant is automatically generated. [Visual: 4k resolution comparison] [Transition: slide]\nAspect ratios for every platform included. [Visual: social media platform icons] [Transition: fade]\nOne render produces all variants. [Visual: automated pipeline factory] [Transition: slide] [Kinetic: on]",
+    "orientation": "portrait",
+    "platform": "reels",
+    "videoType": "facts",
+    "voice": "en-US-JennyNeural",
+    "preset": "cinematic",
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "kenBurns": true,
+    "vignette": true,
+    "renderer": "ffmpeg",
+    "exportFormat": "mp4",
+    "exportAspects": ["4K", "9:16", "16:9", "1:1"],
+    "outputQuality": "high",
+    "posterScene": 0,
+    "contactSheet": true,
+    "outro": {
+      "ctaText": "Follow for more",
+      "showSubscribe": true,
+      "hashtags": ["#4k", "#video", "#export"],
+      "durationSec": 3
+    },
+    "backend": "agent",
+    "maxAttempts": 1
+  }
+]

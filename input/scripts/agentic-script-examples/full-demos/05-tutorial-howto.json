@@ -1,0 +1,31 @@
+[
+  {
+    "id": "demo-tutorial-howto",
+    "title": "How to Start a Garden",
+    "description": "Step-by-step tutorial video with clear visual instructions. Uses neutral preset with slide transitions, top-tag captions, and calm background music.",
+    "script": "Today I'll show you how to start your own vegetable garden. [Visual: gardening tools spread] [Transition: slide]\nFirst, choose a sunny spot with good soil drainage. [Visual: sunny garden soil bed] [Transition: slide]\nPrepare the soil by removing weeds and adding compost. [Visual: composting organic soil] [Transition: slide] [Kinetic: on]\nPlant your seeds at the recommended depth. [Visual: planting seeds soil hands] [Transition: slide]\nWater gently and keep the soil moist. [Visual: watering can watering plants] [Transition: slide]\nIn a few weeks you'll see sprouts emerging. [Visual: green sprouts growing soil] [Transition: slide]\nHarvest your vegetables when they're ripe and enjoy. [Visual: fresh vegetables harvest] [Transition: fade] [Grade: warm]",
+    "orientation": "portrait",
+    "platform": "reels",
+    "videoType": "tutorial",
+    "voice": "en-US-JennyNeural",
+    "preset": "neutral",
+    "transition": "slide",
+    "grade": "neutral",
+    "kenBurns": false,
+    "kineticText": true,
+    "captions": "burned",
+    "captionTheme": "topTag",
+    "sfx": true,
+    "musicIntensity": "calm",
+    "musicQuery": "calm relaxing acoustic guitar",
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "maxAttempts": 2,
+    "outro": {
+      "ctaText": "Follow for more gardening tips",
+      "showSubscribe": true,
+      "hashtags": ["#gardening", "#howto", "#diy", "#growingfood"],
+      "durationSec": 3
+    }
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "feat-multi-persona",
+    "title": "Multi-Persona Dialogue Demo",
+    "description": "Demonstrates multi-speaker dialogue within a single scene. Define personas with different voice profiles, then use sceneDialogue to script back-and-forth conversation. Supports host/guest/narrator roles.",
+    "script": "Welcome to today's discussion on artificial intelligence.\nLet's explore what AI means for the future of creativity.",
+    "orientation": "portrait",
+    "voice": "en-US-JennyNeural",
+    "personas": [
+      { "id": "host", "preset": { "engine": "kokoro", "voiceId": "af_heart" } },
+      { "id": "guest", "preset": { "engine": "kokoro", "voiceId": "am_michael" } },
+      { "id": "narrator", "preset": { "engine": "kokoro", "voiceId": "af_bella" } }
+    ],
+    "defaultPersona": "narrator",
+    "scenePersonas": { "0": "host", "1": "host" },
+    "sceneDialogue": {
+      "0": [
+        { "speaker": "host", "text": "Welcome to the show. Today we're discussing AI." },
+        { "speaker": "guest", "text": "Thanks for having me. AI is transforming every industry." },
+        { "speaker": "host", "text": "What excites you most about the future?" }
+      ],
+      "1": [
+        { "speaker": "guest", "text": "The creative possibilities are endless." },
+        { "speaker": "host", "text": "That's a great perspective to end on." }
+      ]
+    },
+    "captions": "burned",
+    "captionTheme": "softCard",
+    "renderer": "ffmpeg",
+    "backend": "agent"
+  }
+]

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "feat-presets-video-types",
+    "title": "Presets & Video Types Demo",
+    "description": "Shows all 5 visual presets (cinematic, reels, documentary, documentary-cool, neutral) and 7 video types (facts, tutorial, news, story, product, motivational, nature). Change preset and videoType to see different auto-styles.",
+    "script": "This scene auto-styles based on the preset and video type. [Visual: preset demo scene one] [Transition: fade]\nDifferent visuals, different transitions, different grades. [Visual: preset demo scene two] [Transition: slide]\nEach preset defines a complete look and feel. [Visual: preset demo scene three] [Transition: fade]",
+    "orientation": "portrait",
+    "voice": "en-US-GuyNeural",
+    "preset": "reels",
+    "videoType": "motivational",
+    "transition": "mixed",
+    "grade": "cinematic",
+    "kenBurns": true,
+    "vignette": true,
+    "kineticText": true,
+    "captions": "burned",
+    "captionTheme": "softCard",
+    "sfx": true,
+    "musicIntensity": "energetic",
+    "renderer": "ffmpeg",
+    "backend": "agent"
+  }
+]
