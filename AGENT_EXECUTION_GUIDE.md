@@ -28,10 +28,11 @@ existing pipeline functions, no ffmpeg, no Remotion renderer, no Python scripts.
 | **4** | **Scene Breakdown** | Agent splits script into numbered scenes, each with: `durationSec`, `voiceoverText`, `searchKeywords`, `visualPreference` (video/image/motion), inline tags `[Visual:]` `[Motion:]` `[Transition:]` | Agent reviews each scene for completeness |
 | **5** | **Capture Website Screenshots** | Agent navigates to provided URLs via `browser_navigate`, takes screenshots via `browser_vision`, saves PNGs to `input/visuals/` | Agent inspects each screenshot with `vision_analyze` for readability |
 | **7** | **Write Remotion Compositions** | Agent writes TSX code from scratch for any motion kind (infographic, HUD, kinetic typography, diagram, abstract, logo reveal, intro/outro). The code is valid Remotion `<AbsoluteFill>` + `<Text>` + `<TransitionSeries>` components | Agent reviews the written code for correctness before any rendering |
+| **8** | **Asset Quality Verification** | Agent runs ffprobe (signal gate: resolution/codec/duration) + extracts ONE frame via ffmpeg → `vision_analyze` (content gate: subject match, no black/corrupt/watermark) | **Each asset verified individually** before the next is acquired. On failure: delete → re-acquire → re-verify |
 | **14** | **Tag Visual Assets** | Agent writes search keywords, `visualPreference`, relevance scores per scene using its understanding of the script | Agent cross-references keywords against scene voiceover text |
 | **15** | **Generate `agentic-scripts.json`** | Agent assembles the complete job spec JSON with: scene list, scene→asset mappings, transitions, text overlays, captions, CTA, music, voice settings, advanced FX config | Agent validates the JSON structure against `AGENTIC_SCRIPT_FORMAT.md` |
-| **17** | **Configure Advanced FX** | Agent writes the config objects for: camera shake, speed-ramp, parallax depth, particle effects, light leaks, color grade, watermarks, brand tints. Sets per-scene values in the job spec | Agent verifies each FX config value is within valid ranges |
-| **18/20** | **Quality Review** | Agent extracts ONE frame per video asset via `browser_*` or `vision_analyze`, inspects for: black frames, corruption, wrong subject, bad lighting, artifacts, sync issues, spelling/grammar in captions | **Each asset reviewed individually** before proceeding. On failure: go back to that asset's creation step |
+| **17** | **Configure Advanced FX** | Agent writes ONE config object at a time (camera shake, then speed-ramp, then parallax, then particles, etc.), verifies its values, then writes the next. All per-scene values set in the job spec | Agent verifies each FX config value is within valid ranges before writing the next config |
+| **18/20** | **Quality Review** | Agent extracts 2 frames per scene via ffmpeg (30%/70% positions), then a 5–7 frame tile grid across final timeline → `vision_analyze` each for: black frames, corruption, wrong subject, audio-sync drift, artifacts, spelling/grammar in captions, branding consistency | **Each scene + final grid reviewed individually** before proceeding. On failure: go back to that scene's creation step |
 
 **What the agent then commands the project code to execute** (these require ffmpeg /
 Remotion Chrome / Python / TTS model — the agent directs but does not execute):
@@ -44,6 +45,39 @@ Remotion Chrome / Python / TTS model — the agent directs but does not execute)
 
 For those, the agent still follows the **one-by-one rule**: command ONE operation,
 `vision_analyze` the output, then command the next.
+
+---
+
+# ⭐ The Fully-Curated Local-Asset Path (recommended for highest quality)
+
+When the agent has curated **every** asset itself (screenshots, one-by-one stock
+downloads, agent-authored Remotion clips) and bound them with `[Visual: <file>]`
+tags, do **NOT** run the network acquire stage. Use the local-asset path:
+
+```bash
+npx tsx src/adapters/cli/agentic-modular.ts plan    --file <job.json>
+npx tsx src/adapters/cli/agentic-modular.ts voice   --file <job.json>
+npx tsx src/adapters/cli/agentic-modular.ts visuals --no-acquire --file <job.json>   # ← key flag
+npx tsx src/adapters/cli/agentic-modular.ts render  --file <job.json>
+```
+
+`--no-acquire` builds `render-manifest.json` directly from the plan's
+`localAsset` bindings + resolved background music — zero network fetch, zero
+gateway, no hand-written manifest. This is the path that produced the verified
+AVS showcase video (see `docs/AVS_SHOWCASE_GENERATION_WALKTHROUGH.md`).
+
+**Script-authoring rules that make this path work:**
+
+1. **One narrative line = one scene.** The parser splits prose on sentence
+   periods. A line that carries a `[Visual: <file>]` binding is kept as ONE
+   scene even if it contains multiple sentences/clauses — but a line *without*
+   a binding will be split. Author one line per scene, each ending with its
+   `[Visual:]` tag.
+2. **Author order is preserved when local assets are bound.** The planner's
+   hook-first reorder (`applyProEdits`) is skipped when scenes carry
+   `localAsset` bindings, so your CTA stays last. For pure-stock jobs the
+   reorder MAY move the most intriguing scene first — review
+   `workspace/jobs/<id>/plan.json` scene order before running voice/render.
 
 ---
 
@@ -109,11 +143,14 @@ Search/download entry point is `src/lib/visual-fetcher/search.ts` (`searchImages
 - **Openverse** — `src/lib/openverse-fetcher.ts` (CC images, no API key)
 - **Wikimedia** — `src/lib/free-{image,video}/providers/wikimedia.ts`
 - **Pixabay** — video via `searchPixabayVideos` (`search.ts`), music via `PixabayProvider` (`src/music-system/providers/pixabay.ts`)
+- **Internet Archive** — `src/lib/free-image/providers/archive.ts` + `src/lib/free-video/providers/archive.ts` (images + videos, no API key)
+- **NASA** — `src/lib/free-image/providers/nasa.ts` (images only, gated to space-related queries)
+- **MetMuseum** — `src/lib/free-image/providers/metmuseum.ts` (images only, gated to art-related queries)
 
 NOT present in code: Unsplash, Freepik. Downloads land in **`input/visuals/`** (single
-folder — not `input/images/`, `input/videos/`, etc.). Search uses multiple keywords;
-candidates are ranked by relevance and verified (ffprobe + vision) before approval
-(gateway stage).
+folder — not `input/images/`, `input/videos/`, etc.). Search uses one keyword at a time;
+each returned candidate is verified individually (ffprobe + vision) before the next
+download begins. No batch ranking, no bulk approval.
 
 ---
 
@@ -135,14 +172,44 @@ Supported motion kinds (extend the list from the real `kinds` map, not the origi
 20-item wishlist): infographic charts, HUD/radar, kinetic typography, diagrams,
 abstract backgrounds, logo reveal, intro/outro.
 
+**⭐ For unlimited bespoke motion graphics use `[GenMotion: <free description>]` or
+`autonomousMotion: true`** (see `input/scripts/AGENTIC_SCRIPT_FORMAT.md` §4.5.1).
+Unlike preset `[Motion: comp]` kinds, GenMotion lets the agent author a NEW Remotion
+`.tsx` from scratch for ANY concept — procedural art, timelines, UI demos, maps,
+audio-reactive spectrum — then render → ffprobe-verify → vision-check → self-fix
+(up to `motionMaxRetries`, default 5) → integrate into `input/visuals/` as a
+`[Visual:]` asset. Generated code is safety-gated by `assertSafeImports()` (only
+`remotion`/`react`/`@remotion/*` imports). This is the highest-leverage feature
+for advanced videos — prefer it whenever a preset kind doesn't fit.
+
 ---
 
-# Phase 8 – Asset Quality Verification
+# Phase 8 – Asset Quality Verification (agent-driven)
 
-`src/agentic/pipeline/verify.ts` (Stage 3) runs a full matrix reusing
-`verifyMedia` (ffprobe + optional vision) and `verifyMusic`. `asset-checks.ts` and
-`probeAsset` gate every asset on resolution/blur/crop/watermark/aspect/licensing/
-relevance. Failed assets are regenerated or re-fetched (gateway loop). This is wired in.
+The AI agent verifies every asset **individually** using its own tools — NOT the
+project's `verify.ts` (which depends on a local Ollama server that may not be running).
+
+For each single asset (image, video, Remotion clip, screenshot):
+
+**1. Signal gate — check resolution, codec, duration via ffprobe:**
+```powershell
+$ffp = node -e "console.log(require('ffprobe-static').path)"
+& $ffp -v quiet -print_format json -show_format -show_streams "<asset_path>"
+```
+Must show: valid resolution (match job spec), h264/h265, duration ≥ expected.
+
+**2. Content gate — extract one frame, analyze via agent vision:**
+```powershell
+$ff = node -e "console.log(require('ffmpeg-static'))"
+& $ff -y -i "<asset_path>" -ss 1 -frames:v 1 -vf scale=1280:-1 workspace/tmp_agent_run/check.jpg
+```
+Then agent runs `vision_analyze("workspace/tmp_agent_run/check.jpg")` asking:
+- Does this show the expected subject?
+- Any black frames, corruption, watermarks, wrong subject, bad lighting?
+
+**3. If both pass → asset approved. If either fails → delete asset, re-download/re-generate, re-verify. No bulk batching.**
+
+This replaces the project's `verify.ts` (Ollama-gated) path entirely. See Appendix A.5 for the copy-paste verify block.
 
 ---
 
@@ -150,10 +217,11 @@ relevance. Failed assets are regenerated or re-fetched (gateway loop). This is w
 
 > ⚡ Quick-start JSON: `input/scripts/agentic-script-examples/modes/03-download-music.json`
 
-`src/lib/free-music.ts` selects royalty-free tracks (procedural + ccMixter + Internet
-Archive sources), matched by mood/genre/energy. `music-verifier.ts` checks
-quality/length/loudness/licensing; audio can be looped to fit via `loopAudioToDuration` (`src/agentic/operations/sfx.ts`).
-(No paid/freepik music.)
+The agent downloads ONE background music track at a time via `src/lib/free-music.ts`
+(procedural + ccMixter + Internet Archive sources), matched by mood/genre/energy.
+Each track is verified individually (`music-verifier.ts` checks quality/length/
+loudness/licensing) before the next download; audio can be looped to fit via
+`loopAudioToDuration` (`src/agentic/operations/sfx.ts`). (No paid/freepik music.)
 
 ---
 
@@ -287,41 +355,89 @@ ffmpeg `xfade` transitions (fade/slide/zoomblur/cut) with per-scene duration and
 
 ---
 
-# Phase 17 – Advanced Editing (corrected — many plugins are present)
+# Phase 17 – Advanced Editing (corrected — what is actually wired vs. present as module)
 
 > ⚡ Quick-start JSON: `input/scripts/agentic-script-examples/features/06-motion-graphics.json` | `07-per-scene-filters.json` | `08-color-grading-advanced.json`
 
-`src/agentic/plugins/` provides plugin-based effects activated by config:
+There are **two parallel effect systems** in this repo. They are NOT the same path,
+and conflating them is the single biggest source of doc-vs-reality drift.
 
-- **Camera shake** — `plugins/motion/shake.ts` (handheld simulation)
-- **Speed ramps** — `plugins/motion/speed-ramp.ts` (bezier-interpolated variable speed)
-- **Parallax** — `plugins/motion/parallax.ts` + `advanced-fx.ts:applyParallax` (2.5D depth)
-- **Particles** — `advanced-fx.ts:applyParticles` (snow/rain/sparkles via ffmpeg `geq`)
-- **Light leaks** — `plugins/transitions/light-leak.ts`
-- **Glitch transitions** — `plugins/transitions/glitch.ts`
-- **Morph cut** — `plugins/transitions/morph-cut.ts`
-- **Whip pan** — `plugins/transitions/whip-pan.ts`
-- **Ken Burns pro** — `plugins/motion/ken-burns-pro.ts`
-- **Punch-in zoom** — `plugins/motion/punch-in.ts`
-- **Dynamic captions** — `plugins/overlays/dynamic-captions.ts`
-- **Lower thirds** — `plugins/overlays/lower-third.ts`
-- **Progress bar** — `plugins/overlays/progress-bar.ts`
-- **Typewriter** — `plugins/overlays/typewriter.ts`
-- **Color grading** — `advanced-fx.ts` (wheels, tone-curve, LUT)
-- **All wired** into `compose.ts` lines 279-328
+### A. The path `agentic-modular render` actually uses (compose.ts + advanced-fx.ts + overlays.js)
 
-NOT present (future work): motion blur, mask/shape transitions, animated callouts.
+This is the render engine the agent invokes (`src/adapters/cli/agentic-modular.ts →
+src/agentic/operations/compose.ts`). It is **standalone** — it imports NOTHING from
+`src/agentic/plugins/`. The effects below are genuinely produced by this path:
+
+- **Motion FX (per-scene, real):** `compose.ts` lines 324-328 call `applyParallax` +
+  `applyParticles` (advanced-fx.ts) and `applyShake` + `applySpeedRamp` + `applyPunchIn`
+  (advanced-fx.ts — wired this session). Set via `parallaxDepthByScene`, `particlesByScene`,
+  `shakeByScene`, `speedRampByScene`, `punchInByScene`.
+- **Color (per-scene, real):** `applyColorAdjustments`, `applyColorGradeDepth`, `buildPaletteFilter`
+  (advanced-fx.ts), plus `applyMirror`, `applyOpacityBlend`, `applyLut`, `applyChromaKey`,
+  `kenBurns` flag. Set via `colorAdjustmentsByScene`, `colorGradeDepthByScene`, `paletteFilter`,
+  `filterByScene`, `blurScenes`, `chromaKeyScenes`, `kenBurns`.
+- **Overlays (lower-third / progress-bar / captions / CTA / emoji / title):** burned by
+  `compose.ts` via its OWN engine — `buildOverlayPlan(job)` from `./overlays.js` (line 361) +
+  `txt()` drawtext. **NOT** the `plugins/overlays/*` files.
+- **Transitions (glitch / morph-cut / whip-pan / light-leak):** `compose.ts` maps these
+  names to native ffmpeg `xfade` types (lines 754-762): `glitch→pixelize`, `whippan→hblur`,
+  `morphcut→smoothleft`, `lightleak→fadewhite`. The OUTPUT matches the name, but the
+  **`plugins/transitions/*` files are NOT invoked** — ffmpeg's built-in xfade is.
+
+So: every effect listed above WORKS in the `agentic-modular` path. But the
+`src/agentic/plugins/*` module files are **not** what produces them.
+
+### B. The plugin module system (`src/agentic/plugins/`)
+
+The plugin files exist and are real, well-structured modules
+(`lowerThirdPlugin`, `progressBarPlugin`, `dynamicCaptionsPlugin`, `typewriterPlugin`,
+`glitchPlugin`, `lightLeakPlugin`, `kenBurnsPro`, `shakePlugin`, etc.). They are registered
+in `src/agentic/plugins/index.ts` (`registerDefaultPlugins`) and consumed by the **legacy
+orchestrator** (`src/agentic/orchestrator/pipeline.ts` / `render.ts`).
+
+**Critical:** per the Strict AI Agent Execution Rule (top of this guide), the agent MUST
+NOT use `src/agentic/orchestrator/pipeline.ts`. Therefore, for the agent's workflow, the
+`plugins/` modules are **effectively dormant** — editing `plugins/overlays/lower-third.ts`
+will NOT change the output of `agentic-modular render`. The compose path owns those effects.
+
+### Bottom line for the agent
+Set the per-scene FX config in the job spec (the field names above). The compose engine
+applies them. Do NOT assume a change to a `plugins/*` file will affect the modular render —
+it won't, unless/until compose is refactored to dispatch to the plugin registry.
+
+NOT present anywhere (future work): motion blur, mask/shape transitions, animated callouts.
 
 ---
 
-# Phase 18 – AI Quality Review
+# Phase 18 – AI Quality Review (agent-driven)
 
-> ⚡ Quick-start JSON: `input/scripts/agentic-script-examples/features/14-ai-verify.json`
+The AI agent reviews every intermediate output **individually** — NOT the project's
+`verify.ts` (Ollama-dependent and unreliable when the server is down).
 
-`verify.ts` (Stage 3) + the vision-in-loop `remotion-verify.ts` (`verifyClip`)
-re-check script accuracy, visual relevance, audio sync, subtitle timing, transition/
-image/video/voice quality, music balance, scene timing, color & branding consistency.
-Issues auto-route back to the responsible stage (regenerate/re-fetch/re-render).
+**Per-scene review after render step:**
+1. Extract frame at 30% and 70% of the scene timeline:
+   ```powershell
+   $ff = node -e "console.log(require('ffmpeg-static'))"
+   & $ff -y -i "<rendered_scene.mp4>" -ss 0.3 -frames:v 1 workspace/tmp_agent_run/scene_a.jpg
+   & $ff -y -i "<rendered_scene.mp4>" -ss 0.7 -frames:v 1 workspace/tmp_agent_run/scene_b.jpg
+   ```
+2. Agent runs `vision_analyze` on both frames checking:
+   - Script accuracy (does the visual match the voiceover text?)
+   - Visual relevance, no wrong subject
+   - No black frames, corruption, artifacts
+   - Subtitle/caption readability and spelling
+   - Color/branding consistency
+3. **Audio sync check** — use ffprobe to compare audio duration vs video duration:
+   ```powershell
+   $ffp = node -e "console.log(require('ffprobe-static').path)"
+   $info = & $ffp -v quiet -print_format json -show_format -show_streams "<rendered_scene.mp4>" | ConvertFrom-Json
+   $v = $info.streams | Where-Object { $_.codec_type -eq 'video' } | Select-Object -First 1
+   $a = $info.streams | Where-Object { $_.codec_type -eq 'audio' } | Select-Object -First 1
+   Write-Host "video:$($v.duration)s audio:$($a.duration)s diff:$([math]::Abs($v.duration - $a.duration))"
+   ```
+   Audio/video duration diff must be < 0.5s.
+
+**On failure:** delete the faulty asset, re-run its creation step (re-download, re-generate, or re-render), re-verify. Keep repeating until quality passes.
 
 ---
 
@@ -329,22 +445,60 @@ Issues auto-route back to the responsible stage (regenerate/re-fetch/re-render).
 
 > ⚡ Quick-start JSON: `input/scripts/agentic-script-examples/full-demos/08-multi-aspect-4k.json` | `features/12-export-options.json`
 
-`compose.ts` renders the final `final.mp4` at the job resolution (landscape 1280×720
-or per `orientation`) and can emit **multi-aspect** variants via `exportAspects`
-(`9:16`, `16:9`, `1:1`, **`4K`**). **4K is now supported** — add `exportAspects: ["4K"]`
-to the job spec and it renders a 3840×2160 variant alongside the primary output.
-Note: this is an **upscale** of the base render (e.g. 1280×720 → 3840×2160), not native
-4K source rendering. Real outputs: primary MP4 + requested aspect variants + thumbnail/poster (`exportPoster`) +
-contact sheet + captions + chapters where declared.
+`compose.ts` renders the final `final.mp4` at the job resolution first. Then,
+if `exportAspects` is set (`9:16`, `16:9`, `1:1`, **`4K`**), the agent renders
+ONE aspect variant at a time, verifies it (ffprobe + vision_analyze frame
+extraction), then renders the next. **4K is now supported** — add `exportAspects: ["4K"]`
+to the job spec and it renders a 3840×2160 variant after the primary is verified.
+Note: 4K is an **upscale** of the base render (e.g. 1280×720 → 3840×2160), not native
+4K source rendering. **For sharpest 4K results:** author Remotion clips at 3840×2160
+native and set the job resolution to 1920×1080 minimum before upscaling; pure
+720p→4K upscales look soft on large screens. Additional exports (thumbnail/poster,
+contact sheet, captions, chapters) are rendered one per command, each verified
+before the next.
 
 ---
 
-# Phase 20 – Final Verification
+# Phase 20 – Final Verification (agent-driven)
 
-Final AI review via `verify.ts` + vision checks: no missing assets, no broken scene
-refs, no audio issues, no artifacts, no blank frames, no sync issues, no duplicate
-scenes, no spelling/grammar mistakes, smooth playback. On failure, the pipeline
-returns to the owning stage and re-renders until production quality is met.
+Final AI review by the agent using `vision_analyze` on a multi-frame grid — NOT
+`verify.ts` (Ollama-gated, unreliable).
+
+**1. Extract 6 frames spread across the final video timeline and tile into a 2×3 grid:**
+```powershell
+$ff  = node -e "console.log(require('ffmpeg-static'))"
+$ffp = node -e "console.log(require('ffprobe-static').path)"
+
+# get total duration in seconds
+$info = & $ffp -v quiet -print_format json -show_format "final.mp4" | ConvertFrom-Json
+$dur = [double]$info.format.duration
+
+# extract 6 frames at 5%, 20%, 40%, 60%, 80%, 95% of timeline
+$ts = @([math]::Round($dur*0.05,2), [math]::Round($dur*0.20,2), [math]::Round($dur*0.40,2),
+        [math]::Round($dur*0.60,2), [math]::Round($dur*0.80,2), [math]::Round($dur*0.95,2))
+0..5 | ForEach-Object { & $ff -y -i "final.mp4" -ss $ts[$_] -frames:v 1 -vf scale=640:-1 "workspace/tmp_agent_run/frame$_.jpg" }
+
+# tile 6 frames into a 2-column × 3-row grid
+& $ff -y -i workspace/tmp_agent_run/frame0.jpg -i workspace/tmp_agent_run/frame1.jpg `
+      -i workspace/tmp_agent_run/frame2.jpg -i workspace/tmp_agent_run/frame3.jpg `
+      -i workspace/tmp_agent_run/frame4.jpg -i workspace/tmp_agent_run/frame5.jpg `
+      -filter_complex "[0:v][1:v][2:v][3:v][4:v][5:v]xstack=2x3" workspace/tmp_agent_run/final_grid.jpg
+```
+
+**2. Agent runs `vision_analyze` on the grid checking:**
+- No missing assets or blank frames across the entire timeline
+- No broken scene references (ordering correct, no duplicate scenes)
+- No audio-sync drift (all scenes should be within 0.5s)
+- No artifacts, corruption, black frames
+- No spelling/grammar mistakes in on-screen text or captions
+- Smooth playback: transitions are present, no hard jumps between unrelated content
+- No watermark or wrong branding visible
+
+**3. If the grid passes → video is production-ready.**
+**If any frame fails → route back to the owning phase (re-download asset, re-render scene, re-compose), then re-run final verification from step 1.**
+Only mark the job complete after a clean grid review.
+
+Downscale frames if the output is ≥4K before passing to `vision_analyze` (full-res can time out).
 
 ---
 
@@ -368,8 +522,11 @@ The completed system should function as a fully autonomous AI video production p
 12. Tag visual assets (per-scene search keywords, visualPreference, relevance scores)
 13. Generate `agentic-scripts.json` + manifests with scene→asset mappings
 14. Pro transitions/motion/captions/cinematic fx (shake, speed-ramp, parallax,
-     particles, light-leak, glitch, morph-cut, whip-pan, color grading — all present;
-     only motion blur, mask/shape transitions, animated callouts are future)
+     particles, glitch/morph-cut/whip-pan/light-leak transitions, color grading —
+     all WORK in the compose path via per-scene config; see Phase 17 for the
+     important caveat that the `src/agentic/plugins/*` module files are NOT the
+     code path for `agentic-modular render`). Remaining future work: motion blur,
+     mask/shape transitions, animated callouts.
 15. Automated QA at every stage (`verify.ts`)
 16. Auto-reject + regenerate low-quality assets (gateway loop)
 17. Render polished multi-format video (multi-aspect + 4K via `exportAspects: ["4K"]`)
@@ -447,10 +604,10 @@ standalone gate right now.
 **Therefore the one-by-one visual check uses the agent's own `vision_analyze`
 tool** (used successfully in every earlier turn of this session). For each single
 asset, extract ONE frame and inspect it:
-```bash
-FF=./node_modules/ffmpeg-static/ffmpeg.exe
-$FF -y -ss 1 -i input/visuals/proof_vid.mp4 -frames:v 1 /tmp/f.png
-# then: vision_analyze(/tmp/f.png, "Does this show city traffic? Any black/corrupt?")
+```powershell
+$ff = node -e "console.log(require('ffmpeg-static'))"
+& $ff -y -ss 1 -i input/visuals/proof_vid.mp4 -frames:v 1 workspace/tmp_agent_run/f.png
+# then: vision_analyze(workspace/tmp_agent_run/f.png, "Does this show city traffic? Any black/corrupt?")
 ```
 This is the **always-available** visual verify and is what proved the mixed-media
 videos earlier (screenshots readable, Remotion charts correct, etc.).
@@ -462,6 +619,28 @@ runs `ffprobe` (resolution/aspect/duration) — pair that with the agent
 2. `ffprobe` (via `verifyMedia` offline) → must be 1920×1080 / valid h264
 3. `vision_analyze` ONE extracted frame → subject must match, no black/corrupt
 4. **only then** move to the next asset
+
+**Copy-paste verify block (per single asset):**
+```powershell
+$ff  = node -e "console.log(require('ffmpeg-static'))"
+$ffp = node -e "console.log(require('ffprobe-static').path)"
+$A   = "input/visuals/<asset>"        # the ONE asset just created
+
+# signal gate — resolution/codec/duration
+$info = & $ffp -v quiet -print_format json -show_format -show_streams $A | ConvertFrom-Json
+$v = $info.streams | Where-Object { $_.codec_type -eq 'video' } | Select-Object -First 1
+Write-Host "$($v.width)x$($v.height), $($v.codec_name), $($info.format.duration)s"
+
+# content gate — extract ONE frame (note: -ss AFTER -i for accuracy)
+& $ff -y -i $A -ss 1 -frames:v 1 -vf scale=1280:-1 workspace/tmp_agent_run/check.jpg
+
+# then: vision_analyze(workspace/tmp_agent_run/check.jpg,
+#   "Does this show <expected subject>? Any black frames, corruption, watermarks, wrong subject?")
+```
+For the FINAL video, extract 5–7 frames spread across the timeline, tile them with
+ffmpeg `xstack`, and vision-check the grid in ONE call (cheaper + catches ordering
+errors). See `docs/AVS_SHOWCASE_GENERATION_WALKTHROUGH.md` §6 for the exact recipe.
+Downscale frames ≥4K to ~1280 wide before vision analysis (full-res can time out).
 
 ## A.6 Why this matters
 Doing it one-by-one (not `searchImages(..., 12, 2, ...)` + bulk verify) means a
