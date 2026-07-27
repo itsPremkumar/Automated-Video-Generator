@@ -93,8 +93,8 @@ inline tags (`[Visual:]`, `[Motion:]`, `[Transition:]`, `[Color:]`, …).
 
 The **pipeline does not open a browser**. The agent captures screenshots with its browser
 tool (`browser_navigate` + `browser_vision` → PNG in its cache), then copies them into
-`input/visuals/` (e.g. `s0.png`, `s1.png`). The acquire stage then treats them as
-local assets. **Critical:** full-page screenshots are very tall — convert with a
+`input/visuals/` (e.g. `s0.png`, `s1.png`). The agent then treats them as
+local assets for scene assembly. **Critical:** full-page screenshots are very tall — convert with a
 scroll-pan ffmpeg recipe (scale 1920 wide, crop 1080 viewport, pan down) so they
 stay readable inside the 1920×1080 frame. (See `docs/MIXED_MEDIA_WORKFLOW.md`.)
 
@@ -117,12 +117,13 @@ candidates are ranked by relevance and verified (ffprobe + vision) before approv
 
 # Phase 7 – Generate Missing Visuals with Remotion
 
-`src/agentic/media/hermes-remotion-controller.ts` (`runRemotionController`) does
-**autonomous codegen**: it writes a Remotion composition from a free-text description
-(`[GenMotion: ...]`) or a kind (`infographic` | `hud` | `kinetic` | `diagram` |
-`abstract` | …), bundles it (`@remotion/bundler`), and renders an MP4 into
-`input/visuals/`. `remotion-sequence.ts` also renders `<TransitionSeries>` timelines
-and `renderStillClip` (PNG).
+The **agent** writes a Remotion composition (TSX) from scratch — either from a
+free-text description (`[GenMotion: ...]`) or a kind (`infographic` | `hud` |
+`kinetic` | `diagram` | `abstract` | …). The agent then commands `runRemotionController`
+(`src/agentic/media/hermes-remotion-controller.ts`) to bundle the TSX via
+`@remotion/bundler` and render an MP4 via `@remotion/renderer` (Chrome → H.264).
+`remotion-sequence.ts` also renders `<TransitionSeries>` timelines and
+`renderStillClip` (PNG). The agent verifies every output with `vision_analyze`.
 
 **Important:** The ffmpeg-based compose path (`compose.ts`) uses `xfade` transitions
 (fade/slide/zoomIn) — not CSS. Shader-based transitions (glitch, morph-cut, whip-pan)
@@ -248,22 +249,21 @@ There is no `input/images/`, `videos/`, `logos/`, `screenshots/`, `sfx/`, `speec
 
 ---
 
-# Phase 14 – Visual Asset Tagging
+# Phase 14 – Visual Asset Tagging (fully handled by the AI agent)
 
-Scenes carry `visualPreference` + search keywords + inline tags; the planner/gateway rank
-candidates by relevance. There is no separate auto-tagging service, but the mechanism
-(tag → asset match) exists inside acquire/gateway. Partial.
+The agent writes search keywords, `visualPreference`, and relevance scores per scene
+based on the script content, then cross-references them against voiceover text to
+ensure relevance. These tags are used later when the agent commands asset downloads
+via the search functions.
 
 ---
 
-# Phase 15 – Generate `agentic-scripts.json` (naming corrected)
+# Phase 15 – Generate `agentic-scripts.json` (fully handled by the AI agent)
 
-The job spec is **`input/scripts/agentic-scripts.json`** (plural `scripts`, not
-`script.json`). At render time the orchestrator also writes `render-manifest.json`
-and `scene-data.json` into the job workspace, each scene referencing the resolved asset
-paths (image/video/screenshot/animation/voice/music), transition, text overlays,
-caption timing, and motion instructions. The schema is documented in
-`input/scripts/AGENTIC_SCRIPT_FORMAT.md`.
+The agent assembles the complete job spec JSON with: scene list, scene→asset mappings,
+transitions, text overlays, captions, CTA, music, voice settings, advanced FX config.
+The schema is documented in `input/scripts/AGENTIC_SCRIPT_FORMAT.md`. The agent
+validates the JSON structure against that schema before proceeding.
 
 ---
 
@@ -336,12 +336,12 @@ The completed system should function as a fully autonomous AI video production p
 
 1. Understand requirements (agent + `agentic-scripts.json` fields)
 2. Research topic (fully handled by the AI agent)
-3. Write high-quality script (`plan.ts`)
-4. Break into scenes (`Plan.scenes`)
+3. Write high-quality script (fully handled by the AI agent)
+4. Break into scenes (fully handled by the AI agent)
 5. Collect website screenshots + browser captures (agent captures → `input/visuals/`)
-6. Download images/videos (Pexels, Pixabay, Openverse, Wikimedia)
+6. Download images/videos (Pexels, Openverse, Wikimedia)
 7. Generate missing visuals via Remotion (`runRemotionController`)
-8. Image pixel-editing toolbox (22 commands in `agentic-image.ts`; only object-removal/shadow/brand-match missing)
+8. Image pixel-editing toolbox (29 commands in `agentic-image.ts`; only object-removal/shadow/brand-match missing)
 9. Select + sync realistic AI voice (`src/speech/backends/`)
 10. Download + optimize background music (`free-music.ts`)
 11. Organize assets (`input/visuals/` for visuals, `input/bgm/` for music, `input/voiceover/` for voice)
