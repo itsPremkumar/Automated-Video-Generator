@@ -286,6 +286,19 @@ export interface AgenticConfig {
      *  last-resort visual when both fetch and the pool fail (legacy-style
      *  default.mp4 fallback). */
     defaultVisual?: string;
+    /** MOTION GRAPHICS SOURCE (code-only Remotion). When a scene resolves to a
+     *  `motion` visual, the pipeline renders a Remotion composition instead of
+     *  fetching/using an image or video. Keeps the existing `[Visual:]` stock and
+     *  user-asset paths intact — motion is an additive third source. */
+    /** Named Remotion libraries and where to find them. Key = library name
+     *  (used by `[Motion: name@library]` and `motionByScene`). Value = relative
+     *  folder under the project root containing that library's `index.ts`.
+     *  Default if omitted: `{ "creation": "remotion-creation" }`. This makes the
+     *  motion engine location-configurable at an advanced level — a composition
+     *  can live in any folder. */
+    motionLibrary?: Record<string, string>;
+    /** Per-scene composition id (or `name@library`). Overrides planner choice. */
+    motionByScene?: Record<number, string>;
 
     /** ── Pro-edit (human-feel) toggles ── */
     /** Lead with the most intriguing scene instead of a flat list order. */

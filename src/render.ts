@@ -32,6 +32,15 @@ interface Scene {
         videoDuration?: number;
         videoTrimAfterFrames?: number;
     } | null;
+    /** Code-only Remotion motion-graphics source (no image/video download). */
+    motion?: {
+        /** Composition id, e.g. 'NeuralNetwork' | 'BarChartInfographic'. */
+        composition: string;
+        /** Optional Remotion library/entry location (folder name under project). */
+        library?: string;
+        /** Props forwarded to the composition (data-driven content). */
+        props?: Record<string, unknown>;
+    } | null;
     audioPath?: string;
 }
 

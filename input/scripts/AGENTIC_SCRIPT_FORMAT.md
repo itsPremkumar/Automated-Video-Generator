@@ -61,6 +61,7 @@ These tags are parsed from the script text. Each applies to the sentence/scene i
 | Tag | Values | Example |
 | :-- | :----- | :------ |
 | `[Visual: keyword or file]` | Search keyword or filename in `input/visuals/` | `[Visual: mountain sunset]` |
+| `[Motion: comp]` or `[Motion: comp@library]` | **Code-only Remotion motion graphic** (no download). `comp` = composition id (e.g. `NeuralNetwork`); optional `@library` targets a named Remotion folder (see §4.5) | `[Motion: BarChartInfographic]` · `[Motion: NeuralNetwork@create]` |
 | `[Text: on\|off]` | Enable/disable on-screen text | `[Text: on]` |
 | `[Kinetic: on\|off\|custom]` | Kinetic word animation | `[Kinetic: on]` |
 
@@ -99,6 +100,58 @@ These tags are parsed from the script text. Each applies to the sentence/scene i
   "script": "Welcome to the show. [Visual: studio lights] [Transition: fade] [Grade: warm] [Kinetic: on]\nToday we explore AI. [Visual: artificial intelligence] [Style: center] [Color: cyan] [CaptionTheme: neon]\nThe future is here. [Visual: futuristic city] [Transition: zoomblur] [Grade: cinematic] [JCut: 0.5] [Sfx: on]"
 }
 ```
+
+### 4.5 Motion-Graphics Visual Source (code-only Remotion)
+
+A scene can use a **generated** motion graphic instead of a downloaded image/video.
+This is the third visual source, alongside stock (`[Visual: keyword]`) and the
+user's own files (`localAssets` / `videoClips` / `[Visual: file]`). It is
+additive — old scripts without `[Motion:]` are untouched.
+
+**Inline tag (per scene):**
+
+```
+Today we explore how neural networks learn. [Motion: NeuralNetwork]
+Sales grew 3x. [Motion: BarChartInfographic]
+```
+
+**Advanced: target any Remotion library folder.** A single `[Motion:]` can pull
+a composition from *any* configured Remotion project folder, not just the bundled
+one. Syntax `comp@library`:
+
+```
+[Motion: NeuralNetwork@create]      # library named "create" (folder remotion-creation)
+[Motion: MyHero@brand2026]          # custom library "brand2026" (your folder)
+```
+
+Libraries are declared in config (`motionLibrary`) as `name -> relative folder`:
+
+```json
+{
+  "motionLibrary": {
+    "creation": "remotion-creation",
+    "brand2026": "remotion-brand/2026"
+  },
+  "motionByScene": { "0": "BarChartInfographic", "2": "HudRadar@creation" }
+}
+```
+
+- `motionByScene` pins a composition per scene index (overrides the planner / tags).
+- Default library (when `@library` is omitted) is `creation` → `remotion-creation/`.
+- The pipeline resolves `folder/index.ts`, bundles it with `@remotion/bundler`,
+  selects the composition, and renders an MP4 **inside the job workspace**
+  (project root — system TEMP is never used).
+- The rendered clip is **verified offline** (ffprobe: dimensions + duration) with
+  the same `probeAsset()` gate used for downloaded assets. If verification fails,
+  the scene falls back to stock / the user's own asset.
+- Compositions are **data-driven**: pass per-scene content via `props`
+  (title, data array, colors). Example config:
+  `"motionBySceneProps": { "0": { "title": "Q3 Growth", "data": [42,68,55,91] } }`
+
+**Mixing sources in one video:** every scene resolves independently, so scene 0
+can be the user's downloaded clip, scene 1 a Remotion bar chart, scene 2 a user
+image, scene 3 a Remotion HUD — all concatenated into one final video. User
+assets always win over generated motion when both are supplied for the same scene.
 
 ---
 
