@@ -192,7 +192,7 @@ export interface PipelineRequest {
     panByScene?: Record<number, { startX: number; startY: number; endX: number; endY: number }>;
     parallaxDepthByScene?: Record<number, number>;
     particlesByScene?: Record<number, string>;
-    exportAspects?: ('9:16' | '16:9' | '1:1' | 'square')[];
+    exportAspects?: ('9:16' | '16:9' | '1:1' | 'square' | '4K')[];
     outputName?: string;
     outputQuality?: 'low' | 'medium' | 'high' | 'lossless';
     halfResolution?: boolean;

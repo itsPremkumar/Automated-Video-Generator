@@ -372,7 +372,7 @@ export interface AgenticCliJob {
 
     // ── Output Control ──
     /** Render multiple aspect ratios in one pass: ['9:16', '16:9', '1:1']. */
-    exportAspects?: ('9:16' | '16:9' | '1:1' | 'square')[];
+    exportAspects?: ('9:16' | '16:9' | '1:1' | 'square' | '4K')[];
     /** Custom output filename (without extension). */
     outputName?: string;
     /** Output quality: 'low' | 'medium' | 'high' | 'lossless'. */
