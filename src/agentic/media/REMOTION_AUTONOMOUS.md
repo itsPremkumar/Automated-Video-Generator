@@ -96,3 +96,9 @@ agentic script.json
     HUD radar) confirming distinct scenes + transitions.
   - **Still**: `renderStillClip({logo NEXUS})` → `input/visuals/cover.png`
     (229 KB); vision-checked (gradient squircle + bold NEXUS text).
+
+## See also
+
+- **docs/MIXED_MEDIA_WORKFLOW.md** — complete end-to-end guide for mixing all four
+  visual source types (Pexels downloads, website screenshots, Remotion codegen,
+  photos) into one final video, with verification steps and pitfall table.
