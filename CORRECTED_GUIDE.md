@@ -3,9 +3,6 @@
 > **Corrected against the actual codebase** (`C:\one\Automated-Video-Generator`) on 2026-07-27.
 > **Second-pass corrections** applied: Phase 12 color grading, Phase 17 motion/transition
 > plugins, Phase 6 Wikimedia availability, and workspace path.
->
-> Each phase below carries a status marker:
-> ✅ = fully supported by current code · ⚠️ = partially supported / agent-assisted / naming differs · ❌ = not present in current code.
 
 **Important — Strict AI Agent Execution Rule:**
 The AI agent **MUST NOT use the existing pipeline** (`src/agentic/orchestrator/pipeline.ts` or
@@ -31,8 +28,8 @@ existing pipeline functions, no ffmpeg, no Remotion renderer, no Python scripts.
 | **4** | **Scene Breakdown** | Agent splits script into numbered scenes, each with: `durationSec`, `voiceoverText`, `searchKeywords`, `visualPreference` (video/image/motion), inline tags `[Visual:]` `[Motion:]` `[Transition:]` | Agent reviews each scene for completeness |
 | **5** | **Capture Website Screenshots** | Agent navigates to provided URLs via `browser_navigate`, takes screenshots via `browser_vision`, saves PNGs to `input/visuals/` | Agent inspects each screenshot with `vision_analyze` for readability |
 | **7** | **Write Remotion Compositions** | Agent writes TSX code from scratch for any motion kind (infographic, HUD, kinetic typography, diagram, abstract, logo reveal, intro/outro). The code is valid Remotion `<AbsoluteFill>` + `<Text>` + `<TransitionSeries>` components | Agent reviews the written code for correctness before any rendering |
-| **14** | **Generate `agentic-scripts.json`** | Agent assembles the complete job spec JSON with: scene list, scene→asset mappings, transitions, text overlays, captions, CTA, music, voice settings, advanced FX config | Agent validates the JSON structure against `AGENTIC_SCRIPT_FORMAT.md` |
-| **15** | **Tag Visual Assets** | Agent writes search keywords, `visualPreference`, relevance scores per scene using its understanding of the script | Agent cross-references keywords against scene voiceover text |
+| **14** | **Tag Visual Assets** | Agent writes search keywords, `visualPreference`, relevance scores per scene using its understanding of the script | Agent cross-references keywords against scene voiceover text |
+| **15** | **Generate `agentic-scripts.json`** | Agent assembles the complete job spec JSON with: scene list, scene→asset mappings, transitions, text overlays, captions, CTA, music, voice settings, advanced FX config | Agent validates the JSON structure against `AGENTIC_SCRIPT_FORMAT.md` |
 | **17** | **Configure Advanced FX** | Agent writes the config objects for: camera shake, speed-ramp, parallax depth, particle effects, light leaks, color grade, watermarks, brand tints. Sets per-scene values in the job spec | Agent verifies each FX config value is within valid ranges |
 | **18/20** | **Quality Review** | Agent extracts ONE frame per video asset via `browser_*` or `vision_analyze`, inspects for: black frames, corruption, wrong subject, bad lighting, artifacts, sync issues, spelling/grammar in captions | **Each asset reviewed individually** before proceeding. On failure: go back to that asset's creation step |
 
@@ -50,7 +47,7 @@ For those, the agent still follows the **one-by-one rule**: command ONE operatio
 
 ---
 
-# Phase 1 – Collect User Requirements  ✅ (agent-assisted)
+# Phase 1 – Collect User Requirements (agent-assisted)
 
 The agent collects requirements via the `clarify` tool / CLI flags before running the pipeline.
 
@@ -63,7 +60,7 @@ fields in `input/scripts/agentic-scripts.json`
 
 ---
 
-# Phase 2 – Research the Topic  ✅ (fully handled by the AI agent)
+# Phase 2 – Research the Topic (fully handled by the AI agent)
 
 The **agent** uses its own tools (`web_search`, `browser_*`) to research the topic
 autonomously — finding facts, statistics, trends, competitor content, and reference
@@ -74,7 +71,7 @@ This phase is 100% agent-driven and complete.
 
 ---
 
-# Phase 3 – Generate the Script  ✅
+# Phase 3 – Generate the Script
 
 Driven by `src/agentic/pipeline/plan.ts` (the `plan` stage). Produces title, hook,
 intro, scene-by-scene narration, ending, CTA. Optimized for retention/storytelling/
@@ -82,7 +79,7 @@ transitions. Emits both a full narration and a scene list.
 
 ---
 
-# Phase 4 – Scene Breakdown  ✅
+# Phase 4 – Scene Breakdown
 
 `plan.ts` outputs structured `Plan.scenes`, each with: sceneNumber, durationSec,
 voiceoverText, searchKeywords, visualPreference (`video` | `image` | `motion`),
@@ -91,7 +88,7 @@ script via inline tags (`[Visual:]`, `[Motion:]`, `[Transition:]`, `[Color:]`, �
 
 ---
 
-# Phase 5 – Website Capture   (agent-assisted)
+# Phase 5 – Website Capture (agent-assisted)
 
 The **pipeline does not open a browser**. The agent captures screenshots with its browser
 tool (`browser_navigate` + `browser_vision` → PNG in its cache), then copies them into
@@ -102,7 +99,7 @@ stay readable inside the 1920×1080 frame. (See `docs/MIXED_MEDIA_WORKFLOW.md`.)
 
 ---
 
-# Phase 6 – Asset Collection  ✅ (corrected provider list)
+# Phase 6 – Asset Collection (corrected provider list)
 
 Real providers in `src/lib/visual-fetcher/` are:
 - **Pexels** (`searchImages` / `searchVideos`) — requires `PEXELS_API_KEY` in `.env`
@@ -117,7 +114,7 @@ candidates are ranked by relevance and verified (ffprobe + vision) before approv
 
 ---
 
-# Phase 7 – Generate Missing Visuals with Remotion  ✅
+# Phase 7 – Generate Missing Visuals with Remotion
 
 `src/agentic/media/hermes-remotion-controller.ts` (`runRemotionController`) does
 **autonomous codegen**: it writes a Remotion composition from a free-text description
@@ -136,7 +133,7 @@ abstract backgrounds, logo reveal, intro/outro.
 
 ---
 
-# Phase 8 – Asset Quality Verification  ✅
+# Phase 8 – Asset Quality Verification
 
 `src/agentic/pipeline/verify.ts` (Stage 3) runs a full matrix reusing
 `verifyMedia` (ffprobe + optional vision) and `verifyMusic`. `asset-checks.ts` and
@@ -145,7 +142,7 @@ relevance. Failed assets are regenerated or re-fetched (gateway loop). This is w
 
 ---
 
-# Phase 9 – Background Music Collection  ✅
+# Phase 9 – Background Music Collection
 
 `src/lib/free-music.ts` selects royalty-free tracks (procedural + ccMixter + Internet
 Archive sources), matched by mood/genre/energy. `music-verifier.ts` checks
@@ -154,7 +151,7 @@ quality/length/loudness/licensing; `loopAudioToDuration` loops to fit.
 
 ---
 
-# Phase 10 – Voice Generation  ✅
+# Phase 10 – Voice Generation
 
 `src/speech/backends/` contains real models: `chatterbox`, `chatterbox_turbo`,
 `kokoro`, `qwen_llm`, `qwen_custom_voice`, `luxtts`, `mlx`, `pytorch`, `base`.
@@ -164,11 +161,11 @@ is synced to scenes by the voice stage.
 
 ---
 
-# Phase 11 – Image Editing  ✅
+# Phase 11 – Image Editing
 
 A full single-image editing toolbox exists at `src/adapters/cli/agentic-image.ts` (22 commands):
 - `npm run agentic:image convert/resize/crop/rotate/adjust/blur/text/emoji/watermark/tint/vignette/border/enhance/flip/info/to-video/contact-sheet/gif/grayscale/sepia/pixelate/slideshow/remove-bg`
-  (19 via ffmpeg-static, 3 via sharp — zero cost, no API keys).
+ (19 via ffmpeg-static, 3 via sharp — zero cost, no API keys).
 - **Background removal** — `remove-bg` command via `tools/remove_bg.py` (rembg, on-device AI, offline).
 - Programmatic API: `src/agentic/operations/remove-bg.ts:removeBackground()`.
 - Slideshow/video conversion: `src/agentic/operations/image-video.ts` (`imagesToVideo`, `videoToImages`).
@@ -178,24 +175,24 @@ NOT implemented: remove object, add shadow/light, match branding.
 
 ---
 
-# Phase 12 – Video Editing  ✅ (17 functions + grading)
+# Phase 12 – Video Editing (17 functions + grading)
 
 `src/agentic/operations/edit.ts` exports exactly:
-- `mergeVideos` ✅
-- `trimVideo` ✅
-- `cropVideo` ✅ (also does aspect-ratio conversion)
-- `resizeVideo` ✅
-- `rotateVideo` ✅
-- `extractAudio` ✅
+- `mergeVideos`
+- `trimVideo`
+- `cropVideo` (also does aspect-ratio conversion)
+- `resizeVideo`
+- `rotateVideo`
+- `extractAudio`
 
 Additionally, the **broader system** provides (via `compose.ts` + `advanced-fx.ts` +
 `visual-fx.ts`):
 - **Color correction** — per-scene contrast/saturation/brightness/gamma/colorTemp
-  (`applyColorAdjustments`)
+ (`applyColorAdjustments`)
 - **Color grading** — highlights/shadows/whites/blacks/color-wheels/tone-curve
-  (`applyColorGradeDepth`)
+ (`applyColorGradeDepth`)
 - **Named palettes** — warm/cool/blue/teal/cyberpunk/vintage/cinematic
-  (`buildPaletteFilter`)
+ (`buildPaletteFilter`)
 - **Speed adjustment** — per-scene clip speed (`clipSpeedByScene` → `setpts`)
 - **Blur** — per-scene boxblur (`blurScenes`)
 - **Filters** — bw/vintage/sepia per scene (`filterByScene`)
@@ -210,22 +207,22 @@ noise reduction, subtitle generation. The compose stage adds
 transitions/zoompan/kinetic text via `advanced-fx.ts` + `compose.ts`.
 
 Additionally, these operations added as standalone modules:
-- `interpolateVideo` ✅ — motion interpolation (60/120 fps via `minterpolate`)
-- `changeSpeed` ✅ — slow-mo 0.25x to 10x fast (`setpts` + `atempo`)
-- `reverseVideo` ✅ — play backward (`reverse` + `areverse`)
-- `addTextOverlay` ✅ — burn text onto video (`drawtext`)
-- `extractThumbnail` ✅ — frame → PNG at timestamp
-- `videoToGif` ✅ — animated GIF with palette optimization
-- `loopVideo` ✅ — repeat N times via concat
-- `splitVideo` ✅ — cut at timestamp → two files
-- `addAudio` ✅ — replace or mix new audio track
-- `silenceRemove` ✅ — auto-cut silent sections
-- `addProgressBar` ✅ — animated bar overlay
-- **Background removal** — `src/agentic/operations/remove-bg.ts` (Python `rembg`). ✅
+- `interpolateVideo` — motion interpolation (60/120 fps via `minterpolate`)
+- `changeSpeed` — slow-mo 0.25x to 10x fast (`setpts` + `atempo`)
+- `reverseVideo` — play backward (`reverse` + `areverse`)
+- `addTextOverlay` — burn text onto video (`drawtext`)
+- `extractThumbnail` — frame → PNG at timestamp
+- `videoToGif` — animated GIF with palette optimization
+- `loopVideo` — repeat N times via concat
+- `splitVideo` — cut at timestamp → two files
+- `addAudio` — replace or mix new audio track
+- `silenceRemove` — auto-cut silent sections
+- `addProgressBar` — animated bar overlay
+- **Background removal** — `src/agentic/operations/remove-bg.ts` (Python `rembg`).
 
 ---
 
-# Phase 13 – Asset Organization   (corrected folder tree)
+# Phase 13 – Asset Organization (corrected folder tree)
 
 Real layout (single `input/visuals/` bucket + `input/scripts/`):
 ```
@@ -250,7 +247,15 @@ There is no `input/images/`, `videos/`, `logos/`, `screenshots/`, `sfx/`, `speec
 
 ---
 
-# Phase 14 – Generate `agentic-scripts.json`  ✅ (naming corrected)
+# Phase 14 – Visual Asset Tagging
+
+Scenes carry `visualPreference` + search keywords + inline tags; the planner/gateway rank
+candidates by relevance. There is no separate auto-tagging service, but the mechanism
+(tag → asset match) exists inside acquire/gateway. Partial.
+
+---
+
+# Phase 15 – Generate `agentic-scripts.json` (naming corrected)
 
 The job spec is **`input/scripts/agentic-scripts.json`** (plural `scripts`, not
 `script.json`). At render time the orchestrator also writes `render-manifest.json`
@@ -261,15 +266,7 @@ caption timing, and motion instructions. The schema is documented in
 
 ---
 
-# Phase 15 – Visual Asset Tagging  ⚠️
-
-Scenes carry `visualPreference` + search keywords + inline tags; the planner/gateway rank
-candidates by relevance. There is no separate auto-tagging service, but the mechanism
-(tag → asset match) exists inside acquire/gateway. Partial.
-
----
-
-# Phase 16 – Scene Assembly  ✅
+# Phase 16 – Scene Assembly
 
 `src/agentic/operations/compose.ts` assembles each scene from image/video/motion/
 screenshot + voice + music + sfx + text overlays + captions, synced to narration.
@@ -278,7 +275,7 @@ ffmpeg `xfade` transitions (fade/slide/zoomIn) with per-scene duration and curve
 
 ---
 
-# Phase 17 – Advanced Editing  ✅ (corrected — many plugins are present)
+# Phase 17 – Advanced Editing (corrected — many plugins are present)
 
 `src/agentic/plugins/` provides plugin-based effects activated by config:
 
@@ -303,7 +300,7 @@ NOT present (future work): motion blur, mask/shape transitions, animated callout
 
 ---
 
-# Phase 18 – AI Quality Review  ✅
+# Phase 18 – AI Quality Review
 
 `verify.ts` (Stage 3) + the vision-in-loop `remotion-verify.ts` (`verifyClip`)
 re-check script accuracy, visual relevance, audio sync, subtitle timing, transition/
@@ -312,7 +309,7 @@ Issues auto-route back to the responsible stage (regenerate/re-fetch/re-render).
 
 ---
 
-# Phase 19 – Final Rendering  ✅ (multi-aspect including 4K)
+# Phase 19 – Final Rendering (multi-aspect including 4K)
 
 `compose.ts` renders the final `final.mp4` at the job resolution (landscape 1280×720
 or per `orientation`) and can emit **multi-aspect** variants via `exportAspects`
@@ -323,7 +320,7 @@ contact sheet + captions + chapters where declared.
 
 ---
 
-# Phase 20 – Final Verification  ✅
+# Phase 20 – Final Verification
 
 Final AI review via `verify.ts` + vision checks: no missing assets, no broken scene
 refs, no audio issues, no artifacts, no blank frames, no sync issues, no duplicate
@@ -336,29 +333,30 @@ returns to the owning stage and re-renders until production quality is met.
 
 The completed system should function as a fully autonomous AI video production pipeline:
 
-1. ✅ Understand requirements (agent + `agentic-scripts.json` fields)
-2. ✅ Research topic (fully handled by the AI agent)
-3. ✅ Write high-quality script (`plan.ts`)
-4. ✅ Break into scenes (`Plan.scenes`)
-5. ⚠️ Collect website screenshots + browser captures (agent captures → `input/visuals/`)
-6. ✅ Download images/videos (Pexels, Pixabay, Openverse, Wikimedia)
-7. ✅ Generate missing visuals via Remotion (`runRemotionController`)
-8. ✅ Image pixel-editing toolbox (22 commands in `agentic-image.ts`; only object-removal/shadow/brand-match missing)
-9. ✅ Select + sync realistic AI voice (`src/speech/backends/`)
-10. ✅ Download + optimize background music (`free-music.ts`)
-11. ⚠️ Organize assets (`input/visuals/` for visuals, `input/bgm/` for music, `input/voiceover/` for voice)
-11b. ✅ Frame interpolation (`edit.ts:interpolateVideo`)
-11c. ✅ Background removal (`remove-bg.ts` + Python `rembg`)
-12. ✅ Generate `agentic-scripts.json` + manifests with scene→asset mappings
-13. ✅ Pro transitions/motion/captions/cinematic fx (shake, speed-ramp, parallax,
-    particles, light-leak, glitch, morph-cut, whip-pan, color grading — all present;
-    only motion blur, mask/shape transitions, animated callouts are future)
-14. ✅ Automated QA at every stage (`verify.ts`)
-15. ✅ Auto-reject + regenerate low-quality assets (gateway loop)
-16. ✅ Render polished multi-format video (multi-aspect + 4K via `exportAspects: ["4K"]`)
-17. ✅ Repeat verify/correct cycles until professional standard
+1. Understand requirements (agent + `agentic-scripts.json` fields)
+2. Research topic (fully handled by the AI agent)
+3. Write high-quality script (`plan.ts`)
+4. Break into scenes (`Plan.scenes`)
+5. Collect website screenshots + browser captures (agent captures → `input/visuals/`)
+6. Download images/videos (Pexels, Pixabay, Openverse, Wikimedia)
+7. Generate missing visuals via Remotion (`runRemotionController`)
+8. Image pixel-editing toolbox (22 commands in `agentic-image.ts`; only object-removal/shadow/brand-match missing)
+9. Select + sync realistic AI voice (`src/speech/backends/`)
+10. Download + optimize background music (`free-music.ts`)
+11. Organize assets (`input/visuals/` for visuals, `input/bgm/` for music, `input/voiceover/` for voice)
+11b. Frame interpolation (`edit.ts:interpolateVideo`)
+11c. Background removal (`remove-bg.ts` + Python `rembg`)
+12. Tag visual assets (per-scene search keywords, visualPreference, relevance scores)
+13. Generate `agentic-scripts.json` + manifests with scene→asset mappings
+14. Pro transitions/motion/captions/cinematic fx (shake, speed-ramp, parallax,
+     particles, light-leak, glitch, morph-cut, whip-pan, color grading — all present;
+     only motion blur, mask/shape transitions, animated callouts are future)
+15. Automated QA at every stage (`verify.ts`)
+16. Auto-reject + regenerate low-quality assets (gateway loop)
+17. Render polished multi-format video (multi-aspect + 4K via `exportAspects: ["4K"]`)
+18. Repeat verify/correct cycles until professional standard
 
-**Remaining gaps (to reach full ✅):** object-removal/add-shadow/match-branding in `agentic-image.ts`,
+**Remaining gaps (to reach full):** object-removal/add-shadow/match-branding in `agentic-image.ts`,
 stabilization/noise reduction/subtitle gen in `edit.ts`,
 motion blur + mask/shape transitions in `advanced-fx.ts`.
 
