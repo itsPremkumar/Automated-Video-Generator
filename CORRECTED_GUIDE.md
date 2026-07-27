@@ -102,6 +102,8 @@ stay readable inside the 1920×1080 frame. (See `docs/MIXED_MEDIA_WORKFLOW.md`.)
 
 # Phase 6 – Asset Collection (corrected provider list)
 
+> ⚡ Quick-start JSON: `input/scripts/agentic-script-examples/modes/01-download-images.json` | `02-download-videos.json` | `04-download-sfx.json`
+
 Search/download entry point is `src/lib/visual-fetcher/search.ts` (`searchImages` / `searchVideos`). Underlying providers:
 - **Pexels** (API key) — used directly in `search.ts` via REST API
 - **Openverse** — `src/lib/openverse-fetcher.ts` (CC images, no API key)
@@ -146,6 +148,8 @@ relevance. Failed assets are regenerated or re-fetched (gateway loop). This is w
 
 # Phase 9 – Background Music Collection
 
+> ⚡ Quick-start JSON: `input/scripts/agentic-script-examples/modes/03-download-music.json`
+
 `src/lib/free-music.ts` selects royalty-free tracks (procedural + ccMixter + Internet
 Archive sources), matched by mood/genre/energy. `music-verifier.ts` checks
 quality/length/loudness/licensing; audio can be looped to fit via `loopAudioToDuration` (`src/agentic/operations/sfx.ts`).
@@ -154,6 +158,8 @@ quality/length/loudness/licensing; audio can be looped to fit via `loopAudioToDu
 ---
 
 # Phase 10 – Voice Generation
+
+> ⚡ Quick-start JSON: `input/scripts/agentic-script-examples/modes/07-voice-edgetts.json` | `08-voice-voicebox.json` | `09-clone-voice.json`
 
 `src/speech/backends/` contains real models: `chatterbox`, `chatterbox_turbo`,
 `kokoro`, `qwen_llm`, `qwen_custom_voice`, `luxtts`, `mlx`, `pytorch`, `base`.
@@ -260,6 +266,9 @@ via the search functions.
 
 # Phase 15 – Generate `agentic-scripts.json` (fully handled by the AI agent)
 
+> ⚡ See complete reference examples: `input/scripts/agentic-script-examples/full-demos/` (8 ready-to-render jobs)
+> ⚡ Feature-specific patterns: `input/scripts/agentic-script-examples/features/` (15 files — transitions, grading, captions, audio, persona, etc.)
+
 The agent assembles the complete job spec JSON with: scene list, scene→asset mappings,
 transitions, text overlays, captions, CTA, music, voice settings, advanced FX config.
 The schema is documented in `input/scripts/AGENTIC_SCRIPT_FORMAT.md`. The agent
@@ -269,6 +278,8 @@ validates the JSON structure against that schema before proceeding.
 
 # Phase 16 – Scene Assembly
 
+> ⚡ Quick-start JSON: `input/scripts/agentic-script-examples/modes/11-compose-full.json`
+
 `src/agentic/operations/compose.ts` assembles each scene from image/video/motion/
 screenshot + voice + music + sfx + text overlays + captions, synced to narration.
 Lower-thirds/progress bars are applied via `advanced-fx.ts` where declared. Uses
@@ -277,6 +288,8 @@ ffmpeg `xfade` transitions (fade/slide/zoomblur/cut) with per-scene duration and
 ---
 
 # Phase 17 – Advanced Editing (corrected — many plugins are present)
+
+> ⚡ Quick-start JSON: `input/scripts/agentic-script-examples/features/06-motion-graphics.json` | `07-per-scene-filters.json` | `08-color-grading-advanced.json`
 
 `src/agentic/plugins/` provides plugin-based effects activated by config:
 
@@ -303,6 +316,8 @@ NOT present (future work): motion blur, mask/shape transitions, animated callout
 
 # Phase 18 – AI Quality Review
 
+> ⚡ Quick-start JSON: `input/scripts/agentic-script-examples/features/14-ai-verify.json`
+
 `verify.ts` (Stage 3) + the vision-in-loop `remotion-verify.ts` (`verifyClip`)
 re-check script accuracy, visual relevance, audio sync, subtitle timing, transition/
 image/video/voice quality, music balance, scene timing, color & branding consistency.
@@ -311,6 +326,8 @@ Issues auto-route back to the responsible stage (regenerate/re-fetch/re-render).
 ---
 
 # Phase 19 – Final Rendering (multi-aspect including 4K)
+
+> ⚡ Quick-start JSON: `input/scripts/agentic-script-examples/full-demos/08-multi-aspect-4k.json` | `features/12-export-options.json`
 
 `compose.ts` renders the final `final.mp4` at the job resolution (landscape 1280×720
 or per `orientation`) and can emit **multi-aspect** variants via `exportAspects`
