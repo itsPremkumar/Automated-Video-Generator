@@ -24,6 +24,7 @@ import { renderMedia, selectComposition } from '@remotion/renderer';
 import { resolveWorkspacePath, resolveProjectPath } from '../../shared/runtime/paths.js';
 import { authorRemotionComponent, writeSceneProject, type SceneSpec, type MotionKind } from './remotion-codegen.js';
 import { probeAsset } from './asset-checks.js';
+import { verifyClip } from './remotion-verify.js';
 
 /** A scene parsed from the agentic script that the controller may generate. */
 export interface MotionScene {
@@ -49,10 +50,10 @@ export interface ControllerOptions {
   fps?: number;
   width?: number;
   height?: number;
-  /** Pluggable frame verifier. Receives the rendered MP4; returns ok + note.
-   *  In the real Hermes run this calls vision_analyze; offline tests pass a
-   *  stub that checks ffprobe only. */
-  verifyFrame?: (mp4: string, scene: MotionScene) => Promise<{ ok: boolean; note: string }>;
+  /** Pluggable VISION frame check. Enforces the "verified visually" bar inside
+   *  the self-fix loop: extracted settled frame + content confirmation. In a
+   *  real Hermes run this calls vision_analyze; offline tests pass a stub. */
+  visionCheck?: (framePng: string, scene: { index: number; text: string; kind?: string }) => Promise<{ ok: boolean; note: string }>;
   /** If true, exhaust fallback to stock on repeated failure (default true). */
   allowFallback?: boolean;
 }
@@ -63,13 +64,6 @@ export interface SceneResult {
   /** Final visual path placed in input/visuals/ (for [Visual:] tag). */
   integratedPath?: string;
   note: string;
-}
-
-/** ffprobe-based verifier (signal-level). Used when no vision stub supplied. */
-async function signalVerify(mp4: string, scene: MotionScene): Promise<{ ok: boolean; note: string }> {
-  const p = await probeAsset(mp4);
-  const ok = !!p && p.width > 0 && p.height > 0 && (p.durationSec ?? 0) > 0.05;
-  return { ok, note: ok ? '' : `probe=${JSON.stringify(p)}` };
 }
 
 /**
@@ -83,7 +77,6 @@ async function generateOneScene(
   const jobDir = resolveWorkspacePath('remotion-generation', opts.jobId, `scene_${scene.index}`);
   fs.mkdirSync(jobDir, { recursive: true });
   const compId = `Scene${scene.index}`;
-  const verify = opts.verifyFrame ?? signalVerify;
   const maxRetries = opts.maxRetries ?? 5;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -126,10 +119,18 @@ async function generateOneScene(
         concurrency: 2,
       });
 
-      // 3. verify
-      const v = await verify(mp4, scene);
-      if (v.ok) return { mp4, note: `generated (attempt ${attempt})` };
-      if (attempt === maxRetries) return { mp4: null, note: `verify failed: ${v.note}` };
+      // 3. verify (signal gate + optional vision content check in-loop)
+      const vres = await verifyClip(
+        mp4,
+        { index: scene.index, text: scene.text, kind: scene.kind },
+        {
+          visionCheck: opts.visionCheck
+            ? (frame, s) => opts.visionCheck!(frame, s)
+            : undefined,
+        },
+      );
+      if (vres.ok) return { mp4, note: `generated (attempt ${attempt})` };
+      if (attempt === maxRetries) return { mp4: null, note: `verify failed: ${vres.note}` };
       // self-fix: re-synthesize next loop (agent could also patch .tsx here)
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

@@ -15,7 +15,7 @@ agentic script.json
    │ 1. DECIDE   parse [GenMotion:] tags (or autonomousMotion) │
    │ 2. CODEGEN  author new scene_<n>.tsx (full Remotion)      │
    │ 3. RENDER   bundle() + renderMedia() → MP4               │
-   │ 4. VERIFY   ffprobe + vision frame                        │
+   │ 4. VERIFY   signal (ffprobe) + VISION frame check         │
    │ 5. SELF-FIX retry loop (rewrite .tsx, re-render)          │
    │ 6. FALLBACK stock/user asset if retries exhausted         │
    │ 7. INTEGRATE → input/visuals/<job>_s<n>.mp4 + [Visual:]tag │
@@ -28,20 +28,41 @@ agentic script.json
 
 | File | Role |
 |------|------|
-| `src/agentic/media/remotion-codegen.ts` | `authorRemotionComponent()` synthesizes a valid `.tsx` from a `SceneSpec` (or uses agent-provided `code` verbatim). `assertSafeImports()` enforces the import allowlist. `writeSceneProject()` emits the scene + Root + index. |
-| `src/agentic/media/hermes-remotion-controller.ts` | `runRemotionController()` — the autonomous loop. `extractMotionTags()` parses `[GenMotion:]`/`[Motion:]` per scene. |
-| `src/agentic/media/motion-resolver.ts` | resolves `[Motion: comp@library]` → entry point (multi-location libraries). |
-| `src/agentic/operations/motion-render.ts` | `renderMotionClip()` — render a known composition id (preset path). |
+| `remotion-codegen.ts` | `authorRemotionComponent()` synthesizes a valid `.tsx` from a `SceneSpec` (or uses agent-provided `code` verbatim). `assertSafeImports()` enforces the import allowlist. |
+| `hermes-remotion-controller.ts` | `runRemotionController()` — the autonomous loop. `extractMotionTags()` parses `[GenMotion:]`/`[Motion:]`. |
+| `remotion-verify.ts` | `verifyClip()` — signal (ffprobe) + optional VISION frame check inside the self-fix loop. `extractFrame()` pulls a settled frame for vision. |
+| `remotion-sequence.ts` | `renderSequence()` — ONE bundle, native `<TransitionSeries>` transitions between scenes. `renderStillClip()` — `renderStill` → PNG (generated images). |
+| `motion-resolver.ts` | resolves `[Motion: comp@library]` → entry point (multi-location libraries). |
+| `motion-render.ts` | `renderMotionClip()` — render a known composition id (preset path). |
+
+## Full-capacity features (added)
+
+1. **Vision-in-loop verification.** `verifyClip()` runs ffprobe (signal) AND,
+   when a `visionCheck` callback is supplied, extracts a settled frame and
+   confirms the subject matches the intended scene. The self-fix loop only
+   passes a clip that is both valid AND visually correct.
+2. **Native transitions.** `renderSequence()` stacks all scenes in one
+   `<TransitionSeries>` with `crossZoom` / `filmBurn` / `linearBlur` / `slide` /
+   `wipe` / `dissolve` between them — the headline Remotion feature, rendered
+   in a single bundle (fast, no per-scene re-bundle).
+   - Headless note: shader/canvas transitions (crossZoom, filmBurn,
+     linearBlur, wipe, dissolve) use WebGL that **hangs under headless Chrome
+     without a GPU**. By default they are mapped to `slide` (pure CSS,
+     headless-safe). Pass `allowShaderTransitions: true` on a GPU machine to
+     enable the richer shader transitions.
+3. **Generated images.** `renderStillClip()` uses `renderStill` to emit a PNG
+   (cover / lower-third / thumbnail) into `input/visuals/` — fulfilling
+   "Remotion should also generate images," not just video.
 
 ## Config (`AgenticConfig`)
 
 ```json
 {
-  "autonomousMotion": true,     // enable [GenMotion:] autonomous codegen
-  "motionMaxRetries": 5,        // self-fix attempts per scene
-  "motionAutoDecide": false,    // auto-classify scenes as motion (else tag-only)
-  "motionLibrary": { "creation": "remotion-creation" },  // [Motion:@lib] folders
-  "motionByScene": { "0": "BarChartInfographic" }         // pin a preset per scene
+  "autonomousMotion": true,
+  "motionMaxRetries": 5,
+  "motionAutoDecide": false,
+  "motionLibrary": { "creation": "remotion-creation" },
+  "motionByScene": { "0": "BarChartInfographic" }
 }
 ```
 
@@ -63,17 +84,15 @@ agentic script.json
 ## Verified (this build)
 
 - `npx tsc -p tsconfig.json --noEmit` → clean.
-- `src/agentic/media/hermes-remotion-controller.test.ts` → 6/6 pass (codegen
-  synth, unsafe-import blocking, tag parsing).
-- **End-to-end**: a 4-scene script with two `[GenMotion:]` tags was run; both
-  scenes were codegen'd, rendered, ffprobe-verified, and integrated into
-  `input/visuals/e2e_demo_s1.mp4` + `s2.mp4`. Frames vision-checked: s1 =
-  gradient/title card, s2 = 4-bar infographic (Q1–Q4: 42/68/55/91).
-
-## Not yet wired into the 6-stage pipeline
-
-The controller + resolver + renderer are **built, tested, and e2e-proven**, but
-the pipeline's tag parser / scene loop does not yet *automatically* call
-`runRemotionController`. Today you drive it manually (or via the e2e driver).
-Next step: hook `extractMotionTags` + `runRemotionController` into the planner
-→ scene loop, and consume `Scene.visual.motion` in `compose.ts`.
+- `hermes-remotion-controller.test.ts` → 6/6 pass (codegen synth, unsafe-import
+  blocking, tag parsing).
+- `remotion-sequence.test.ts` → pass (verifyClip signal gate, tag parsing).
+- **E2E (vision-verified):**
+  - 4-scene script with two `[GenMotion:]` tags → 2 clips codegen'd, rendered,
+    ffprobe-verified, integrated to `input/visuals/e2e_demo_s1/s2.mp4`; frames
+    vision-checked (gradient card + 4-bar infographic).
+  - **Sequence**: 3 scenes (diagram→infographic→hud) rendered in ONE bundle
+    with transitions → `seq.mp4` (1.29 MB); frames vision-checked (bar chart,
+    HUD radar) confirming distinct scenes + transitions.
+  - **Still**: `renderStillClip({logo NEXUS})` → `input/visuals/cover.png`
+    (229 KB); vision-checked (gradient squircle + bold NEXUS text).
