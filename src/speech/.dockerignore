@@ -1,0 +1,48 @@
+# ── Version control ──
+.git
+.gitignore
+.gitattributes
+
+# ── Python ──
+__pycache__
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.whl
+
+# ── Environment ──
+venv/
+.venv/
+.env
+.env.local
+.env.*.local
+
+# ── IDE / editor ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+
+# ── Speech-specific ──
+README.md
+STYLE_GUIDE.md
+VENDORED.md
+LICENSE
+pyproject.toml
+voicebox-server.spec
+build_binary.py
+server.py
+__pycache__/
+*.db
+*.sqlite3
+
+# ── Source noise ──
+pyi_hooks/
+pyi_rth_*.py

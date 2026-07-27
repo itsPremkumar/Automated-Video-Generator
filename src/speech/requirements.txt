@@ -1,43 +1,44 @@
 # ── Server (FastAPI) ──
-fastapi>=0.109.0
-uvicorn[standard]>=0.27.0
-pydantic>=2.5.0
+fastapi>=0.109.0,<0.141.0
+uvicorn[standard]>=0.27.0,<0.52.0
+gunicorn>=22.0.0,<24.0.0
+pydantic>=2.5.0,<3.0.0
 
 # ── Database (profile / clone metadata) ──
-sqlalchemy>=2.0.0
-alembic>=1.13.0
+sqlalchemy>=2.0.0,<3.0.0
 
 # ── Core ML (utilities + qwen-tts) ──
+# Install PyTorch separately per platform (see Dockerfile):
+#   CPU:   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   CUDA:  pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu118
 torch>=2.2.0
+torchaudio>=2.2.0
 transformers>=4.36.0,<=4.57.6
-accelerate>=0.26.0
-huggingface_hub>=0.20.0
-qwen-tts>=0.0.5
+accelerate>=0.26.0,<1.15.0
+huggingface_hub>=0.20.0,<1.0.0
+qwen-tts>=0.0.5,<1.0.0
 
 # ── Kokoro TTS (DEFAULT zero-config voice engine) ──
 kokoro==0.9.4
-onnxruntime>=1.16.0
-soundfile>=0.12.0
-librosa>=0.10.0
-scipy>=1.11.0
-numpy>=1.24.0
+onnxruntime>=1.16.0,<2.0.0
+soundfile>=0.12.0,<1.0.0
+librosa>=0.10.0,<1.0.0
+scipy>=1.11.0,<2.0.0
+numpy>=1.24.0,<2.0.0
 
 # ── MCP server (mounted by app.py at startup) ──
-fastmcp>=2.0.0
-mcp>=1.0.0
+fastmcp>=2.0.0,<4.0.0
+mcp>=1.0.0,<2.0.0
 
 # ── Image handling (PIL used by some backends / asset utils) ──
-Pillow>=10.0.0
+Pillow>=10.0.0,<12.0.0
 
-# The engines themselves (chatterbox-tts / Zipvoice-LuxTTS / Hume TADA) are
-# OPTIONAL and live in requirements-clone.txt (fragile git/--find-links sources).
-# Install only when you need clone profiles:
-#   pip install -r requirements-clone.txt
-conformer>=0.3.2
-diffusers>=0.29.0
-omegaconf
-pykakasi
-resemble-perth>=1.0.1
-s3tokenizer
-spacy-pkuseg
-pyloudnorm
+# ── Optional cloning engines (install with requirements-clone.txt) ──
+# conformer>=0.3.2
+# diffusers>=0.29.0
+# omegaconf
+# pykakasi
+# resemble-perth>=1.0.1
+# s3tokenizer
+# spacy-pkuseg
+# pyloudnorm

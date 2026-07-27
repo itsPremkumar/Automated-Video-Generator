@@ -1,55 +1,94 @@
-# Automated Video Generator — docker compose
+# =============================================================================
+# Automated Video Generator — docker-compose.yml
+# =============================================================================
+# Orchestrates the full stack:
+#   speech     - Voicebox backend (Kokoro TTS + voice cloning)
+#   app        - Node.js agentic pipeline (optional, for batch generation)
 #
-# Avoids "version / system" errors:
-#   - platform: linux/amd64 pins the runtime arch so ffmpeg-static / native
-#     addons fetch the correct x64 binary (prevents the classic
-#     "Error: /lib/x86_64-linux-gnu/... invalid ELF" on Apple Silicon / ARM).
-#   - healthcheck hits the real /api/health route (not the stale /health).
-#   - depends_on uses the container HEALTHCHECK, not just "started".
+# Quick start:
+#   docker compose up -d speech
 #
-# Usage:
-#   docker compose up --build
-#   app:  http://localhost:3001   health: http://localhost:3001/api/health
+# With model preloading:
+#   VOICEBOX_PRELOAD=kokoro docker compose up -d speech
+#
+# First run will download ~300 MB of models (Kokoro-82M). Subsequent
+# starts use the cached volume.
+# =============================================================================
 
 services:
-  video-generator:
+
+  # ── Voicebox Speech Backend ────────────────────────────────────────────
+  speech:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: automated-video-generator:latest
-    container_name: automated-video-generator
-    platform: linux/amd64
-    ports:
-      - "3001:3001"
-    volumes:
-      - ./input:/app/input
-      - ./output:/app/output
-      - ./public:/app/public
-      - ./.env:/app/.env:ro
-    environment:
-      - NODE_ENV=production
-      - PORT=3001
-      - VIDEO_ORIENTATION=landscape
-      - VIDEO_VOICE=en-US-GuyNeural
+      dockerfile: src/speech/Dockerfile
+      args:
+        # CPU-only (default). For CUDA 12.1:
+        #   BASE_IMAGE: nvidia/cuda:12.1.0-runtime-ubuntu22.04
+        #   TORCH_INDEX_URL: https://download.pytorch.org/whl/cu121
+        BASE_IMAGE: python:3.11-slim
+        TORCH_INDEX_URL: https://download.pytorch.org/whl/cpu
+    image: avs-voicebox:latest
+    container_name: avs-speech
     restart: unless-stopped
+    ports:
+      - "17493:8000"
+    volumes:
+      # Persistent data: database, profiles, generated audio, model cache
+      - voicebox-data:/data
+      # Optional: mount a local cache to avoid re-downloading models
+      # - ~/.cache/huggingface:/data/models/hub
+    environment:
+      - VOICEBOX_DATA_DIR=/data
+      - VOICEBOX_MODELS_DIR=/data/models/hub
+      - VOICEBOX_LOG_LEVEL=info
+      - VOICEBOX_WORKERS=1
+      - VOICEBOX_PRELOAD=${VOICEBOX_PRELOAD:-}
+      # For GPU support, uncomment:
+      # - NVIDIA_VISIBLE_DEVICES=all
+      # - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/health', r => process.exit(r.statusCode===200?0:1)).on('error', () => process.exit(1))"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
+    # Uncomment for GPU access:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
 
-  # OPTIONAL: Voicebox GPU/CPU voice-clone backend (separate repo).
-  # Uncomment + adjust the path if you run Voicebox in a sidecar.
-  # voicebox:
-  #   image: python:3.11-slim
-  #   platform: linux/amd64
-  #   working_dir: /voicebox
+  # ── Node.js Pipeline App ──────────────────────────────────────────────
+  # Optional: run the agentic pipeline in a container
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/Dockerfile.node
+  #   image: avs-pipeline:latest
+  #   container_name: avs-pipeline
+  #   depends_on:
+  #     speech:
+  #       condition: service_healthy
+  #   environment:
+  #     - TTS_PROVIDER=voicebox
+  #     - VOICEBOX_API_URL=http://speech:8000
+  #     - VOICEBOX_PROFILE_ID=${VOICEBOX_PROFILE_ID}
   #   volumes:
-  #     - ../voicebox:/voicebox
-  #   command: >
-  #     bash -c "cd /voicebox && pip install -r requirements.txt &&
-  #     python -m backend.main --host 0.0.0.0 --port 17493"
-  #   ports:
-  #     - "17493:17493"
-  #   restart: unless-stopped
+  #     - pipeline-output:/app/output
+  #   command: ["pipeline", "--file", "input/scripts/agentic-scripts.json"]
+
+volumes:
+  voicebox-data:
+    driver: local
+  pipeline-output:
+    driver: local
