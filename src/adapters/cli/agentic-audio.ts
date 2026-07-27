@@ -294,6 +294,53 @@ COMMANDS['equalize'] = (args) => {
   runFfmpeg(['-i', input, '-af', af, '-c:a', 'pcm_s16le', output, '-y'], `EQ (bass=${bass} mid=${mid} treble=${treble})`);
 };
 
+// 14. PAN — remix channels (stereo↔mono, L/R swap, balance)
+COMMANDS['pan'] = (args) => {
+  const input = resolveInput(args.input);
+  const output = resolveOutput(args.output, `pan_${path.basename(input)}`);
+  const mode = args.mode || args.layout || 'mono';
+  let af: string;
+  switch (mode) {
+    case 'mono':
+    case 'downmix':
+      af = `pan=mono|c0=0.5*c0+0.5*c1`;
+      break;
+    case 'stereo':
+    case 'upmix':
+      af = `pan=stereo|c0=c0|c1=c1`;
+      break;
+    case 'left':
+    case 'l':
+      af = `pan=mono|c0=c0`;
+      break;
+    case 'right':
+    case 'r':
+      af = `pan=mono|c0=c1`;
+      break;
+    case 'swap':
+    case 'lr-swap':
+      af = `pan=stereo|c0=c1|c1=c0`;
+      break;
+    default:
+      // custom expression, e.g. "stereo|c0=0.7*c0+0.3*c1|c1=0.3*c0+0.7*c1"
+      af = mode;
+      break;
+  }
+  runFfmpeg(['-i', input, '-af', af, '-c:a', 'pcm_s16le', output, '-y'], `Pan (${mode})`);
+};
+
+// 15. COMPAND — dynamics (compressor/limiter via compand + alimiter)
+COMMANDS['compand'] = (args) => {
+  const input = resolveInput(args.input);
+  const output = resolveOutput(args.output, `dyn_${path.basename(input)}`);
+  const attack = args.attack || '0.005';
+  const decay = args.decay || '0.2';
+  const threshold = args.threshold || '0.01';
+  const ratio = args.ratio || '2';
+  const af = `compand=attacks=${attack}:decays=${decay}:points=-80/-80|-30/-20|0/0|20/20,alimiter=limit=0.8:asc=1`;
+  runFfmpeg(['-i', input, '-af', af, '-c:a', 'pcm_s16le', output, '-y'], `Dynamics (compand+limiter, ratio=${ratio})`);
+};
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {

@@ -1393,6 +1393,8 @@ inspected where applicable).
 | `reverb` | Add reverberation (aecho) | `--delays 60 --decays 0.5` |
 | `echo` | Simple echo | `--delay 500 --decay 0.5` |
 | `equalize` | 3-band EQ | `--bass 4 --mid 0 --treble 2` |
+| `pan` | Remix channels (mono/stereo/swap/L/R/balance) | `--mode mono` (or `swap`, `stereo`, `left`, `right`) |
+| `compand` | Dynamics — compressor + limiter | `--attack 0.005 --decay 0.2` |
 
 **Image (`npm run agentic:image`) — added: `grayscale`, `sepia`, `pixelate`, `slideshow`**
 | Command | What it does | Key options |
@@ -1412,9 +1414,11 @@ inspected where applicable).
 **Verified notes:** `slideshow` loops each image (`-loop 1`) so `trim=duration` works;
 `duck` outputs PCM WAV; `lut` with no `--cube` applies a teal-orange `colorbalance`
 preset (no external file needed); `speed-ramp` splits into 2 `trim`+`setpts` segments
-and `concat`s them. All pure ffmpeg — zero-cost, no ML.
+and `concat`s them. `pan` downmixes to mono or swaps L/R; `compand` applies a
+compressor+limiter for uniform loudness. All pure ffmpeg — zero-cost, no ML.
 
-**Final single-asset coverage:** image (22 cmds), video (39 cmds), audio (13 cmds).
+**Final single-asset coverage:** image (22 cmds), video (39 cmds), audio (15 cmds).
 The only still-missing items are ML-dependent: **AI upscale** (needs Real-ESRGAN)
 and **auto-captions** (needs Whisper) — both excluded by the zero-cost constraint.
+The toolboxes are otherwise feature-complete for single-asset editing.
 
