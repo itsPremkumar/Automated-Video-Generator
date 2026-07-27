@@ -373,6 +373,8 @@ export function resolveAspectSizes(job: any, baseW: number, baseH: number): { la
     '16:9': [1280, 720],
     '1:1': [1080, 1080],
     square: [1080, 1080],
+    '4K': [3840, 2160],
+    '4k': [3840, 2160],
   };
   const out: { label: string; w: number; h: number }[] = [];
   for (const a of aspects) {

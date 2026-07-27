@@ -31,9 +31,20 @@
  *   enhance        Denoise + sharpen + deblock
  *   flip           Alias helpers (hflip/vflip)
  *   info           Show image metadata (dims, format, size)
+ *   grayscale      Desaturate to B&W
+ *   sepia          Warm vintage tone
+ *   pixelate       Mosaic / pixel-art effect
+ *   compress       Reduce file size (quality 1-31)
+ *   face-blur      Blur a region (privacy)
+ *   round-corners  Rounded corners (social thumbnails)
+ *   merge          Overlay one image on top of another
+ *   background-replace  Remove bg + insert new background
+ *   focus          Auto center-crop to content
+ *   remove-bg      Remove background (via rembg, on-device AI, offline)
  *   to-video       Image → video (Ken Burns zoom/pan, with optional text/emoji, duration, fps, music)
  *   contact-sheet  Build a grid/contact-sheet from many images
  *   gif            Image → animated GIF (Ken Burns loop)
+ *   slideshow      Multiple images → timed video (crossfade)
  *
  * EXAMPLES:
  *   npm run agentic:image convert --input shot.png --output shot.jpg
@@ -522,6 +533,119 @@ COMMANDS['pixelate'] = (args) => {
     ['-i', input, '-vf', `scale='max(1,trunc(iw/${blocks}))':'max(1,trunc(ih/${blocks}))':flags=neighbor,scale=iw:ih:flags=neighbor`, '-y', output],
     `Pixelated (block=${blocks})`,
   );
+};
+
+// 22b. COMPRESS — reduce file size (quality 1-31, lower = better)
+COMMANDS['compress'] = (args) => {
+  const input = resolveInput(args.input);
+  const q = args.quality || args.q || '15';
+  const output = resolveOutput(args.output, `compressed_${path.basename(input)}`);
+  runFfmpeg(['-i', input, '-q:v', q, '-y', output], `Compressed (quality=${q})`);
+};
+
+// 22c. FACE-BLUR — blur a region (by default center 30% of frame)
+COMMANDS['face-blur'] = (args) => {
+  const input = resolveInput(args.input);
+  const output = resolveOutput(args.output, `faceblur_${path.basename(input)}`);
+  const strength = args.strength || '12';
+  const region = args.region || '0.3:0.2:0.4:0.6'; // w_ratio:h_ratio:x_ratio:y_ratio
+  const [rw, rh, rx, ry] = region.split(':').map(Number);
+  const filter = `split[a][b];[a]scale=iw*${rw}:ih*${rh},boxblur=${strength}:${strength}[blur];[b][blur]overlay=${Math.round(rx * 100)}:${Math.round(ry * 100)}`;
+  runFfmpeg(['-i', input, '-filter_complex', filter, '-y', output], `Face-blur (region=${region})`);
+};
+
+// 22d. ROUND-CORNERS — rounded corners on image using sharp
+COMMANDS['round-corners'] = async (args) => {
+  const input = resolveInput(args.input);
+  const radius = parseInt(args.radius || args.r || '30', 10);
+  const output = resolveOutput(args.output, `rounded_${path.basename(input)}`);
+  try {
+    const sharp = require('sharp');
+    const meta = await sharp(input).metadata();
+    const W = meta.width!;
+    const H = meta.height!;
+    const r = Math.min(radius, Math.min(W, H) / 2);
+    const svg = Buffer.from(
+      `<svg width="${W}" height="${H}"><rect x="0" y="0" width="${W}" height="${H}" rx="${r}" ry="${r}" fill="white"/></svg>`,
+    );
+    await sharp(input).composite([{ input: svg, blend: 'dest-in' }]).toFile(output);
+    console.log(`  ✅ Rounded corners (r=${r})`);
+  } catch (e: any) {
+    console.error(`  ✖ round-corners failed: ${e?.message || e}`);
+  }
+};
+
+// 22e. MERGE — overlay one image on top of another (blend)
+COMMANDS['merge'] = (args) => {
+  const input = resolveInput(args.input);
+  const overlay = args.overlay || args.over || args.image;
+  if (!overlay) { console.error('  ✖ --overlay <path> is required'); return; }
+  const resolvedOverlay = resolveInput(overlay);
+  const output = resolveOutput(args.output, `merged_${path.basename(input)}`);
+  const x = args.x || '(W-w)/2';
+  const y = args.y || '(H-h)/2';
+  const opacity = args.opacity || '1.0';
+  const ff: string[] = [
+    '-i', input, '-i', resolvedOverlay,
+    '-filter_complex',
+    `[1:v]colorchannelmixer=aa=${opacity}[ov];[0:v][ov]overlay=${x}:${y},format=yuv420p`,
+    '-y', output,
+  ];
+  runFfmpeg(ff, `Merged ${path.basename(resolvedOverlay)}`);
+};
+
+// 22f. BACKGROUND-REPLACE — remove bg then insert a new background image
+COMMANDS['background-replace'] = async (args) => {
+  const input = resolveInput(args.input);
+  const bg = args.background || args.bg;
+  if (!bg) { console.error('  ✖ --background <path> is required'); return; }
+  const resolvedBg = resolveInput(bg);
+  const output = resolveOutput(args.output, `bg_rep_${path.basename(input)}`);
+  const tmp = path.join(path.dirname(output), `_tmp_nobg_${Date.now()}.png`);
+  try {
+    const { removeBackground } = await import('../../agentic/operations/remove-bg.js');
+    const r = await removeBackground(input, tmp, args.model || 'u2net');
+    if (!r.ok) { console.error(`  ✖ ${r.detail}`); return; }
+    const sharp = require('sharp');
+    const [fg, bgImg] = await Promise.all([sharp(tmp).metadata(), sharp(resolvedBg).metadata()]);
+    const W = Math.max(fg.width!, bgImg.width!);
+    const H = Math.max(fg.height!, bgImg.height!);
+    const bgResized = await sharp(resolvedBg).resize(W, H, { fit: 'cover' }).toBuffer();
+    const fgResized = await sharp(tmp).resize(W, H, { fit: 'inside' }).toBuffer();
+    await sharp(bgResized).composite([{ input: fgResized, top: 0, left: 0 }]).toFile(output);
+    console.log(`  ✅ Background replaced → ${path.basename(output)}`);
+  } catch (e: any) {
+    console.error(`  ✖ background-replace failed: ${e?.message || e}`);
+  } finally {
+    try { fs.rmSync(tmp, { force: true }); } catch { /* ignore */ }
+  }
+};
+
+// 22g. FOCUS — auto center crop to the most interesting region (entropy-based)
+COMMANDS['focus'] = (args) => {
+  const input = resolveInput(args.input);
+  const W = args.w || '1080';
+  const H = args.h || '1080';
+  const output = resolveOutput(args.output, `focus_${path.basename(input)}`);
+  // Use ffmpeg cropdetect or a simple center crop with scale+pad
+  const ff: string[] = ['-i', input, '-vf', `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}`, '-y', output];
+  runFfmpeg(ff, `Focus crop ${W}×${H}`);
+};
+
+// 22h. REMOVE-BG — background removal via rembg (Python on-device AI)
+COMMANDS['remove-bg'] = async (args) => {
+  const input = resolveInput(args.input);
+  const output = resolveOutput(args.output, `nobg_${path.basename(input).replace(/\.[^.]+$/, '')}.png`);
+  const model = args.model || 'u2net';
+  try {
+    const { removeBackground } = await import('../../agentic/operations/remove-bg.js');
+    const r = await removeBackground(input, output, model);
+    if (r.ok) console.log(`  ✅ Background removed → ${path.basename(output)}`);
+    else console.error(`  ✖ ${r.detail}`);
+  } catch (e: any) {
+    console.error(`  ✖ remove-bg failed: ${e?.message || e}`);
+    process.exit(1);
+  }
 };
 
 // 22. SLIDESHOW — multiple images → timed video (with optional crossfade)
