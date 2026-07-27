@@ -250,6 +250,84 @@ export function applyParticles(clipPath: string, sceneIndex: number, job: any, w
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// MOTION: shake + speed-ramp + punch-in (plugin effects wired per-scene)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Camera shake: handheld simulation via jittered crop. shakeByScene: {"0": 0.5}
+ * (intensity 0..1). Mirrors plugins/motion/shake.ts.
+ */
+export function applyShake(clipPath: string, sceneIndex: number, job: any, workDir: string, W: number, H: number): string {
+  const intensity = job.shakeByScene?.[sceneIndex];
+  if (!intensity || !fs.existsSync(clipPath)) return clipPath;
+  const amp = Math.max(1, Math.round(Math.min(1, Number(intensity)) * 20)); // 1..20 px jitter
+  const out = path.join(workDir, `shake_${sceneIndex}.mp4`);
+  if (fs.existsSync(out)) fs.rmSync(out, { force: true });
+  // Oversize slightly, then crop with per-frame random offset = handheld feel.
+  const filt = `scale=${W + amp * 2}:${H + amp * 2}:force_original_aspect_ratio=increase,crop=${W}:${H}:x='${amp}+${amp}*sin(n/7)*random(1)':y='${amp}+${amp}*cos(n/9)*random(2)'`;
+  try {
+    execFileSync(ff(), ['-y', '-i', clipPath, '-vf', filt, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 90000 });
+    return isReadableVideo(out) ? out : clipPath;
+  } catch (e: any) {
+    console.warn(`  ⚠ shake scene ${sceneIndex} failed: ${String(e?.stderr ?? e?.message).slice(0, 200)}`);
+    return clipPath;
+  }
+}
+
+/**
+ * Speed ramp: variable-speed playback. speedRampByScene: {"0": "dramatic"} or
+ * {"0": {from: 1.0, to: 0.5}}. Presets mirror plugins/motion/speed-ramp.ts.
+ */
+export function applySpeedRamp(clipPath: string, sceneIndex: number, job: any, workDir: string): string {
+  const ramp = job.speedRampByScene?.[sceneIndex];
+  if (!ramp || !fs.existsSync(clipPath)) return clipPath;
+  const presets: Record<string, [number, number]> = {
+    dramatic: [1.0, 0.4], 'slow-in': [0.5, 1.0], 'slow-out': [1.0, 0.5], hyper: [1.0, 2.0],
+  };
+  const [from, to] = typeof ramp === 'string' ? (presets[ramp] ?? [1, 1]) : [Number(ramp.from ?? 1), Number(ramp.to ?? 1)];
+  if (from === to && from === 1) return clipPath;
+  const out = path.join(workDir, `ramp_${sceneIndex}.mp4`);
+  if (fs.existsSync(out)) fs.rmSync(out, { force: true });
+  // Linear PTS interpolation between the two speeds across the clip.
+  const avg = (from + to) / 2;
+  const filt = `setpts='PTS*(1/${from.toFixed(3)}+(1/${to.toFixed(3)}-1/${from.toFixed(3)})*T/max(1,${(job.sceneDurationByScene?.[sceneIndex] ?? 5)}))',minterpolate=fps=25:mi_mode=blend`;
+  try {
+    execFileSync(ff(), ['-y', '-i', clipPath, '-vf', filt, '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 120000 });
+    return isReadableVideo(out) ? out : clipPath;
+  } catch {
+    // Fallback: constant average speed (always valid).
+    try {
+      execFileSync(ff(), ['-y', '-i', clipPath, '-vf', `setpts=PTS/${avg.toFixed(3)}`, '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 90000 });
+      return isReadableVideo(out) ? out : clipPath;
+    } catch (e2: any) {
+      console.warn(`  ⚠ speed-ramp scene ${sceneIndex} failed: ${String(e2?.stderr ?? e2?.message).slice(0, 200)}`);
+      return clipPath;
+    }
+  }
+}
+
+/**
+ * Punch-in: quick zoom emphasis at clip start. punchInByScene: {"0": 1.3}
+ * (target zoom). Mirrors plugins/motion/punch-in.ts.
+ */
+export function applyPunchIn(clipPath: string, sceneIndex: number, job: any, workDir: string, W: number, H: number): string {
+  const zoom = job.punchInByScene?.[sceneIndex];
+  if (!zoom || !fs.existsSync(clipPath)) return clipPath;
+  const z = Math.min(2, Math.max(1.05, Number(zoom)));
+  const out = path.join(workDir, `punch_${sceneIndex}.mp4`);
+  if (fs.existsSync(out)) fs.rmSync(out, { force: true });
+  // Fast zoom to z within the first ~0.4s (10 frames @25fps), then hold.
+  const filt = `scale=${W * 2}:${H * 2}:force_original_aspect_ratio=increase,crop=${W * 2}:${H * 2},zoompan=z='if(lte(in,10),1+(${z.toFixed(2)}-1)*in/10,${z.toFixed(2)})':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${W}x${H}:fps=25`;
+  try {
+    execFileSync(ff(), ['-y', '-i', clipPath, '-vf', filt, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 90000 });
+    return isReadableVideo(out) ? out : clipPath;
+  } catch (e: any) {
+    console.warn(`  ⚠ punch-in scene ${sceneIndex} failed: ${String(e?.stderr ?? e?.message).slice(0, 200)}`);
+    return clipPath;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // BRAND: watermark per-scene (rotation/shadow/tint) + brand tint
 // ═══════════════════════════════════════════════════════════════════════════
 

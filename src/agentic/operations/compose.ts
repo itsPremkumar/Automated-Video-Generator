@@ -39,6 +39,9 @@ import {
     applyColorGradeDepth,
     applyParallax,
     applyParticles,
+    applyShake,
+    applySpeedRamp,
+    applyPunchIn,
     applyWatermarkScene,
     applyBrandTint,
     resolveEncodeOpts,
@@ -321,6 +324,10 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
         // Phase 2: motion — parallax + particles
         out = applyParallax(out, i, job, outDir, outW, outH);
         out = applyParticles(out, i, job, outDir, outW, outH);
+        // Phase 3: motion plugins — shake + speed-ramp + punch-in
+        out = applyShake(out, i, job, outDir, outW, outH);
+        out = applySpeedRamp(out, i, job, outDir);
+        out = applyPunchIn(out, i, job, outDir, outW, outH);
         // Phase 2: brand — per-scene watermark + brand tint
         out = applyWatermarkScene(out, i, job, outDir, inputDir, outW, outH);
         out = applyBrandTint(out, i, job, outDir);
@@ -743,7 +750,17 @@ function crossfadeSlideshow(clips: string[], W: number, H: number, out: string, 
             // hard cut: xfade with ~0 duration keeps the graph valid.
             segs.push(`[${i}:v][${i - 1}:v]xfade=transition=fade:duration=0.001:offset=${offset.toFixed(3)}[v${i}]`);
         } else {
-            const ttype = kind === 'slide' ? 'slideleft' : kind === 'zoomblur' ? 'zoomin' : 'fade';
+            // Extended plugin transitions map to native ffmpeg xfade kinds:
+            // glitch→pixelize, whippan→hblur (motion streak), morphcut→smoothleft,
+            // lightleak→fadewhite (bright flash). Falls back to fade for unknown.
+            const ttype =
+                kind === 'slide' ? 'slideleft'
+                : kind === 'zoomblur' ? 'zoomin'
+                : kind === 'glitch' ? 'pixelize'
+                : kind === 'whippan' || kind === 'whip-pan' ? 'hblur'
+                : kind === 'morphcut' || kind === 'morph-cut' ? 'smoothleft'
+                : kind === 'lightleak' || kind === 'light-leak' ? 'fadewhite'
+                : 'fade';
             // xfade eases by default; this build doesn't expose an :ease
             // override, so we drop the curve modifier (intent preserved).
             segs.push(`[${i}:v][${i - 1}:v]xfade=transition=${ttype}:duration=${segDur.toFixed(2)}:offset=${offset.toFixed(3)}[v${i}]`);

@@ -467,12 +467,15 @@ Our growth was strong. [GenMotion: bar chart of quarterly sales]
 | `panByScene` | `object` | Pan movement: `{"1": {startX: 0, startY: 0, endX: 50, endY: 30}}` |
 | `parallaxDepthByScene` | `object` | 2.5D parallax depth (0–10) |
 | `particlesByScene` | `object` | Particle effects: `snow`, `sparkles`, `rain`, `fireflies` |
+| `shakeByScene` | `object` | Handheld camera shake per scene, intensity 0–1: `{"0": 0.5}` |
+| `speedRampByScene` | `object` | Variable speed: preset (`dramatic`, `slow-in`, `slow-out`, `hyper`) or `{from, to}`: `{"1": "dramatic"}` |
+| `punchInByScene` | `object` | Quick zoom emphasis at scene start, target zoom 1.05–2.0: `{"2": 1.3}` |
 
 ### 11.2 Advanced Transitions
 
 | Field | Type | Description |
 | :---- | :--- | :---------- |
-| `transitionInByScene` | `object` | Per-scene transition IN: `fade`, `slide`, `zoomblur`, `cut`, `push`, `wipe`, `cube` |
+| `transitionInByScene` | `object` | Per-scene transition IN: `fade`, `slide`, `zoomblur`, `cut`, `push`, `wipe`, `cube`, `glitch`, `whippan`, `morphcut`, `lightleak` |
 | `transitionOutByScene` | `object` | Per-scene transition OUT |
 | `transitionDurationByScene` | `object` | Per-scene transition duration (seconds) |
 | `transitionCurve` | `string` | Curve: `ease-in`, `ease-out`, `ease-in-out`, `linear` |
