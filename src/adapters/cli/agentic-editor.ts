@@ -860,6 +860,63 @@ COMMANDS['normalize-audio'] = (args) => {
     runFfmpeg(ff, `Normalized audio to ${lufs} LUFS`);
 };
 
+// 37. DUCK — lower background audio under a voice track (sidechain compress)
+COMMANDS['duck'] = (args) => {
+    const music = resolveInput(args.music || args.input);
+    const voice = resolveInput(args.voice || args.voiceover);
+    const output = resolveOutput(args.output, `ducked_${path.basename(music)}`);
+    const threshold = args.threshold || '0.02';
+    const ratio = args.ratio || '8';
+    const attack = args.attack || '20';
+    const release = args.release || '300';
+    const ff: string[] = [
+        '-i', music, '-i', voice,
+        '-filter_complex',
+        `[1:a]asplit=2[sc][v];` +
+        `[0:a][sc]sidechaincompress=threshold=${threshold}:ratio=${ratio}:attack=${attack}:release=${release}:makeup=1[ducked];` +
+        `[ducked][v]amix=inputs=2:dropout_transition=0`,
+        '-c:v', 'copy', '-c:a', 'pcm_s16le',
+        output, '-y',
+    ];
+    runFfmpeg(ff, `Ducked BGM under voice (ratio=${ratio})`);
+};
+
+// 38. LUT — apply a color grade (.cube file or built-in preset)
+COMMANDS['lut'] = (args) => {
+    const file = resolveInput(args.input);
+    const cube = args.cube || args.lut;
+    const output = resolveOutput(args.output, `graded_${path.basename(file)}`);
+    let vf: string;
+    if (cube && fs.existsSync(cube)) {
+        const esc = cube.replace(/:/g, '\\:').replace(/'/g, "'\\''");
+        vf = `lut3d=${esc}`;
+    } else {
+        // built-in cinematic teal-orange grade (no external file needed)
+        vf = `colorbalance=rs=0.06:bs=-0.06:gh=0.04`;
+    }
+    runFfmpeg(['-i', file, '-vf', vf, '-c:v', 'libx264', '-c:a', 'copy', output, '-y'], `Color grade (${cube ? 'cube' : 'cinematic preset'})`);
+};
+
+// 39. SPEED-RAMP — variable-speed clip (slow→fast or fast→slow, switched at fraction `at`)
+COMMANDS['speed-ramp'] = (args) => {
+    const input = resolveInput(args.input);
+    const output = resolveOutput(args.output, `ramp_${path.basename(input)}`);
+    const start = parseFloat(args.start || '0.5');
+    const end = parseFloat(args.end || '2.0');
+    const at = parseFloat(args.at || '0.5');
+    // Robust: split into 2 time segments, apply different setpts, concat.
+    const ff: string[] = [
+        '-i', input,
+        '-filter_complex',
+        `[0:v]trim=end=${at},setpts=PTS*1/${start}[s];` +
+        `[0:v]trim=start=${at},setpts=PTS*1/${end}[e];` +
+        `[s][e]concat=n=2:v=1[v]`,
+        '-map', '[v]', '-c:v', 'libx264', '-c:a', 'copy',
+        output, '-y',
+    ];
+    runFfmpeg(ff, `Speed-ramp (${start}x → ${end}x @ ${at})`);
+};
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 function main() {

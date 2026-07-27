@@ -1379,3 +1379,42 @@ npm run agentic:editor transition --a a.mp4 --b b.mp4 --type fade --duration 1 -
 npm run agentic:editor normalize-audio --input reel.mp4 --lufs -14 --output reel_norm.mp4
 ```
 
+### 22.17 Remaining gap-fill commands (verified this pass)
+
+The last gaps across all three toolboxes were closed — every command below was
+built, **typechecked**, and **verified with real ffmpeg output** (and visually
+inspected where applicable).
+
+**Audio (`npm run agentic:audio`) — added: `convert`, `reverse`, `reverb`, `echo`, `equalize`**
+| Command | What it does | Key options |
+| :------ | :---------- | :---------- |
+| `convert` | wav/mp3/ogg/flac/m4a conversion | `--output out.mp3` |
+| `reverse` | Play audio backwards | — |
+| `reverb` | Add reverberation (aecho) | `--delays 60 --decays 0.5` |
+| `echo` | Simple echo | `--delay 500 --decay 0.5` |
+| `equalize` | 3-band EQ | `--bass 4 --mid 0 --treble 2` |
+
+**Image (`npm run agentic:image`) — added: `grayscale`, `sepia`, `pixelate`, `slideshow`**
+| Command | What it does | Key options |
+| :------ | :---------- | :---------- |
+| `grayscale` | Desaturate to B&W | — |
+| `sepia` | Warm vintage tone | — |
+| `pixelate` | Mosaic / pixel-art | `--blocks 30` |
+| `slideshow` | Multiple images → timed video w/ crossfade | `--files "a.png,b.png" --duration 2 --w 1080 --h 1920` |
+
+**Video (`npm run agentic:editor`) — added: `duck`, `lut`, `speed-ramp`**
+| Command | What it does | Key options |
+| :------ | :---------- | :---------- |
+| `duck` | Lower BGM under a voice track (sidechain) | `--music bg.wav --voice vo.wav` |
+| `lut` | Color grade (`.cube` file or built-in cinematic preset) | `--cube grade.cube` (omit = preset) |
+| `speed-ramp` | Variable speed (slow→fast at fraction) | `--start 0.5 --end 2 --at 0.5` |
+
+**Verified notes:** `slideshow` loops each image (`-loop 1`) so `trim=duration` works;
+`duck` outputs PCM WAV; `lut` with no `--cube` applies a teal-orange `colorbalance`
+preset (no external file needed); `speed-ramp` splits into 2 `trim`+`setpts` segments
+and `concat`s them. All pure ffmpeg — zero-cost, no ML.
+
+**Final single-asset coverage:** image (22 cmds), video (39 cmds), audio (13 cmds).
+The only still-missing items are ML-dependent: **AI upscale** (needs Real-ESRGAN)
+and **auto-captions** (needs Whisper) — both excluded by the zero-cost constraint.
+

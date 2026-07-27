@@ -240,6 +240,60 @@ COMMANDS['info'] = (args) => {
   console.log(`  Channels:  ${aud.channels || '?'}`);
 };
 
+// 9. CONVERT — change audio container/codec (wav/mp3/ogg/flac/m4a)
+COMMANDS['convert'] = (args) => {
+  const input = resolveInput(args.input);
+  const output = resolveOutput(args.output, `conv_${Date.now()}${path.extname(input) || '.wav'}`);
+  const ext = path.extname(output).replace(/^\./, '').toLowerCase();
+  const acodec =
+    ext === 'mp3' ? 'libmp3lame' :
+    ext === 'ogg' ? 'libopus' :
+    ext === 'm4a' ? 'aac' :
+    ext === 'flac' ? 'flac' : 'pcm_s16le';
+  runFfmpeg(['-i', input, '-c:a', acodec, output, '-y'], `Converted audio → ${ext.toUpperCase()}`);
+};
+
+// 10. REVERSE — play audio backwards
+COMMANDS['reverse'] = (args) => {
+  const input = resolveInput(args.input);
+  const output = resolveOutput(args.output, `rev_${path.basename(input)}`);
+  runFfmpeg(['-i', input, '-af', 'areverse', '-c:a', 'pcm_s16le', output, '-y'], `Reversed audio`);
+};
+
+// 11. REVERB — add reverberation (aecho)
+COMMANDS['reverb'] = (args) => {
+  const input = resolveInput(args.input);
+  const output = resolveOutput(args.output, `reverb_${path.basename(input)}`);
+  const inGain = args.inGain || '0.8';
+  const outGain = args.outGain || '0.6';
+  const d1 = parseInt(args.delays || '60', 10);
+  const decay1 = args.decays || '0.5';
+  // single echo (widely compatible): in:out:delay:decay
+  const af = `aecho=${inGain}:${outGain}:${d1}:${decay1}`;
+  runFfmpeg(['-i', input, '-af', af, '-c:a', 'pcm_s16le', output, '-y'], `Reverb (aecho)`);
+};
+
+// 12. ECHO — simple echo (concentric delays)
+COMMANDS['echo'] = (args) => {
+  const input = resolveInput(args.input);
+  const output = resolveOutput(args.output, `echo_${path.basename(input)}`);
+  const delay = args.delay || '500';
+  const decay = args.decay || '0.5';
+  const af = `adelay=${delay}|${delay},aecho=0.8:0.9:${delay}:${decay}`;
+  runFfmpeg(['-i', input, '-af', af, '-c:a', 'pcm_s16le', output, '-y'], `Echo (delay=${delay}ms)`);
+};
+
+// 13. EQUALIZE — 2/3-band EQ (equalizer filter)
+COMMANDS['equalize'] = (args) => {
+  const input = resolveInput(args.input);
+  const output = resolveOutput(args.output, `eq_${path.basename(input)}`);
+  const bass = args.bass || '0';
+  const treble = args.treble || '0';
+  const mid = args.mid || '0';
+  const af = `equalizer=f=100:width_type=h:width=50:g=${bass},equalizer=f=1000:width_type=h:width=200:g=${mid},equalizer=f=8000:width_type=h:width=1000:g=${treble}`;
+  runFfmpeg(['-i', input, '-af', af, '-c:a', 'pcm_s16le', output, '-y'], `EQ (bass=${bass} mid=${mid} treble=${treble})`);
+};
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {

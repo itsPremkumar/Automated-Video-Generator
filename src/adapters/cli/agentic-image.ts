@@ -499,6 +499,63 @@ COMMANDS['gif'] = (args) => {
   runFfmpeg(ff, `Animated GIF (${duration}s)`);
 };
 
+// 19. GRAYSCALE — desaturate to B&W
+COMMANDS['grayscale'] = (args) => {
+  const input = resolveInput(args.input);
+  const output = resolveOutput(args.output, `gray_${path.basename(input)}`);
+  runFfmpeg(['-i', input, '-vf', 'hue=s=0', '-y', output], `Grayscale (B&W)`);
+};
+
+// 20. SEPIA — warm vintage tone
+COMMANDS['sepia'] = (args) => {
+  const input = resolveInput(args.input);
+  const output = resolveOutput(args.output, `sepia_${path.basename(input)}`);
+  runFfmpeg(['-i', input, '-vf', 'colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131', '-y', output], `Sepia tone`);
+};
+
+// 21. PIXELATE — mosaic / pixel-art effect
+COMMANDS['pixelate'] = (args) => {
+  const input = resolveInput(args.input);
+  const output = resolveOutput(args.output, `pixel_${path.basename(input)}`);
+  const blocks = args.blocks || args.size || '20';
+  runFfmpeg(
+    ['-i', input, '-vf', `scale='max(1,trunc(iw/${blocks}))':'max(1,trunc(ih/${blocks}))':flags=neighbor,scale=iw:ih:flags=neighbor`, '-y', output],
+    `Pixelated (block=${blocks})`,
+  );
+};
+
+// 22. SLIDESHOW — multiple images → timed video (with optional crossfade)
+COMMANDS['slideshow'] = (args) => {
+  const files = (args.files || args.input || '').split(',').filter(Boolean);
+  if (files.length < 2) {
+    console.error('  ✖ Provide at least 2 images via --files "a.png,b.png,..."');
+    return;
+  }
+  const output = resolveOutput(args.output, `slideshow_${Date.now()}.mp4`);
+  const dur = args.duration || args.d || '2';
+  const fade = args.fade || args.crossfade || '0.5';
+  const W = args.w || '1080';
+  const H = args.h || '1920';
+  const fps = args.fps || '25';
+  const inputs = files.map((f: string) => resolveInput(f));
+  const ff: string[] = [];
+  inputs.forEach((f: string) => ff.push('-loop', '1', '-i', f));
+  let filter = '';
+  for (let i = 0; i < inputs.length; i++) {
+    filter += `[${i}:v]scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},setsar=1,format=yuv420p,trim=duration=${dur},setpts=PTS-STARTPTS[v${i}];`;
+  }
+  let chain = '';
+  let prev = 'v0';
+  for (let i = 1; i < inputs.length; i++) {
+    const out = i === inputs.length - 1 ? 'v' : `x${i}`;
+    chain += `[${prev}][v${i}]xfade=transition=fade:duration=${fade}:offset=${parseFloat(dur) - parseFloat(fade)}[${out}];`;
+    prev = out;
+  }
+  filter += chain.replace(/;$/, '');
+  ff.push('-filter_complex', filter, '-map', '[v]', '-r', fps, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-y', output);
+  runFfmpeg(ff, `Slideshow (${inputs.length} images, ${dur}s each)`);
+};
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
