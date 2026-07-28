@@ -37,6 +37,8 @@ export interface ScenePlan {
     transition?: string;
     /** Override color grade for this scene ('neutral' | 'warm' | 'cool' | 'cinematic' | 'vivid'). */
     grade?: string;
+    /** Override visual filter for this scene ('bw' | 'vintage' | 'sepia' | 'blur'). */
+    filter?: string;
     /** Disable Ken Burns for this specific scene (false = no zoompan). */
     kenBurns?: boolean;
     /** Trim start time for local video asset (seconds). */
