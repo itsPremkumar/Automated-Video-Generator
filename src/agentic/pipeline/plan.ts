@@ -52,6 +52,7 @@ function toScenePlans(parsed: ParsedScript): ScenePlan[] {
         localAsset: s.localAsset,
         transition: s.transition,
         grade: s.grade,
+        filter: s.filter,
         kenBurns: s.kenBurns === 'off' ? false : undefined,
         trimStart: s.trimStart ? parseTimeToSeconds(s.trimStart) : undefined,
         trimEnd: s.trimEnd ? parseTimeToSeconds(s.trimEnd) : undefined,
@@ -100,7 +101,7 @@ export async function buildPlan(script: string, opts: PlanOptions, parser: Parse
             if (adv.chromaKey !== undefined) s.chromaKey = adv.chromaKey;
             if (adv.speed !== undefined) s.speed = adv.speed;
             if (adv.stabilize !== undefined) s.stabilize = adv.stabilize;
-            if (adv.filter !== undefined) s.filter = adv.filter;
+            if (adv.filter !== undefined && !s.filter) s.filter = adv.filter;
             if (adv.blur !== undefined) s.blur = adv.blur;
             if (adv.keyframes !== undefined) s.keyframes = adv.keyframes;
         }
