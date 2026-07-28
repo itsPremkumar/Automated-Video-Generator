@@ -10,6 +10,7 @@ import { resolveBridge, type LlmBridge, type DriverLlmCallback } from '../ai/bri
 import { writeJson, readJson } from '../management/workspace.js';
 import { chunkCues, mergeWordsToLines, fmtSrt } from './captions.js';
 import { runFfmpeg, estimateAudioDurationSafe } from './ffmpeg.js';
+import { buildPaletteFilter } from '../operations/compose.js';
 import type { PipelineResult } from './types.js';
 import { AGENTIC_OUTPUT_DIR } from '../management/workspace.js';
 import { logInfo, logWarn, logError } from '../../shared/logging/runtime-logging.js';
@@ -344,6 +345,7 @@ export async function renderAgenticSlideshow(
         jCutSec?: number;
         exportAspects?: string[];
         emojiByScene?: Record<string, string>;
+        paletteFilter?: string;
         aiVerify?: import('../config.js').AgenticConfig['aiVerify'];
         languages?: string[];
         vignette?: boolean;
@@ -774,12 +776,16 @@ else vfArgs.push(`${videoMap}null[vig]`);
             const capStr = segCaptionArg.length ? ',' + segCaptionArg.join(',') : '';
             const kinStr = kin.length ? ',' + kin.join(',') : '';
             const gradeStr = grade ? ',' + grade : '';
+            // BUG A2/combo: paletteFilter (job-wide color grade) was never
+            // applied on the modular render path. Append it to every scene.
+            const paletteStr = opts.paletteFilter ? buildPaletteFilter(opts.paletteFilter) : '';
+            const gradeWithPalette = (gradeStr + (paletteStr ? ',' + paletteStr : '')) || '';
             let vfChain: string;
             if (sp?.chromaKey) {
                 // Chroma key: key the scene to TRANSPARENT (rgba) then composite over
                 // a black background via overlay. Just discarding alpha with
                 // format=yuv420p would reveal the original green underneath.
-                const base = `[0:v]tpad=stop_mode=clone:stop_duration=${dur},fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${segAdvStr}${gradeStr},format=rgba,colorkey=0x00FF00:0.3:0.2[fg]`;
+                const base = `[0:v]tpad=stop_mode=clone:stop_duration=${dur},fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${segAdvStr}${gradeWithPalette},format=rgba,colorkey=0x00FF00:0.3:0.2[fg]`;
                 vfChain = `color=c=black:s=${W}x${H}:r=25:d=${dur},settb=1/25[bg];${base};[bg][fg]overlay=shortest=1,format=yuv420p${capStr}${kinStr}[v]`;
             } else {
                 vfChain = `[0:v]tpad=stop_mode=clone:stop_duration=${dur},fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${doVignette ? ',vignette=PI/5' : ''}${segAdvStr}${gradeStr},format=yuv420p${capStr}${kinStr}[v]`;
