@@ -110,11 +110,15 @@ export function writeScriptHeuristic(topic: string, title: string): string {
     // across scenes (not all "coffee X"), because the fetcher joins ALL keywords
     // into one query and a shared leading noun collapses to the same top result.
     // Generate topic-relevant angles from the topic words themselves.
+    // Stopwords must never become a scene's primary visual noun — observed
+    // in QA: topic "The turtle who learned to fly" produced searches for
+    // "the" / "the close up" (12s timeouts, junk candidates).
+    const STOP = new Set(['the', 'and', 'who', 'that', 'this', 'with', 'from', 'for', 'you', 'your', 'how', 'why', 'what', 'when', 'are', 'was', 'were', 'can', 'not', 'but', 'his', 'her', 'its', 'our', 'they', 'them']);
     const topicParts = topic
         .toLowerCase()
         .replace(/[^a-z0-9 ]/g, ' ')
         .split(/\s+/)
-        .filter((w) => w.length > 2)
+        .filter((w) => w.length > 2 && !STOP.has(w))
         .slice(0, 4);
     const fallback = topicParts.length > 1 ? topicParts : [kw || 'nature'];
     const angles = [
