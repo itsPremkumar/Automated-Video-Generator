@@ -249,25 +249,29 @@ export async function runAgenticPipeline(
         const variants = [topicNoun, `${topicNoun} photo`, (req.title || '').trim(), `person ${topicNoun}`]
             .map((s) => s.trim())
             .filter(Boolean);
+        // Every fallback fetch below MUST be time-bounded. These calls used
+        // to run bare (no withTimeout) — one wedged provider request hung the
+        // entire pipeline indefinitely (observed twice in matrix QA).
+        const POOL_FETCH_TIMEOUT_MS = 20000;
         for (const q of variants) {
             if (preferVideo) {
                 try {
-                    const r = await fetchVisualsForScene([q], true, plan.orientation);
+                    const r = await withTimeout(fetchVisualsForScene([q], true, plan.orientation), POOL_FETCH_TIMEOUT_MS, `pool[video:${q}]`);
                     if (r) add(Array.isArray(r) ? r[0]?.url : r.url);
                 } catch { /* next */ }
                 try {
-                    (await searchImages(q, 12, 2, plan.orientation, 1)).forEach((p) => add(p.url));
+                    (await withTimeout(searchImages(q, 12, 2, plan.orientation, 1), POOL_FETCH_TIMEOUT_MS, `pool[img:${q}]`)).forEach((p) => add(p.url));
                 } catch { /* next */ }
                 try {
-                    const r = await fetchVisualsForScene([q], false, plan.orientation);
+                    const r = await withTimeout(fetchVisualsForScene([q], false, plan.orientation), POOL_FETCH_TIMEOUT_MS, `pool[image:${q}]`);
                     if (r) add(Array.isArray(r) ? r[0]?.url : r.url);
                 } catch { /* next */ }
             } else {
                 try {
-                    (await searchImages(q, 12, 2, plan.orientation, 1)).forEach((p) => add(p.url));
+                    (await withTimeout(searchImages(q, 12, 2, plan.orientation, 1), POOL_FETCH_TIMEOUT_MS, `pool[img:${q}]`)).forEach((p) => add(p.url));
                 } catch { /* next */ }
                 try {
-                    const r = await fetchVisualsForScene([q], false, plan.orientation);
+                    const r = await withTimeout(fetchVisualsForScene([q], false, plan.orientation), POOL_FETCH_TIMEOUT_MS, `pool[image:${q}]`);
                     if (r) add(Array.isArray(r) ? r[0]?.url : r.url);
                 } catch { /* next */ }
             }
