@@ -66,6 +66,19 @@ async function main() {
         if (p.stage === 'voiceover') process.stdout.write('\n');
     };
 
+    // ── Global watchdog: no run may wedge silently forever. QA found hang
+    // modes where a provider request stalled with no timeout in the path;
+    // per-call bounds cover known sites, this covers the unknown ones.
+    // Override with AGENTIC_MAX_RUN_MS (0 disables).
+    const maxRunMs = Number(process.env.AGENTIC_MAX_RUN_MS ?? 30 * 60 * 1000);
+    if (maxRunMs > 0) {
+        const watchdog = setTimeout(() => {
+            console.error(`\n✖ WATCHDOG: run exceeded ${Math.round(maxRunMs / 60000)} min — aborting (set AGENTIC_MAX_RUN_MS to change).`);
+            process.exit(3);
+        }, maxRunMs);
+        watchdog.unref?.();
+    }
+
     const res = await runAgenticPipeline({ topic, title, backend, orientation, preferVisual, dryRun }, onProgress);
     console.log('');
 
