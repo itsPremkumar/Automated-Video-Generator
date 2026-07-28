@@ -20,6 +20,8 @@ export interface Scene {
     transition?: string;
     /** Per-scene color grade override (e.g. 'warm', 'cool', 'cinematic', 'vivid', 'neutral'). */
     grade?: string;
+    /** Per-scene visual filter override (e.g. 'bw', 'vintage', 'sepia', 'blur'). */
+    filter?: string;
     /** Per-scene Ken Burns toggle. 'on' (default) or 'off'. */
     kenBurns?: string;
     /** Trim start time for local video clips (e.g. '00:05'). */
@@ -205,6 +207,7 @@ function parseScriptLocally(script: string): ParsedScript {
     // Per-scene tag values (hoisted for trailing pending-visual scene at end of script)
     let sceneTransition: string | undefined;
     let sceneGrade: string | undefined;
+    let sceneFilter: string | undefined;
     let sceneKenBurns: string | undefined;
     let sceneTrimStart: string | undefined;
     let sceneTrimEnd: string | undefined;
@@ -227,10 +230,12 @@ function parseScriptLocally(script: string): ParsedScript {
         const sceneShowText = inlineTextMatch ? inlineTextMatch[1].toLowerCase() === 'on' : undefined;
 
         // Per-scene inline tags
-        const transitionMatch = line.match(/\[Transition:?\s*(fade|slide|zoomblur|cut)\]/is);
+        const transitionMatch = line.match(/\[Transition:?\s*(fade|slide|zoomblur|cut|glitch|whippan|morphcut|lightleak|wipe|dissolve|circle|rectcrop|circlecrop|fadewhite|fadeblack|fadecolor|distance|smoothleft|smoothright|smoothup|smoothdown|windowslice|x|diag)\]/is);
         sceneTransition = transitionMatch ? transitionMatch[1].toLowerCase() : undefined;
         const gradeMatch = line.match(/\[Grade:?\s*(neutral|warm|cool|cinematic|vivid)\]/is);
         sceneGrade = gradeMatch ? gradeMatch[1].toLowerCase() : undefined;
+        const filterMatch = line.match(/\[Filter:?\s*(bw|vintage|sepia|blur|grayscale|mono)\]/is);
+        sceneFilter = filterMatch ? (filterMatch[1].toLowerCase() === 'grayscale' || filterMatch[1].toLowerCase() === 'mono' ? 'bw' : filterMatch[1].toLowerCase()) : undefined;
         const kenBurnsMatch = line.match(/\[KenBurns:?\s*(on|off|true|false)\]/is);
         sceneKenBurns = kenBurnsMatch ? (['on', 'true'].includes(kenBurnsMatch[1].toLowerCase()) ? 'on' : 'off') : undefined;
         const trimMatch = line.match(/\[Trim:?\s*(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\]/is);
@@ -268,6 +273,7 @@ function parseScriptLocally(script: string): ParsedScript {
             .replace(/\[Text:?\s*.*?\]/gis, '')
             .replace(/\[Caption:?\s*.*?\]/gis, '')
             .replace(/\[Transition:?\s*.*?\]/gis, '')
+            .replace(/\[Filter:?\s*.*?\]/gis, '')
             .replace(/\[Grade:?\s*.*?\]/gis, '')
             .replace(/\[KenBurns:?\s*.*?\]/gis, '')
             .replace(/\[Trim:?\s*.*?\]/gis, '')
@@ -304,6 +310,7 @@ function parseScriptLocally(script: string): ParsedScript {
                     showText: false,
                     transition: sceneTransition,
                     grade: sceneGrade,
+                    filter: sceneFilter,
                     kenBurns: sceneKenBurns,
                     trimStart: sceneTrimStart,
                     trimEnd: sceneTrimEnd,
@@ -335,6 +342,7 @@ function parseScriptLocally(script: string): ParsedScript {
                 showText: false,
                 transition: sceneTransition,
                 grade: sceneGrade,
+                filter: sceneFilter,
                 kenBurns: sceneKenBurns,
                 trimStart: sceneTrimStart,
                 trimEnd: sceneTrimEnd,
@@ -394,6 +402,7 @@ function parseScriptLocally(script: string): ParsedScript {
             showText: sceneShowText,
             transition: sceneTransition,
             grade: sceneGrade,
+            filter: sceneFilter,
             kenBurns: sceneKenBurns,
             trimStart: sceneTrimStart,
             trimEnd: sceneTrimEnd,
@@ -430,6 +439,7 @@ function parseScriptLocally(script: string): ParsedScript {
             showText: false,
             transition: sceneTransition,
             grade: sceneGrade,
+            filter: sceneFilter,
             kenBurns: sceneKenBurns,
             trimStart: sceneTrimStart,
             trimEnd: sceneTrimEnd,
