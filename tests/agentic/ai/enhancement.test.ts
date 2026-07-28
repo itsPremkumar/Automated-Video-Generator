@@ -72,9 +72,12 @@ test('buildDuckExpression: null when no captions, else sums between() over speec
         0.18,
         0.06,
     );
-    assert.ok(withSpeech!.includes('between(t\\,0.000\\,1.500)'));
-    assert.ok(withSpeech!.includes('gt('));
-    assert.ok(withSpeech!.startsWith('0.18-0.120*gt('));
+    // Raw commas + direct between() gate — escaped commas (`\,`) or a gt()
+    // wrapper make ffmpeg reject the volume expression (see render.ts).
+    assert.ok(withSpeech!.includes('between(t,0.000,1.500)'));
+    assert.ok(!withSpeech!.includes('\\,'), 'commas must stay raw for ffmpeg');
+    assert.ok(!withSpeech!.includes('gt('), 'gt() wrapper breaks ffmpeg volume expr');
+    assert.ok(withSpeech!.startsWith('0.18-0.120*between('));
 });
 
 test('chunkCues: merges sub-100ms micro segments and splits >8-word lines', () => {

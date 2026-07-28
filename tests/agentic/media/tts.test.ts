@@ -10,6 +10,13 @@ import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
 import * as fs from 'fs';
 import * as path from 'path';
+
+// CI / offline hardening: never probe an external speech backend from unit
+// tests — force the built-in fallback engine (Edge-TTS → tones) so the suite
+// cannot hang waiting on a dead Voicebox/HTTP backend (was: 120s timeout).
+if (process.env.CI === 'true' || !process.env.VOICEBOX_API_URL) {
+    process.env.AGENTIC_VOICE_FALLBACK = '1';
+}
 import { generateAgenticVoiceovers } from '../../../src/agentic/media/tts.js';
 import { buildPlan } from '../../../src/agentic/pipeline/plan.js';
 import { Plan } from '../../../src/agentic/types.js';

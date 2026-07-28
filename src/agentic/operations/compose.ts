@@ -104,8 +104,23 @@ function escExpr(e: string): string {
  * ffmpeg drawtext has no `fontweight` option — bold is selected by the
  * bold font file (e.g. arialbd.ttf). */
 function resolveFontFile(family: string | undefined, weight?: number): string {
-    const base = 'C:\\Windows\\Fonts';
     const bold = (weight ?? 400) >= 600;
+    if (process.platform !== 'win32') {
+        // Cross-platform: pick the first present common system font.
+        const candidates = process.platform === 'darwin'
+            ? ['/System/Library/Fonts/Helvetica.ttc', '/System/Library/Fonts/Supplemental/Arial.ttf', '/Library/Fonts/Arial.ttf']
+            : [
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+                '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+                '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+                '/usr/share/fonts/TTF/DejaVuSans.ttf',
+            ];
+        const ordered = bold ? candidates : [...candidates].reverse();
+        for (const c of ordered) { if (fs.existsSync(c)) return c; }
+        return candidates[0]; // best effort — ffmpeg falls back to fontconfig
+    }
+    const base = 'C:\\Windows\\Fonts';
     const map: Record<string, [string, string]> = { // [regular, bold]
         'inter, sans-serif': ['arial.ttf', 'arialbd.ttf'],
         'arial': ['arial.ttf', 'arialbd.ttf'],

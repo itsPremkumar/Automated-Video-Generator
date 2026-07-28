@@ -29,6 +29,7 @@ import { buildPipelineRequest } from '../../adapters/cli/cli-job.js';
 export function sanitizeVideoFilename(title: string | undefined, fallback = 'output'): string {
     const cleaned = (title ?? '')
         .replace(/[\\/:*?"<>|]/g, ' ') // illegal on Windows/macOS
+        // eslint-disable-next-line no-control-regex
         .replace(/[\u0000-\u001f]/g, ' ') // control chars
         .replace(/\s+/g, ' ')
         .replace(/[. ]+$/, '') // no trailing dot/space (Windows strips them)

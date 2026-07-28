@@ -73,6 +73,7 @@ async function streamToFile(url: string, partPath: string, resumeFrom = 0): Prom
             response.data.destroy();
         }
     }, 5000);
+    stallTimer.unref?.(); // never hold the process open on its own
 
     try {
         await new Promise<void>((resolve, reject) => {
