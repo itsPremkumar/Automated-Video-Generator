@@ -20,6 +20,8 @@ export interface MediaInfo {
     width: number;
     /** pixel height (0 if unknown / audio-only) */
     height: number;
+    /** whether the media has at least one audio stream */
+    hasAudio: boolean;
 }
 
 /** Default probe runner: shells out to the bundled ffprobe binary. */
@@ -47,7 +49,7 @@ const defaultRunner: ProbeRunner = (file: string) =>
         let out = '';
         child.stdout.on('data', (d) => (out += d.toString()));
         child.stderr.on('data', (d) => (out += d.toString()));
-        child.on('close', (code) => resolve(code === 0 ? parseProbe(out) : { duration: 0, width: 0, height: 0 }));
+        child.on('close', (code) => resolve(code === 0 ? parseProbe(out) : { duration: 0, width: 0, height: 0, hasAudio: false }));
     });
 
 /**
@@ -59,18 +61,20 @@ export function parseProbe(out: string): MediaInfo {
     try {
         data = JSON.parse(out);
     } catch {
-        return { duration: 0, width: 0, height: 0 };
+        return { duration: 0, width: 0, height: 0, hasAudio: false };
     }
     const dur = parseFloat(data?.format?.duration ?? '0') || 0;
     let width = 0,
         height = 0;
+    let hasAudio = false;
     for (const s of data?.streams ?? []) {
+        if (s.codec_type === 'audio') hasAudio = true;
         if (s.width && s.height && (s.codec_type === 'video' || !width)) {
             width = parseInt(s.width, 10) || width;
             height = parseInt(s.height, 10) || height;
         }
     }
-    return { duration: dur, width, height };
+    return { duration: dur, width, height, hasAudio };
 }
 
 /**

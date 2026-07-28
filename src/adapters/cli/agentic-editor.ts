@@ -159,12 +159,22 @@ COMMANDS['speed'] = (args) => {
     const output = resolveOutput(args.output, `speed${rate}_${path.basename(input)}`);
     const audioRate = 1 / rate;
     const setpts = 1 / rate;
+    // GUARD (BUG #4 class): the input may have NO audio track. Referencing
+    // `[0:a]` unconditionally throws "Stream specifier ':a' matches no streams"
+    // and the whole command fails. Skip the audio branch when absent.
+    const info = getMediaInfo(input);
+    const hasAudio = Array.isArray(info?.streams) && info.streams.some((s: any) => s.codec_type === 'audio');
+    const fc = hasAudio
+        ? `[0:v]setpts=${setpts}*PTS[v];[0:a]atempo=${audioRate}[a]`
+        : `[0:v]setpts=${setpts}*PTS[v]`;
+    const map = hasAudio ? ['-map', '[v]', '-map', '[a]'] : ['-map', '[v]'];
+    const acodec = hasAudio ? ['-c:a', 'aac'] : ['-an'];
     const ff: string[] = [
         '-i', input,
         '-filter_complex',
-        `[0:v]setpts=${setpts}*PTS[v];[0:a]atempo=${audioRate}[a]`,
-        '-map', '[v]', '-map', '[a]',
-        '-c:v', 'libx264', '-c:a', 'aac',
+        fc,
+        ...map,
+        '-c:v', 'libx264', ...acodec,
         output, '-y',
     ];
     runFfmpeg(ff, `Speed ${rate}x`);

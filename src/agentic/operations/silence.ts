@@ -153,21 +153,32 @@ export async function removeSilence(file: string, out?: string, opts: SilenceOpt
     const vf = buildKeepFilter(spoken);
     if (!vf) return { ok: false, detail: 'could not build keep filter' };
 
+    // GUARD (BUG #4 class): the input may have NO audio track. Referencing
+    // `[0:a]` unconditionally throws "Stream specifier ':a' matches no streams"
+    // and the whole silence-remove fails. Probe for an audio stream and drop
+    // the `[a]` branch (and the audio map/codec) when absent.
+    let hasAudio = true;
+    try {
+        const probeInfo = await probe(file);
+        hasAudio = !!(probeInfo as any)?.hasAudio;
+    } catch { /* best effort; assume audio present */ }
+
+    const fc = hasAudio ? `[0:v]${vf}[v];[0:a]${vf}[a]` : `[0:v]${vf}[v]`;
+    const mapArgs = hasAudio ? ['[v]', '[a]'] : ['[v]'];
+    const acodec = hasAudio ? ['-c:a', 'aac'] : ['-an'];
+
     const { code, out: log } = await runner([
         '-i',
         file,
         '-filter_complex',
-        `[0:v]${vf}[v];[0:a]${vf}[a]`,
+        fc,
         '-map',
-        '[v]',
-        '-map',
-        '[a]',
+        ...mapArgs,
         '-c:v',
         'libx264',
         '-pix_fmt',
         'yuv420p',
-        '-c:a',
-        'aac',
+        ...acodec,
         '-y',
         output,
     ]);
