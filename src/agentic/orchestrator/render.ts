@@ -869,7 +869,9 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
     }
 
     let sfxLayer: string | null = null;
-    if (opts.sfx && music && fs.existsSync(music.localPath)) {
+    // BUG M5 (partial): SFX used to be gated on music being present; cut SFX
+    // are independent of the music bed, so build the layer whenever sfx is on.
+    if (opts.sfx) {
         try {
             const { planSceneSfx } = await import('../media/sfx-selector.js');
             const sfxPlans = planSceneSfx(res.plan);
@@ -947,6 +949,22 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
         }
         fs.rmSync(silent, { force: true });
         if (sfxLayer) fs.rmSync(sfxLayer, { force: true });
+    } else if (sfxLayer && fs.existsSync(sfxLayer)) {
+        // No music, but SFX requested: mix the cut-SFX layer over the silent
+        // track's own audio (or alone when the video has no audio stream).
+        let vidHasAudio = false;
+        try {
+            const { execFileSync } = require('child_process');
+            const ffprobeBin = require('ffprobe-static').path;
+            const pr = execFileSync(ffprobeBin, ['-v', 'quiet', '-select_streams', 'a', '-show_entries', 'stream=index', '-of', 'csv=p=0', silent], { timeout: 15000 }).toString();
+            vidHasAudio = pr.trim().length > 0;
+        } catch { /* best effort */ }
+        const fcS = vidHasAudio
+            ? `[1:a]volume=0.6[sfx];[0:a][sfx]amix=inputs=2:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`
+            : `[1:a]volume=0.6[aout]`;
+        await runFfmpegSpawn(['-i', silent, '-i', sfxLayer, '-filter_complex', fcS, '-map', '0:v:0', '-map', '[aout]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-y', out]);
+        fs.rmSync(silent, { force: true });
+        fs.rmSync(sfxLayer, { force: true });
     } else {
         fs.renameSync(silent, out);
     }
