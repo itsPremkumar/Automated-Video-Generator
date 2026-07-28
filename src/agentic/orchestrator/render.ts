@@ -343,6 +343,7 @@ export async function renderAgenticSlideshow(
         outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number };
         jCutSec?: number;
         exportAspects?: string[];
+        emojiByScene?: Record<string, string>;
         aiVerify?: import('../config.js').AgenticConfig['aiVerify'];
         languages?: string[];
         vignette?: boolean;
@@ -731,6 +732,15 @@ else vfArgs.push(`${videoMap}null[vig]`);
                 }
             }
             const kin: string[] = [];
+            // BUG C4: emojiByScene was a dead option on this path — burn a big
+            // emoji sticker (Segoe UI Emoji renders color glyphs on Windows).
+            if (clip.kind === 'scene' && opts.emojiByScene) {
+                const em = opts.emojiByScene[String(clip.idx)];
+                if (em) {
+                    const emojiFont = process.platform === 'win32' ? 'C\\:/Windows/Fonts/seguiemj.ttf' : '/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf';
+                    kin.push(`drawtext=fontfile='${emojiFont}':text='${em}':fontsize=96:x=w-text_w-40:y=40`);
+                }
+            }
             if (clip.kind === 'scene' && stylePlan && opts.kinetic !== false && opts.captions === 'none') {
                 for (const cue of stylePlan.scenes[clip.idx]?.kinetic ?? []) {
                     const start = cue.atSec.toFixed(2);
