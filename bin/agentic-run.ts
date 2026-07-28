@@ -23,6 +23,24 @@ async function main() {
     const backend = arg('backend', 'agent') as 'agent' | 'vision';
     const orientation = arg('orientation', 'portrait') as 'portrait' | 'landscape';
     const format = arg('format', 'none') as 'none' | 'square';
+
+    // ── Input validation (fail fast with a clear message, not a silent default)
+    if (process.argv.includes('--topic') && !topic.trim()) {
+        console.error('✖ --topic must not be empty');
+        process.exit(2);
+    }
+    if (!['portrait', 'landscape'].includes(orientation)) {
+        console.error(`✖ --orientation must be "portrait" or "landscape" (got "${orientation}"). Use --format square for 1:1.`);
+        process.exit(2);
+    }
+    if (!['agent', 'vision'].includes(backend)) {
+        console.error(`✖ --backend must be "agent" or "vision" (got "${backend}")`);
+        process.exit(2);
+    }
+    if (!['none', 'square'].includes(format)) {
+        console.error(`✖ --format must be "none" or "square" (got "${format}")`);
+        process.exit(2);
+    }
     const preferVisual = bool('images') ? 'image' : bool('videos') ? 'video' : undefined;
     const renderer = arg('renderer', 'ffmpeg') as 'ffmpeg' | 'remotion';
     const quality = arg('quality', 'medium') as 'draft' | 'medium' | 'high';

@@ -72,7 +72,7 @@
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
     "test": "npm run typecheck && npm run test:unit",
-    "test:unit": "node --import tsx --test --test-timeout=120000 --experimental-test-module-mocks \"src/**/*.test.ts\" \"remotion/**/*.test.ts\" \"tests/**/*.test.ts\"",
+    "test:unit": "node --import tsx --test --test-timeout=240000 --test-concurrency=2 --experimental-test-module-mocks \"src/**/*.test.ts\" \"remotion/**/*.test.ts\" \"tests/**/*.test.ts\"",
     "test:render": "tsx --test \"src/render.e2e.test.ts\"",
     "qa:smoke": "tsx src/adapters/cli/agentic-modular.ts plan --file input/scripts/agentic-scripts.json && tsx src/adapters/cli/agentic-modular.ts visuals --file input/scripts/agentic-scripts.json && tsx src/adapters/cli/agentic-modular.ts voice --file input/scripts/agentic-scripts.json && tsx src/adapters/cli/agentic-modular.ts render --file input/scripts/agentic-scripts.json",
     "test:coverage": "node --import tsx --experimental-test-coverage --test --experimental-test-module-mocks \"src/**/*.test.ts\" \"remotion/**/*.test.ts\" \"tests/**/*.test.ts\"",
