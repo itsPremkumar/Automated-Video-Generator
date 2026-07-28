@@ -12,12 +12,27 @@ import { runFfmpeg } from './edit.js';
 import { resolveFreeBackgroundMusic } from '../../lib/free-music.js';
 import { inputBgmPath } from '../../lib/path-safety.js';
 import { applyAutoDucking } from '../../lib/audio-processor.js';
+// @ts-ignore
+import ffprobe from 'ffprobe-static';
 
 export interface AudioTrackResult {
     ok: boolean;
     output?: string;
     detail: string;
     usedMusic: boolean;
+}
+
+/** True when the file contains at least one audio stream. */
+function audioStreamPresent(file: string): boolean {
+    if (!fs.existsSync(file)) return false;
+    try {
+        const cmd: string = (ffprobe as any)?.path ?? (ffprobe as unknown as string);
+        const { execFileSync } = require('child_process');
+        const out = execFileSync(cmd, ['-v', 'quiet', '-show_entries', 'stream=codec_type', '-of', 'csv=p=0', file]).toString();
+        return out.split('\n').some((l: string) => l.trim() === 'audio');
+    } catch {
+        return false;
+    }
 }
 
 /** Add a free background music track under a video. */
@@ -116,5 +131,10 @@ export async function addAudioTrack(
         return { ok: false, output: undefined, detail: `mux failed:\n${log.slice(-600)}`, usedMusic: false };
     if (!fs.existsSync(output))
         return { ok: false, output: undefined, detail: 'output not produced', usedMusic: false };
+    // Validate that the audio actually made it into the output. A silent or
+    // audio-less source can make ffmpeg silently drop the [1:a] mapping while
+    // still exiting 0 — never report ok:true for a video that lost its audio.
+    if (!audioStreamPresent(output))
+        return { ok: false, output: undefined, detail: `audio track missing in output (source ${audioFile} produced no usable audio)`, usedMusic: false };
     return { ok: true, output, detail: `muxed ${audioFile} onto ${file}`, usedMusic: false };
 }

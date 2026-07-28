@@ -132,6 +132,17 @@ export async function generateSilence(duration: number, outputDir: string, scene
 /**
  * Apply auto-ducking to background music based on voiceover tracks
  */
+/** True when the file has at least one audio stream (ffprobe probe). */
+function hasAudioStream(file: string): boolean {
+    if (!fs.existsSync(file)) return false;
+    try {
+        const out = runFfprobe(['-v', 'quiet', '-show_entries', 'stream=codec_type', '-of', 'csv=p=0', file]);
+        return out.split('\n').some((l) => l.trim() === 'audio');
+    } catch {
+        return false;
+    }
+}
+
 export async function applyAutoDucking(musicPath: string, voicePaths: string[], outputDir: string): Promise<string> {
     if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });
@@ -140,14 +151,24 @@ export async function applyAutoDucking(musicPath: string, voicePaths: string[], 
     const outputPath = path.join(outputDir, 'ducked-bgm.mp3');
     const tempCombinedVoice = path.join(outputDir, 'temp_combined_voice.mp3');
 
+    // BUG A5: voice inputs can be AUDIO-LESS (e.g. a screen recording with no
+    // track). The naive `[0:a]concat` then fails to open `[0:a]`, so the
+    // combined-voice file is never produced and the ducking step throws
+    // "No such file". Filter to audio-bearing inputs first.
+    const audibleVoicePaths = voicePaths.filter((p) => hasAudioStream(p));
+    if (audibleVoicePaths.length === 0) {
+        // Nothing to duck against → just return the music unchanged.
+        return musicPath;
+    }
+
     try {
         // 1. Combine all voiceover tracks into one continuous track
         const concatInputArgs: string[] = ['-y'];
-        for (const p of voicePaths) {
+        for (const p of audibleVoicePaths) {
             concatInputArgs.push('-i', p);
         }
-        const filterParts = voicePaths.map((_, i) => `[${i}:a]`).join('');
-        const concatFilter = `${filterParts}concat=n=${voicePaths.length}:v=0:a=1[out]`;
+        const filterParts = audibleVoicePaths.map((_, i) => `[${i}:a]`).join('');
+        const concatFilter = `${filterParts}concat=n=${audibleVoicePaths.length}:v=0:a=1[out]`;
         concatInputArgs.push('-filter_complex', concatFilter, '-map', '[out]', tempCombinedVoice);
         runFfmpeg(concatInputArgs);
 
