@@ -618,6 +618,33 @@ async function runRender(cliArgs: CliArgs) {
         const outputDir = outputFor(id);
         fs.mkdirSync(outputDir, { recursive: true });
 
+        // BUG M3: motion FX (shakeByScene / speedRampByScene / punchInByScene /
+        // parallaxDepthByScene) were only applied by composeVideo(), never on
+        // the CLI render path. Pre-process the per-scene visual assets here.
+        if (job.shakeByScene || job.speedRampByScene || job.punchInByScene || job.parallaxDepthByScene) {
+            const fx = await import('../../agentic/operations/advanced-fx.js');
+            const fxDir = path.join(ws.root, 'motion-fx');
+            fs.mkdirSync(fxDir, { recursive: true });
+            const dims = (job.orientation === 'portrait') ? { w: 720, h: 1280 } : (job.orientation === 'square' ? { w: 720, h: 720 } : { w: 1280, h: 720 });
+            for (const a of (result.manifest?.assets ?? [])) {
+                if (!a?.localPath || a.kind === 'music' || a.sceneIndex < 0) continue;
+                if (!/\.(mp4|webm|mov|m4v)$/i.test(a.localPath)) continue; // stills handled by ken-burns
+                let p = a.localPath;
+                try {
+                    p = fx.applyShake(p, a.sceneIndex, job, fxDir, dims.w, dims.h);
+                    p = fx.applySpeedRamp(p, a.sceneIndex, job, fxDir);
+                    p = fx.applyPunchIn(p, a.sceneIndex, job, fxDir, dims.w, dims.h);
+                    p = fx.applyParallax(p, a.sceneIndex, job, fxDir, dims.w, dims.h);
+                } catch (e: any) {
+                    console.warn(`  ⚠ motion FX scene ${a.sceneIndex} failed: ${String(e?.message).slice(0, 160)}`);
+                }
+                if (p !== a.localPath && fs.existsSync(p)) {
+                    console.log(`  🎬 motion FX applied to scene ${a.sceneIndex}: ${path.basename(p)}`);
+                    a.localPath = p;
+                }
+            }
+        }
+
         // BUG M4: honor declared ducking/voice-volume on the modular path.
         // render.ts reads these from env (AUDIO_DUCK_LEVEL / AUDIO_FULL_LEVEL).
         const duck = job.duckDepth;

@@ -219,7 +219,12 @@ export function buildPaletteFilter(preset?: string): string {
         case 'cyberpunk': return "colorbalance=rs=0.10:bs=0.10:gs=-0.08,eq=contrast=1.2:saturation=1.3";
         case 'vintage': return "colorbalance=rs=0.08:gs=0.02:bs=-0.08,eq=contrast=0.95:saturation=0.85:gamma=1.1";
         case 'cinematic': return "eq=contrast=1.15:saturation=1.05,colortemperature=7000";
-        default: return '';
+        // BUG A3: sunset/noir were documented vocab but silently mapped to ''.
+        case 'sunset':  return "colorbalance=rs=0.15:gs=0.02:bs=-0.12,eq=saturation=1.2:gamma=1.05";
+        case 'noir':    return "hue=s=0,eq=contrast=1.35:brightness=-0.03";
+        default:
+            if (p) console.warn(`  ⚠ unknown paletteFilter '${p}' — no palette applied (known: warm, cool, blue, teal, cyberpunk, vintage, cinematic, sunset, noir)`);
+            return '';
     }
 }
 export function wrapCaption(s: string, size: number, maxW: number): string[] {
