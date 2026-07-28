@@ -56,7 +56,11 @@ async function streamToFile(url: string, partPath: string, resumeFrom = 0): Prom
     const response = await axios.get(url, {
         responseType: 'stream',
         maxContentLength: MAX_DOWNLOAD_BYTES,
-        // No total `timeout`: the stall timer below handles dead connections.
+        // `timeout` on a stream request covers ONLY the connect/headers
+        // phase — body stalls are handled by the stall timer below. Without
+        // this, a server that accepts the socket but never sends headers
+        // hangs the pipeline forever (observed in matrix QA).
+        timeout: 30000,
         headers,
     });
 
