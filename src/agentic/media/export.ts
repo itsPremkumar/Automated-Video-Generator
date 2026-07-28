@@ -19,12 +19,13 @@ import * as path from 'path';
 import { Plan } from '../types.js';
 import type { PipelineResult } from '../types.js';
 
-export type Aspect = '9:16' | '16:9' | '1:1';
+export type Aspect = '9:16' | '16:9' | '1:1' | '4K';
 
 export const ASPECT_DIMS: Record<Aspect, { w: number; h: number }> = {
     '9:16': { w: 720, h: 1280 },
     '16:9': { w: 1280, h: 720 },
     '1:1': { w: 1080, h: 1080 },
+    '4K': { w: 3840, h: 2160 },
 };
 
 const FFMPEG = () => require('ffmpeg-static') as string;
@@ -70,8 +71,13 @@ export async function exportMultiAspect(
     const dir = path.dirname(srcMp4);
     const base = path.basename(srcMp4, path.extname(srcMp4));
     for (const a of aspects) {
-        const { w, h } = ASPECT_DIMS[a];
-        const dest = path.join(dir, `${base}_${a.replace(':', 'x')}.mp4`);
+        const dims = ASPECT_DIMS[a as Aspect];
+        if (!dims) {
+            console.warn(`⚠ unknown export aspect '${a}' — skipping (valid: 9:16, 16:9, 1:1, 4K)`);
+            continue;
+        }
+        const { w, h } = dims;
+        const dest = path.join(dir, `${base}_${String(a).replace(':', 'x')}.mp4`);
         // scale to fit (preserve aspect, decrease), then pad to target aspect.
         // Using force_original_aspect_ratio=decrease avoids the -2 parity
         // failure that broke 1:1 / 16:9 from a 9:16 source.
