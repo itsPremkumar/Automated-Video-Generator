@@ -585,8 +585,24 @@ async function runRender(cliArgs: CliArgs) {
                 }
             }
         }
+        // GUARD (BUG A3, root cause): the earlier `result.voiceovers =
+        // voiceoverMeta` may be the SLIM fallback shape
+        // {voiceoverDriven, sceneCount, fallbackUsed} with NO `scenes` array
+        // (when no per-scene WAVs exist on disk). render.ts indexes
+        // `res.voiceovers?.scenes[clip.idx]`, which throws on that shape.
+        // Always normalize to a VoiceoverResult with a real `scenes` array:
+        // the on-disk WAVs when present, else an empty array (renderer then
+        // uses a silent anullsrc track per scene — no crash).
         if (voiceScenes.length > 0) {
-            result.voiceovers = { scenes: voiceScenes, voiceoverDriven: true, fallbackUsed: voiceoverMeta?.fallbackUsed ?? false };
+            result.voiceovers = { scenes: voiceScenes, voiceoverDriven: true, fallbackUsed: voiceoverMeta?.fallbackUsed ?? false, sidecars: result.voiceovers?.sidecars ?? [] };
+        } else {
+            // Preserve whatever slim meta was set, but guarantee `scenes`.
+            result.voiceovers = {
+                scenes: [],
+                voiceoverDriven: voiceoverMeta?.voiceoverDriven ?? false,
+                fallbackUsed: voiceoverMeta?.fallbackUsed ?? false,
+                sidecars: (result.voiceovers as any)?.sidecars ?? [],
+            };
         }
 
         const { renderAgenticSlideshow } = await import('../../agentic/orchestrator/render.js');

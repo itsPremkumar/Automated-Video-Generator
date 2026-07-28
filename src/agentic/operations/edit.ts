@@ -24,6 +24,59 @@ const ffmpeg: string = (() => {
     }
 })();
 
+const ffprobe: string = (() => {
+    try {
+        return require('ffprobe-static').path;
+    } catch {
+        return 'ffprobe';
+    }
+})();
+
+/** Probe duration in seconds via ffprobe; null if missing/unreadable. */
+function probeDurationSec(file: string): number | null {
+    try {
+        const { execFileSync } = require('child_process');
+        const out = execFileSync(ffprobe, ['-v', 'quiet', '-print_format', 'json', '-show_format', file], {
+            timeout: 15000,
+        }).toString();
+        const info = JSON.parse(out);
+        const d = parseFloat(info?.format?.duration);
+        return Number.isFinite(d) ? d : null;
+    } catch {
+        return null;
+    }
+}
+
+/** Does `file` contain an audio stream? (best-effort via ffprobe). */
+function hasAudioStream(file: string): boolean {
+    try {
+        const { execFileSync } = require('child_process');
+        const out = execFileSync(ffprobe, ['-v', 'quiet', '-select_streams', 'a', '-show_entries', 'stream=index', '-of', 'csv=p=0', file], {
+            timeout: 15000,
+        }).toString();
+        return out.trim().length > 0;
+    } catch {
+        return false;
+    }
+}
+
+/** Build a chained atempo filter for speeds outside [0.5, 100] (atempo's range). */
+function atempoFilter(s: number): string {
+    // atempo accepts [0.5, 100]; chain multiples for values outside that.
+    const factors: number[] = [];
+    let rem = s;
+    while (rem < 0.5) { factors.push(0.5); rem /= 0.5; }
+    while (rem > 100) { factors.push(100); rem /= 100; }
+    factors.push(rem);
+    // Combine consecutive factors into a single atempo when possible (max 2 per filter).
+    const chained: string[] = [];
+    for (let i = 0; i < factors.length; i += 2) {
+        const pair = factors.slice(i, i + 2);
+        chained.push(`atempo=${pair.join('*')}`);
+    }
+    return chained.join(',');
+}
+
 /** Run ffmpeg with a hard wall-clock timeout. Resolves to stderr (ffmpeg logs there). */
 export function runFfmpeg(args: string[], timeoutMs = 120000): Promise<{ code: number; out: string }> {
     return new Promise((resolve) => {
@@ -106,17 +159,27 @@ export async function mergeVideos(
                 `[${i}:v]scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1[v${i}]`,
         )
         .join(';');
-    const concat = files.map((_, i) => `[v${i}]`).join('') + `concat=n=${files.length}:v=1:a=0[outv]`;
+    // Keep audio only when EVERY input actually has an audio track — otherwise
+    // concat with a=1 fails. (BUG #11: old code always dropped audio via a=0.)
+    const allHaveAudio = files.every((f) => hasAudioStream(f));
+    // ffmpeg's concat filter expects inputs INTERLEAVED PER SEGMENT:
+    // [v0][0:a][v1][1:a] (NOT all-videos-then-all-audios). The latter yields
+    // "Media type mismatch between ... video output pad and ... audio input
+    // pad" and the whole merge fails. (Real defect caught by edit.test.ts.)
+    const concat = allHaveAudio
+        ? files.map((_, i) => `[v${i}][${i}:a]`).join('') + `concat=n=${files.length}:v=1:a=1[outv][outa]`
+        : files.map((_, i) => `[v${i}]`).join('') + `concat=n=${files.length}:v=1:a=0[outv]`;
+    const mapArgs = allHaveAudio ? ['[outv]', '[outa]'] : ['[outv]'];
     const { code, out: log } = await runFfmpeg([
         ...inputs,
         '-filter_complex',
         `${filter};${concat}`,
-        '-map',
-        '[outv]',
+        ...mapArgs.flatMap((m) => ['-map', m]),
         '-c:v',
         'libx264',
         '-pix_fmt',
         'yuv420p',
+        ...(allHaveAudio ? ['-c:a', 'aac'] : []),
         '-y',
         output,
     ]);
@@ -132,14 +195,19 @@ export async function trimVideo(file: string, out?: string, startSec = 0, endSec
     const err = ensureFiles([file]);
     if (err) return fail(err);
     const output = resolveOut(out, 'mp4', 'trimmed');
-    // Seek AFTER -i (accurate seek) so output is never empty even on streams
-    // that copy-seek can't keyframe-align. Re-encode lightly for safety.
+    // Accurate seek AFTER -i, then RE-ENCODE (not -c copy). Stream copy cannot
+    // re-align to non-keyframes, which yields a 0-stream (empty) output that
+    // still exits 0 — see BUG #1. Re-encoding guarantees a real, playable clip.
     const args = ['-i', file, '-ss', String(startSec)];
     if (endSec != null) args.push('-to', String(endSec));
-    args.push('-c', 'copy', '-y', output);
+    args.push('-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-y', output);
     const { code, out: log } = await runFfmpeg(args);
     if (code !== 0) return fail(`ffmpeg trim failed:\n${log.slice(-800)}`);
-    if (!fs.existsSync(output)) return fail('trim produced no output file');
+    // Validate the output actually has a video stream + positive duration.
+    const dur = probeDurationSec(output);
+    if (!fs.existsSync(output) || dur == null || dur <= 0) {
+        return fail('trim produced an empty/unplayable output');
+    }
     return ok(output, `trimmed ${file} [${startSec}s${endSec != null ? `–${endSec}s` : ''}] -> ${output}`);
 }
 
@@ -171,7 +239,9 @@ export async function cropVideo(file: string, out?: string, opts: CropOptions = 
     let vf: string;
     if (opts.preset && PRESET_DIMS[opts.preset]) {
         const { w, h } = PRESET_DIMS[opts.preset];
-        vf = `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h}`;
+        // setsar=1 forces exact square pixels so the output is a true 9:16 / 16:9 /
+        // 1:1 (BUG #10: without it the SAR was 5120:5121 → not exactly the aspect).
+        vf = `scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},setsar=1`;
     } else if (opts.w && opts.h) {
         const x = opts.x ?? 0;
         const y = opts.y ?? 0;
@@ -250,9 +320,10 @@ export async function interpolateVideo(file: string, out?: string, targetFps: nu
     const err = ensureFiles([file]);
     if (err) return fail(err);
     const output = resolveOut(out, 'mp4', 'interpolated');
+    const fps = Math.max(24, Math.min(120, targetFps));
     const { code, out: log } = await runFfmpeg([
         '-i', file,
-        '-vf', `minterpolate=mode=blend:fps=${Math.max(24, Math.min(120, targetFps))}`,
+        '-vf', `minterpolate=mi_mode=blend:fps=${fps}`,
         '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'medium',
         '-y', output,
     ]);
@@ -280,14 +351,19 @@ export async function changeSpeed(file: string, out?: string, speed: number = 1)
     if (err) return fail(err);
     const s = Math.max(0.05, Math.min(10, speed));
     const output = resolveOut(out, 'mp4', 'speed');
-    const { code, out: log } = await runFfmpeg([
-        '-i', file,
-        '-filter_complex', `[0:v]setpts=${1 / s}*PTS[v];[0:a]atempo=${s}[a]`,
-        '-map', '[v]', '-map', '[a]', '-c:v', 'libx264', '-pix_fmt', 'yuv420p',
-        '-y', output,
-    ]);
+    const audio = hasAudioStream(file);
+    // Video speed via setpts. Audio speed via atempo (chained for sub-0.5x / >100x).
+    // Skip the audio branch entirely when the input has no audio track — else
+    // ffmpeg fails with "Stream specifier ':a' matches no streams" (BUG #4).
+    const vFilter = `[0:v]setpts=${1 / s}*PTS[v]`;
+    const filterComplex = audio ? `${vFilter};[0:a]${atempoFilter(s)}[a]` : vFilter;
+    const args = ['-i', file, '-filter_complex', filterComplex, '-map', '[v]'];
+    if (audio) args.push('-map', '[a]');
+    args.push('-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-y', output);
+    const { code, out: log } = await runFfmpeg(args);
     if (code !== 0) return fail(`ffmpeg speed change failed:\n${log.slice(-800)}`);
-    if (!fs.existsSync(output)) return fail('speed change produced no output file');
+    const d = probeDurationSec(output);
+    if (!fs.existsSync(output) || d == null || d <= 0) return fail('speed change produced an empty/unplayable output');
     return ok(output, `speed ${s}x: ${file} -> ${output}`);
 }
 
@@ -389,10 +465,14 @@ export async function splitVideo(file: string, splitSec: number, out1?: string, 
     if (err) return failR(err);
     const o1 = resolveOut(out1, 'mp4', 'part1');
     const o2 = resolveOut(out2, 'mp4', 'part2');
-    const { code: c1, out: l1 } = await runFfmpeg(['-i', file, '-ss', '0', '-to', String(splitSec), '-c', 'copy', '-y', o1]);
-    const { code: c2, out: l2 } = await runFfmpeg(['-i', file, '-ss', String(splitSec), '-c', 'copy', '-y', o2]);
-    const r1 = c1 !== 0 ? fail(`part1 failed:\n${l1.slice(-600)}`) : fs.existsSync(o1) ? ok(o1, `part1 (0-${splitSec}s): ${o1}`) : fail('part1 not created');
-    const r2 = c2 !== 0 ? fail(`part2 failed:\n${l2.slice(-600)}`) : fs.existsSync(o2) ? ok(o2, `part2 (${splitSec}s-): ${o2}`) : fail('part2 not created');
+    // Re-encode (NOT -c copy): stream copy over a non-keyframe split point
+    // yields a 0-stream empty file that still exits 0 — see BUG #2.
+    const { code: c1, out: l1 } = await runFfmpeg(['-i', file, '-ss', '0', '-to', String(splitSec), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-y', o1]);
+    const { code: c2, out: l2 } = await runFfmpeg(['-i', file, '-ss', String(splitSec), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-y', o2]);
+    const d1 = probeDurationSec(o1);
+    const d2 = probeDurationSec(o2);
+    const r1 = c1 !== 0 ? fail(`part1 failed:\n${l1.slice(-600)}`) : (fs.existsSync(o1) && d1 != null && d1 > 0) ? ok(o1, `part1 (0-${splitSec}s): ${o1}`) : fail('part1 empty/unplayable');
+    const r2 = c2 !== 0 ? fail(`part2 failed:\n${l2.slice(-600)}`) : (fs.existsSync(o2) && d2 != null && d2 > 0) ? ok(o2, `part2 (${splitSec}s-): ${o2}`) : fail('part2 empty/unplayable');
     return { part1: r1, part2: r2 };
 }
 
@@ -403,12 +483,24 @@ export async function addAudio(file: string, audioFile: string, out?: string, op
     const output = resolveOut(out, 'mp4', 'audio');
     const vol = opts?.volume ?? 1;
     if (opts?.mix) {
-        const { code, out: log } = await runFfmpeg([
-            '-i', file, '-i', audioFile,
-            '-filter_complex', `[1:a]volume=${vol.toFixed(2)}[a1];[0:a][a1]amix=inputs=2:duration=first[outa]`,
-            '-map', '0:v', '-map', '[outa]', '-c:v', 'copy', '-c:a', 'aac', '-shortest', '-y', output,
-        ]);
-        if (code !== 0) return fail(`ffmpeg add-audio mix failed:\n${log.slice(-800)}`);
+        const videoHasAudio = hasAudioStream(file);
+        if (!videoHasAudio) {
+            // Video has no audio — "mix" degenerates to "replace" (just add the
+            // new track). amix requires two audio inputs, so map [1:a] directly. BUG #6.
+            const { code, out: log } = await runFfmpeg([
+                '-i', file, '-i', audioFile,
+                '-filter_complex', `[1:a]volume=${vol.toFixed(2)}[outa]`,
+                '-map', '0:v', '-map', '[outa]', '-c:v', 'copy', '-c:a', 'aac', '-shortest', '-y', output,
+            ]);
+            if (code !== 0) return fail(`ffmpeg add-audio mix (no-src-audio) failed:\n${log.slice(-800)}`);
+        } else {
+            const { code, out: log } = await runFfmpeg([
+                '-i', file, '-i', audioFile,
+                '-filter_complex', `[1:a]volume=${vol.toFixed(2)}[a1];[0:a][a1]amix=inputs=2:duration=first[outa]`,
+                '-map', '0:v', '-map', '[outa]', '-c:v', 'copy', '-c:a', 'aac', '-shortest', '-y', output,
+            ]);
+            if (code !== 0) return fail(`ffmpeg add-audio mix failed:\n${log.slice(-800)}`);
+        }
     } else {
         const { code, out: log } = await runFfmpeg([
             '-i', file, '-i', audioFile, '-map', '0:v', '-map', '1:a',
@@ -424,16 +516,27 @@ export async function addAudio(file: string, audioFile: string, out?: string, op
 export async function silenceRemove(file: string, out?: string, opts?: { noiseThreshold?: number; minSilenceSec?: number }): Promise<EditResult> {
     const err = ensureFiles([file]);
     if (err) return fail(err);
+    if (!hasAudioStream(file)) {
+        return fail('silenceRemove: input has no audio track — nothing to remove');
+    }
     const output = resolveOut(out, 'mp4', 'nosilence');
     const threshold = opts?.noiseThreshold ?? '-30dB';
     const minSilence = opts?.minSilenceSec ?? 0.5;
+    const before = probeDurationSec(file);
     const { code, out: log } = await runFfmpeg([
         '-i', file, '-af', `silenceremove=start_periods=1:start_threshold=${threshold}:start_silence=${minSilence}:stop_periods=1:stop_threshold=${threshold}:stop_silence=${minSilence}`,
-        '-c:v', 'copy', '-y', output,
+        // Re-encode video (not -c copy) so the shortened audio and the video
+        // timeline stay aligned — copying video into a trimmed audio desyncs. BUG #7.
+        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-y', output,
     ]);
     if (code !== 0) return fail(`ffmpeg silence-remove failed:\n${log.slice(-800)}`);
     if (!fs.existsSync(output)) return fail('silence-remove produced no output file');
-    return ok(output, `silence removed: ${file} -> ${output}`);
+    const after = probeDurationSec(output);
+    // Confirm something actually changed; otherwise the filter was a no-op.
+    if (before != null && after != null && Math.abs(before - after) < 0.05) {
+        return fail('silence-remove: output duration unchanged — input may have no silence to cut');
+    }
+    return ok(output, `silence removed: ${file} (${before?.toFixed(1)}s -> ${after?.toFixed(1)}s) -> ${output}`);
 }
 
 /** ADD PROGRESS BAR — animated progress bar overlay (bottom edge). */
@@ -443,7 +546,8 @@ export async function addProgressBar(file: string, out?: string, opts?: { height
     const output = resolveOut(out, 'mp4', 'progress');
     const h = opts?.height ?? 6;
     const color = opts?.color ?? 'white';
-    const total = opts?.totalSec ?? 10;
+    // Probe the real clip duration (default was a bogus 10s → bar never filled). BUG #9.
+    const total = opts?.totalSec ?? (probeDurationSec(file) ?? 10);
     const { code, out: log } = await runFfmpeg([
         '-i', file, '-vf',
         `drawbox=x=0:y=ih-${h}:w='min(iw,iw*(t/${Math.max(1, total)}))':h=${h}:color=${color}@0.9:t=fill`,

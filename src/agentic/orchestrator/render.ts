@@ -293,6 +293,29 @@ async function writeOutputArtifacts(
     } catch { /* output copy is best-effort */ }
 }
 
+/**
+ * Resolve the per-scene voiceover audio path for a clip (BUG A3 guard).
+ *
+ * `voiceovers` can arrive in two shapes:
+ *   1. Full `{ scenes: SceneVoiceover[]; ... }` (orchestrator path, modular
+ *      path with on-disk WAVs).
+ *   2. Slim fallback `{ voiceoverDriven, sceneCount, fallbackUsed }` with NO
+ *      `scenes` array (modular CLI when the voice stage wrote no per-scene
+ *      WAVs). The legacy `res.voiceovers.scenes[idx]` indexing threw
+ *      `TypeError: Cannot read properties of undefined (reading '0')`.
+ *
+ * This helper defensively returns `undefined` for either the missing array or
+ * a missing entry, so the caller falls back to a silent anullsrc track instead
+ * of crashing the entire render. Exported for unit testing.
+ */
+export function sceneVoicePath(
+    voiceovers: { scenes?: Array<{ audioPath?: string }> | null } | null | undefined,
+    idx: number,
+): string | undefined {
+    const entry = voiceovers?.scenes?.[idx];
+    return entry?.audioPath;
+}
+
 export async function renderAgenticSlideshow(
     res: PipelineResult,
     opts: {
@@ -733,7 +756,14 @@ else vfArgs.push(`${videoMap}null[vig]`);
             } else {
                 vfChain = `[0:v]tpad=stop_mode=clone:stop_duration=${dur},fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${doVignette ? ',vignette=PI/5' : ''}${segAdvStr}${gradeStr},format=yuv420p${capStr}${kinStr}[v]`;
             }
-            const voPath = clip.kind === 'scene' ? res.voiceovers?.scenes[clip.idx]?.audioPath : undefined;
+            // GUARD (BUG A3): `voiceovers` may be a slim fallback shape
+            // (e.g. {voiceoverDriven, sceneCount, fallbackUsed} written by the
+            // modular CLI when no per-scene WAVs exist) with NO `scenes` array.
+            // The naive `res.voiceovers?.scenes[clip.idx]` throws
+            // "Cannot read properties of undefined (reading '0')". Use the
+            // optional chain on `.scenes` so a missing array yields undefined
+            // (→ silent anullsrc track) instead of crashing the whole render.
+            const voPath = clip.kind === 'scene' ? sceneVoicePath(res.voiceovers, clip.idx) : undefined;
             const hasVo = !!voPath && fs.existsSync(voPath);
             const inputs: string[] = ['-i', clip.file];
             if (hasVo) inputs.push('-i', voPath);
