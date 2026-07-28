@@ -51,8 +51,11 @@ export function hexToRgb(hex: string): [number, number, number] {
     return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 function rgbExpr(hex: string): string {
-    const [r, g, b] = hexToRgb(hex || '#000000');
-    return `${r}:${g}:${b}`;
+    // ffmpeg drawbox/color filters expect 0xRRGGBB (or #RRGGBB), NOT r:g:b.
+    const h = (hex || '#000000').replace('#', '');
+    // normalize 3-digit shorthand to 6-digit
+    const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+    return `0x${full}`;
 }
 
 /** Build the ffmpeg filter chain for a brand kit applied to a single clip. */
@@ -111,59 +114,83 @@ export async function applyBrandKit(
     const output = out ?? path.join(process.cwd(), 'output', `branded_${Date.now()}.mp4`);
     fs.mkdirSync(path.dirname(output), { recursive: true });
 
-    // Probe REAL dims with ffprobe (fall back to 720x1280 default).
+    // Probe REAL dims (and audio presence) with ffprobe (fall back to 720x1280 default).
     const probe = (runner as unknown as { probe?: ProbeRunner })?.probe ?? probeMedia;
     const info = await probe(file);
     const dims = info.width > 0 && info.height > 0 ? { w: info.width, h: info.height } : { w: 720, h: 1280 };
+    const hasAudio = !!info.hasAudio;
 
+    // Temp cards dir — cleaned up in `finally` so we never leak `_brand_*` dirs (BUG B3).
     const tmpDir = path.join(process.cwd(), 'output', `_brand_${Date.now()}`);
     fs.mkdirSync(tmpDir, { recursive: true });
-    const cards: string[] = [];
+    try {
+        const introCards: string[] = [];
+        const outroCards: string[] = [];
 
-    if (kit.intro && kit.intro > 0 && kit.name) {
-        const p = path.join(tmpDir, 'intro.mp4');
-        if (await makeCard(kit.name, color, kit.intro, dims.w, dims.h, p)) cards.push(p);
+        if (kit.intro && kit.intro > 0 && kit.name) {
+            const p = path.join(tmpDir, 'intro.mp4');
+            if (await makeCard(kit.name, color, kit.intro, dims.w, dims.h, p)) introCards.push(p);
+        }
+        if (kit.outro && kit.outro > 0) {
+            const p = path.join(tmpDir, 'outro.mp4');
+            const txt = kit.tagline || kit.name || 'Thanks for watching';
+            if (await makeCard(txt, color, kit.outro, dims.w, dims.h, p)) outroCards.push(p);
+        }
+
+        const vf = buildBrandFilter(kit, dims.w, dims.h);
+        const needsVf = vf.length > 0;
+
+        // BUG B1 (ordering): intro card(s) MUST precede the main video, which
+        // MUST precede the outro card(s). The old code did [...cards, file]
+        // which put the outro BEFORE the main clip.
+        const segments = [...introCards, file, ...outroCards];
+        const inputs = segments.flatMap((s) => ['-i', s]);
+        // Index of the MAIN video within `segments` (its audio stream lives here).
+        const mainIdx = introCards.length;
+
+        if (segments.length === 1 && !needsVf) {
+            const { code, out: log } = await run(['-i', file, '-c', 'copy', '-y', output]);
+            return finalize(code, output, log, 'passed through (no brand elements)');
+        }
+
+        // Build per-segment scale (+ optional brand filter on the MAIN clip).
+        const filterParts: string[] = [];
+        segments.forEach((_, i) => {
+            let scale = `[${i}:v]scale=${dims.w}:${dims.h}:force_original_aspect_ratio=increase,crop=${dims.w}:${dims.h}[v${i}]`;
+            if (i === mainIdx && needsVf)
+                scale = `[${i}:v]scale=${dims.w}:${dims.h}:force_original_aspect_ratio=increase,crop=${dims.w}:${dims.h},${vf}[v${i}]`;
+            filterParts.push(scale);
+        });
+
+        // BUG B1 fix: order is [...intro, file, ...outro] so the concat chain
+        // naturally yields intro → main → outro. The concat *filter* takes all
+        // scaled segment labels together: [v0][v1]...[vN]concat=n=N:v=1:a=0[outv].
+        // (The old code listed the labels with no connector, so later segments
+        // were never actually concatenated — only [v0] was used, which also
+        // orphaned the main clip's audio input.)
+        const concat = segments.map((_, i) => `[v${i}]`).join('') + `concat=n=${segments.length}:v=1:a=0[outv]`;
+        const graph = filterParts.join(';') + ';' + concat;
+
+        const args: string[] = [
+            ...inputs,
+            '-filter_complex',
+            graph,
+            '-map',
+            '[outv]',
+            ...(hasAudio ? ['-map', `${mainIdx}:a`, '-c:a', 'aac'] : ['-an']),
+            '-c:v',
+            'libx264',
+            '-pix_fmt',
+            'yuv420p',
+            '-y',
+            output,
+        ];
+        const { code, out: log } = await run(args);
+        return finalize(code, output, log, `branded with kit (intro=${kit.intro || 0}s, outro=${kit.outro || 0}s)`);
+    } finally {
+        // BUG B3: always remove the temp card dir (no `_brand_*` leaks).
+        try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
     }
-    if (kit.outro && kit.outro > 0) {
-        const p = path.join(tmpDir, 'outro.mp4');
-        const txt = kit.tagline || kit.name || 'Thanks for watching';
-        if (await makeCard(txt, color, kit.outro, dims.w, dims.h, p)) cards.push(p);
-    }
-
-    const vf = buildBrandFilter(kit, dims.w, dims.h);
-    const needsVf = vf.length > 0;
-
-    // concat [intro?] + [main with brand filter] + [outro?]
-    const segments = [...cards, file];
-    const inputs = segments.flatMap((s) => ['-i', s]);
-    if (segments.length === 1 && !needsVf) {
-        const { code, out: log } = await run(['-i', file, '-c', 'copy', '-y', output]);
-        return finalize(code, output, log, 'passed through (no brand elements)');
-    }
-
-    // Use concat demuxer-friendly filter_complex with re-encode.
-    const filterParts: string[] = [];
-    segments.forEach((_, i) => {
-        let scale = `[${i}:v]scale=${dims.w}:${dims.h}:force_original_aspect_ratio=increase,crop=${dims.w}:${dims.h}[v${i}]`;
-        if (i === segments.length - 1 && needsVf)
-            scale = `[${i}:v]scale=${dims.w}:${dims.h}:force_original_aspect_ratio=increase,crop=${dims.w}:${dims.h},${vf}[v${i}]`;
-        filterParts.push(scale);
-    });
-    const concat = segments.map((_, i) => `[v${i}]`).join('') + `concat=n=${segments.length}:v=1:a=0[outv]`;
-    const { code, out: log } = await run([
-        ...inputs,
-        '-filter_complex',
-        `${filterParts.join(';')};${concat}`,
-        '-map',
-        '[outv]',
-        '-c:v',
-        'libx264',
-        '-pix_fmt',
-        'yuv420p',
-        '-y',
-        output,
-    ]);
-    return finalize(code, output, log, `branded with kit (intro=${kit.intro || 0}s, outro=${kit.outro || 0}s)`);
 }
 
 function finalize(code: number, output: string, log: string, detail: string): BrandResult {
