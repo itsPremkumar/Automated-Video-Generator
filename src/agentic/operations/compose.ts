@@ -404,7 +404,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
         if (!overlayText || !overlayText.text) return;
         const start = cumStart[i] ?? 0;
         const end = start + (durations[i] ?? DEFAULT_SCENE_SEC);
-        const enable = `gte(t,${start.toFixed(2)})*lte(t,${end.toFixed(2)})`;
+        const enable = `gte(t,${start.toFixed(2)})*lt(t,${end.toFixed(2)})`;
         const fontSize = overlayText.fontSize ?? 48;
         const color = overlayText.color ?? 'white';
         const x = overlayText.x ?? '(w-text_w)/2';
@@ -424,7 +424,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
         if (!cta || !cta.text) return;
         const start = cumStart[i] ?? 0;
         const end = start + (durations[i] ?? DEFAULT_SCENE_SEC);
-        const enable = `gte(t,${start.toFixed(2)})*lte(t,${end.toFixed(2)})`;
+        const enable = `gte(t,${start.toFixed(2)})*lt(t,${end.toFixed(2)})`;
         const fontSize = 32;
         const fontFile = resolveFontFile(undefined, cta.borderColor ? 800 : 700);
         const x = cta.x ?? '(w-text_w)/2';
@@ -495,14 +495,14 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
                 wl.forEach((ln, li) => {
                     const ly = `H-th-${Math.max(60, 120 + blockH / 2) - (wl.length - 1 - li) * lineH}`;
                     vf.push(drawTextFilter(ln, '(w-text_w)/2', ly, size, overlay.font.color,
-                        { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: `gte(t,${ws})*lte(t,${we})`, shadow: overlay.font.shadow }));
+                        { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: `gte(t,${ws})*lt(t,${we})`, shadow: overlay.font.shadow }));
                 });
             });
         } else {
             lines.forEach((ln, li) => {
                 const ly = `H-th-${Math.max(60, 120 + blockH / 2) - (lines.length - 1 - li) * lineH}`;
                 vf.push(txt(ln, '(w-text_w)/2', ly, size, overlay.font.color,
-                    { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: `gte(t,${start.toFixed(2)})*lte(t,${end.toFixed(2)})` }));
+                    { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: `gte(t,${start.toFixed(2)})*lt(t,${end.toFixed(2)})` }));
             });
         }
     });
@@ -939,7 +939,7 @@ function applyTextOverlay(clipPath: string, sceneIndex: number, job: any, workDi
     if (!isReadableVideo(clipPath)) return null;
     const start = cumStart;
     const end = start + duration;
-    const enable = `gte(t,${start.toFixed(2)})*lte(t,${end.toFixed(2)})`;
+    const enable = `gte(t,${start.toFixed(2)})*lt(t,${end.toFixed(2)})`;
     const fontSize = overlay.fontSize ?? 48;
     const color = overlay.color ?? 'white';
     const x = overlay.x ?? '(w-text_w)/2';
