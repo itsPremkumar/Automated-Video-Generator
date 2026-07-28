@@ -46,7 +46,7 @@ export class WikimediaImageProvider implements ImageProvider {
                     gsrnamespace: 6,
                     gsrlimit: Math.min(options.count, 50),
                     prop: 'imageinfo',
-                    iiprop: 'url|size|dimensions|extmetadata',
+                    iiprop: 'url|size|dimensions|mime|extmetadata',
                     iiurlwidth: 800,
                     format: 'json',
                 };
@@ -60,6 +60,16 @@ export class WikimediaImageProvider implements ImageProvider {
                 for (const page of Object.values(pages)) {
                     const info = page.imageinfo?.[0];
                     if (!info?.url) continue;
+
+                    // Namespace 6 on Commons includes PDFs, DjVu scans, videos,
+                    // and audio. Only accept real raster/vector images — a PDF
+                    // "visual" wastes downloads (observed: hundreds of 429'd
+                    // PDF fetches in one run) and can never render as a scene.
+                    const mime = info.mime ?? '';
+                    const url = info.url.toLowerCase();
+                    const isImage = mime.startsWith('image/')
+                        || (!mime && /\.(jpe?g|png|gif|webp|svg)$/.test(url));
+                    if (!isImage || /\.(pdf|djvu|ogv|ogg|webm|mp3|wav|tiff?)$/.test(url)) continue;
 
                     const width = info.width ?? null;
                     const height = info.height ?? null;
