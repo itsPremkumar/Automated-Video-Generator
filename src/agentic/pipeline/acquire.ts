@@ -326,6 +326,20 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                     }
                 }
                 const lic = normalizeLicense(f);
+                // Kind/extension mismatch guard: fallback providers can return
+                // a VIDEO url for an image request (observed: image scene got
+                // candidate_1.webm → rendered as a frozen 'still'). Reclassify
+                // by actual extension so downstream FX (Ken Burns vs trim)
+                // treat the asset correctly.
+                const actualExt = path.extname(localPath).toLowerCase();
+                const VIDEO_EXTS = ['.mp4', '.mov', '.webm', '.m4v', '.mkv'];
+                const effectiveKind: typeof kind =
+                    kind === 'image' && VIDEO_EXTS.includes(actualExt) ? 'video'
+                    : kind === 'video' && ['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(actualExt) ? 'image'
+                    : kind;
+                if (effectiveKind !== kind) {
+                    console.warn(`⚠ scene ${i} cand ${c + 1}: requested ${kind} but got ${actualExt} — reclassified as ${effectiveKind}`);
+                }
                 // OPT-IN AI verify (acquire stage): score the materialised
                 // candidate with the agent's own model. A non-null FAILING score
                 // drops this candidate (next source in the ladder is tried). A
@@ -346,7 +360,7 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                     }
                 }
                 candidates.push({
-                    kind,
+                    kind: effectiveKind,
                     sceneIndex: i,
                     candidateIndex: c + 1,
                     localPath,
