@@ -309,11 +309,16 @@ async function writeOutputArtifacts(
  * of crashing the entire render. Exported for unit testing.
  */
 export function sceneVoicePath(
-    voiceovers: { scenes?: Array<{ audioPath?: string }> | null } | null | undefined,
+    voiceovers: { scenes?: Array<{ audioPath?: string; sceneIndex?: number }> | null } | null | undefined,
     idx: number,
 ): string | undefined {
-    const entry = voiceovers?.scenes?.[idx];
-    return entry?.audioPath;
+    // Match by sceneIndex when present (BUG M3): a missing/extra scene shifts
+    // positional array indexing so the WRONG narration lands on a visual. The
+    // entries carry their own sceneIndex, so key on that instead of position.
+    const scenes = voiceovers?.scenes;
+    if (!scenes) return undefined;
+    const byIndex = scenes.find((s) => s && s.sceneIndex === idx);
+    return (byIndex ?? scenes[idx])?.audioPath;
 }
 
 export async function renderAgenticSlideshow(

@@ -444,6 +444,27 @@ export async function runVoiceStage(
         report(30, `engine ${defaultEngine} loads on first speak (no explicit preload)`);
     }
 
+    // Provision (or reuse) a VoiceBox preset profile for a given Kokoro voice
+    // name (e.g. af_bella). Reusing a raw name as a profile id 404s (BUG M2).
+    async function kokoroProfileFor(voice: string): Promise<{ id: string; engine: string }> {
+        const engine = 'kokoro';
+        const cacheFile = profileCachePath(ws).replace(/\.json$/, `.${voice}.json`);
+        try {
+            const cached = JSON.parse(fs.readFileSync(cacheFile, 'utf-8'));
+            if (cached?.id) return { id: cached.id, engine };
+        } catch { /* ignore */ }
+        try {
+            const list = await axios.get(`${baseUrl()}/profiles`, { timeout: 15000 });
+            const existing = (list.data || []).find((p: any) => p?.preset_engine === engine && p?.preset_voice_id === voice);
+            if (existing?.id) { fs.writeFileSync(cacheFile, JSON.stringify({ id: existing.id, engine }, null, 2)); return { id: existing.id, engine }; }
+        } catch { /* fall through */ }
+        const res = await axios.post(`${baseUrl()}/profiles`, { name: `agentic-${engine}-${voice}-${Date.now()}`, voice_type: 'preset', preset_engine: engine, preset_voice_id: voice }, { headers: { 'Content-Type': 'application/json' }, timeout: 30000 });
+        const id = res.data?.id || res.data?.profile_id;
+        if (!id) throw new Error(`kokoro profile create returned no id for voice ${voice}`);
+        fs.writeFileSync(cacheFile, JSON.stringify({ id, engine }, null, 2));
+        return { id, engine };
+    }
+
     const audioDir = ws.audioDir;
     fs.mkdirSync(audioDir, { recursive: true });
 
@@ -472,8 +493,14 @@ export async function runVoiceStage(
                 profId = personaMap.get(personaId)!.id;
                 eng = personaMap.get(personaId)!.engine;
             } else if (scene.voiceOverride && !/Neural$/.test(scene.voiceOverride)) {
-                // A non-Edge voiceOverride is treated as a VoiceBox profile id.
-                profId = scene.voiceOverride;
+                // A non-Edge voiceOverride is a Kokoro preset voice name
+                // (e.g. af_bella) — provision a real profile for it instead of
+                // treating the name as a (nonexistent) profile id (BUG M2).
+                const ko = /^af_|^am_|^bf_|^bm_|^hf_|^hm_|^af |^am /.test(scene.voiceOverride)
+                    ? await kokoroProfileFor(scene.voiceOverride)
+                    : { id: scene.voiceOverride, engine: engineName() };
+                profId = ko.id;
+                eng = ko.engine;
             }
             // In-scene dialogue: each turn spoken by its own persona, one-by-one.
             if (scene.dialogue && scene.dialogue.length > 0) {

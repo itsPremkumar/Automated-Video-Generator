@@ -240,7 +240,7 @@ async function runVisuals(cliArgs: CliArgs) {
         // synthesize the render-manifest directly from plan.json localAssets + music.
         if (cliArgs['no-acquire'] === true) {
             const { resolveFreeBackgroundMusic } = await import('../../lib/free-music.js');
-            const { inputAssetPath } = await import('../../lib/path-safety.js');
+            const { inputAssetPath, inputBgmPath } = await import('../../lib/path-safety.js');
             const assets: any[] = [];
             for (const s of plan.scenes) {
                 const la = s.localAsset;
@@ -260,8 +260,12 @@ async function runVisuals(cliArgs: CliArgs) {
             // Resolve background music (explicit file or query)
             let musicPath = '';
             if (job.backgroundMusic) {
-                const bp = inputAssetPath(job.backgroundMusic);
-                musicPath = fs.existsSync(bp) ? bp : '';
+                const bp = inputBgmPath(job.backgroundMusic);
+                const bpBundled = inputBgmPath('__bundled__', job.backgroundMusic);
+                const bpLegacy = inputAssetPath(job.backgroundMusic);
+                musicPath = fs.existsSync(bp) ? bp
+                    : (fs.existsSync(bpBundled) ? bpBundled
+                        : (fs.existsSync(bpLegacy) ? bpLegacy : ''));
             }
             if (!musicPath) {
                 const m = await resolveFreeBackgroundMusic({ query: job.musicQuery || 'background music', enabled: true });
@@ -328,8 +332,13 @@ async function runVisuals(cliArgs: CliArgs) {
             },
             fetchMusic: async (query: string, count: number) => {
                 if (job.backgroundMusic) {
-                    const bgmPath = inputAssetPath(job.backgroundMusic);
-                    if (fs.existsSync(bgmPath)) return [{ url: '', localPath: bgmPath, source: 'local' }];
+                    const bgmPath = inputBgmPath(job.backgroundMusic);
+                    const bgmBundled = inputBgmPath('__bundled__', job.backgroundMusic);
+                    const bgmLegacy = inputAssetPath(job.backgroundMusic);
+                    const resolved = fs.existsSync(bgmPath) ? bgmPath
+                        : (fs.existsSync(bgmBundled) ? bgmBundled
+                            : (fs.existsSync(bgmLegacy) ? bgmLegacy : ''));
+                    if (resolved) return [{ url: '', localPath: resolved, source: 'local' }];
                 }
                 const tracks = [];
                 for (let i = 0; i < count; i++) {
@@ -608,6 +617,13 @@ async function runRender(cliArgs: CliArgs) {
         const { renderAgenticSlideshow } = await import('../../agentic/orchestrator/render.js');
         const outputDir = outputFor(id);
         fs.mkdirSync(outputDir, { recursive: true });
+
+        // BUG M4: honor declared ducking/voice-volume on the modular path.
+        // render.ts reads these from env (AUDIO_DUCK_LEVEL / AUDIO_FULL_LEVEL).
+        const duck = job.duckDepth;
+        if (typeof duck === 'number') process.env.AUDIO_DUCK_LEVEL = String(duck);
+        const voiceVol = job.voiceVolumeByScene?.[0] ?? (typeof job.voiceVolume === 'number' ? job.voiceVolume : undefined);
+        if (typeof voiceVol === 'number') process.env.AUDIO_FULL_LEVEL = String(voiceVol);
 
         const finalMp4 = await renderAgenticSlideshow(result, {
             outPath: path.join(outputDir, `${job.title || 'output'}.mp4`),
