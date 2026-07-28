@@ -130,7 +130,10 @@ function getWindowsVoiceCulture(config: VoiceConfig): string {
     const requested = (config.language || '').toLowerCase().trim();
     if (requested && WINDOWS_SAPI_LANGUAGE_MAP[requested]) return WINDOWS_SAPI_LANGUAGE_MAP[requested];
 
-    const voice = config.voice || '';
+    // Defensive: job.voice may be an object ({backend, voice}) on the agentic
+    // path — coerce to the inner voice string instead of crashing on .split.
+    const rawVoice: any = config.voice || '';
+    const voice = typeof rawVoice === 'string' ? rawVoice : String(rawVoice?.voice ?? '');
     const voicePrefix = voice.split('-').slice(0, 2).join('-');
     if (/^[a-z]{2}-[A-Z]{2}$/.test(voicePrefix)) return voicePrefix;
     return WINDOWS_SAPI_LANGUAGE_MAP.english;

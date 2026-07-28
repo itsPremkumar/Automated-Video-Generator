@@ -165,6 +165,7 @@ async function writeOutputArtifacts(
     outDir: string,
     aiVerify?: import('../config.js').AgenticConfig['aiVerify'],
     languages?: string[],
+    exportAspects?: string[],
 ): Promise<void> {
     const brain = new AgentBrain();
     const base = outDir + '/' + res.workspace.jobId;
@@ -207,7 +208,10 @@ async function writeOutputArtifacts(
     );
     try { await renderThumbnail(mp4, res.plan); } catch { /* optional */ }
     let aspectPaths: string[] = [];
-    try { aspectPaths = await exportMultiAspect(mp4, ['9:16', '16:9', '1:1']); } catch { /* optional */ }
+    // BUG A2: honor the job's exportAspects (incl. '4K') instead of a
+    // hardcoded three-aspect list.
+    const aspects = (exportAspects && exportAspects.length ? exportAspects : ['9:16', '16:9', '1:1']) as any;
+    try { aspectPaths = await exportMultiAspect(mp4, aspects); } catch { /* optional */ }
     if (aiVerify?.verifyOnRender && brain.modelEnabled && aspectPaths.length) {
         const keywords = res.plan.scenes.flatMap((s) => s.searchKeywords);
         for (const ap of aspectPaths) {
@@ -338,6 +342,7 @@ export async function renderAgenticSlideshow(
         intro?: { title: string; subtitle?: string; durationSec?: number };
         outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number };
         jCutSec?: number;
+        exportAspects?: string[];
         aiVerify?: import('../config.js').AgenticConfig['aiVerify'];
         languages?: string[];
         vignette?: boolean;
@@ -693,7 +698,11 @@ else vfArgs.push(`${videoMap}null[vig]`);
             const isVideo = /\.(mp4|webm|mov|m4v)$/i.test(clip.file);
             const sceneKb = clip.kind === 'scene' ? res.plan.scenes[clip.idx]?.kenBurns : undefined;
             const doZoom = clip.kind === 'scene' && !isVideo && (sceneKb !== false ? opts.kenBurns !== false : false);
-            const zoom = doZoom ? `,zoompan=z=zoom+0.0008:d=1:s=${W}x${H}` : '';
+            // BUG C3: with a tpad-cloned 25fps stream + d=1 the `zoom` variable
+            // resets every input frame, so zoom+0.0008 never accumulates
+            // (static image). Drive the zoom off `time` instead and anchor at
+            // the center so the Ken Burns drift is actually visible.
+            const zoom = doZoom ? `,zoompan=z='1+0.04*time':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=${W}x${H}:fps=25` : '';
             const grade = clip.kind === 'scene' ? gradeFilter(stylePlan.scenes[clip.idx]?.grade ?? 'neutral') : '';
             const segCaptionArg: string[] = [];
             if (clip.kind === 'scene' && burn) {
@@ -742,9 +751,13 @@ else vfArgs.push(`${videoMap}null[vig]`);
                 if (sp.blur) segAdv.push('boxblur=10');
                 if (sp.keyframes && sp.keyframes.length >= 2) {
                     const sorted = [...sp.keyframes].sort((a, b) => a.t - b.t);
+                    // BUG C1: zoompan's eval has no `t` variable (use `time`),
+                    // and `\\,` escaping inside z='...' reaches ffmpeg's eval as
+                    // a literal backslash → parse error. Plain commas inside the
+                    // quoted expr are legal.
                     let expr = `${sorted[sorted.length - 1].z}`;
-                    for (let k = sorted.length - 1; k >= 0; k--) expr = `if(lte(t\\,${sorted[k].t})\\,${sorted[k].z}\\,${expr})`;
-                    segAdv.push(`zoompan=z='${expr}':d=${Math.round(dur * 25)}:s=${W}x${H}:fps=25`);
+                    for (let k = sorted.length - 1; k >= 0; k--) expr = `if(lte(time,${sorted[k].t}),${sorted[k].z},${expr})`;
+                    segAdv.push(`zoompan=z='${expr}':d=1:s=${W}x${H}:fps=25`);
                 }
             }
             const segAdvStr = segAdv.length ? ',' + segAdv.join(',') : '';
@@ -792,11 +805,18 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
                 '-c:a', 'aac', '-b:a', '192k', '-y', seg,
             ];
             let lastErr: any;
+            let segOk = false;
             for (let attempt = 0; attempt < 3; attempt++) {
-                try { await runFfmpegSpawn(args, dur); break; }
+                try { await runFfmpegSpawn(args, dur); segOk = true; break; }
                 catch (e) { lastErr = e; console.warn(`⚠ segment ${ci} attempt ${attempt + 1} failed, retrying`); }
             }
-            if (!fs.existsSync(seg)) throw lastErr ?? new Error(`segment ${ci} failed`);
+            // BUG C2: a failed ffmpeg run can leave a headerless/0-byte file
+            // behind, so existsSync alone let a hard per-scene failure become a
+            // silent content drop at concat. Require success + a plausible size.
+            const segSize = fs.existsSync(seg) ? fs.statSync(seg).size : 0;
+            if (!segOk || segSize < 2048) {
+                throw lastErr ?? new Error(`segment ${ci} failed (size=${segSize}) — aborting render instead of silently dropping the scene`);
+            }
             segFiles.push(seg);
         }
         const list = outDir + '/_concat_' + res.workspace.jobId + '.txt';
@@ -967,7 +987,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
         }
     }
 
-    await writeOutputArtifacts(res, out, outDir, opts.aiVerify, opts.languages);
+    await writeOutputArtifacts(res, out, outDir, opts.aiVerify, opts.languages, opts.exportAspects);
     fs.rmSync(srtPath, { force: true });
 
     const aiBrain = opts.aiVerify?.verifyOnRender ? new AgentBrain() : undefined;

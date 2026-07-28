@@ -216,7 +216,14 @@ export function applyParallax(clipPath: string, sceneIndex: number, job: any, wo
   const z = 1 + Math.min(10, Number(depth)) * 0.02; // up to +20% zoom
   const out = path.join(workDir, `par_${sceneIndex}.mp4`);
   if (fs.existsSync(out)) fs.rmSync(out, { force: true });
-  const filt = `scale=${W * z}:${H * z}:force_original_aspect_ratio=increase,crop=${W}:${H},zoompan=z='min(zoom+0.001,${z.toFixed(3)})':d=1:s=${W}x${H}:fps=25`;
+  // BUG M5: zoompan with d=1 resets `zoom` each frame (static 1.001 micro-zoom,
+  // no drift). Oversize the frame, then animate a slow diagonal crop drift over
+  // time — a real 2.5D parallax slide whose travel scales with depth.
+  const ow = Math.round(W * z / 2) * 2;
+  const oh = Math.round(H * z / 2) * 2;
+  const dx = ow - W;
+  const dy = oh - H;
+  const filt = `scale=${ow}:${oh}:force_original_aspect_ratio=increase,crop=${ow}:${oh},crop=${W}:${H}:x='(${dx})*t/max(1,${(Number(job.sceneDurationByScene?.[sceneIndex] ?? 5) || 5).toFixed(2)})':y='(${dy})*t/max(1,${(Number(job.sceneDurationByScene?.[sceneIndex] ?? 5) || 5).toFixed(2)})'`;
   try {
     execFileSync(ff(), ['-y', '-i', clipPath, '-vf', filt, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 90000 });
     return isReadableVideo(out) ? out : clipPath;
@@ -289,13 +296,26 @@ export function applySpeedRamp(clipPath: string, sceneIndex: number, job: any, w
   const presets: Record<string, [number, number]> = {
     dramatic: [1.0, 0.4], 'slow-in': [0.5, 1.0], 'slow-out': [1.0, 0.5], hyper: [1.0, 2.0],
   };
-  const [from, to] = typeof ramp === 'string' ? (presets[ramp] ?? [1, 1]) : [Number(ramp.from ?? 1), Number(ramp.to ?? 1)];
+  // BUG M1: a plain number (e.g. {1: 1.5}) used to fall into the object branch
+  // → [1,1] → silent no-op. Treat numbers as constant speed.
+  const [from, to] = typeof ramp === 'string'
+    ? (presets[ramp] ?? [1, 1])
+    : (typeof ramp === 'number'
+      ? [Number(ramp) || 1, Number(ramp) || 1]
+      : [Number(ramp.from ?? 1), Number(ramp.to ?? 1)]);
   if (from === to && from === 1) return clipPath;
+  if (!(from > 0) || !(to > 0)) { console.warn(`  ⚠ speed-ramp scene ${sceneIndex}: invalid speeds ${from}→${to}, skipped`); return clipPath; }
   const out = path.join(workDir, `ramp_${sceneIndex}.mp4`);
   if (fs.existsSync(out)) fs.rmSync(out, { force: true });
-  // Linear PTS interpolation between the two speeds across the clip.
   const avg = (from + to) / 2;
-  const filt = `setpts='PTS*(1/${from.toFixed(3)}+(1/${to.toFixed(3)}-1/${from.toFixed(3)})*T/max(1,${(job.sceneDurationByScene?.[sceneIndex] ?? 5)}))',minterpolate=fps=25:mi_mode=blend`;
+  // BUG M2: the old formula multiplied PTS by a time-varying factor, which is
+  // NOT the integral of 1/speed(t) — PTS became non-monotonic (mass frame
+  // drops, wrong duration). For linear speed s(t)=from+(to-from)*t/D the exact
+  // output time is τ(t) = D/(to-from)·ln(s(t)/from); constant speed is PTS/s.
+  const D = Number(job.sceneDurationByScene?.[sceneIndex] ?? 5) || 5;
+  const filt = from === to
+    ? `setpts=PTS/${from.toFixed(3)},minterpolate=fps=25:mi_mode=blend`
+    : `setpts='(${D.toFixed(3)}/(${to.toFixed(3)}-${from.toFixed(3)}))*log(1+(${to.toFixed(3)}-${from.toFixed(3)})*T/(${from.toFixed(3)}*${D.toFixed(3)}))/TB',minterpolate=fps=25:mi_mode=blend`;
   try {
     execFileSync(ff(), ['-y', '-i', clipPath, '-vf', filt, '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 120000 });
     return isReadableVideo(out) ? out : clipPath;
@@ -318,7 +338,11 @@ export function applySpeedRamp(clipPath: string, sceneIndex: number, job: any, w
 export function applyPunchIn(clipPath: string, sceneIndex: number, job: any, workDir: string, W: number, H: number): string {
   const zoom = job.punchInByScene?.[sceneIndex];
   if (!zoom || !fs.existsSync(clipPath)) return clipPath;
-  const z = Math.min(2, Math.max(1.05, Number(zoom)));
+  // BUG M4: values in (0,1) plausibly mean "punch intensity" — map 0.4 → 1.4
+  // instead of silently clamping to the 1.05 floor.
+  const zRaw = Number(zoom);
+  const zIn = zRaw > 0 && zRaw < 1 ? 1 + zRaw : zRaw;
+  const z = Math.min(2, Math.max(1.05, zIn));
   const out = path.join(workDir, `punch_${sceneIndex}.mp4`);
   if (fs.existsSync(out)) fs.rmSync(out, { force: true });
   // Fast zoom to z within the first ~0.4s (10 frames @25fps), then hold.

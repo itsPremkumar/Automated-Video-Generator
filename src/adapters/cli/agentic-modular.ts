@@ -560,7 +560,7 @@ async function runRender(cliArgs: CliArgs) {
         const result: any = {
             backend: job.backend ?? 'agent',
             plan,
-            workspace: { root: ws.root, assetsDir: ws.assetsDir, imagesDir: ws.imagesDir, videosDir: ws.videosDir, musicDir: ws.musicDir, verificationDir: ws.verificationDir, audioDir: ws.audioDir },
+            workspace: { jobId: id, root: ws.root, assetsDir: ws.assetsDir, imagesDir: ws.imagesDir, videosDir: ws.videosDir, musicDir: ws.musicDir, verificationDir: ws.verificationDir, audioDir: ws.audioDir },
             manifest: manifest.assets ? manifest : {
                 assets: plan.scenes.map((s: any, i: number) => ({
                     sceneIndex: i,
@@ -638,6 +638,11 @@ async function runRender(cliArgs: CliArgs) {
             kenBurns: job.kenBurns ?? meta.kenBurns,
             preset: job.preset || meta.preset,
             vignette: job.vignette ?? meta.vignette,
+            // BUG A1: jCutSec was written to job-meta but never forwarded.
+            jCutSec: job.jCutSec ?? meta.jCutSec,
+            // BUG A2: honor the job's exportAspects (incl. '4K') instead of the
+            // hardcoded three-aspect list in render.ts.
+            exportAspects: job.exportAspects ?? meta.exportAspects,
         });
 
         if (finalMp4 && fs.existsSync(finalMp4)) {
