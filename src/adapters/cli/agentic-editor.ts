@@ -295,11 +295,17 @@ COMMANDS['loop'] = (args) => {
     const input = resolveInput(args.input);
     const n = parseInt(args.n || args.count || '3');
     const output = resolveOutput(args.output, `looped_${path.basename(input)}`);
+    // BUG E2: an audio-less input makes `[0:a]aloop` fail ("matches no
+    // streams"). Probe and drop the audio branch when there is no audio.
+    const hasAudio = Array.isArray(getMediaInfo(input)?.streams) && getMediaInfo(input).streams.some((s: any) => s.codec_type === 'audio');
+    const fc = hasAudio
+        ? `[0:v]loop=loop=${n - 1}:size=32767[v];[0:a]aloop=loop=${n - 1}:size=32767[a]`
+        : `[0:v]loop=loop=${n - 1}:size=32767[v]`;
     const ff: string[] = [
         '-i', input,
-        '-filter_complex', `[0:v]loop=loop=${n - 1}:size=32767[v];[0:a]aloop=loop=${n - 1}:size=32767[a]`,
-        '-map', '[v]', '-map', '[a]',
-        '-c:v', 'libx264', '-c:a', 'aac', output, '-y',
+        '-filter_complex', fc,
+        '-map', '[v]', ...(hasAudio ? ['-map', '[a]'] : []),
+        '-c:v', 'libx264', ...(hasAudio ? ['-c:a', 'aac'] : ['-an']), output, '-y',
     ];
     runFfmpeg(ff, `Looped ${n} times`);
 };
@@ -410,11 +416,16 @@ COMMANDS['adjust'] = (args) => {
 COMMANDS['reverse'] = (args) => {
     const input = resolveInput(args.input);
     const output = resolveOutput(args.output, `reversed_${path.basename(input)}`);
+    // BUG E2: audio-less input → `[0:a]areverse` fails. Probe and drop audio.
+    const hasAudio = Array.isArray(getMediaInfo(input)?.streams) && getMediaInfo(input).streams.some((s: any) => s.codec_type === 'audio');
+    const fc = hasAudio
+        ? '[0:v]reverse[v];[0:a]areverse[a]'
+        : '[0:v]reverse[v]';
     const ff: string[] = [
         '-i', input,
-        '-filter_complex', '[0:v]reverse[v];[0:a]areverse[a]',
-        '-map', '[v]', '-map', '[a]',
-        '-c:v', 'libx264', '-c:a', 'aac',
+        '-filter_complex', fc,
+        '-map', '[v]', ...(hasAudio ? ['-map', '[a]'] : []),
+        '-c:v', 'libx264', ...(hasAudio ? ['-c:a', 'aac'] : ['-an']),
         '-preset', 'medium',
         output, '-y',
     ];
@@ -844,13 +855,29 @@ COMMANDS['transition'] = (args) => {
     const type = args.type || args.t || 'fade';
     const dur = args.duration || args.d || '1';
     const offset = args.offset || '0';
+    const aHas = Array.isArray(getMediaInfo(a)?.streams) && getMediaInfo(a).streams.some((s: any) => s.codec_type === 'audio');
+    const bHas = Array.isArray(getMediaInfo(b)?.streams) && getMediaInfo(b).streams.some((s: any) => s.codec_type === 'audio');
+    // BUG E2: audio-less input → `[0:a][1:a]acrossfade` fails. Only build the
+    // audio crossfade when BOTH clips carry an audio stream; otherwise carry
+    // the single available audio track (or none).
+    let audioFilter = '';
+    let audioMap: string[] = [];
+    let audioCodec: string[] = ['-an'];
+    if (aHas && bHas) {
+        audioFilter = `[0:a][1:a]acrossfade=d=${dur}[a]`;
+        audioMap = ['-map', '[a]'];
+        audioCodec = ['-c:a', 'aac'];
+    } else if (aHas) {
+        audioMap = ['-map', '0:a'];
+    } else if (bHas) {
+        audioMap = ['-map', '1:a'];
+    }
     const ff: string[] = [
         '-i', a, '-i', b,
         '-filter_complex',
-        `[0:v][1:v]xfade=transition=${type}:duration=${dur}:offset=${offset}[v];` +
-        `[0:a][1:a]acrossfade=d=${dur}[a]`,
-        '-map', '[v]', '-map', '[a]',
-        '-c:v', 'libx264', '-c:a', 'aac',
+        `[0:v][1:v]xfade=transition=${type}:duration=${dur}:offset=${offset}[v];` + audioFilter,
+        '-map', '[v]', ...audioMap,
+        '-c:v', 'libx264', ...audioCodec,
         output, '-y',
     ];
     runFfmpeg(ff, `Transition ${type} (${dur}s) between two clips`);
@@ -879,12 +906,25 @@ COMMANDS['duck'] = (args) => {
     const ratio = args.ratio || '8';
     const attack = args.attack || '20';
     const release = args.release || '300';
+    const mHas = Array.isArray(getMediaInfo(music)?.streams) && getMediaInfo(music).streams.some((s: any) => s.codec_type === 'audio');
+    const vHas = Array.isArray(getMediaInfo(voice)?.streams) && getMediaInfo(voice).streams.some((s: any) => s.codec_type === 'audio');
+    // BUG E2: audio-less music/voice → `[0:a]`/`[1:a]` fails. Only run the
+    // sidechain duck when BOTH carry audio; otherwise fall back to a plain
+    // passthrough of whichever track exists (or the music, if voice is empty).
+    let filter = '';
+    let audioMap: string[] = [];
+    if (mHas && vHas) {
+        filter = `[1:a]asplit=2[sc][v];[0:a][sc]sidechaincompress=threshold=${threshold}:ratio=${ratio}:attack=${attack}:release=${release}:makeup=1[ducked];[ducked][v]amix=inputs=2:dropout_transition=0`;
+        audioMap = ['-map', '[a]'];
+    } else if (mHas) {
+        audioMap = ['-map', '0:a'];
+    } else if (vHas) {
+        audioMap = ['-map', '1:a'];
+    }
     const ff: string[] = [
         '-i', music, '-i', voice,
-        '-filter_complex',
-        `[1:a]asplit=2[sc][v];` +
-        `[0:a][sc]sidechaincompress=threshold=${threshold}:ratio=${ratio}:attack=${attack}:release=${release}:makeup=1[ducked];` +
-        `[ducked][v]amix=inputs=2:dropout_transition=0`,
+        ...(filter ? ['-filter_complex', filter] : []),
+        ...audioMap,
         '-c:v', 'copy', '-c:a', 'pcm_s16le',
         output, '-y',
     ];
@@ -950,3 +990,6 @@ function main() {
 }
 
 main();
+
+// Exported for unit/integration tests (e.g. audio-less guard verification).
+export { COMMANDS };
