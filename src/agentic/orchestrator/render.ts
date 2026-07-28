@@ -845,12 +845,35 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
         const duckExpr = buildDuckExpression(visuals, full, duck, duckForScene);
         const volFilter = duckExpr ? `volume=eval=frame:volume='${duckExpr}'` : `volume=${full}`;
         const inputs: string[] = ['-i', silent, '-i', music.localPath];
-        let fc = `[1:a]${volFilter}[a]`;
-        if (sfxLayer && fs.existsSync(sfxLayer)) {
-            inputs.push('-i', sfxLayer);
-            fc += `;[2:a]volume=0.6[sfx];[0:a][a][sfx]amix=inputs=3:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`;
+        // GUARD (BUG #4 class): `silent` is audio-less when no scene had a
+        // voiceover (voScenes empty → pass1 used -an). Referencing `[0:a]` in the
+        // amix then throws "Stream specifier ':a' matches no streams" and the
+        // render dies even though music was requested. Probe the silent video
+        // and, when it has no audio, mux the music (± sfx) ALONE.
+        let silentHasAudio = false;
+        try {
+            const { execFileSync } = require('child_process');
+            const ffprobeBin = require('ffprobe-static').path;
+            const pr = execFileSync(ffprobeBin, ['-v', 'quiet', '-select_streams', 'a', '-show_entries', 'stream=index', '-of', 'csv=p=0', silent], { timeout: 15000 }).toString();
+            silentHasAudio = pr.trim().length > 0;
+        } catch { /* best effort */ }
+        let fc: string;
+        if (silentHasAudio) {
+            fc = `[1:a]${volFilter}[a]`;
+            if (sfxLayer && fs.existsSync(sfxLayer)) {
+                inputs.push('-i', sfxLayer);
+                fc += `;[2:a]volume=0.6[sfx];[0:a][a][sfx]amix=inputs=3:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`;
+            } else {
+                fc += `;[0:a][a]amix=inputs=2:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`;
+            }
         } else {
-            fc += `;[0:a][a]amix=inputs=2:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`;
+            // No voiceover audio in the silent track — just play the music (±sfx).
+            if (sfxLayer && fs.existsSync(sfxLayer)) {
+                inputs.push('-i', sfxLayer);
+                fc = `[1:a]${volFilter}[a];[2:a]volume=0.6[sfx];[a][sfx]amix=inputs=2:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`;
+            } else {
+                fc = `[1:a]${volFilter}[a];[a]alimiter=limit=0.7:asc=1:level=disabled[aout]`;
+            }
         }
         const pass2 = [
             ...inputs, '-filter_complex', fc,
@@ -869,8 +892,12 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             // to a flat volume instead. The render still completes.
             console.warn(`ℹ music duck expression unsupported on this ffmpeg build; using flat volume`);
             const flatFc = sfxLayer && fs.existsSync(sfxLayer)
-                ? `[1:a]volume=${full}[a];[2:a]volume=0.6[sfx];[0:a][a][sfx]amix=inputs=3:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`
-                : `[1:a]volume=${full}[a];[0:a][a]amix=inputs=2:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`;
+                ? silentHasAudio
+                    ? `[1:a]volume=${full}[a];[2:a]volume=0.6[sfx];[0:a][a][sfx]amix=inputs=3:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`
+                    : `[1:a]volume=${full}[a];[2:a]volume=0.6[sfx];[a][sfx]amix=inputs=2:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`
+                : silentHasAudio
+                    ? `[1:a]volume=${full}[a];[0:a][a]amix=inputs=2:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`
+                    : `[1:a]volume=${full}[a];[a]alimiter=limit=0.7:asc=1:level=disabled[aout]`;
             const flatPass2 = [...inputs, '-filter_complex', flatFc, '-map', '0:v:0', '-map', '[aout]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-y', out];
             await runFfmpegSpawn(flatPass2);
         }
