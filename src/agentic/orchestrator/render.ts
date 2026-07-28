@@ -798,9 +798,18 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
         fs.writeFileSync(list, segFiles.map((f) => `file '${f.replace(/\\/g, '/')}'`).join('\n'), 'utf8');
         silent = outDir + '/_av_' + res.workspace.jobId + '.mp4';
         await new Promise<void>((resolve, reject) => {
-            execFile(ffmpeg, ['-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', silent], (err: any) =>
+            // `-fflags +genpts` regenerates PTS so the concat demuxer with
+            // `-c copy` does not silently drop/truncate frames at segment
+            // boundaries when timestamps are non-monotonic (the classic
+            // concat-copy pitfall). Segments are all libx264/yuv420p/25fps so
+            // stream-copy is safe once timestamps are normalized.
+            execFile(ffmpeg, ['-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', silent], (err: any) =>
                 err ? reject(new Error('concat failed: ' + err)) : resolve());
         });
+        // BUG (cleanup leak): _seg_* intermediates and the _concat_*.txt list are
+        // created per render but never removed. Clean them up now that concat is done.
+        for (const seg of segFiles) try { fs.rmSync(seg, { force: true }); } catch { /* ignore */ }
+        try { fs.rmSync(list, { force: true }); } catch { /* ignore */ }
     } else {
         const introDur = introClip ? (opts.intro!.durationSec ?? 2.5) : 0;
         const outroDur = outroClip ? (opts.outro!.durationSec ?? 3) : 0;
