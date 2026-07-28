@@ -385,8 +385,10 @@ export async function renderAgenticSlideshow(
     const CJK_FONT = process.platform === 'win32' ? CJK_FONT_WIN : CJK_FONT_LINUX;
     function pickFontArg(text: string): string {
         if (CJK_RE.test(text) && fs.existsSync(CJK_FONT)) {
+            // NOTE: this ffmpeg build rejects drawtext `fontindex`, so just pass
+            // the .ttc path directly — the first face renders CJK glyphs fine.
             const p = CJK_FONT.replace(/:/g, '\\:');
-            return process.platform === 'win32' ? `fontfile='${p}':fontindex=0:` : `fontfile='${p}':`;
+            return `fontfile='${p}':`;
         }
         return FONT_ARG;
     }
