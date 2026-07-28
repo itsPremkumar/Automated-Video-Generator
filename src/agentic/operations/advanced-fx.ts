@@ -53,8 +53,13 @@ export function buildVoiceAudioFilter(job: any, sceneIndex: number): string {
   const parts: string[] = [];
   const eq = job.eqByScene?.[sceneIndex];
   if (eq && Array.isArray(eq) && eq.length) {
-    const bands = eq.map((b: any, i: number) => `anequalizer=c0 f=${b.freq ?? 1000}:g=${b.gain ?? 0}:t=q:w=${b.q ?? 1}:${i === 0 ? 'n=' + eq.length : ''}`).join(',');
-    parts.push(bands);
+    // anequalizer syntax: params='c0 f=FREQ w=WIDTH g=GAIN t=TYPE:c1 ...'
+    // (entries separated by ':', channels by c0/c1). The old code emitted
+    // 'c0 f=..:g=..:t=..:w=..:n=N' which is invalid (n is not an option and
+    // stray ':' breaks parsing) → every eqByScene job silently kept raw voice. BUG#6.
+    const chan = (ch: string) => eq.map((b: any) => `${ch} f=${b.freq ?? 1000}:w=${b.q ?? 1}:g=${b.gain ?? 0}:t=q`).join(':');
+    const params = `${chan('c0')}:${chan('c1')}`;
+    parts.push(`anequalizer=params='${params}'`);
   }
   const comp = job.compressorByScene?.[sceneIndex];
   if (comp) {
@@ -240,7 +245,7 @@ export function applyParticles(clipPath: string, sceneIndex: number, job: any, w
   try {
     execFileSync(ff(), [
       '-y', '-i', clipPath, '-f', 'lavfi', '-i', `color=c=black:s=${W}x${H}:r=25:d=5`,
-      '-filter_complex', filt, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out,
+      '-filter_complex', filt, '-map', '[ov]', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out,
     ], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 90000 });
     return isReadableVideo(out) ? out : clipPath;
   } catch (e: any) {

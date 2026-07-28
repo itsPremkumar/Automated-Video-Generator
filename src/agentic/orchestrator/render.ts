@@ -732,8 +732,8 @@ else vfArgs.push(`${videoMap}null[vig]`);
             if (sp) {
                 if (sp.speed && sp.speed !== 1) segAdv.push(`setpts=${1 / sp.speed}*PTS`);
                 if (sp.filter === 'bw') segAdv.push('format=gray');
-                else if (sp.filter === 'vintage') segAdv.push('curves=vintage,saturation=1.2');
-                else if (sp.filter === 'sepia') segAdv.push('sepia=0.8');
+                else if (sp.filter === 'vintage') segAdv.push('curves=vintage,eq=saturation=1.2');
+                else if (sp.filter === 'sepia') segAdv.push('colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131');
                 if (sp.blur) segAdv.push('boxblur=10');
                 if (sp.keyframes && sp.keyframes.length >= 2) {
                     const sorted = [...sp.keyframes].sort((a, b) => a.t - b.t);

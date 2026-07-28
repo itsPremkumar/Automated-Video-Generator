@@ -82,8 +82,14 @@ export function applySceneFx(clipPath: string, sceneIndex: number, fx: FxJob, wo
 
     const filt = fx.filterByScene?.[sceneIndex];
     if (filt === 'bw') filters.push('format=gray');
-    else if (filt === 'vintage') filters.push('curves=vintage,saturation=1.2');
-    else if (filt === 'sepia') filters.push('sepia=0.8');
+    else if (filt === 'vintage')
+        // curves=vintage is a valid ffmpeg filter; saturation must come from
+        // eq=, not a bare 'saturation=' (that is not a filter). BUG#4.
+        filters.push('curves=vintage,eq=saturation=1.2');
+    else if (filt === 'sepia')
+        // this ffmpeg-static build ships no 'sepia' filter; emulate with a
+        // colorchannelmixer matrix (the canonical sepia approximation). BUG#4.
+        filters.push('colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131');
     if (fx.blurScenes?.includes(sceneIndex)) filters.push('boxblur=10');
 
     if (fx.kenBurns) {

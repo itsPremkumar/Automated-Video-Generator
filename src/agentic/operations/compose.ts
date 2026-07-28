@@ -544,6 +544,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     // input relative to the audio timeline via -itsoffset.
     if (job.jCutSec && job.jCutSec > 0) amixInputs.push('-itsoffset', job.jCutSec.toFixed(2));
     const filterParts: string[] = [];
+    const amixLabels: string[] = []; // labels fed INTO amix (BUG#3 fix)
     let ai = 1;
     // voice (concat scenes) — only if at least one non-empty voice file exists
     const validVoices = audios
@@ -557,9 +558,11 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
             // concat already merged per-scene FX, so we scale the merged voice).
             const vVol = sceneVoiceVolume(job, 0);
             if (vVol !== 1) {
-                filterParts.push(`[${ai}:a]volume=${vVol.toFixed(2)}[va]`);
+                const lbl = `[${ai}:a]volume=${vVol.toFixed(2)}[va${ai}]`;
+                filterParts.push(`${lbl};`);
+                amixLabels.push(`[va${ai}]`);
             } else {
-                filterParts.push(`[${ai}:a]`);
+                amixLabels.push(`[${ai}:a]`);
             }
             amixInputs.push('-i', voiceConcat); ai++;
         }
@@ -574,9 +577,11 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
             return sum / n;
         })();
         if (duckAvg !== 1) {
-            filterParts.push(`[${ai}:a]volume=${duckAvg.toFixed(2)}[ma]`);
+            const lbl = `[${ai}:a]volume=${duckAvg.toFixed(2)}[ma${ai}]`;
+            filterParts.push(`${lbl};`);
+            amixLabels.push(`[ma${ai}]`);
         } else {
-            filterParts.push(`[${ai}:a]`);
+            amixLabels.push(`[${ai}:a]`);
         }
         amixInputs.push('-i', normMusic); ai++;
     }
@@ -587,7 +592,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
             // video timestamp where that scene's picture begins.
             const at = cumStart[s.sceneIndex] ?? 0;
             if (at > 0) amixInputs.push('-itsoffset', at.toFixed(2));
-            amixInputs.push('-i', s.localPath); filterParts.push(`[${ai}:a]`); ai++;
+            amixInputs.push('-i', s.localPath); amixLabels.push(`[${ai}:a]`); ai++;
         }
     }
 
@@ -603,12 +608,13 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     }
     const vEncArgs = job.jCutSec && job.jCutSec > 0 ? codecArgs : ['-c:v', 'copy'];
 
-    if (filterParts.length > 0) {
+    if (filterParts.length > 0 || amixLabels.length > 0) {
         // amix needs >=2 real inputs; if only 1 audio input, map it directly
         // (no synthetic anullsrc — that is a *source*, not an audio filter).
-        const amix = filterParts.length === 1
-            ? `[${ai - 1}:a]acopy[a]`
-            : `${filterParts.join('')}amix=inputs=${filterParts.length}:duration=longest[a]`;
+        const n = amixLabels.length;
+        const amix = n === 1
+            ? `${amixLabels[0]}acopy[a]`
+            : `${filterParts.join('')}${amixLabels.join('')}amix=inputs=${n}:duration=longest[a]`;
         const args = [...amixInputs, '-filter_complex', amix, '-map', '0:v', '-map', '[a]',
             // J-cut uses -itsoffset to shift the *video* timeline forward.
             // Copying a timestamp-shifted stream corrupts the tail frames
@@ -746,9 +752,10 @@ function crossfadeSlideshow(clips: string[], W: number, H: number, out: string, 
     for (let i = 1; i < trimmed.length; i++) {
         const kind = (transitions?.[i - 1] ?? defaultTransition ?? 'fade');
         const segDur = tDurOf(i - 1);
+        const prevLabel = i === 1 ? `[0:v]` : `[v${i - 1}]`;
         if (kind === 'cut') {
             // hard cut: xfade with ~0 duration keeps the graph valid.
-            segs.push(`[${i}:v][${i - 1}:v]xfade=transition=fade:duration=0.001:offset=${offset.toFixed(3)}[v${i}]`);
+            segs.push(`${prevLabel}[${i}:v]xfade=transition=fade:duration=0.001:offset=${offset.toFixed(3)}[v${i}]`);
         } else {
             // Extended plugin transitions map to native ffmpeg xfade kinds:
             // glitch→pixelize, whippan→hblur (motion streak), morphcut→smoothleft,
@@ -761,17 +768,20 @@ function crossfadeSlideshow(clips: string[], W: number, H: number, out: string, 
                 : kind === 'morphcut' || kind === 'morph-cut' ? 'smoothleft'
                 : kind === 'lightleak' || kind === 'light-leak' ? 'fadewhite'
                 : 'fade';
-            // xfade eases by default; this build doesn't expose an :ease
-            // override, so we drop the curve modifier (intent preserved).
-            segs.push(`[${i}:v][${i - 1}:v]xfade=transition=${ttype}:duration=${segDur.toFixed(2)}:offset=${offset.toFixed(3)}[v${i}]`);
+            segs.push(`${prevLabel}[${i}:v]xfade=transition=${ttype}:duration=${segDur.toFixed(2)}:offset=${offset.toFixed(3)}[v${i}]`);
         }
         offset += durOf(i - 1) - segDur;
     }
     const last = trimmed.length - 1;
-    const filter = `${segs.join(',')},format=yuv420p`;
+    // Chain the xfade segments with ';' (NOT ',') and apply format to the final
+    // output label so the graph is fully connected. BUG#1: old code consumed raw
+    // [i:v][i-1:v] every iteration (double-consumed inputs, unchained) and joined
+    // with ',' leaving format= with an unlabeled pad → every transition fell back
+    // to a hard cut.
+    const filter = `${segs.join(';')};[v${last}]format=yuv420p[vout]`;
     const args: string[] = ['-y'];
     for (let i = 0; i < trimmed.length; i++) args.push('-i', trimmed[i]);
-    args.push('-filter_complex', filter, '-map', `[v${last}]`, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-r', String(fps), out);
+    args.push('-filter_complex', filter, '-map', '[vout]', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-r', String(fps), out);
     try { execFileSync(ff(), args, { stdio: ['ignore', 'ignore', 'pipe'], timeout: 180000 }); } catch (e: any) { console.warn(`  ⚠ xfade failed: ${String(e?.stderr ?? e?.message).split('\n').filter((l: string) => /Error|Invalid|not found|mismatch|non-monoton|exist/.test(l)).slice(-3).join(' | ').slice(0, 300)}`); return undefined; }
     return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : undefined;
 }
