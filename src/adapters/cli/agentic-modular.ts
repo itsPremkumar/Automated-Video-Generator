@@ -672,6 +672,8 @@ async function runRender(cliArgs: CliArgs) {
             exportAspects: job.exportAspects ?? meta.exportAspects,
             // BUG C4: forward per-scene emoji stickers.
             emojiByScene: job.emojiByScene ?? meta.emojiByScene,
+            // BUG combo-2: forward job-wide paletteFilter to the modular render path.
+            paletteFilter: job.paletteFilter ?? meta.paletteFilter,
         });
 
         if (finalMp4 && fs.existsSync(finalMp4)) {

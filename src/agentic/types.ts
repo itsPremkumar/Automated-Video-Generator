@@ -37,8 +37,6 @@ export interface ScenePlan {
     transition?: string;
     /** Override color grade for this scene ('neutral' | 'warm' | 'cool' | 'cinematic' | 'vivid'). */
     grade?: string;
-    /** Override visual filter for this scene ('bw' | 'vintage' | 'sepia' | 'blur'). */
-    filter?: string;
     /** Disable Ken Burns for this specific scene (false = no zoompan). */
     kenBurns?: boolean;
     /** Trim start time for local video asset (seconds). */
@@ -93,8 +91,8 @@ export interface ScenePlan {
     speed?: number;
     /** Stabilize this scene's clip (vidstab two-pass). Best for shaky captures. */
     stabilize?: boolean;
-    /** Color filter for this scene: 'bw' | 'vintage' | 'sepia'. */
-    filter?: 'bw' | 'vintage' | 'sepia';
+    /** Color filter for this scene: 'bw' | 'vintage' | 'sepia' | 'blur'. */
+    filter?: 'bw' | 'vintage' | 'sepia' | 'blur';
     /** Box-blur this scene's clip (depth/background effect). */
     blur?: boolean;
     /** Multi-point zoom path: keyframes at times t (sec) with zoom z.
