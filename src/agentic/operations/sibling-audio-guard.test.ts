@@ -101,3 +101,28 @@ test('agentic-editor speed-graph: audio-less input renders with [0:a] branch ski
   const s = probeStreams(out);
   assert.ok(s.video && !s.audio, 'guarded speed output: video present, no audio (correct)');
 });
+
+// render.ts non-segmented music-mux: when the silent video has NO audio
+// (no voiceover), the pass2 amix referenced [0:a] and crashed. The fixed
+// branch muxes music ALONE. Prove the fixed graph works, old crashes.
+test('render pass2: music-mux on audio-less silent video (no [0:a] crash)', () => {
+  const silent = makeClip('silent_na.mp4', false, 3); // audio-less
+  const music = makeClip('music.mp4', true, 3);        // has audio
+  const out = path.join(TMP, 'music_mux_out.mp4');
+  const full = 0.18;
+  // OLD (crashes): [1:a]volume=full[a];[0:a][a]amix=inputs=2...
+  let oldCrashed = false;
+  try {
+    execFileSync(ffmpeg, ['-i', silent, '-i', music,
+      '-filter_complex', `[1:a]volume=${full}[a];[0:a][a]amix=inputs=2:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`,
+      '-map', '0:v:0', '-map', '[aout]', '-c:v', 'copy', '-c:a', 'aac', '-shortest', out + '.old.mp4', '-y'], { stdio: 'ignore' });
+  } catch { oldCrashed = true; }
+  assert.ok(oldCrashed, 'OLD [0:a] amix graph must crash on audio-less silent (baseline)');
+  // NEW (guarded): [1:a]volume=full[a];[a]alimiter...
+  execFileSync(ffmpeg, ['-i', silent, '-i', music,
+    '-filter_complex', `[1:a]volume=${full}[a];[a]alimiter=limit=0.7:asc=1:level=disabled[aout]`,
+    '-map', '0:v:0', '-map', '[aout]', '-c:v', 'copy', '-c:a', 'aac', '-shortest', out, '-y'], { stdio: 'ignore' });
+  assert.ok(fs.existsSync(out), 'NEW guarded music-mux must produce output on audio-less silent');
+  const s = probeStreams(out);
+  assert.ok(s.video && s.audio, 'music-mux output: video + music audio present');
+});
