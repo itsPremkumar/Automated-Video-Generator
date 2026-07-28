@@ -357,7 +357,7 @@ export async function concatDialogueTurns(turnPaths: string[], outPath: string, 
         // generate a tiny silence gap (valid low-frequency sine looped silently
         // is avoided; use anullsrc for true silence)
         execFileSync(ffmpegPath as unknown as string, ['-y', '-f', 'lavfi', '-i', `anullsrc=r=44100:cl=mono:d=${gapSec}`, '-c:a', 'pcm_s16le', outPath + '.gap.wav'], { stdio: 'ignore' });
-        execFileSync(ffmpegPath as unknown as string, ['-y', '-f', 'concat', '-safe', '0', '-i', listFile, '-c', 'copy', outPath], { stdio: 'ignore' });
+        execFileSync(ffmpegPath as unknown as string, ['-y', '-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', listFile, '-c', 'copy', outPath], { stdio: 'ignore' });
         fs.rmSync(listFile, { force: true });
         fs.rmSync(outPath + '.gap.wav', { force: true });
     }

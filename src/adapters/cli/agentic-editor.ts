@@ -235,7 +235,7 @@ COMMANDS['merge'] = (args) => {
     const listPath = path.join(process.cwd(), '.avs_concat_list.txt');
     const lines = files.map((f: string) => `file '${path.resolve(f).replace(/'/g, "'\\''")}'`);
     fs.writeFileSync(listPath, lines.join('\n'));
-    const ff: string[] = ['-f', 'concat', '-safe', '0', '-i', listPath, '-c', 'copy', output, '-y'];
+    const ff: string[] = ['-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', listPath, '-c', 'copy', output, '-y'];
     runFfmpeg(ff, `Merged ${files.length} files`);
     try { fs.unlinkSync(listPath); } catch { /* concat file may already be cleaned up */ }
 };

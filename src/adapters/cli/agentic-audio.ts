@@ -141,7 +141,7 @@ COMMANDS['merge'] = (args) => {
   const listPath = path.join(process.cwd(), 'workspace', `_audiolist_${Date.now()}.txt`);
   fs.mkdirSync(path.dirname(listPath), { recursive: true });
   fs.writeFileSync(listPath, list);
-  const ff = ['-f', 'concat', '-safe', '0', '-i', listPath, '-c', 'copy', output, '-y'];
+  const ff = ['-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', listPath, '-c', 'copy', output, '-y'];
   const res = runFfmpeg(ff, `Merged ${files.length} files`);
   fs.rmSync(listPath, { force: true });
   if (res.ok) console.log(`     → ${output}`);
