@@ -450,7 +450,7 @@ export async function loopVideo(file: string, out?: string, times: number = 3): 
     const abs = path.resolve(file);
     fs.writeFileSync(list, Array.from({ length: t }, () => `file '${abs.replace(/'/g, "'\\''")}'`).join('\n'));
     const { code, out: log } = await runFfmpeg([
-        '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', '-y', output,
+        '-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', '-y', output,
     ]);
     try { fs.rmSync(list, { force: true }); } catch { /* ignore */ }
     if (code !== 0) return fail(`ffmpeg loop failed:\n${log.slice(-800)}`);

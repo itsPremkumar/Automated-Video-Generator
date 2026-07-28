@@ -129,7 +129,7 @@ export async function generateVoiceoverOnly(
             try {
                 require('child_process').execFileSync(
                     ffmpeg,
-                    ['-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', '-y', target],
+                    ['-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', '-y', target],
                     {
                         stdio: 'ignore',
                     },

@@ -714,7 +714,7 @@ async function buildSlideshow(visuals: string[], audios: string[], W: number, H:
     // Plain concat (hard cuts) — original behaviour.
     const list = path.join(dir, 'slideshow_list.txt');
     fs.writeFileSync(list, sceneClips.map((c) => `file '${c.replace(/'/g, "'\\''")}'`).join('\n'));
-    const args = ['-y', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', out];
+    const args = ['-y', '-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', out];
     try { execFileSync(ff(), args, { stdio: ['ignore', 'ignore', 'pipe'], timeout: 120000 }); } catch (e: any) { console.warn(`  ⚠ slideshow concat failed: ${String(e?.stderr ?? e?.message).slice(0, 300)}`); }
 }
 
