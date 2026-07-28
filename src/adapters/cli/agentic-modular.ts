@@ -670,6 +670,8 @@ async function runRender(cliArgs: CliArgs) {
             // BUG A2: honor the job's exportAspects (incl. '4K') instead of the
             // hardcoded three-aspect list in render.ts.
             exportAspects: job.exportAspects ?? meta.exportAspects,
+            // BUG C4: forward per-scene emoji stickers.
+            emojiByScene: job.emojiByScene ?? meta.emojiByScene,
         });
 
         if (finalMp4 && fs.existsSync(finalMp4)) {
