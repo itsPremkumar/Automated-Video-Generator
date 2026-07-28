@@ -375,6 +375,21 @@ export async function renderAgenticSlideshow(
         return '';
     })();
     const FONT_ARG = FONT_FILE ? `fontfile='${FONT_FILE}':` : '';
+    // BUG P2-2: captions with CJK (Chinese/Japanese/Korean) text rendered as
+    // tofu boxes because the default Arial chain has no CJK glyphs. When the
+    // text contains CJK codepoints, fall back to a CJK-capable font
+    // (msyh.ttc on Windows, Noto CJK on Linux). .ttc collections need fontindex.
+    const CJK_RE = /[぀-ヿ㐀-鿿豈-﫿⼀-⽿　-〿＀-￯]/;
+    const CJK_FONT_WIN = 'C:/Windows/Fonts/msyh.ttc';
+    const CJK_FONT_LINUX = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc';
+    const CJK_FONT = process.platform === 'win32' ? CJK_FONT_WIN : CJK_FONT_LINUX;
+    function pickFontArg(text: string): string {
+        if (CJK_RE.test(text) && fs.existsSync(CJK_FONT)) {
+            const p = CJK_FONT.replace(/:/g, '\\:');
+            return process.platform === 'win32' ? `fontfile='${p}':fontindex=0:` : `fontfile='${p}':`;
+        }
+        return FONT_ARG;
+    }
     const outDir = res.workspace.root + '/render';
     fs.mkdirSync(outDir, { recursive: true });
     const out = opts.outPath ?? outDir + '/' + res.workspace.jobId + '.mp4';
@@ -591,7 +606,7 @@ export async function renderAgenticSlideshow(
                     const end = (tBase + wseg.endMs / 1000).toFixed(2);
                     const safe = ffmpegDrawtextEscape(wseg.word);
                     const out = `c${ci}`;
-                    vfArgs.push(`${ctag}drawtext=${FONT_ARG}text='${safe}':fontcolor=yellow:fontsize=38:box=1:boxcolor=black@0.55:boxborderw=12:x=(w-text_w)/2:y=h-text_h-140:enable='between(t\\,${start},${end})'[${out}]`);
+                    vfArgs.push(`${ctag}drawtext=${pickFontArg(safe)}text='${safe}':fontcolor=yellow:fontsize=38:box=1:boxcolor=black@0.55:boxborderw=12:x=(w-text_w)/2:y=h-text_h-140:enable='between(t\\,${start},${end})'[${out}]`);
                     ctag = `[${out}]`;
                     ci++;
                 }
@@ -608,7 +623,7 @@ export async function renderAgenticSlideshow(
                         const safe = ffmpegDrawtextEscape(ln).replace(/\n/g, ' ');
                         const out = `c${ci}`;
                         const y = li === 0 ? yExpr : `(${yExpr})-${li * lineH}`;
-                        vfArgs.push(`drawtext=${FONT_ARG}text='${safe}':fontcolor=${capColor}:fontsize=${baseSize}${boxArgs}:line_spacing=4:x=(w-text_w)/2:y=${y}:enable='between(t\\,${start}\\,${end})'`);
+                        vfArgs.push(`drawtext=${pickFontArg(safe)}text='${safe}':fontcolor=${capColor}:fontsize=${baseSize}${boxArgs}:line_spacing=4:x=(w-text_w)/2:y=${y}:enable='between(t\\,${start}\\,${end})'`);
                         ctag = `[${out}]`;
                         ci++;
                     });
@@ -634,9 +649,9 @@ export async function renderAgenticSlideshow(
                 const end = (base + cue.atSec + (cue.kind === 'wordpop' ? 0.9 : 2.6)).toFixed(2);
                 const safe = String(cue.text ?? '').replace(/'/g, '’').replace(/:/g, '\\:');
                 if (cue.kind === 'lowerthird') {
-                    vfArgs.push(`${ktag}drawtext=${FONT_ARG}text='${safe}':fontcolor=white:fontsize=34:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=h-text_h-90:enable='between(t\\,${start},${end})'[k${i}]`);
+                    vfArgs.push(`${ktag}drawtext=${pickFontArg(safe)}text='${safe}':fontcolor=white:fontsize=34:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=h-text_h-90:enable='between(t\\,${start},${end})'[k${i}]`);
                 } else {
-                    vfArgs.push(`${ktag}drawtext=${FONT_ARG}text='${safe}':fontcolor=yellow:fontsize=64:box=1:boxcolor=black@0.0:borderw=3:bordercolor=yellow:x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t\\,${start},${end})'[k${i}]`);
+                    vfArgs.push(`${ktag}drawtext=${pickFontArg(safe)}text='${safe}':fontcolor=yellow:fontsize=64:box=1:boxcolor=black@0.0:borderw=3:bordercolor=yellow:x=(w-text_w)/2:y=(h-text_h)/2:enable='between(t\\,${start},${end})'[k${i}]`);
                 }
                 ktag = `[k${i}]`;
             }
@@ -729,7 +744,7 @@ else vfArgs.push(`${videoMap}null[vig]`);
                     wrapped.forEach((ln, li) => {
                         const safe = ffmpegDrawtextEscape(ln).replace(/\n/g, ' ');
                         const y = li === 0 ? yExpr : `(${yExpr})-${li * lineH}`;
-                        segCaptionArg.push(`drawtext=${FONT_ARG}text='${safe}':fontcolor=${fontColor}:fontsize=${baseSize}${boxArgs}:line_spacing=4:x=(w-text_w)/2:y=${y}:enable='between(t\\,${start}\\,${end})'`);
+                        segCaptionArg.push(`drawtext=${pickFontArg(safe)}text='${safe}':fontcolor=${fontColor}:fontsize=${baseSize}${boxArgs}:line_spacing=4:x=(w-text_w)/2:y=${y}:enable='between(t\\,${start}\\,${end})'`);
                     });
                 }
             }
@@ -748,7 +763,7 @@ else vfArgs.push(`${videoMap}null[vig]`);
                     const start = cue.atSec.toFixed(2);
                     const end = (cue.atSec + (cue.kind === 'wordpop' ? 0.9 : 2.6)).toFixed(2);
                     const safe = String(cue.text ?? '').replace(/'/g, '’').replace(/:/g, '\\:');
-                    kin.push(`drawtext=${FONT_ARG}text='${safe}':fontcolor=${cue.kind === 'wordpop' ? 'yellow' : 'white'}:fontsize=${cue.kind === 'wordpop' ? 64 : 34}:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=${cue.kind === 'wordpop' ? '(h-text_h)/2' : 'h-text_h-90'}:enable='between(t\\,${start},${end})'`);
+                    kin.push(`drawtext=${pickFontArg(safe)}text='${safe}':fontcolor=${cue.kind === 'wordpop' ? 'yellow' : 'white'}:fontsize=${cue.kind === 'wordpop' ? 64 : 34}:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=${cue.kind === 'wordpop' ? '(h-text_h)/2' : 'h-text_h-90'}:enable='between(t\\,${start},${end})'`);
                 }
             }
             // ═══ Advanced editing (per-scene, additive) — segment branch ═══

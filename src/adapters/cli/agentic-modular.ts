@@ -242,13 +242,22 @@ async function runVisuals(cliArgs: CliArgs) {
             const { resolveFreeBackgroundMusic } = await import('../../lib/free-music.js');
             const { inputAssetPath, inputBgmPath } = await import('../../lib/path-safety.js');
             const assets: any[] = [];
+            const missingVisuals: string[] = [];
             for (const s of plan.scenes) {
                 const la = s.localAsset;
                 if (!la) {
                     console.warn(`  ⚠ scene ${s.sceneNumber} has no localAsset — skipping in manifest`);
+                    missingVisuals.push(`scene ${s.sceneNumber} (no [Visual:] tag)`);
                     continue;
                 }
                 const localPath = path.isAbsolute(la) ? la : path.join(process.cwd(), 'input', 'visuals', la);
+                if (!fs.existsSync(localPath)) {
+                    // BUG P2-1: a [Visual:] tag naming a file that isn't on disk
+                    // (typo / wrong dir) must FAIL loudly under --no-acquire, not
+                    // be silently skipped.
+                    missingVisuals.push(`scene ${s.sceneNumber} -> ${la} (file not found)`);
+                    continue;
+                }
                 const kind = /\.(mp4|mov|webm|mkv)$/i.test(la) ? 'video' : 'image';
                 assets.push({
                     kind,
@@ -273,6 +282,17 @@ async function runVisuals(cliArgs: CliArgs) {
             }
             if (musicPath) {
                 assets.push({ kind: 'music', sceneIndex: -1, localPath: musicPath, license: 'User-supplied / free music' });
+            }
+            // BUG P2-1: under --no-acquire, a missing visual file must not "succeed".
+            // If any scene is missing its visual AND there's no music to fall back
+            // on, abort loudly (non-zero exit) so CI/automation doesn't ship a
+            // broken video.
+            const visualAssets = assets.filter((a: any) => a.kind !== 'music');
+            if (missingVisuals.length > 0 && visualAssets.length === 0) {
+                throw new Error(`--no-acquire: ${missingVisuals.length} scene(s) have no resolvable local visual and no music fallback: ${missingVisuals.join('; ')}`);
+            }
+            if (missingVisuals.length > 0) {
+                console.warn(`  ⚠ --no-acquire: ${missingVisuals.length} scene(s) missing visual: ${missingVisuals.join('; ')}`);
             }
             const manifest = { jobId: id, title: job.title, orientation: job.orientation ?? 'landscape', voice: job.voice, musicQuery: job.musicQuery, assets, generatedAt: new Date().toISOString() };
             writeJson(ws.root, 'render-manifest.json', manifest);
