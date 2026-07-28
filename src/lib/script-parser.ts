@@ -21,7 +21,7 @@ export interface Scene {
     /** Per-scene color grade override (e.g. 'warm', 'cool', 'cinematic', 'vivid', 'neutral'). */
     grade?: string;
     /** Per-scene visual filter override (e.g. 'bw', 'vintage', 'sepia', 'blur'). */
-    filter?: string;
+    filter?: 'bw' | 'vintage' | 'sepia' | 'blur';
     /** Per-scene Ken Burns toggle. 'on' (default) or 'off'. */
     kenBurns?: string;
     /** Trim start time for local video clips (e.g. '00:05'). */
@@ -207,7 +207,7 @@ function parseScriptLocally(script: string): ParsedScript {
     // Per-scene tag values (hoisted for trailing pending-visual scene at end of script)
     let sceneTransition: string | undefined;
     let sceneGrade: string | undefined;
-    let sceneFilter: string | undefined;
+    let sceneFilter: 'bw' | 'vintage' | 'sepia' | 'blur' | undefined;
     let sceneKenBurns: string | undefined;
     let sceneTrimStart: string | undefined;
     let sceneTrimEnd: string | undefined;
@@ -235,7 +235,7 @@ function parseScriptLocally(script: string): ParsedScript {
         const gradeMatch = line.match(/\[Grade:?\s*(neutral|warm|cool|cinematic|vivid)\]/is);
         sceneGrade = gradeMatch ? gradeMatch[1].toLowerCase() : undefined;
         const filterMatch = line.match(/\[Filter:?\s*(bw|vintage|sepia|blur|grayscale|mono)\]/is);
-        sceneFilter = filterMatch ? (filterMatch[1].toLowerCase() === 'grayscale' || filterMatch[1].toLowerCase() === 'mono' ? 'bw' : filterMatch[1].toLowerCase()) : undefined;
+        sceneFilter = filterMatch ? (filterMatch[1].toLowerCase() === 'grayscale' || filterMatch[1].toLowerCase() === 'mono' ? 'bw' : (filterMatch[1].toLowerCase() as 'bw' | 'vintage' | 'sepia' | 'blur')) : undefined;
         const kenBurnsMatch = line.match(/\[KenBurns:?\s*(on|off|true|false)\]/is);
         sceneKenBurns = kenBurnsMatch ? (['on', 'true'].includes(kenBurnsMatch[1].toLowerCase()) ? 'on' : 'off') : undefined;
         const trimMatch = line.match(/\[Trim:?\s*(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\]/is);

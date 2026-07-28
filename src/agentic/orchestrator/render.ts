@@ -788,7 +788,7 @@ else vfArgs.push(`${videoMap}null[vig]`);
                 const base = `[0:v]tpad=stop_mode=clone:stop_duration=${dur},fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${segAdvStr}${gradeWithPalette},format=rgba,colorkey=0x00FF00:0.3:0.2[fg]`;
                 vfChain = `color=c=black:s=${W}x${H}:r=25:d=${dur},settb=1/25[bg];${base};[bg][fg]overlay=shortest=1,format=yuv420p${capStr}${kinStr}[v]`;
             } else {
-                vfChain = `[0:v]tpad=stop_mode=clone:stop_duration=${dur},fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${doVignette ? ',vignette=PI/5' : ''}${segAdvStr}${gradeStr},format=yuv420p${capStr}${kinStr}[v]`;
+                vfChain = `[0:v]tpad=stop_mode=clone:stop_duration=${dur},fps=25,scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1,trim=duration=${dur},setpts=PTS-STARTPTS,settb=1/25${zoom}${doVignette ? ',vignette=PI/5' : ''}${segAdvStr}${gradeWithPalette},format=yuv420p${capStr}${kinStr}[v]`;
             }
             // GUARD (BUG A3): `voiceovers` may be a slim fallback shape
             // (e.g. {voiceoverDriven, sceneCount, fallbackUsed} written by the
