@@ -27,6 +27,18 @@ npm run dev
 
 Open `http://localhost:3001/` in your browser.
 
+## Agentic Pipeline (Zero API Keys)
+
+After `npm install`, you can generate videos immediately without any API keys:
+
+```bash
+npm run agentic -- --topic "5 benefits of drinking water" --orientation portrait
+```
+
+Output: `workspace/jobs/<jobId>/render/<jobId>.mp4`
+
+See the [CLI Reference](cli-reference.md) for all 50+ commands and flags.
+
 ## Docker
 
 ```bash
