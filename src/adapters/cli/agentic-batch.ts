@@ -78,7 +78,11 @@ async function main() {
     const parallel = Number(args.parallel || args.waveSize || process.env.AGENTIC_WAVE_SIZE || 3);
     const preview = args.preview === true || process.env.AGENTIC_PREVIEW === '1';
     const generate = args.generate === true;
-    const topics = args.topics ? String(args.topics).split(',').map((t) => t.trim()) : undefined;
+    const topics = args.topics
+        ? String(args.topics)
+              .split(',')
+              .map((t) => t.trim())
+        : undefined;
     const singleMode = args.mode ? String(args.mode) : undefined;
     const jobFilter = args.job ? String(args.job) : undefined;
 
@@ -97,7 +101,10 @@ async function main() {
         if (preview) {
             console.log(`\n📋 Previewing generated jobs...\n`);
             for (const job of jobs) {
-                const id = (job.id || `job_${Date.now()}`).toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 64);
+                const id = (job.id || `job_${Date.now()}`)
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '_')
+                    .slice(0, 64);
                 const topic = job.topic ?? job.title ?? 'Untitled video';
                 const report = await generatePreview(job, id, topic);
                 printPreview(report);
@@ -116,7 +123,16 @@ async function main() {
         const count = Number(args.count || 10);
         const kind = (args.kind === 'video' ? 'video' : 'image') as 'image' | 'video';
         const { runBulkImageFetch } = await import('../../agentic/operations/bulk-fetch.js');
-        const outDir = path.resolve(process.cwd(), 'workspace', 'bulk', kind === 'video' ? 'videos' : 'images', searchQuery.replace(/[^a-z0-9]+/gi, '_').toLowerCase().slice(0, 40));
+        const outDir = path.resolve(
+            process.cwd(),
+            'workspace',
+            'bulk',
+            kind === 'video' ? 'videos' : 'images',
+            searchQuery
+                .replace(/[^a-z0-9]+/gi, '_')
+                .toLowerCase()
+                .slice(0, 40),
+        );
         fs.mkdirSync(outDir, { recursive: true });
         console.log(`\n🎯 Bulk ${kind} fetch: "${searchQuery}" × ${count} → ${outDir}`);
         const files = await runBulkImageFetch(searchQuery, count, outDir, (args.orientation as any) || '', kind);
@@ -149,10 +165,14 @@ async function main() {
                 process.exit(1);
             }
             const field = broadcast.slice(0, colon);
-            let raw = broadcast.slice(colon + 1);
+            const raw = broadcast.slice(colon + 1);
             let value: any = raw;
             // attempt JSON parse for objects/arrays/numbers/booleans
-            try { value = JSON.parse(raw); } catch { /* keep string */ }
+            try {
+                value = JSON.parse(raw);
+            } catch {
+                /* keep string */
+            }
             console.log(`  📡 Broadcasting ${field} = ${JSON.stringify(value)} → ${filtered.length} job(s)`);
             for (const j of filtered) (j as any)[field] = value;
         }
@@ -162,17 +182,34 @@ async function main() {
                 (jobFilter ? ` (filter: ${jobFilter})` : ''),
         );
         const validModes = [
-            'plan', 'visuals', 'voice', 'render', 'download-images', 'download-videos',
-            'download-music', 'download-sfx', 'download-url', 'generate-voice-edgetts',
-            'generate-voice-voicebox', 'clone-voice', 'apply-advanced', 'rerender',
-            'render-gif', 'render-poster', 'render-contact-sheet', 'compose',
+            'plan',
+            'visuals',
+            'voice',
+            'render',
+            'download-images',
+            'download-videos',
+            'download-music',
+            'download-sfx',
+            'download-url',
+            'generate-voice-edgetts',
+            'generate-voice-voicebox',
+            'clone-voice',
+            'apply-advanced',
+            'rerender',
+            'render-gif',
+            'render-poster',
+            'render-contact-sheet',
+            'compose',
         ];
         if (!validModes.includes(singleMode)) {
             console.error(`✖ Invalid --mode "${singleMode}". Valid: ${validModes.join(', ')}`);
             process.exit(1);
         }
         for (const job of filtered) {
-            const id = (job.id || `job_${Date.now()}`).toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 64);
+            const id = (job.id || `job_${Date.now()}`)
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '_')
+                .slice(0, 64);
             const topic = job.topic ?? job.title ?? 'Untitled video';
             try {
                 const res = await runSingleFeature(job, id, singleMode as SingleFeatureMode);
@@ -198,7 +235,10 @@ async function main() {
         fs.mkdirSync(previewDir, { recursive: true });
 
         for (const job of jobs) {
-            const id = (job.id || `job_${Date.now()}`).toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 64);
+            const id = (job.id || `job_${Date.now()}`)
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '_')
+                .slice(0, 64);
             const topic = job.topic ?? job.title ?? 'Untitled video';
             const report = await generatePreview(job, id, topic);
             printPreview(report);
@@ -217,7 +257,9 @@ async function main() {
     console.log(`╚═══════════════════════════════════════════════════╝\n`);
 
     const results = await runBatchWaves(jobs, parallel, (report) => {
-        console.log(`\n  📊 Wave ${report.waveNumber}/${report.totalWaves} complete: ${report.completed}✅ ${report.failed}❌`);
+        console.log(
+            `\n  📊 Wave ${report.waveNumber}/${report.totalWaves} complete: ${report.completed}✅ ${report.failed}❌`,
+        );
     });
 
     // ─── Summary ───
