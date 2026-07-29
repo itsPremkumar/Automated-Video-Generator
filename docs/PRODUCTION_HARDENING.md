@@ -233,6 +233,62 @@ For unpacked Windows release verification:
 npm run electron:verify-release
 ```
 
+## Pipeline Hardening (Recent Additions)
+
+The following hardening features were added in the latest release cycle (v5.0.x):
+
+### GPU Acceleration (`--gpu` / `GPU_ACCEL`)
+
+Hardware-accelerated rendering via auto-detected GPU encoder:
+- **NVIDIA:** NVENC (`h264_nvenc`)
+- **AMD:** AMF (`h264_amf`)
+- **Intel:** QSV (`h264_qsv`)
+- Falls back to software encoding (libx264) when no GPU detected
+
+Enable with `--gpu` flag on `agentic-run` or set `GPU_ACCEL=true` in `.env`.
+
+### Global Watchdog (`AGENTIC_MAX_RUN_MS`)
+
+No pipeline run may wedge silently forever. A 30-minute hard timeout is set by
+default. When exceeded, the process exits with code 3. Set `AGENTIC_MAX_RUN_MS=0`
+to disable (not recommended). Implemented in `bin/agentic-run.ts` lines 72-79.
+
+### Content Gate for Uniform Placeholders
+
+**File:** `src/agentic/pipeline/asset-validators.ts`
+
+Solid-color/gradient images that previously leaked through download failures
+are now rejected at acquire time using ffmpeg signalstats analysis (`YSTD`
+channel variance). If detected:
+- The image is skipped without calling the AI verification provider
+- The asset source is labeled `placeholder` instead of a real provider name
+- The pipeline tries the next available source
+
+### Honest Source Labeling (`sourceFromUrl`)
+
+**File:** `src/agentic/orchestrator/source.ts`
+
+Media source attribution is now derived from the actual download URL host,
+eliminating mislabeled sources like "openverse/pexels" in rendered frames.
+
+### Download Hardening
+
+- **Stall timeout:** Downloads that stop receiving data for >30s are aborted
+- **Bounded connect/headers phase:** Unbounded HTTP connect/headers phases no
+  longer hang the pipeline — both are bounded and guarded with unref'd timers
+- **Retry/backoff:** Transient failures use 600ms exponential backoff
+
+### CLI Input Validation
+
+CLI flags (`--topic`, `--orientation`, `--backend`, `--format`) now fail fast
+with actionable error messages and exit code 2 (see `bin/agentic-run.ts` lines
+29-45).
+
+### Dry-Run Mode (`--dry-run`)
+
+Plan and preview the full pipeline (script → scenes → asset decisions) without
+downloading anything or rendering video. Useful for rapid iteration.
+
 ## Remaining Recommended Work
 
 The repo is in a much better place now, but these are still strong next steps:

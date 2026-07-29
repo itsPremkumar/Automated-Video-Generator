@@ -31,6 +31,8 @@ Each runs one stage of the agentic pipeline independently:
 | `agentic:voice` | `tsx src/adapters/cli/agentic-modular.ts voice` | Generate voiceovers for each scene |
 | `agentic:render` | `tsx src/adapters/cli/agentic-modular.ts render` | Render final video from prepared assets |
 | `agentic:edit` | `tsx src/adapters/cli/agentic-modular.ts edit` | Apply per-scene edits (transitions, grades, etc.) |
+| `agentic:editor` | `tsx src/adapters/cli/agentic-editor.ts` | Scene editor for rendered videos |
+| `agentic:list` | `tsx src/adapters/cli/agentic-modular.ts list` | List jobs and their status |
 | `agentic:revise` | `tsx src/adapters/cli/agentic-modular.ts revise` | Revise a rendered video with AI feedback |
 | `agentic:critique` | `tsx src/adapters/cli/agentic-modular.ts critique` | AI critique of rendered video quality |
 | `agentic:reorder` | `tsx src/adapters/cli/agentic-modular.ts reorder` | Reorder scenes in the pipeline |
@@ -210,9 +212,9 @@ The project is configured through environment variables in a `.env` file at the 
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `TTS_BACKEND` | `edge-tts` | TTS backend: `edge-tts`, `voicebox`, `xtts`, `kokoro` |
-| `TTS_VOICE` | — | Voice selection for the chosen TTS backend |
-| `VOICEBOX_CLONE_DIR` | — | Directory for Voicebox voice clone data |
+| `TTS_PROVIDER` | `voicebox` | TTS provider: `voicebox` (default, vendored in-repo), `edge-tts`, `xtts`, `openai-local` |
+| `VOICEBOX_ENGINE` | `kokoro` | Voicebox engine (e.g. `kokoro`, `chatterbox_turbo`) |
+| `VOICEBOX_PROFILE_ID` | — | Voicebox voice profile ID for cloned voice |
 
 ### Pipeline Tuning
 

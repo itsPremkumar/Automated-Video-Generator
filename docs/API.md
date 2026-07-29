@@ -128,9 +128,9 @@ Produce 9:16 / 16:9 / 1:1 versions + a thumbnail from an existing video.
 - **Example:** `{ "file": "a.mp4", "aspects": ["9:16","1:1"], "thumbnail": true }`
 
 ### `make_voiceover`
-Generate an mp3 voiceover from text using Edge-TTS (free).
+Generate an mp3 voiceover from text using the configured TTS provider (default: Voicebox/Kokoro).
 - **Inputs:** `text: string` (min 1, `;` or newline splits lines), `voice?: string`, `out?: string`
-- **Example:** `{ "text": "Hello world; Welcome to my video", "voice": "en-US-AriaNeural" }`
+- **Example:** `{ "text": "Hello world; Welcome to my video", "voice": "af_sky" }`
 
 ### `download_image`
 Fetch a free CC image for a keyword.
@@ -141,6 +141,31 @@ Fetch a free CC image for a keyword.
 Fetch a free CC video for a keyword.
 - **Inputs:** `keyword: string` (min 1), `out?: string`
 - **Example:** `{ "keyword": "city timelapse" }`
+
+### `remove_silence`
+Detect and remove silence segments from an audio/video file.
+- **Inputs:** `file: string`, `out?: string`
+- **Example:** `{ "file": "a.mp4" }`
+
+### `detect_scenes`
+Detect scene changes in a video and return timestamps.
+- **Inputs:** `file: string`
+- **Example:** `{ "file": "a.mp4" }`
+
+### `auto_reframe`
+Auto-reframe a video to a target aspect ratio (9:16/16:9/1:1) with subject-aware cropping.
+- **Inputs:** `file: string`, `preset: '9:16'|'16:9'|'1:1'`, `out?: string`
+- **Example:** `{ "file": "a.mp4", "preset": "9:16" }`
+
+### `reduce_noise`
+Reduce background noise from an audio track.
+- **Inputs:** `file: string`, `strength?: number` (default 0.5), `out?: string`
+- **Example:** `{ "file": "a.mp4", "strength": 0.7 }`
+
+### `apply_brand_kit`
+Apply a brand kit overlay (logo, colors, fonts) to a video.
+- **Inputs:** `file: string`, `out?: string`
+- **Example:** `{ "file": "a.mp4" }`
 
 ---
 
@@ -184,6 +209,16 @@ Agent approves/rejects a candidate (full control). `reject_asset` triggers a re-
 the gateway.
 - **Inputs:** `jobId: string`, `assetId: string`, `rationale?: string`
 - **Example:** `{ "jobId": "job_1", "assetId": "image_s0_c1", "rationale": "good composition" }`
+
+### `agentic_revise`
+Revise a rendered video with AI feedback. The agent re-examines the rendered output and suggests improvements (re-cut, regrade, re-voice, etc.).
+- **Inputs:** `jobId: string`, `feedback?: string`
+- **Example:** `{ "jobId": "job_1", "feedback": "Make it shorter and add more transitions" }`
+
+### `agentic_critique`
+Run AI critique on a rendered video, analyzing pacing, visual quality, audio quality, and caption readability.
+- **Inputs:** `jobId: string`
+- **Example:** `{ "jobId": "job_1" }`
 
 ### `agentic_gate`  (STAGE 5)
 Run the final holistic gate (X1–X6). Blocks render if anything unverified.

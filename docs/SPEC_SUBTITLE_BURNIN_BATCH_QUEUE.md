@@ -37,7 +37,7 @@ Grounded in the AVG codebase at time of writing:
 | Error boundary so a caption failure never crashes the render | **Done** | `SubtitleErrorBoundary` in `SubtitleOverlay.tsx` |
 | Web form controls for styling | **Done** | `src/views/home/components/workspace.component.ts` (`#subtitle-animation`, `-position`, `-color`, `-fontSize`, `-background`, `-glow`) |
 | `showText` toggle | **Done** | `job.contract.ts` (`showText` default `true`) |
-| Sidecar SRT/VTT export | **Missing** | not present |
+|| Sidecar SRT/VTT export | **Done** | `src/agentic/delivery/publish.ts` (`.srt` per language), `archive.ts` gathers sidecars; `render.ts` lines 1107–1128 generate `subtitles.srt`/`subtitles.vtt` |
 | Word-level (karaoke) timing | **Missing** | captions render full scene text, not timed cues |
 | Multi-language / dubbed tracks | **Missing** | single `language` field, single text stream |
 
@@ -48,7 +48,8 @@ Grounded in the AVG codebase at time of writing:
 | Phase gating + dedup keys (`jobId:phase`) | **Done** | `enqueueTask` / `queuedTaskKeys` / `activeTaskKeys` |
 | Per-job status page + cancel | **Done** | `src/views/job-status.view.ts`, `adapters/http/jobs-controller.ts` |
 | MCP `batch-generate` prompt | **Done (prompt only)** | `src/mcp-prompts.ts` — emits instructions to an LLM; does NOT enqueue jobs itself |
-| Multi-job batch **dashboard UI** | **Missing** | only single-job status page exists |
+|| Multi-job batch CLI queue | **Done** | `src/adapters/cli/batch-queue.ts` + `agentic-batch.ts` — CLI batch processing with `--mode` stage control and `--parallel` concurrency |
+|| Multi-job batch **dashboard UI** | **Missing** | only single-job status page exists |
 | Queue persistence across restarts | **Missing** | queue is process-memory only |
 | Priority / ordering / reorder | **Missing** | FIFO by enqueue order |
 | Concurrency control UI (set `MAX_CONCURRENT_JOBS` from UI) | **Missing** | env var only |
