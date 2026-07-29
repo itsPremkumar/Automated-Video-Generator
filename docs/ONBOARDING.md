@@ -17,7 +17,7 @@ npm install
 ```
 
 No API keys required. The pipeline is **free and key-less** by default (Openverse/Pexels
-stock, royalty-free music, Edge-TTS voiceover).
+stock, royalty-free music, Voicebox in-repo TTS).
 
 ## Minute 2 — Run the one-shot agentic pipeline
 
@@ -28,7 +28,7 @@ npm run agentic -- --topic "5 fascinating facts about coffee" --title "Coffee Fa
 That single command makes the **agent** do everything: write the script, pick stock
 visuals, verify them, decide approve/reject, gate, generate voiceover + captions, and
 render a `.mp4` via the bundled `ffmpeg-static`. Output lands in
-`agentic-pipeline/workspaces/<jobId>/render/`.
+`workspace/jobs/<jobId>/render/`.
 
 ## Minute 3 — Talk to it in plain language (MCP)
 

@@ -9,7 +9,7 @@ Yes. MIT-licensed, no paid plans, no subscriptions, no watermarks. Optional thir
 No. Openverse provides 600M+ CC-licensed images with no API key. For video stock, a free Pexels API key is recommended but not required.
 
 ### Is this an AI video generator?
-Yes. It uses AI voice generation (Edge-TTS) with deterministic media selection and Remotion rendering. Optional AI visual verification uses Ollama or Gemini Vision.
+Yes. It uses Voicebox in-repo TTS (Kokoro/Chatterbox) for realistic local voice synthesis with Edge-TTS as a free fallback, deterministic media selection, and ffmpeg/Remotion rendering. Optional AI visual verification uses Ollama or Gemini Vision.
 
 ### Does it add a watermark?
 No watermark is added by this project.

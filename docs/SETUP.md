@@ -35,9 +35,9 @@ For the architectural layout behind these entrypoints, see [ARCHITECTURE.md](./A
 
 Voice generation now follows this order when possible:
 
-1. `Edge-TTS`
-2. Windows offline speech fallback in packaged desktop mode
-3. Google TTS fallback when available
+1. **Voicebox** (vendored in-repo at `src/speech/`) — Kokoro/Chatterbox TTS, supports voice cloning, auto-started by pipeline
+2. **Edge-TTS** — fallback when Voicebox can't start (missing venv, no GPU)
+3. **Sine-tone** — last resort fallback for silence detection
 
 ## Development Setup
 
@@ -112,16 +112,17 @@ cp .env.example .env
 Set at least:
 
 ```env
+TTS_PROVIDER=voicebox
 PEXELS_API_KEY=your_key_here
 PIXABAY_API_KEY=
 GEMINI_API_KEY=
 PUBLIC_BASE_URL=
 PORT=3001
 VIDEO_ORIENTATION=portrait
-VIDEO_VOICE=en-US-GuyNeural
 ```
 
-`PEXELS_API_KEY` is the main required key for the standard browser workflow.
+`TTS_PROVIDER` defaults to `voicebox` (vendored in-repo backend at `src/speech/`).
+`PEXELS_API_KEY` is recommended for better stock media in the browser workflow.
 
 ## Running The Project
 

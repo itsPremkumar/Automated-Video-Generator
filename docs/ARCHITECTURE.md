@@ -28,38 +28,50 @@ src/
   adapters/
     cli/
       cli-runner.ts
+      batch-queue.ts
     http/
+      agentic-controller.ts
       ai-controller.ts
       api-helpers.ts
       api-routes.ts
       file-routes.ts
       files-controller.ts
+      free-video-controller.ts
       jobs-controller.ts
       scenes-controller.ts
       server-bootstrap.ts
       setup-controller.ts
+      social-download-controller.ts
+      video-download-controller.ts
       videos-controller.ts
       view-controller.ts
       view-routes.ts
     mcp/
+      driver-llm.ts
       env-tools.ts
       input-store.ts
       output-store.ts
       pipeline-commands.ts
       register-admin-tools.ts
+      register-agentic-tools.ts
+      register-free-video-tools.ts
       register-input-tools.ts
       register-job-tools.ts
+      register-operations-tools.ts
       register-output-tools.ts
       responses.ts
   application/
     ai-app.service.ts
     diagnostics.service.ts
     filesystem-app.service.ts
+    free-video-app.service.ts
     media-app.service.ts
     pipeline-app.service.ts
     portal-app.service.ts
     scene-app.service.ts
     setup.service.ts
+    social-download-app.service.ts
+    video-download-app.service.ts
   infrastructure/
     filesystem/
       local-filesystem.ts
@@ -85,10 +97,13 @@ src/
     video.service.ts
   app.ts
   cli.ts
+  mcp-env-init.ts
   mcp-prompts.ts
   mcp-resources.ts
   mcp-server.ts
+  pipeline-workspace.ts
   render.ts
+  runtime-safety.test.ts
   runtime.ts
   server.ts
   video-generator.ts
@@ -113,6 +128,8 @@ This is the shared application layer.
 - [src/application/diagnostics.service.ts](/c:/one/Automated-Video-Generator/src/application/diagnostics.service.ts) exposes cross-runtime diagnostics behavior.
 - [src/application/media-app.service.ts](/c:/one/Automated-Video-Generator/src/application/media-app.service.ts) owns published video and job-response use cases for HTTP and view adapters.
 - [src/application/filesystem-app.service.ts](/c:/one/Automated-Video-Generator/src/application/filesystem-app.service.ts) exposes file-management use cases without embedding raw filesystem mechanics.
+- [src/application/free-video-app.service.ts](/c:/one/Automated-Video-Generator/src/application/free-video-app.service.ts) handles free video search/download operations.
+- [src/application/social-download-app.service.ts](/c:/one/Automated-Video-Generator/src/application/social-download-app.service.ts) manages social media download workflows.
 - [src/application/scene-app.service.ts](/c:/one/Automated-Video-Generator/src/application/scene-app.service.ts) owns scene editing and AI-assisted refinement orchestration.
 - [src/application/portal-app.service.ts](/c:/one/Automated-Video-Generator/src/application/portal-app.service.ts) provides the local portal view layer with structured page data.
 
