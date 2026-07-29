@@ -157,7 +157,10 @@ COMMANDS['speed'] = (args) => {
     const rate = parseFloat(args.rate || '1.0');
     if (rate <= 0) { console.error('  ✖ Rate must be > 0'); return; }
     const output = resolveOutput(args.output, `speed${rate}_${path.basename(input)}`);
-    const audioRate = 1 / rate;
+    // Parallel to setpts=1/rate (faster playback = smaller PTS multiplier),
+    // audio needs atempo=rate (faster playback = higher tempo multiplier).
+    // BUGFIX: was `1 / rate` which produced atempo=0.5 for 2x (slowing audio).
+    const audioRate = rate;
     const setpts = 1 / rate;
     // GUARD (BUG #4 class): the input may have NO audio track. Referencing
     // `[0:a]` unconditionally throws "Stream specifier ':a' matches no streams"
@@ -243,10 +246,11 @@ COMMANDS['merge'] = (args) => {
 // 8. CROP — Crop region
 COMMANDS['crop'] = (args) => {
     const input = resolveInput(args.input);
-    const w = args.w || '720';
-    const h = args.h || '720';
-    const x = args.x || '0';
-    const y = args.y || '0';
+    // Accept both --w/--h/--x/--y AND --width/--height/--x/--y
+    const w = args.w || args.width || '720';
+    const h = args.h || args.height || '720';
+    const x = args.x || args['x-offset'] || '0';
+    const y = args.y || args['y-offset'] || '0';
     const output = resolveOutput(args.output, `cropped_${path.basename(input)}`);
     const ff: string[] = [
         '-i', input,
@@ -260,8 +264,9 @@ COMMANDS['crop'] = (args) => {
 // 9. RESIZE — Scale dimensions
 COMMANDS['resize'] = (args) => {
     const input = resolveInput(args.input);
-    const w = args.w || '1920';
-    const h = args.h || '1080';
+    // Accept both --w/--h AND --width/--height
+    const w = args.w || args.width || '1920';
+    const h = args.h || args.height || '1080';
     const output = resolveOutput(args.output, `resized_${path.basename(input)}`);
     const ff: string[] = [
         '-i', input,
