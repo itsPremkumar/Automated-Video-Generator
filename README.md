@@ -100,7 +100,7 @@ Choose your path:
 
 ### 🎬 Your first video in 2 commands
 
-No API key required — Openverse finds stock footage automatically; voiceover uses Edge-TTS.
+No API key required — Openverse finds stock footage automatically; voiceover uses the vendored Voicebox backend (Kokoro by default) with Edge-TTS fallback.
 
 ```bash
 # 1. Install (one time)
@@ -200,18 +200,17 @@ No external services are required for the default pipeline.
 | `PEXELS_API_KEY` | _(none)_ | Free stock video. Without it, falls back to Openverse / Wikimedia / Internet Archive. |
 | `YOUTUBE_API_KEY` | _(none)_ | YouTube metadata enrichment (optional). |
 | `OPENVERSE_ENABLED` | `true` | Use Openverse CC media when no API key is set. |
-| `TTS_PROVIDER` | `edge-tts` | `edge-tts` (free, CPU) or `voicebox` (optional local GPU engine). |
+| `TTS_PROVIDER` | `voicebox` | `voicebox` (default — vendored in-repo Kokoro/Chatterbox) or `edge-tts` (free, CPU). The pipeline auto-spawns the vendored backend. |
 | `VOICEBOX_ENGINE` | _(none)_ | `kokoro` or `chatterbox_turbo` — only when `TTS_PROVIDER=voicebox`. |
 | `VOICEBOX_PROFILE_ID` | _(none)_ | A Voicebox profile id (preset or cloned voice). |
 
-**Optional: Voicebox GPU voice-clone (opt-in, never blocking).**
-Voicebox is a separate, locally-run headless TTS engine (MIT). It is
-**disabled by default** — the pipeline uses Edge-TTS (free, CPU) and only
-switches to Voicebox if `TTS_PROVIDER=voicebox` is explicitly set and a
-backend is reachable. If the backend is unavailable, it degrades gracefully
-back to Edge-TTS. On this project's dev laptop (RTX 3050 4 GB, CUDA
-12.6) Kokoro uses ~819 MB VRAM and Chatterbox-Turbo ~3.8 GB; CPU-only
-is not recommended (OOM). See `docs/VOICE_CLONING_GUIDE.md`.
+**Voicebox (in-repo vendored, default narrator).**
+Voicebox is **vendored in-repo** at `src/speech/` (MIT, sourced from jamiepine/voicebox).
+It is the **default TTS provider** — the pipeline auto-spawns it as `python -m speech.main`
+using the in-repo venv. Kokoro (~800 MB VRAM) is the default narrator engine.
+If the backend cannot start (missing venv, no GPU), the pipeline degrades gracefully
+back to Edge-TTS. For voice cloning, set `TTS_PROVIDER=voicebox` and provide a
+`VOICEBOX_PROFILE_ID`. See `docs/VOICEBOX_SETUP.md`.
 
 **Health & hardening:**
 - Healthcheck hits `GET /api/health` (container `HEALTHCHECK`).
@@ -327,7 +326,7 @@ Use `[Visual: ...]` tags for frame-perfect scene control:
 
 | Feature                      | Description                                                                                     |
 | ---------------------------- | ----------------------------------------------------------------------------------------------- |
-| **🎤 400+ Voices**           | Multi-language TTS via Edge-TTS with fallback to Windows offline speech, Voicebox, XTTS, Kokoro |
+| **🎤 400+ Voices**           | Multi-language TTS via Voicebox (Kokoro, default) with Edge-TTS, XTTS fallback |
 | **🖼️ Stock Media**           | Pexels + Pixabay + Openverse (CC images, no API key) + Wikimedia Commons + Internet Archive     |
 | **🎵 Background Music**      | Auto-ducking with volume control                                                                |
 | **🔄 Batch Processing**      | Generate dozens of videos from one JSON file                                                    |
