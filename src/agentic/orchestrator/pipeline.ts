@@ -321,7 +321,11 @@ export async function runAgenticPipeline(
                                 ({
                                     url: a.url,
                                     localPath: '',
-                                    source: 'openverse/pexels',
+                                    // Honest source: derive from the URL host when the
+                                    // fetcher doesn't carry an explicit source. Never
+                                    // hardcode a provider name — matrix QA found a
+                                    // solid-color gradient mislabeled 'openverse/pexels'.
+                                    source: a.url?.startsWith('http') ? sourceFromUrl(a.url) : (a.photographer || 'unknown'),
                                     license: a.license,
                                     licenseUrl: a.licenseUrl,
                                 }) as FetchedVisual,
@@ -390,7 +394,11 @@ export async function runAgenticPipeline(
                         const local = require('path').join(dir, filename.replace(/(\.[^.]+)?$/, '.png'));
                         const def = req.defaultVisual ? useDefaultVisual() : '';
                         if (!def) {
-                            const ph = makePlaceholder([filename.replace(/\.[^.]+$/, '')], 'image');
+                            // Pass a human label, NOT the downloaded filename
+                            // (e.g. 'candidate_1.png') — burning a filename into the
+                            // frame is a defect. The download dep only gets url/dir/
+                            // filename, so use the job title as the fallback label.
+                            const ph = makePlaceholder([req.title || topicNoun || "scene"], "image");
                             try {
                                 require('fs').copyFileSync(ph, local);
                             } catch (e) {
@@ -405,7 +413,10 @@ export async function runAgenticPipeline(
             const local = require('path').join(dir, filename.replace(/(\.[^.]+)?$/, '.png'));
             const def = req.defaultVisual ? useDefaultVisual() : '';
             if (!def) {
-                const ph = makePlaceholder([filename.replace(/\\.[^.]+$/, '')], 'image');
+                // Pass a human label, NOT the downloaded filename (e.g.
+                // 'candidate_1.png') — burning a filename into the frame is a
+                // defect. Use the job title as the fallback label.
+                const ph = makePlaceholder([req.title || topicNoun || "scene"], "image");
                 try {
                     require('fs').copyFileSync(ph, local);
                 } catch (e) {

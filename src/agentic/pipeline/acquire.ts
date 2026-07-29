@@ -22,6 +22,7 @@ import { aiVerifyAsset } from '../ai/ai-verify.js';
 import { ModelBridge, NullBridge, type LlmBridge } from '../ai/bridge.js';
 import { trimBlackFrames } from '../../lib/media-downloader.js';
 import { getCached, putCache } from '../operations/asset-cache.js';
+import { isUniformPlaceholderImage } from './asset-validators.js';
 
 /**
  * Run async producers with a bounded concurrency. `tasks` is an array of
@@ -359,13 +360,27 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                         return;
                     }
                 }
+                // Content gate: reject near-uniform / solid-color placeholders
+                // (degenerate swatch visuals). Matrix QA found a flat gradient
+                // being accepted as a real scene image. Skip it so the scene
+                // falls through to the next source, or a proper fallback.
+                if (effectiveKind === 'image' && isUniformPlaceholderImage(localPath)) {
+                    console.warn(
+                        `⚠ scene ${i} cand ${c + 1}: near-uniform placeholder (no real content) — skipped; trying next source`,
+                    );
+                    return;
+                }
                 candidates.push({
                     kind: effectiveKind,
                     sceneIndex: i,
                     candidateIndex: c + 1,
                     localPath,
                     url: f.url,
-                    source: f.source,
+                    // Honest source labeling: a "fetched" candidate that actually
+                    // resolved to a generated placeholder must be labeled so the
+                    // render manifest / attribution never lies (matrix QA found a
+                    // solid-color gradient mislabeled "Source: openverse/pexels").
+                    source: isUniformPlaceholderImage(localPath) ? 'placeholder' : (f.source || 'unknown'),
                     license: lic.license,
                     licenseUrl: lic.licenseUrl,
                     keywords: scene.searchKeywords,
