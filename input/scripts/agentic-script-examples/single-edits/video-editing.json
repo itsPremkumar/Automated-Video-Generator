@@ -1,0 +1,116 @@
+{
+  "description": "Single video editing operations via agentic-editor.ts. Each command is a standalone ffmpeg operation. Run via: npm run agentic:editor <command> [options]",
+  "common_flags": {
+    "--input": "Input video file path (required for most commands)",
+    "--output": "Output file path (auto-generated if omitted)",
+    "--start": "Start timecode (e.g. 00:05 or 30 for seconds)",
+    "--end": "End timecode",
+    "--files": "Comma-separated file list for merge/split operations",
+    "--rate": "Speed multiplier (0.25-4.0)",
+    "--preset": "Crop preset: '9:16', '16:9', '1:1'",
+    "--text": "Text content for overlays",
+    "--position": "Position: top-left, top-right, bottom-left, center"
+  },
+  "examples": [
+    {
+      "command": "trim",
+      "description": "Cut a video to a specific time range",
+      "usage": "npm run agentic:editor trim --input input.mp4 --start 00:05 --end 00:30 --output trimmed.mp4"
+    },
+    {
+      "command": "speed",
+      "description": "Change playback speed (preserves audio pitch)",
+      "usage": "npm run agentic:editor speed --input input.mp4 --rate 2.0 --output fast.mp4"
+    },
+    {
+      "command": "extract-audio",
+      "description": "Extract audio track as MP3",
+      "usage": "npm run agentic:editor extract-audio --input input.mp4 --output audio.mp3"
+    },
+    {
+      "command": "replace-audio",
+      "description": "Replace the audio track of a video",
+      "usage": "npm run agentic:editor replace-audio --input video.mp4 --audio new_audio.mp3 --output re Audiod.mp4"
+    },
+    {
+      "command": "mute",
+      "description": "Remove all audio from a video",
+      "usage": "npm run agentic:editor mute --input input.mp4 --output silent.mp4"
+    },
+    {
+      "command": "split",
+      "description": "Split video at a timestamp",
+      "usage": "npm run agentic:editor split --input input.mp4 --at 00:15 --output-prefix part"
+    },
+    {
+      "command": "merge",
+      "description": "Join multiple video files",
+      "usage": "npm run agentic:editor merge --files \"part1.mp4,part2.mp4,part3.mp4\" --output merged.mp4"
+    },
+    {
+      "command": "crop",
+      "description": "Crop video to aspect ratio",
+      "usage": "npm run agentic:editor crop --input input.mp4 --preset 9:16 --output cropped.mp4"
+    },
+    {
+      "command": "resize",
+      "description": "Scale video to dimensions",
+      "usage": "npm run agentic:editor resize --input input.mp4 --width 1080 --height 1920 --output resized.mp4"
+    },
+    {
+      "command": "rotate",
+      "description": "Rotate or flip video",
+      "usage": "npm run agentic:editor rotate --input input.mp4 --angle 90 --output rotated.mp4"
+    },
+    {
+      "command": "loop",
+      "description": "Loop a clip multiple times",
+      "usage": "npm run agentic:editor loop --input clip.mp4 --count 3 --output looped.mp4"
+    },
+    {
+      "command": "overlay-text",
+      "description": "Add text/caption to video",
+      "usage": "npm run agentic:editor overlay-text --input input.mp4 --text \"Hello World\" --position bottom-left --output captioned.mp4"
+    },
+    {
+      "command": "overlay-image",
+      "description": "Add image watermark to video",
+      "usage": "npm run agentic:editor overlay-image --input input.mp4 --image logo.png --position top-right --output branded.mp4"
+    },
+    {
+      "command": "extract-frame",
+      "description": "Save a single video frame as image",
+      "usage": "npm run agentic:editor extract-frame --input input.mp4 --at 00:10 --output frame.png"
+    },
+    {
+      "command": "thumbnail",
+      "description": "Generate a poster/thumbnail frame",
+      "usage": "npm run agentic:editor thumbnail --input input.mp4 --output thumbnail.jpg"
+    },
+    {
+      "command": "blur",
+      "description": "Blur a region of the frame (privacy)",
+      "usage": "npm run agentic:editor blur --input input.mp4 --region 100:200:300:400 --output blurred.mp4"
+    },
+    {
+      "command": "adjust",
+      "description": "Adjust brightness, contrast, saturation",
+      "usage": "npm run agentic:editor adjust --input input.mp4 --brightness 0.1 --contrast 1.2 --saturation 1.5 --output adjusted.mp4"
+    },
+    {
+      "command": "reverse",
+      "description": "Reverse video playback",
+      "usage": "npm run agentic:editor reverse --input input.mp4 --output reversed.mp4"
+    },
+    {
+      "command": "info",
+      "description": "Show video metadata (codec, resolution, duration)",
+      "usage": "npm run agentic:editor info --input input.mp4"
+    },
+    {
+      "command": "concat-scene",
+      "description": "Extract one scene from rendered workspace video",
+      "usage": "npm run agentic:editor concat-scene --job avs_test_job --scene 3"
+    }
+  ]
+}

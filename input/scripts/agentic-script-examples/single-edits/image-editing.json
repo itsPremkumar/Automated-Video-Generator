@@ -1,0 +1,125 @@
+{
+  "description": "Single image editing operations via agentic-image.ts. Each command processes a still image using ffmpeg-static + sharp. Run via: npm run agentic:image <command> [options]",
+  "common_flags": {
+    "--input": "Input image file path (required)",
+    "--output": "Output file path (auto-generated if omitted)",
+    "--width": "Target width in pixels",
+    "--height": "Target height in pixels",
+    "--quality": "JPEG/WebP quality (1-100, default 85)",
+    "--text": "Text content for overlays",
+    "--color": "Color hex code or name",
+    "--position": "Position: top-left, top-right, bottom-left, center"
+  },
+  "examples": [
+    {
+      "command": "convert",
+      "description": "Convert image format",
+      "usage": "npm run agentic:image convert --input photo.png --format jpg --output photo.jpg --quality 90"
+    },
+    {
+      "command": "resize",
+      "description": "Scale image to new dimensions",
+      "usage": "npm run agentic:image resize --input photo.jpg --width 1080 --height 1920 --output resized.jpg"
+    },
+    {
+      "command": "crop",
+      "description": "Crop a region of the image",
+      "usage": "npm run agentic:image crop --input photo.jpg --region 100:100:800:800 --output cropped.jpg"
+    },
+    {
+      "command": "rotate",
+      "description": "Rotate 90/180/270 or flip",
+      "usage": "npm run agentic:image rotate --input photo.jpg --angle 90 --output rotated.jpg"
+    },
+    {
+      "command": "adjust",
+      "description": "Brightness/contrast/saturation/gamma",
+      "usage": "npm run agentic:image adjust --input photo.jpg --brightness 0.1 --contrast 1.2 --saturation 1.3 --output adjusted.jpg"
+    },
+    {
+      "command": "blur",
+      "description": "Blur whole image or a region",
+      "usage": "npm run agentic:image blur --input photo.jpg --sigma 5 --output blurred.jpg"
+    },
+    {
+      "command": "text",
+      "description": "Burn text onto the image",
+      "usage": "npm run agentic:image text --input photo.jpg --text \"Hello World\" --position center --color white --font-size 48 --output text.jpg"
+    },
+    {
+      "command": "emoji",
+      "description": "Burn emoji/sticker onto image",
+      "usage": "npm run agentic:image emoji --input photo.jpg --emoji \"\ud83c\udf89\" --position top-right --size 64 --output emoji.jpg"
+    },
+    {
+      "command": "watermark",
+      "description": "Overlay a logo watermark image",
+      "usage": "npm run agentic:image watermark --input photo.jpg --watermark logo.png --position bottom-right --opacity 0.7 --output watermarked.jpg"
+    },
+    {
+      "command": "tint",
+      "description": "Brand color tint overlay",
+      "usage": "npm run agentic:image tint --input photo.jpg --color \"#7C3AED\" --opacity 0.3 --output tinted.jpg"
+    },
+    {
+      "command": "vignette",
+      "description": "Add edge darkening effect",
+      "usage": "npm run agentic:image vignette --input photo.jpg --strength 0.5 --output vignette.jpg"
+    },
+    {
+      "command": "border",
+      "description": "Add colored border/padding",
+      "usage": "npm run agentic:image border --input photo.jpg --width 10 --color white --output bordered.jpg"
+    },
+    {
+      "command": "enhance",
+      "description": "Denoise + sharpen + deblock",
+      "usage": "npm run agentic:image enhance --input photo.jpg --output enhanced.jpg"
+    },
+    {
+      "command": "grayscale",
+      "description": "Convert to black and white",
+      "usage": "npm run agentic:image grayscale --input photo.jpg --output bw.jpg"
+    },
+    {
+      "command": "sepia",
+      "description": "Apply warm vintage tone",
+      "usage": "npm run agentic:image sepia --input photo.jpg --output sepia.jpg"
+    },
+    {
+      "command": "pixelate",
+      "description": "Mosaic / pixel-art effect",
+      "usage": "npm run agentic:image pixelate --input photo.jpg --block-size 16 --output pixelated.jpg"
+    },
+    {
+      "command": "compress",
+      "description": "Reduce file size via quality",
+      "usage": "npm run agentic:image compress --input photo.jpg --quality 50 --output compressed.jpg"
+    },
+    {
+      "command": "face-blur",
+      "description": "Blur a region (privacy protection)",
+      "usage": "npm run agentic:image face-blur --input photo.jpg --region 200:150:180:220 --output anonymized.jpg"
+    },
+    {
+      "command": "round-corners",
+      "description": "Rounded corners for social thumbnails",
+      "usage": "npm run agentic:image round-corners --input photo.jpg --radius 20 --output rounded.jpg"
+    },
+    {
+      "command": "merge",
+      "description": "Overlay one image on top of another",
+      "usage": "npm run agentic:image merge --input bg.jpg --overlay overlay.png --position center --opacity 0.8 --output merged.jpg"
+    },
+    {
+      "command": "info",
+      "description": "Show image metadata",
+      "usage": "npm run agentic:image info --input photo.jpg"
+    },
+    {
+      "command": "flip",
+      "description": "Horizontal or vertical flip",
+      "usage": "npm run agentic:image flip --input photo.jpg --direction hflip --output flipped.jpg"
+    }
+  ]
+}

@@ -43,6 +43,9 @@ agentic-script-examples/
 │   ├── 16-gpu-quality.json           GPU acceleration + quality tier demo
 │   ├── 17-silent-mute.json           No music, no SFX, no ducking mode
 │   └── 18-localization.json          Multi-language subtitle sidecars
+├── single-edits/                     ← Standalone image/video editing reference
+│   ├── video-editing.json            All 20 agentic:editor commands with CLI examples
+│   └── image-editing.json            All 22 agentic:image commands with CLI examples
 └── full-demos/                       ← Complete ready-to-render jobs
     ├── 01-minimal.json               Shortest possible config
     ├── 02-motivational-reel.json     Inspirational Instagram Reel
@@ -142,6 +145,70 @@ npm run agentic:modular plan --file input/scripts/agentic-script-examples/full-d
 | **Modes** | |
 | `modes/14-render-gif` | Render GIF output mode (animated preview) |
 | `modes/15-render-poster` | Render poster/thumbnail from rendered video |
+
+## Single Editing Operations
+
+The `single-edits/` folder contains reference files for the standalone video and image editing CLIs that operate on individual media files (not the full pipeline).
+
+### Video Editing (`npm run agentic:editor`)
+
+20 commands for single-video operations using bundled ffmpeg-static:
+
+| Command | Description | Quick Example |
+|---------|-------------|---------------|
+| `trim` | Cut video by timecode | `--input clip.mp4 --start 00:05 --end 00:30` |
+| `speed` | Change playback speed 0.25x–4x | `--rate 2.0` |
+| `extract-audio` | Pull audio track as MP3/WAV | `--output audio.mp3` |
+| `replace-audio` | Replace video audio | `--audio new_audio.mp3` |
+| `mute` | Remove audio track | `--output silent.mp4` |
+| `split` | Split at timestamp | `--at 00:15 --output-prefix part` |
+| `merge` | Concatenate videos | `--files "a.mp4,b.mp4"` |
+| `crop` | Crop to aspect ratio | `--preset 9:16` |
+| `resize` | Scale dimensions | `--width 1080 --height 1920` |
+| `rotate` | Rotate/flip | `--angle 90` |
+| `loop` | Loop N times | `--count 3` |
+| `overlay-text` | Burn text caption | `--text "Hello" --position bottom-left` |
+| `overlay-image` | Image watermark | `--image logo.png --position top-right` |
+| `extract-frame` | Save frame as image | `--at 00:10 --output frame.png` |
+| `thumbnail` | Generate poster frame | (no extra flags) |
+| `blur` | Blur region | `--region 100:200:300:400` |
+| `adjust` | Brightness/contrast/saturation | `--brightness 0.1 --contrast 1.2` |
+| `reverse` | Reverse playback | (no extra flags) |
+| `info` | Show metadata | (no extra flags) |
+| `concat-scene` | Extract workspace scene | `--job job_123 --scene 3` |
+
+Full reference: `single-edits/video-editing.json`
+
+### Image Editing (`npm run agentic:image`)
+
+22 commands for single-image operations:
+
+| Command | Description | Quick Example |
+|---------|-------------|---------------|
+| `convert` | Change format | `--format webp --quality 90` |
+| `resize` | Scale dimensions | `--width 1080 --height 1920` |
+| `crop` | Crop region | `--region 100:100:800:800` |
+| `rotate` | Rotate/flip | `--angle 90` or `hflip` |
+| `adjust` | Color adjust | `--brightness 0.1 --contrast 1.2` |
+| `blur` | Gaussian blur | `--sigma 5` |
+| `text` | Burn caption text | `--text "Hello" --position center --font-size 48` |
+| `emoji` | Burn emoji sticker | `--emoji "🎉" --size 64` |
+| `watermark` | Logo overlay | `--watermark logo.png --opacity 0.7` |
+| `tint` | Brand color overlay | `--color "#7C3AED" --opacity 0.3` |
+| `vignette` | Edge darkening | `--strength 0.5` |
+| `border` | Colored border | `--width 10 --color white` |
+| `enhance` | Denoise + sharpen | (no extra flags) |
+| `grayscale` | Black and white | (no extra flags) |
+| `sepia` | Vintage tone | (no extra flags) |
+| `pixelate` | Mosaic effect | `--block-size 16` |
+| `compress` | Reduce file size | `--quality 50` |
+| `face-blur` | Privacy blur region | `--region 200:150:180:220` |
+| `round-corners` | Rounded edges | `--radius 20` |
+| `merge` | Overlay images | `--overlay overlay.png --opacity 0.8` |
+| `info` | Show metadata | (no extra flags) |
+| `flip` | Horizontal/vertical flip | `--direction hflip` |
+
+Full reference: `single-edits/image-editing.json`
 
 ## Complete Coverage Map
 
