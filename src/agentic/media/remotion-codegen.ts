@@ -51,6 +51,8 @@ export interface SceneSpec {
   durationInFrames?: number;
   width?: number;
   height?: number;
+  /** Random seed for retry variation. Changes behavior on each retry. */
+  variant?: number;
 }
 
 const DEFAULT_PALETTE: [string, string, string] = ['#0a0a14', '#7c3aed', '#22d3ee'];
@@ -118,6 +120,21 @@ export const RemotionRoot: React.FC = () => {
   return path.join(jobDir, 'index.ts');
 }
 
+/** Clean old bundle artifacts before retry. */
+export function cleanSceneProject(jobDir: string): void {
+  const outDir = path.join(jobDir, '..', 'out');
+  if (fs.existsSync(outDir)) {
+    for (const f of fs.readdirSync(outDir)) {
+      try { fs.rmSync(path.join(outDir, f), { recursive: true }); } catch { /* ignore */ }
+    }
+  }
+  // Clear cached node_modules bundled output
+  const cacheDir = path.join(jobDir, 'node_modules', '.cache');
+  if (fs.existsSync(cacheDir)) {
+    try { fs.rmSync(cacheDir, { recursive: true }); } catch { /* ignore */ }
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* Synthesizer — turns a SceneSpec into a valid composition .tsx.       */
 /* This is the autonomous fallback author; the agent may also hand-write.*/
@@ -127,9 +144,13 @@ function synthesize(spec: SceneSpec): string {
   const [bg, a, b] = spec.palette ?? DEFAULT_PALETTE;
   const title = (spec.title ?? spec.caption ?? 'Remotion').replace(/[\\`${}]/g, '');
   const caption = (spec.caption ?? '').replace(/[\\`${}]/g, '');
+  const v = spec.variant ?? 0; // retry variation seed
+
+  // Calculate pseudo-random offset from variant for retry diversity
+  const vOff = (v * 137.508) % 360;
 
   const head = `import React from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, spring, interpolate } from 'remotion';
+import { AbsoluteFill, useCurrentFrame, useVideoConfig, spring, interpolate, random } from 'remotion';
 
 const BG = '${bg}';
 const A = '${a}';
@@ -156,21 +177,21 @@ export const Scene${spec.index}: React.FC = () => {
       const data = spec.data ?? [42, 68, 55, 91, 76];
       const labels = spec.labels ?? ['A', 'B', 'C', 'D', 'E'];
       const max = Math.max(...data, 1);
+      // Animated bars: each bar grows to its target height using spring
       const bars = data
         .map(
           (v, i) =>
             `<div key={${i}} style={{ display:'flex', flexDirection:'column', alignItems:'center', width:160 }}>
         <span style={{ color:'white', fontSize:34 }}>{${v}}</span>
-        <div style={{ width:120, height:${(v / max) * 480}, background:\`linear-gradient(180deg, \${A}, \${B})\`, borderRadius:12, marginTop:10 }} />
+        <div style={{ width:120, height:interpolate(spring({ frame: frame - ${i * 2}, fps, config: { damping: 18 } }), [0,1], [0,${(v / max) * 480}]), background:\`linear-gradient(180deg, \${A}, \${B})\`, borderRadius:12, marginTop:10 }} />
         <span style={{ color:'#9aa0b5', fontSize:30, marginTop:10 }}>${(labels[i] ?? '').replace(/[<>]/g, '')}</span>
       </div>`,
         )
-        .join('\n      ');
+        .join('\\n      ');
       return `${head}
 export const Scene${spec.index}: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const g = spring({ frame, fps, config: { damping: 16 } });
   return (
     <AbsoluteFill style={{ backgroundColor: BG, padding: 80, fontFamily: 'system-ui' }}>
       <h1 style={{ color:'white', fontSize:60, fontWeight:800 }}>${title}</h1>
@@ -200,6 +221,103 @@ export const Scene${spec.index}: React.FC = () => {
   );
 };
 `;
+    case 'diagram': {
+      // Flow diagram: animated blocks connected by lines
+      const blocks = (spec.labels ?? ['Input', 'Process', 'Output']).map(s => s.replace(/[<>]/g, ''));
+      const blockEls = blocks.map((s, i) => {
+        const x = 960 + (i - (blocks.length - 1) / 2) * 400;
+        return `<g>
+          <rect x={${x - 100}} y={420} width={200} height={200} rx={16} fill={${i % 2 ? 'A' : 'B'}} opacity={spring({ frame: frame - ${i * 5}, fps, config: { damping: 14 } })} />
+          <text x={${x}} y={530} fill="white" fontSize={36} textAnchor="middle" fontWeight={700}>${s}</text>
+        </g>`;
+      }).join('\\n        ');
+      return `${head}
+export const Scene${spec.index}: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  return (
+    <AbsoluteFill style={{ backgroundColor: BG, fontFamily: 'system-ui' }}>
+      <h1 style={{ position:'absolute', top:60, left:90, color:'white', fontSize:48 }}>${title}</h1>
+      <svg width={1920} height={1080}>
+        ${blockEls}
+      </svg>
+    </AbsoluteFill>
+  );
+};
+`;
+    }
+    case 'ui': {
+      // App UI mockup: browser window with content
+      return `${head}
+export const Scene${spec.index}: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const slide = spring({ frame, fps, config: { damping: 12 } });
+  return (
+    <AbsoluteFill style={{ backgroundColor: '#1a1a2e', justifyContent:'center', alignItems:'center', fontFamily:'system-ui' }}>
+      <div style={{ width:1200, height:720, background:'#16213e', borderRadius:16, overflow:'hidden',
+        transform:\`translateY(\${interpolate(slide,[0,1],[80,0])})\`, opacity:slide }}>
+        <div style={{ height:50, background:'#0f3460', display:'flex', alignItems:'center', padding:'0 20' }}>
+          {['red','#f0a500','#6dd5a0'].map((c,i)=> <div key={i} style={{ width:16, height:16, borderRadius:'50%', background:c, marginRight:10 }} />)}
+        </div>
+        <div style={{ padding:60 }}>
+          <span style={{ color:'white', fontSize:48, fontWeight:700 }}>${title}</span>
+          <div style={{ display:'flex', gap:20, marginTop:40 }}>
+            ${(spec.data ?? [1,2,3]).map((_, i) =>
+              `<div key={${i}} style={{ flex:1, height:200, background:\`\${A}33\`, borderRadius:12, padding:20 }}>
+                <div style={{ width:'60%', height:20, background:A, borderRadius:6, marginBottom:16, opacity:0.6 }} />
+                <div style={{ width:'90%', height:20, background:B, borderRadius:6, opacity:0.4 }} />
+              </div>`
+            ).join('\\n            ')}
+          </div>
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+`;
+    }
+    case 'map': {
+      // Animated route/path: moving dot along a polyline
+      const points = (spec.data ?? [0, 1, 2, 3, 4, 5, 4, 3, 2, 1]).map((v, i) => ({
+        x: 200 + (i / 9) * 1520,
+        y: 300 + (i % 2 === 0 ? -v * 40 : v * 40),
+      }));
+      const polyline = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${Math.round(p.x)},${Math.round(p.y)}`).join(' ');
+      const dotPos = (t: number) => {
+        const totalSegs = points.length - 1;
+        const seg = Math.min(Math.floor(t * totalSegs), totalSegs - 1);
+        const frac = (t * totalSegs) - seg;
+        const p0 = points[seg], p1 = points[seg + 1];
+        return { x: p0.x + (p1.x - p0.x) * frac, y: p0.y + (p1.y - p0.y) * frac };
+      };
+      return `${head}
+export const Scene${spec.index}: React.FC = () => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const t = Math.min(frame / 60, 1);
+  const pos = (() => {
+    const pts = [${points.map(p => `{x:${Math.round(p.x)},y:${Math.round(p.y)}}`).join(',')}];
+    const total = pts.length - 1;
+    const seg = Math.min(Math.floor(t * total), total - 1);
+    const f = (t * total) - seg;
+    return { x: pts[seg].x + (pts[seg + 1].x - pts[seg].x) * f, y: pts[seg].y + (pts[seg + 1].y - pts[seg].y) * f };
+  })();
+  return (
+    <AbsoluteFill style={{ backgroundColor: '#0d1117', fontFamily: 'system-ui' }}>
+      <svg width={1920} height={1080}>
+        <path d="${polyline}" fill="none" stroke="#30363d" strokeWidth={4} strokeLinecap="round" />
+        <path d="${polyline}" fill="none" stroke={B} strokeWidth={4} strokeLinecap="round"
+          strokeDasharray={2000} strokeDashoffset={interpolate(t, [0,1], [2000,0])} />
+        <circle cx={pos.x} cy={pos.y} r={16} fill={A} />
+        <circle cx={pos.x} cy={pos.y} r={24} fill={\`\${A}44\`} />
+      </svg>
+      <span style={{ position:'absolute', bottom:60, left:90, color:'white', fontSize:36 }}>${title}</span>
+    </AbsoluteFill>
+  );
+};
+`;
+    }
     case 'timeline': {
       const steps = (spec.labels ?? ['Step 1', 'Step 2', 'Step 3', 'Step 4']).map((s) =>
         s.replace(/[<>]/g, ''),
@@ -210,7 +328,7 @@ export const Scene${spec.index}: React.FC = () => {
             `<g><circle cx={${240 + i * 420}} cy={540} r={30} fill={${i % 2 ? 'A' : 'B'}} />
         <text x={${240 + i * 420}} y={620} fill="white" fontSize={36} textAnchor="middle">${s}</text></g>`,
         )
-        .join('\n      ');
+        .join('\\n      ');
       return `${head}
 export const Scene${spec.index}: React.FC = () => {
   return (
@@ -225,19 +343,55 @@ export const Scene${spec.index}: React.FC = () => {
 };
 `;
     }
-    case 'particle':
+    case 'particle': {
+      // Varied particle system: different seed per variant, multi-color, multi-size
+      const pCount = 150;
       return `${head}
 export const Scene${spec.index}: React.FC = () => {
   const frame = useCurrentFrame();
-  const parts = Array.from({ length: 120 }, (_, i) => {
-    const r = (i * 97) % 1920;
-    const y = (frame * (2 + (i % 5)) + i * 53) % 1080;
-    return <div key={i} style={{ position:'absolute', left:r, top:y, width:10, height:10,
-      background: i % 2 ? A : B, borderRadius:3, opacity:0.9 }} />;
+  const parts = Array.from({ length: ${pCount} }, (_, i) => {
+    const seed = i * 7.3 + ${vOff};
+    const x = (seed * 137.5 + i * 3.1) % 1920;
+    const speed = 1 + (i % 5) * 0.7;
+    const y = (frame * speed + seed * 53 + ${vOff} * 2) % 1280 - 100;
+    const size = 4 + (i % 6);
+    const hue = (i * 27 + ${Math.round(vOff)}) % 360;
+    const wobble = Math.sin(frame * 0.05 + i * 0.7) * 60;
+    return <div key={i} style={{ position:'absolute', left:x + wobble, top:y, width:size, height:size,
+      background:\`hsl(\${hue},80%,60%)\`, borderRadius: Math.round(size/2) === size/2 ? '50%' : 3, opacity:0.85 }} />;
   });
   return <AbsoluteFill style={{ backgroundColor: BG }}>{parts}</AbsoluteFill>;
 };
 `;
+    }
+    case 'procedural': {
+      // Geometric procedural art: rotating shapes, changing colors, grid patterns
+      return `${head}
+export const Scene${spec.index}: React.FC = () => {
+  const frame = useCurrentFrame();
+  const t = frame * 0.02;
+  return (
+    <AbsoluteFill style={{ backgroundColor: BG, justifyContent:'center', alignItems:'center' }}>
+      <svg width={960} height={960} viewBox="0 0 960 960">
+        {Array.from({ length: 12 }, (_, i) => i).map(i => (
+          <rect key={i}
+            x={480 - (300 + i * 40) * Math.cos(t + i * 0.8 * Math.PI / 6)}
+            y={480 - (300 + i * 40) * Math.sin(t + i * 0.8 * Math.PI / 6)}
+            width={60 + i * 8} height={60 + i * 8}
+            fill="none"
+            stroke={i % 2 === 0 ? A : B}
+            strokeWidth={3}
+            transform={\`rotate(\${frame * 2 + i * 30} \${480} \${480})\`}
+            opacity={0.3 + (i / 12) * 0.5}
+          />
+        ))}
+      </svg>
+      <span style={{ position:'absolute', bottom:80, fontFamily:'system-ui', fontSize:40, color:'white', letterSpacing:4, opacity:0.7 }}>${title}</span>
+    </AbsoluteFill>
+  );
+};
+`;
+    }
     case 'logo':
       return `${head}
 export const Scene${spec.index}: React.FC = () => {
@@ -254,13 +408,20 @@ export const Scene${spec.index}: React.FC = () => {
   );
 };
 `;
-    case 'spectrum':
+    case 'spectrum': {
+      // Improved spectrum: more varied, with a reactive-looking pattern
       return `${head}
 export const Scene${spec.index}: React.FC = () => {
   const frame = useCurrentFrame();
+  const base = frame * 0.08 + ${vOff * 0.01};
   const bars = Array.from({ length: 64 }, (_, i) => {
-    const h = 40 + Math.abs(Math.sin(frame * 0.1 + i * 0.3)) * 480;
-    return <div key={i} style={{ width:18, height:h, background:\`hsl(\${(i*4+frame)%360},85%,60%)\`, borderRadius:6 }} />;
+    const osc = Math.sin(base * 2 + i * 0.15) * 0.4
+            + Math.sin(base * 3.7 + i * 0.09) * 0.3
+            + Math.sin(base * 5.1 + i * 0.22) * 0.3;
+    const h = 30 + Math.max(0, osc) * 520;
+    const hue = (i * 5.625 + frame * 0.5) % 360;
+    return <div key={i} style={{ width:18, height:h, background:\`hsl(\${hue},80%,60%)\`, borderRadius:6,
+      transition: 'height 0.05s' }} />;
   });
   return (
     <AbsoluteFill style={{ backgroundColor: BG, justifyContent:'center', alignItems:'center' }}>
@@ -269,6 +430,7 @@ export const Scene${spec.index}: React.FC = () => {
   );
 };
 `;
+    }
     case 'abstract':
     default:
       return `${head}

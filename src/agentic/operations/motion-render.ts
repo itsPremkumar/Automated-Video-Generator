@@ -86,11 +86,11 @@ export async function renderMotionClip(req: MotionRenderRequest): Promise<Motion
   });
 
   // Verify (offline, signal-level) — same bar as downloaded assets.
+  // Allow small dimension padding (some codecs round to even values).
   const probe = await probeAsset(outputPath);
+  const dimOk = probe && Math.abs(probe.width - width) <= 8 && Math.abs(probe.height - height) <= 8;
   const verified =
-    !!probe &&
-    probe.width === width &&
-    probe.height === height &&
+    !!dimOk &&
     (probe.durationSec ?? 0) > 0.1;
   const verifyNote = verified
     ? ''

@@ -15,14 +15,15 @@ import { resolveWorkspacePath } from '../../shared/runtime/paths.js';
 
 /** Extract a settled frame (default ~1s in, past the intro animation). */
 export async function extractFrame(mp4: string, atSec = 1.0): Promise<string> {
-  const ff = require('child_process').execFileSync;
+  const { execFileSync } = require('child_process');
   const outPng = path.join(
     resolveWorkspacePath('remotion-generation', '_frames'),
     `${path.basename(mp4, '.mp4')}.png`,
   );
   fs.mkdirSync(path.dirname(outPng), { recursive: true });
-  const ffmpeg = require.resolve('ffmpeg-static');
-  ff(ffmpeg, ['-y', '-ss', String(atSec), '-i', mp4, '-frames:v', '1', outPng], {
+  let ffmpeg: string;
+  try { ffmpeg = require('ffmpeg-static'); } catch { ffmpeg = 'ffmpeg'; }
+  execFileSync(ffmpeg, ['-y', '-ss', String(atSec), '-i', mp4, '-frames:v', '1', outPng], {
     stdio: 'ignore',
   });
   return outPng;

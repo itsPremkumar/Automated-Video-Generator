@@ -22,7 +22,7 @@ import * as path from 'path';
 import { bundle } from '@remotion/bundler';
 import { renderMedia, selectComposition } from '@remotion/renderer';
 import { resolveWorkspacePath, resolveProjectPath } from '../../shared/runtime/paths.js';
-import { authorRemotionComponent, writeSceneProject, type SceneSpec, type MotionKind } from './remotion-codegen.js';
+import { authorRemotionComponent, writeSceneProject, cleanSceneProject, type SceneSpec, type MotionKind } from './remotion-codegen.js';
 import { probeAsset } from './asset-checks.js';
 import { verifyClip } from './remotion-verify.js';
 
@@ -80,7 +80,11 @@ async function generateOneScene(
   const maxRetries = opts.maxRetries ?? 5;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    // Clean previous attempt artifacts
+    cleanSceneProject(jobDir);
+
     // 1. codegen (agent may have supplied code; else synthesize from spec)
+    //    On retry, pass a variant seed so synthesize() produces different output.
     const spec: SceneSpec = {
       index: scene.index,
       kind: scene.kind,
@@ -90,6 +94,7 @@ async function generateOneScene(
       labels: scene.labels,
       palette: scene.palette,
       code: attempt === 0 ? scene.code : undefined, // retry -> re-synthesize (fresh)
+      variant: attempt, // vary output on each retry so failures aren't identical
       audioFile: scene.audioFile,
       durationInFrames: scene.durationInFrames ?? 120,
       width: opts.width ?? 1920,
