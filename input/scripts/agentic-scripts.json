@@ -1,10 +1,26 @@
 [
   {
-    "id": "test-reel-01",
-    "title": "The Amazing World of AI",
-    "script": "Artificial intelligence is transforming our world. [Visual: technology ai brain network] [Transition: fade]\nFrom healthcare to education, AI helps solve complex problems. [Visual: doctor medical health ai] [Grade: cool]\nMachine learning algorithms process vast amounts of data. [Visual: data center server] [Transition: slide]\nBut the true power of AI lies in its ability to learn and adapt. [Visual: robot human collaboration future] [KenBurns: on]\nThe future of technology is here, powered by artificial intelligence. [Visual: futuristic city sunrise technology]",
+    "id": "multi-test-landscape",
+    "title": "Landscape Demo",
+    "script": "The landscape mode is perfect for YouTube. [Visual: nature landscape mountains] [Transition: fade]\nIt delivers cinematic widescreen quality. [Visual: ocean waves sunset]",
     "orientation": "landscape",
     "voice": "en-US-GuyNeural",
+    "language": "english"
+  },
+  {
+    "id": "multi-test-portrait",
+    "title": "Portrait Reel",
+    "script": "Portrait mode powers Instagram Reels and TikTok. [Visual: person talking phone] [Transition: slide]\nShort form content is king in social media. [Visual: social media icons people]",
+    "orientation": "portrait",
+    "voice": "en-US-JennyNeural",
+    "language": "english"
+  },
+  {
+    "id": "multi-test-square",
+    "title": "Square Format",
+    "script": "Square videos work great on LinkedIn and Facebook. [Visual: business presentation meeting] [Transition: fade]\nThis format is versatile for multiple platforms. [Visual: analytics dashboard screen]",
+    "orientation": "square",
+    "voice": "en-US-AriaNeural",
     "language": "english"
   }
 ]

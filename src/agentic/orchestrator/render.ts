@@ -395,6 +395,9 @@ export async function renderAgenticSlideshow(
     const outDir = res.workspace.root + '/render';
     fs.mkdirSync(outDir, { recursive: true });
     const out = opts.outPath ?? outDir + '/' + res.workspace.jobId + '.mp4';
+    // Ensure the destination directory exists — edit commands may write to
+    // output/<id>/ which doesn't exist until a full pipeline run completes.
+    try { fs.mkdirSync(path.dirname(out), { recursive: true }); } catch { /* ignore */ }
     if (!res.manifest)
         throw new Error('Cannot render: final gate did not produce a render manifest (gate.pass=' + res.gate.pass + ').');
 
