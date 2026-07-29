@@ -553,11 +553,11 @@ git push origin feat/my-feature
 
 ## 🗺️ Roadmap
 
-**Current (v5.x):** Desktop app, MCP server, AI verification, free media sources, voice cloning
+**Current (v5.x):** Desktop app, MCP server, AI verification, GPU acceleration, free media sources, voice cloning, content gate, subtitle sidecars, batch mode presets
 
 **Short-term (v5.5-v6.0):** Plugin system, subtitle styling, template system, macOS/Linux desktop, Swagger docs
 
-**Medium-term (v6.0-v7.0):** Visual timeline editor, collaboration, GPU acceleration, advanced transitions
+**Medium-term (v6.0-v7.0):** Visual timeline editor, collaboration, advanced transitions
 
 **Long-term (v7.0+):** Cloud rendering, marketplace, storyboard AI, mobile companion
 
