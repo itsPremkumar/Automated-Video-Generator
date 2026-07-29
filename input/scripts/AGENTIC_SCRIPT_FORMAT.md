@@ -44,7 +44,7 @@ Run: `npm run agentic:modular pipeline --file input/scripts/agentic-scripts.json
 | `title` | **`string`** | **required** | Video title → output filename `{Title}.mp4` |
 | `script` | `string` | — | Full script text with optional inline `[Visual: ...]` tags |
 | `topic` | `string` | — | Fallback topic when script is auto-generated |
-| `mode` | `string` | `"full"` | Execution mode: `full`, `plan`, `visuals`, `voice`, `render`, `download-images`, `download-videos`, `download-music`, `generate-voice-edgetts`, `generate-voice-voicebox`, `clone-voice`, `download-sfx`, `download-url`, `apply-advanced`, `compose`, `rerender` |
+| `mode` | `string` | `"full"` | Execution mode: `full`, `plan`, `visuals`, `voice`, `render`, `edit`, `list`, `critique`, `revise`, `reorder`, `download-images`, `download-videos`, `download-music`, `generate-voice-edgetts`, `generate-voice-voicebox`, `clone-voice`, `download-sfx`, `download-url`, `apply-advanced`, `compose`, `rerender`, `render-gif`, `render-poster`, `render-contact-sheet` |
 | `orientation` | `string` | `"portrait"` | `portrait` (9:16), `landscape` (16:9), `square` (1:1) |
 | `aspect` | `string` | `"9:16"` | Aspect ratio override: `9:16`, `16:9`, `1:1` |
 | `backend` | `string` | `"agent"` | AI backend: `agent` (default, no API key), `vision` (opt-in Gemini/Ollama) |
@@ -229,7 +229,20 @@ Our growth was strong. [GenMotion: bar chart of quarterly sales]
 
 ## 6. Voice & TTS
 
-### 6.1 Voice Selection Fields
+### 6.1 TTS Provider & Voice Selection
+
+The default TTS engine is **Voicebox (vendored in-repo at `src/speech/`)** with
+**Kokoro** as the narrator engine (~800 MB VRAM on CUDA, CPU fallback for Edge-TTS).
+To switch providers, set `ttsProvider` in the job JSON or `TTS_PROVIDER` in `.env`.
+
+| Provider | Engine | Default | Requires |
+| :------- | :----- | :------ | :------- |
+| `voicebox` | Kokoro (narrator), Chatterbox (clone) | ✅ Yes | In-repo venv (auto-spawned) |
+| `edge-tts` | Microsoft neural voices | Fallback | Python + `pip install edge-tts` |
+| `xtts` | Coqui XTTS | Optional | External server on port 8020 |
+| `openai-local` | Kokoro-FastAPI | Optional | External server on port 8880 |
+
+### 6.2 Voice Selection Fields
 
 | Field | Type | Description |
 | :---- | :--- | :---------- |
@@ -729,7 +742,15 @@ Set the `"mode"` field to run ONLY one stage of the pipeline.
 | `aspect` | `"9:16"`/`"16:9"`/`"1:1"` | `"9:16"` |
 | `format` | `string` | — |
 
-### 20.3 Visual Style
+### 20.3 Rendering & Hardware
+
+| Field | Type | Default | Description |
+| :---- | :--- | :------ | :---------- |
+| `gpu` | `boolean` | `false` | Enable GPU-accelerated encoding (auto-detects NVENC/AMF/QSV) |
+| `hardwareEncode` | `boolean` | `false` | Legacy alias for `gpu` |
+| `quality` | `"draft"`/`"medium"`/`"high"` | `"medium"` | Render quality preset |
+
+### 20.4 Visual Style
 
 | Field | Type | Default |
 | :---- | :--- | :------ |
@@ -757,9 +778,10 @@ Set the `"mode"` field to run ONLY one stage of the pipeline.
 
 | Field | Type | Default |
 | :---- | :--- | :------ |
-| `voice` | `string` | `"en-US-JennyNeural"` |
+| `voice` | `string` | `"en-US-JennyNeural"` (Edge-TTS) or Kokoro preset (see `kokoroVoice`) |
 | `language` | `string` | — |
-| `voicesByScene` | `object` | — |
+| `ttsProvider` | `"voicebox"`/`"edge-tts"`/`"xtts"`/`"openai-local"` | `"voicebox"` (vendored in-repo Kokoro/Chatterbox) |
+| `kokoroVoice` | `string` | Kokoro preset voice: `af_heart`, `af_bella`, `af_sarah`, `af_sky`, `am_michael`, `am_liam`, `am_adam`, `am_echo` |
 | `voiceSpeed` | `number` | `1.0` |
 | `voicePitchSemitones` | `number` | — |
 | `voiceAging` | `string` | — |
