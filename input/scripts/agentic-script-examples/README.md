@@ -7,6 +7,7 @@ Complete, working JSON examples for every mode and feature of the Automated Vide
 ```
 agentic-script-examples/
 ├── README.md                         ← This file
+├── batch-topics.json                 ← Batch topic generation reference
 ├── modes/                            ← Single-stage execution modes
 │   ├── 01-download-images.json       Fetch only image assets
 │   ├── 02-download-videos.json       Fetch only video assets
@@ -36,7 +37,8 @@ agentic-script-examples/
 │   ├── 12-export-options.json        Multi-aspect, quality, poster
 │   ├── 13-brand-kit.json             Watermark, font, accent color
 │   ├── 14-ai-verify.json             Vision-based quality gates
-│   └── 15-emoji-overlays.json        Emoji, text overlays, CTA buttons
+│   ├── 15-emoji-overlays.json        Emoji, text overlays, CTA buttons
+│   └── 16-gpu-quality.json           GPU acceleration + quality tier demo
 └── full-demos/                       ← Complete ready-to-render jobs
     ├── 01-minimal.json               Shortest possible config
     ├── 02-motivational-reel.json     Inspirational Instagram Reel
@@ -45,7 +47,11 @@ agentic-script-examples/
     ├── 05-tutorial-howto.json        Step-by-step tutorial
     ├── 06-storytelling.json          Narrative with voice cast
     ├── 07-kitchen-sink.json          Every feature enabled
-    └── 08-multi-aspect-4k.json       Export 4K + all aspect ratios
+    ├── 08-multi-aspect-4k.json       Export 4K + all aspect ratios
+    ├── 09-ai-tech-explainer.json     AI/Tech with GPU, chapters, subtitles
+    ├── 10-health-wellness.json       Health habits, square format
+    ├── 11-business-news.json         Business trends with chapters
+    └── 12-crypto-blockchain.json     Crypto explainer, high quality
 ```
 
 ## How to Run
@@ -86,6 +92,19 @@ npm run agentic:mode:voice-voicebox
 npm run agentic:mode:advanced
 ```
 
+### Batch topic generation
+
+```bash
+# From a list of topics (no JSON file needed)
+npm run agentic:generate -- --topics "AI in healthcare,Space exploration,Climate change"
+
+# With GPU and preview mode
+npm run agentic:generate:preview -- --gpu --topics "Topic A,Topic B"
+
+# Parallel batch (3 concurrent jobs)
+npm run agentic:batch:parallel -- --topics "Topic 1,Topic 2,Topic 3,Topic 4"
+```
+
 ### Quick test (plan only, no network)
 
 Verify any example file parses correctly:
@@ -94,10 +113,22 @@ Verify any example file parses correctly:
 npm run agentic:modular plan --file input/scripts/agentic-script-examples/full-demos/01-minimal.json
 ```
 
-All 36 files verified working (2026-07-27):
-- 14 feature files → all parse correctly (2–7 scenes each)
-- 8 full demo files → all parse correctly (3–8 scenes each)
+### New in latest examples (v5.x)
+
+| File | What it demonstrates |
+|------|---------------------|
+| `full-demos/09-ai-tech-explainer` | GPU-accelerated rendering with `gpu: true`, chapters, subtitle sidecars, high quality |
+| `full-demos/10-health-wellness` | Square format (1:1), medium quality, square format field |
+| `full-demos/11-business-news` | Chapter markers, subtitle export, authoritative documentary style |
+| `full-demos/12-crypto-blockchain` | GPU, high quality, vivid grade, kinetic text, TikTok platform |
+| `features/16-gpu-quality` | GPU flag, quality tiers (draft/medium/high), verbose mode, no-ducking |
+| `batch-topics.json` | Batch topic generation reference with command examples |
+
+All 42 files verified working (2026-07-29):
+- 16 feature files → all parse correctly (2–7 scenes each)
+- 12 full demo files → all parse correctly (3–8 scenes each)
 - 13 mode files → plan stage passes; download modes confirmed working
+- 1 batch topics reference → command examples for batch generation
 
 ## Field Reference
 

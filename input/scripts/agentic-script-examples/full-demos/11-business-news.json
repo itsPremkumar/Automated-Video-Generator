@@ -1,0 +1,42 @@
+[
+  {
+    "id": "demo-business-news",
+    "title": "Top Business Trends 2026",
+    "description": "Business news update with chapter markers and subtitle export. Uses documentary preset, cool grade, and authoritative narration. Demonstrates chapters and SRT/VTT flags.",
+    "script": "The business landscape is shifting faster than ever in 2026. [Visual: stock market trading floor] [Transition: fade] [Grade: cool] [CaptionTheme: minimal]\nRemote work has permanently transformed company culture. [Visual: remote team video call] [Transition: slide] [Grade: cool]\nAI automation is creating new job categories daily. [Visual: AI robot automation factory] [Transition: fade] [Kinetic: on]\nSustainable business practices are no longer optional. [Visual: green energy wind turbines] [Transition: slide] [Grade: warm]\nCryptocurrency regulation is taking shape globally. [Visual: Bitcoin crypto digital] [Transition: fade] [Grade: cool]\nThe gig economy now represents thirty-five percent of workers. [Visual: freelancer laptop coffee] [Transition: slide]\nBusinesses that adapt fastest will thrive. [Visual: successful business growth chart] [Transition: fade] [Grade: cinematic]",
+    "orientation": "landscape",
+    "platform": "youtube",
+    "videoType": "news",
+    "voice": "en-US-ChristopherNeural",
+    "preset": "documentary",
+    "transition": "mixed",
+    "grade": "cool",
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "sfx": true,
+    "musicIntensity": "mid",
+    "musicQuery": "corporate documentary professional",
+    "chapters": true,
+    "subtitles": true,
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "quality": "high",
+    "intro": {
+      "title": "Business Trends 2026",
+      "subtitle": "What Leaders Need to Know",
+      "durationSec": 3
+    },
+    "outro": {
+      "ctaText": "Subscribe for weekly business insights",
+      "showSubscribe": true,
+      "hashtags": [
+        "#business",
+        "#trends",
+        "#2026",
+        "#economy",
+        "#innovation"
+      ],
+      "durationSec": 3
+    }
+  }
+]

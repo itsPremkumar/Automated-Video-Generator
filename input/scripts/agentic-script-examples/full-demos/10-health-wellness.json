@@ -1,0 +1,37 @@
+[
+  {
+    "id": "demo-health-wellness",
+    "title": "5 Daily Habits for Better Health",
+    "description": "Health/wellness video in square format for LinkedIn/Instagram grid. Uses Voicebox Kokoro TTS, bold captions, and moderate quality for faster rendering.",
+    "script": "Small daily habits create massive health transformations over time. [Visual: healthy lifestyle morning routine] [Transition: fade] [Grade: warm]\nStart your day with a glass of water before coffee. [Visual: glass of water morning sunlight] [Transition: slide] [Kinetic: on]\nWalk for at least 30 minutes every day. [Visual: person walking park nature] [Transition: fade]\nEat more whole foods and less processed junk. [Visual: fresh vegetables fruits bowl] [Transition: slide] [Grade: vivid]\nPrioritize seven to eight hours of quality sleep. [Visual: peaceful bedroom sleep] [Transition: fade]\nPractice mindfulness or meditation for five minutes. [Visual: person meditating calm lake] [Transition: slide] [Grade: warm] [Kinetic: on]\nConsistency beats intensity every single time. [Visual: fitness progress transformation] [Transition: fade] [Grade: warm]",
+    "orientation": "portrait",
+    "platform": "reels",
+    "videoType": "motivational",
+    "voice": "en-US-JennyNeural",
+    "preset": "neutral",
+    "transition": "mixed",
+    "grade": "warm",
+    "captions": "burned",
+    "captionTheme": "bold",
+    "sfx": true,
+    "musicIntensity": "calm",
+    "musicQuery": "calm relaxing piano wellness",
+    "format": "square",
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "quality": "medium",
+    "kenBurns": true,
+    "outro": {
+      "ctaText": "Save this for daily reminder",
+      "showSubscribe": true,
+      "hashtags": [
+        "#health",
+        "#wellness",
+        "#habits",
+        "#selfcare",
+        "#mindfulness"
+      ],
+      "durationSec": 3
+    }
+  }
+]

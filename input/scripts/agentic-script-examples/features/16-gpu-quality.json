@@ -1,0 +1,28 @@
+[
+  {
+    "id": "feature-gpu-quality",
+    "title": "GPU + Quality Settings Demo",
+    "description": "Demonstrates GPU acceleration and quality tier options. Use --gpu for hardware encoding, --quality draft|medium|high for speed/quality tradeoff.",
+    "script": "GPU acceleration makes rendering dramatically faster. [Visual: GPU graphics card computer] [Transition: fade]\nUse --gpu to enable hardware encoding automatically. [Visual: video rendering progress bar] [Transition: slide] [Kinetic: on]\nQuality draft mode is fastest for previews. [Visual: quick draft sketch] [Transition: fade]\nMedium quality balances speed and output quality. [Visual: balanced scale] [Transition: slide]\nHigh quality produces the best looking videos. [Visual: 4K resolution display] [Transition: fade] [Grade: cinematic]\nCombine with --verbose to see full ffmpeg logs. [Visual: terminal code output] [Transition: slide]\nGPU acceleration auto-detects your hardware. [Visual: NVIDIA AMD Intel logos] [Transition: fade]",
+    "orientation": "portrait",
+    "platform": "reels",
+    "videoType": "facts",
+    "voice": "en-US-GuyNeural",
+    "preset": "neutral",
+    "transition": "fade",
+    "captions": "burned",
+    "sfx": true,
+    "musicQuery": "ambient technology electronic",
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "gpu": true,
+    "quality": "high",
+    "verbose": true,
+    "noDucking": false,
+    "intro": {
+      "title": "GPU Acceleration",
+      "subtitle": "Render Faster",
+      "durationSec": 2
+    }
+  }
+]

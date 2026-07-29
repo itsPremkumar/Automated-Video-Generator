@@ -1,0 +1,28 @@
+{
+  "description": "Example topic list for batch generation. Use with: npm run agentic:generate -- --topics \"topic 1,topic 2\" or place topics in this file for reference.",
+  "example_command": "npm run agentic:generate -- --topics \"AI in healthcare,Space exploration,Climate change solutions,Digital marketing tips,Coding best practices\"",
+  "topics": [
+    "AI in healthcare",
+    "Space exploration 2026",
+    "Climate change solutions",
+    "Digital marketing tips",
+    "Coding best practices",
+    "Personal finance for beginners",
+    "Electric vehicles explained",
+    "Mental health awareness",
+    "Cryptocurrency basics",
+    "Remote work productivity"
+  ],
+  "with_flags": {
+    "description": "Same topics with GPU and landscape orientation",
+    "command": "npm run agentic:generate -- --gpu --orientation landscape --topics \"AI in healthcare,Space exploration\""
+  },
+  "preview_mode": {
+    "description": "Preview-only (plan stage, no downloads or renders)",
+    "command": "npm run agentic:generate:preview -- --topics \"Topic A,Topic B\""
+  },
+  "parallel_batch": {
+    "description": "Batch with parallel execution (3 concurrent jobs)",
+    "command": "npm run agentic:batch:parallel -- --topics \"Topic A,Topic B,Topic C,Topic D\""
+  }
+}

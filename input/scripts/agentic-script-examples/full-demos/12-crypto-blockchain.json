@@ -1,0 +1,40 @@
+[
+  {
+    "id": "demo-crypto-blockchain",
+    "title": "Understanding Blockchain in 60 Seconds",
+    "description": "Crypto/blockchain explainer with high quality, GPU rendering, and voicebox preset. Quick-paced with kinetic text and vibrant grading for social media engagement.",
+    "script": "Blockchain is more than just cryptocurrency. [Visual: blockchain network digital nodes] [Transition: fade] [Grade: vivid] [Kinetic: on]\nIt's a decentralized ledger that no single entity controls. [Visual: decentralized network globe] [Transition: slide] [Grade: cool]\nEvery transaction is permanently recorded and verifiable. [Visual: digital transaction verified] [Transition: fade] [Kinetic: on]\nSmart contracts execute automatically when conditions are met. [Visual: smart contract code digital] [Transition: slide] [Grade: vivid]\nSupply chains use blockchain for complete transparency. [Visual: supply chain tracking digital map] [Transition: fade] [Grade: cool]\nNFTs proved digital ownership is valuable. [Visual: digital art NFT gallery] [Transition: zoomblur]\nDecentralized finance is banking without banks. [Visual: DeFi dashboard crypto finance] [Transition: slide] [Grade: vivid] [Kinetic: on]\nThe future of trust is decentralized. [Visual: futuristic blockchain city] [Transition: fade] [Grade: cinematic]",
+    "orientation": "portrait",
+    "platform": "tiktok",
+    "videoType": "facts",
+    "voice": "en-US-GuyNeural",
+    "preset": "reels",
+    "transition": "mixed",
+    "grade": "vivid",
+    "captions": "burned",
+    "captionTheme": "centerPop",
+    "sfx": true,
+    "sfxOnCut": true,
+    "musicIntensity": "energetic",
+    "musicQuery": "electronic upbeat technology crypto",
+    "kineticText": true,
+    "kenBurns": true,
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "gpu": true,
+    "quality": "high",
+    "maxAttempts": 2,
+    "outro": {
+      "ctaText": "Follow for more crypto insights",
+      "showSubscribe": true,
+      "hashtags": [
+        "#blockchain",
+        "#crypto",
+        "#web3",
+        "#defi",
+        "#technology"
+      ],
+      "durationSec": 3
+    }
+  }
+]

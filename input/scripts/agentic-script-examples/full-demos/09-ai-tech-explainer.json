@@ -1,0 +1,45 @@
+[
+  {
+    "id": "demo-ai-tech-explainer",
+    "title": "How AI is Transforming Healthcare",
+    "description": "Tech/AI explainer video showcasing GPU-accelerated rendering, Voicebox Kokoro TTS, chapters, and subtitle sidecar export. Demonstrates modern agentic pipeline features.",
+    "script": "Artificial intelligence is revolutionizing healthcare in ways we never imagined. [Visual: AI medical diagnosis interface] [Transition: fade] [Grade: cinematic] [CaptionTheme: minimal]\nAI can detect cancer in medical scans faster than human radiologists. [Visual: AI analyzing MRI brain scan] [Transition: slide] [Grade: cool] [Kinetic: on]\nMachine learning models predict patient outcomes with remarkable accuracy. [Visual: doctor tablet AI dashboard] [Transition: fade] [Grade: cinematic]\nRobotic surgery systems perform procedures with sub-millimeter precision. [Visual: robotic surgery arm operating] [Transition: slide] [Grade: cool]\nAI-powered drug discovery is cutting development time from years to months. [Visual: laboratory research scientists] [Transition: fade] [Grade: warm]\nPersonalized medicine tailors treatments to your DNA. [Visual: DNA helix genetic analysis] [Transition: slide] [Kinetic: on]\nThe future of healthcare is intelligent, accessible, and powered by AI. [Visual: futuristic hospital AI hologram] [Transition: fade] [Grade: cinematic]\nJoin the revolution in medical technology today. [Visual: medical team collaboration] [Transition: fade] [Grade: warm] [CaptionTheme: bold]",
+    "orientation": "landscape",
+    "platform": "youtube",
+    "videoType": "news",
+    "voice": "en-US-GuyNeural",
+    "preset": "cinematic",
+    "transition": "mixed",
+    "grade": "cool",
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "sfx": true,
+    "sfxOnCut": true,
+    "musicIntensity": "high",
+    "musicQuery": "cinematic technology futuristic documentary",
+    "chapters": true,
+    "subtitles": true,
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "gpu": true,
+    "quality": "high",
+    "maxAttempts": 2,
+    "intro": {
+      "title": "AI in Healthcare",
+      "subtitle": "The Future is Now",
+      "durationSec": 3
+    },
+    "outro": {
+      "ctaText": "Subscribe for more tech insights",
+      "showSubscribe": true,
+      "hashtags": [
+        "#AI",
+        "#healthcare",
+        "#technology",
+        "#innovation",
+        "#future"
+      ],
+      "durationSec": 4
+    }
+  }
+]
