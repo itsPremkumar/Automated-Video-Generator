@@ -13,7 +13,9 @@ import { runAgenticPipeline, renderAgenticSlideshow, renderAgenticWithRemotion, 
 
 function arg(name: string, fallback: string): string {
     const i = process.argv.indexOf(`--${name}`);
-    return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
+    // `!== undefined` (not truthiness): an explicit empty value ("--topic ''")
+    // must reach validation instead of silently becoming the fallback.
+    return i >= 0 && process.argv[i + 1] !== undefined ? process.argv[i + 1] : fallback;
 }
 const bool = (name: string) => process.argv.includes(`--${name}`);
 
@@ -23,6 +25,24 @@ async function main() {
     const backend = arg('backend', 'agent') as 'agent' | 'vision';
     const orientation = arg('orientation', 'portrait') as 'portrait' | 'landscape';
     const format = arg('format', 'none') as 'none' | 'square';
+
+    // ── Input validation (fail fast with a clear message, not a silent default)
+    if (process.argv.includes('--topic') && !topic.trim()) {
+        console.error('✖ --topic must not be empty');
+        process.exit(2);
+    }
+    if (!['portrait', 'landscape'].includes(orientation)) {
+        console.error(`✖ --orientation must be "portrait" or "landscape" (got "${orientation}"). Use --format square for 1:1.`);
+        process.exit(2);
+    }
+    if (!['agent', 'vision'].includes(backend)) {
+        console.error(`✖ --backend must be "agent" or "vision" (got "${backend}")`);
+        process.exit(2);
+    }
+    if (!['none', 'square'].includes(format)) {
+        console.error(`✖ --format must be "none" or "square" (got "${format}")`);
+        process.exit(2);
+    }
     const preferVisual = bool('images') ? 'image' : bool('videos') ? 'video' : undefined;
     const renderer = arg('renderer', 'ffmpeg') as 'ffmpeg' | 'remotion';
     const quality = arg('quality', 'medium') as 'draft' | 'medium' | 'high';
@@ -45,6 +65,19 @@ async function main() {
         process.stdout.write(`\r   [${p.stage}] ${p.percent}%  ${p.message}`.padEnd(80));
         if (p.stage === 'voiceover') process.stdout.write('\n');
     };
+
+    // ── Global watchdog: no run may wedge silently forever. QA found hang
+    // modes where a provider request stalled with no timeout in the path;
+    // per-call bounds cover known sites, this covers the unknown ones.
+    // Override with AGENTIC_MAX_RUN_MS (0 disables).
+    const maxRunMs = Number(process.env.AGENTIC_MAX_RUN_MS ?? 30 * 60 * 1000);
+    if (maxRunMs > 0) {
+        const watchdog = setTimeout(() => {
+            console.error(`\n✖ WATCHDOG: run exceeded ${Math.round(maxRunMs / 60000)} min — aborting (set AGENTIC_MAX_RUN_MS to change).`);
+            process.exit(3);
+        }, maxRunMs);
+        watchdog.unref?.();
+    }
 
     const res = await runAgenticPipeline({ topic, title, backend, orientation, preferVisual, dryRun }, onProgress);
     console.log('');

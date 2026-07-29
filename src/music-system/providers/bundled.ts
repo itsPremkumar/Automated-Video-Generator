@@ -9,6 +9,7 @@ import * as path from 'path';
 import type { MusicTrack, MusicQuery } from '../types';
 import { BaseMusicProvider } from './base';
 import { resolveMusicPath } from '../config';
+import { ensureBundledTracks } from '../bundled-assets';
 
 const AUDIO_EXTS = new Set(['mp3', 'ogg', 'wav', 'm4a', 'flac']);
 
@@ -36,6 +37,9 @@ export class BundledProvider extends BaseMusicProvider {
     constructor(bundleDir?: string) {
         super();
         this.bundleDir = bundleDir || resolveMusicPath('input/bgm/__bundled__');
+        // Self-heal: the bundle dir is git-ignored, so fresh clones/worktrees
+        // start empty. Generate procedural CC0 beds so offline music always works.
+        try { ensureBundledTracks(this.bundleDir); } catch { /* degrade gracefully */ }
         this.loadMetadata();
     }
 

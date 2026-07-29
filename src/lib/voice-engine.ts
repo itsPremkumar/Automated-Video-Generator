@@ -117,17 +117,23 @@ export function runPowerShellEncodedAsync(
         child.on('error', (err) => { stderr += String(err); });
         child.on('close', (code) => {
             clearTimeout(timer);
+            clearTimeout(safetyTimer);
             resolve({ status: code, stdout, stderr, timedOut: killed });
         });
         // Safety: if somehow never closes, force-resolve at 2x timeout so the
         // outer await can NEVER hang.
-        setTimeout(() => {
+        const safetyTimer = setTimeout(() => {
             if (!child.killed && child.exitCode === null) {
                 try { spawnSync('taskkill.exe', ['/F', '/T', '/PID', String(child.pid)], { windowsHide: true }); } catch { /* */ }
                 try { child.kill('SIGKILL'); } catch { /* */ }
                 resolve({ status: null, stdout, stderr, timedOut: true });
             }
         }, timeoutMs * 2);
+        // unref both timers so a finished test process can exit immediately —
+        // an un-unref'd safety timer kept the event loop alive for 2x timeout
+        // (observed: tts.test.ts "passing" but hanging 120s+ until cancelled).
+        timer.unref?.();
+        safetyTimer.unref?.();
     });
 }
 

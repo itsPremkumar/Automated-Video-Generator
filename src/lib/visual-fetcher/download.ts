@@ -62,7 +62,11 @@ async function streamToFile(url: string, partPath: string, resumeFrom = 0): Prom
     const response = await axios.get(url, {
         responseType: 'stream',
         maxContentLength: MAX_DOWNLOAD_BYTES,
-        // No total `timeout`: the stall timer below handles dead connections.
+        // `timeout` on a stream request covers ONLY the connect/headers
+        // phase — body stalls are handled by the stall timer below. Without
+        // this, a server that accepts the socket but never sends headers
+        // hangs the pipeline forever (observed in matrix QA).
+        timeout: 30000,
         headers,
     });
 
@@ -75,10 +79,16 @@ async function streamToFile(url: string, partPath: string, resumeFrom = 0): Prom
     const stallTimer = setInterval(() => {
         if (Date.now() - lastChunk > DOWNLOAD_STALL_TIMEOUT_MS) {
             stalled = true;
-            writer.destroy();
-            response.data.destroy();
+            // CRITICAL: destroy WITH an error. destroy() with no argument
+            // emits only 'close' (no 'error'/'finish'), so the promise below
+            // never settled and the whole pipeline hung forever on a stalled
+            // connection (observed: 36-minute silent hang in matrix QA).
+            const err = new Error(`Download stalled after ${DOWNLOAD_STALL_TIMEOUT_MS}ms (${written} bytes)`);
+            response.data.destroy(err);
+            writer.destroy(err);
         }
     }, 5000);
+    stallTimer.unref?.(); // never hold the process open on its own
 
     try {
         await new Promise<void>((resolve, reject) => {
@@ -98,6 +108,13 @@ async function streamToFile(url: string, partPath: string, resumeFrom = 0): Prom
             writer.on('finish', () => {
                 clearInterval(stallTimer);
                 resolve();
+            });
+            // Belt-and-braces: if either stream closes without 'finish' or
+            // 'error' having settled the promise, settle it here instead of
+            // hanging (destroy() without an error emits only 'close').
+            writer.on('close', () => {
+                clearInterval(stallTimer);
+                reject(new Error(stalled ? `Download stalled after ${DOWNLOAD_STALL_TIMEOUT_MS}ms (${written} bytes)` : 'download stream closed prematurely'));
             });
             response.data.pipe(writer);
         });

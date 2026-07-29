@@ -22,6 +22,7 @@ import { aiVerifyAsset } from '../ai/ai-verify.js';
 import { ModelBridge, NullBridge, type LlmBridge } from '../ai/bridge.js';
 import { trimBlackFrames } from '../../lib/media-downloader.js';
 import { getCached, putCache } from '../operations/asset-cache.js';
+import { isUniformPlaceholderImage } from './asset-validators.js';
 
 /**
  * Run async producers with a bounded concurrency. `tasks` is an array of
@@ -326,6 +327,20 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                     }
                 }
                 const lic = normalizeLicense(f);
+                // Kind/extension mismatch guard: fallback providers can return
+                // a VIDEO url for an image request (observed: image scene got
+                // candidate_1.webm → rendered as a frozen 'still'). Reclassify
+                // by actual extension so downstream FX (Ken Burns vs trim)
+                // treat the asset correctly.
+                const actualExt = path.extname(localPath).toLowerCase();
+                const VIDEO_EXTS = ['.mp4', '.mov', '.webm', '.m4v', '.mkv'];
+                const effectiveKind: typeof kind =
+                    kind === 'image' && VIDEO_EXTS.includes(actualExt) ? 'video'
+                    : kind === 'video' && ['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(actualExt) ? 'image'
+                    : kind;
+                if (effectiveKind !== kind) {
+                    console.warn(`⚠ scene ${i} cand ${c + 1}: requested ${kind} but got ${actualExt} — reclassified as ${effectiveKind}`);
+                }
                 // OPT-IN AI verify (acquire stage): score the materialised
                 // candidate with the agent's own model. A non-null FAILING score
                 // drops this candidate (next source in the ladder is tried). A
@@ -345,13 +360,27 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                         return;
                     }
                 }
+                // Content gate: reject near-uniform / solid-color placeholders
+                // (degenerate swatch visuals). Matrix QA found a flat gradient
+                // being accepted as a real scene image. Skip it so the scene
+                // falls through to the next source, or a proper fallback.
+                if (effectiveKind === 'image' && isUniformPlaceholderImage(localPath)) {
+                    console.warn(
+                        `⚠ scene ${i} cand ${c + 1}: near-uniform placeholder (no real content) — skipped; trying next source`,
+                    );
+                    return;
+                }
                 candidates.push({
-                    kind,
+                    kind: effectiveKind,
                     sceneIndex: i,
                     candidateIndex: c + 1,
                     localPath,
                     url: f.url,
-                    source: f.source,
+                    // Honest source labeling: a "fetched" candidate that actually
+                    // resolved to a generated placeholder must be labeled so the
+                    // render manifest / attribution never lies (matrix QA found a
+                    // solid-color gradient mislabeled "Source: openverse/pexels").
+                    source: isUniformPlaceholderImage(localPath) ? 'placeholder' : (f.source || 'unknown'),
                     license: lic.license,
                     licenseUrl: lic.licenseUrl,
                     keywords: scene.searchKeywords,

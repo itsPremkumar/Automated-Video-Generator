@@ -104,8 +104,23 @@ function escExpr(e: string): string {
  * ffmpeg drawtext has no `fontweight` option — bold is selected by the
  * bold font file (e.g. arialbd.ttf). */
 function resolveFontFile(family: string | undefined, weight?: number): string {
-    const base = 'C:\\Windows\\Fonts';
     const bold = (weight ?? 400) >= 600;
+    if (process.platform !== 'win32') {
+        // Cross-platform: pick the first present common system font.
+        const candidates = process.platform === 'darwin'
+            ? ['/System/Library/Fonts/Helvetica.ttc', '/System/Library/Fonts/Supplemental/Arial.ttf', '/Library/Fonts/Arial.ttf']
+            : [
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+                '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+                '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+                '/usr/share/fonts/TTF/DejaVuSans.ttf',
+            ];
+        const ordered = bold ? candidates : [...candidates].reverse();
+        for (const c of ordered) { if (fs.existsSync(c)) return c; }
+        return candidates[0]; // best effort — ffmpeg falls back to fontconfig
+    }
+    const base = 'C:\\Windows\\Fonts';
     const map: Record<string, [string, string]> = { // [regular, bold]
         'inter, sans-serif': ['arial.ttf', 'arialbd.ttf'],
         'arial': ['arial.ttf', 'arialbd.ttf'],
@@ -394,7 +409,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
         if (!overlayText || !overlayText.text) return;
         const start = cumStart[i] ?? 0;
         const end = start + (durations[i] ?? DEFAULT_SCENE_SEC);
-        const enable = `gte(t,${start.toFixed(2)})*lte(t,${end.toFixed(2)})`;
+        const enable = `gte(t,${start.toFixed(2)})*lt(t,${end.toFixed(2)})`;
         const fontSize = overlayText.fontSize ?? 48;
         const color = overlayText.color ?? 'white';
         const x = overlayText.x ?? '(w-text_w)/2';
@@ -414,7 +429,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
         if (!cta || !cta.text) return;
         const start = cumStart[i] ?? 0;
         const end = start + (durations[i] ?? DEFAULT_SCENE_SEC);
-        const enable = `gte(t,${start.toFixed(2)})*lte(t,${end.toFixed(2)})`;
+        const enable = `gte(t,${start.toFixed(2)})*lt(t,${end.toFixed(2)})`;
         const fontSize = 32;
         const fontFile = resolveFontFile(undefined, cta.borderColor ? 800 : 700);
         const x = cta.x ?? '(w-text_w)/2';
@@ -485,14 +500,14 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
                 wl.forEach((ln, li) => {
                     const ly = `H-th-${Math.max(60, 120 + blockH / 2) - (wl.length - 1 - li) * lineH}`;
                     vf.push(drawTextFilter(ln, '(w-text_w)/2', ly, size, overlay.font.color,
-                        { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: `gte(t,${ws})*lte(t,${we})`, shadow: overlay.font.shadow }));
+                        { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: `gte(t,${ws})*lt(t,${we})`, shadow: overlay.font.shadow }));
                 });
             });
         } else {
             lines.forEach((ln, li) => {
                 const ly = `H-th-${Math.max(60, 120 + blockH / 2) - (lines.length - 1 - li) * lineH}`;
                 vf.push(txt(ln, '(w-text_w)/2', ly, size, overlay.font.color,
-                    { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: `gte(t,${start.toFixed(2)})*lte(t,${end.toFixed(2)})` }));
+                    { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: `gte(t,${start.toFixed(2)})*lt(t,${end.toFixed(2)})` }));
             });
         }
     });
@@ -942,7 +957,7 @@ function applyTextOverlay(clipPath: string, sceneIndex: number, job: any, workDi
     if (!isReadableVideo(clipPath)) return null;
     const start = cumStart;
     const end = start + duration;
-    const enable = `gte(t,${start.toFixed(2)})*lte(t,${end.toFixed(2)})`;
+    const enable = `gte(t,${start.toFixed(2)})*lt(t,${end.toFixed(2)})`;
     const fontSize = overlay.fontSize ?? 48;
     const color = overlay.color ?? 'white';
     const x = overlay.x ?? '(w-text_w)/2';

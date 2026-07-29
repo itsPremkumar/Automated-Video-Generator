@@ -8,6 +8,9 @@ import { resolveProjectPath } from '../../shared/runtime/paths.js';
 export function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         const t = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+        // Don't hold the event loop open just for this guard timer — if all
+        // real work is done the process should be free to exit.
+        t.unref?.();
         p.then(
             (v) => {
                 clearTimeout(t);
@@ -32,19 +35,26 @@ const ffprobe: string = (() => {
 /** Probe an audio file's duration (seconds) via ffprobe */
 export async function estimateAudioDurationSafe(p: string): Promise<number> {
     try {
-        const { spawn } = require('child_process');
+        const { spawn, spawnSync } = require('child_process');
         const timeoutMs = Number(process.env.AGENTIC_FFPROBE_TIMEOUT_MS || 15000);
         const out = await new Promise<string>((resolve, reject) => {
             const child = spawn(
                 ffprobe,
                 ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', p],
-                { encoding: 'utf8' as const, stdio: ['pipe', 'pipe', 'pipe'] } as any,
+                // stdin ignored (an open pipe can make ffprobe linger) and
+                // stderr ignored (an undrained pipe can deadlock the child —
+                // this exact leak kept node:test alive for 60s+ after pass).
+                { encoding: 'utf8' as const, stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true } as any,
             );
             let buf = '';
             const t = setTimeout(() => {
+                try {
+                    if (process.platform === 'win32') spawnSync('taskkill.exe', ['/F', '/T', '/PID', String(child.pid)], { windowsHide: true });
+                } catch { /* ignore */ }
                 try { child.kill('SIGKILL'); } catch { /* ignore */ }
                 reject(new Error('ffprobe timed out'));
             }, timeoutMs);
+            t.unref?.();
             child.stdout?.on('data', (d: Buffer) => { buf += d.toString(); });
             child.on('error', (e: Error) => { clearTimeout(t); reject(e); });
             child.on('close', (code: number) => {
@@ -70,13 +80,17 @@ export async function probeVideo(p: string): Promise<{ width: number; height: nu
             const child = spawn(
                 ffprobe,
                 ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height,codec_name,r_frame_rate', '-of', 'json', p],
-                { encoding: 'utf8' as const, stdio: ['pipe', 'pipe', 'pipe'] } as any,
+                { encoding: 'utf8' as const, stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true } as any,
             );
             let buf = '';
             const t = setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } reject(new Error('ffprobe timed out')); }, 15000);
+            t.unref?.();
             child.stdout?.on('data', (d: Buffer) => { buf += d.toString(); });
             child.on('error', (e: Error) => { clearTimeout(t); reject(e); });
-            child.on('close', (code: number) => { clearTimeout(t); code === 0 ? resolve(buf) : reject(new Error('ffprobe failed')); });
+            child.on('close', (code: number) => {
+                clearTimeout(t);
+                if (code === 0) { resolve(buf); } else { reject(new Error('ffprobe failed')); }
+            });
         });
         const parsed = JSON.parse(out);
         const s = parsed?.streams?.[0] || {};
@@ -84,9 +98,10 @@ export async function probeVideo(p: string): Promise<{ width: number; height: nu
         let hasAudio = false;
         try {
             const aout = await new Promise<string>((resolve) => {
-                const c = spawn(ffprobe, ['-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=index', '-of', 'default=nw=1:nk=1', p], { encoding: 'utf8' as const, stdio: ['pipe', 'pipe', 'pipe'] } as any);
+                const c = spawn(ffprobe, ['-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=index', '-of', 'default=nw=1:nk=1', p], { encoding: 'utf8' as const, stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true } as any);
                 let b = '';
                 const t = setTimeout(() => { try { c.kill('SIGKILL'); } catch { /* ignore */ } resolve(''); }, 15000);
+                t.unref?.();
                 c.stdout?.on('data', (d: Buffer) => { b += d.toString(); });
                 c.on('close', () => { clearTimeout(t); resolve(b); });
             });
@@ -134,7 +149,11 @@ export function makePlaceholder(keywords: string[], kind: 'image' | 'video' | 'm
     }
     const p = base + '.png';
     const color = kind === 'video' ? '0x2a9d8f' : '0x264653';
-    const safeLabel = ffmpegDrawtextEscape(label).slice(0, 40);
+    // Burn a human keyword label (never a filename like 'candidate_1' — that
+    // leaked into rendered frames when the fallback was called with the
+    // downloaded filename as the label). Fall back to a neutral word.
+    const humanLabel = (label || 'video').replace(/[_\-]+/g, ' ').replace(/candidate \d+/i, '').trim() || 'scene';
+    const safeLabel = ffmpegDrawtextEscape(humanLabel).slice(0, 40);
     execFileSync(
         ffmpeg,
         [

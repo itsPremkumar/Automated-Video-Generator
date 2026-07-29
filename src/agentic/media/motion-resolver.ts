@@ -38,7 +38,7 @@ const DEFAULT_LIBRARIES: Record<string, string> = {
  * 'creation' (default). Supports `Name@library` and bare `Name`.
  */
 export function parseMotionTag(raw: string): { composition: string; library: string } {
-  const cleaned = raw.trim().replace(/^\[?Motion:\s*/i, '').replace(/[\[\]]/g, '').trim();
+  const cleaned = raw.trim().replace(/^\[?Motion:\s*/i, '').replace(/[[\]]/g, '').trim();
   const at = cleaned.lastIndexOf('@');
   if (at > 0) {
     const composition = cleaned.slice(0, at).trim();

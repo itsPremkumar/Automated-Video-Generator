@@ -249,25 +249,29 @@ export async function runAgenticPipeline(
         const variants = [topicNoun, `${topicNoun} photo`, (req.title || '').trim(), `person ${topicNoun}`]
             .map((s) => s.trim())
             .filter(Boolean);
+        // Every fallback fetch below MUST be time-bounded. These calls used
+        // to run bare (no withTimeout) — one wedged provider request hung the
+        // entire pipeline indefinitely (observed twice in matrix QA).
+        const POOL_FETCH_TIMEOUT_MS = 20000;
         for (const q of variants) {
             if (preferVideo) {
                 try {
-                    const r = await fetchVisualsForScene([q], true, plan.orientation);
+                    const r = await withTimeout(fetchVisualsForScene([q], true, plan.orientation), POOL_FETCH_TIMEOUT_MS, `pool[video:${q}]`);
                     if (r) add(Array.isArray(r) ? r[0]?.url : r.url);
                 } catch { /* next */ }
                 try {
-                    (await searchImages(q, 12, 2, plan.orientation, 1)).forEach((p) => add(p.url));
+                    (await withTimeout(searchImages(q, 12, 2, plan.orientation, 1), POOL_FETCH_TIMEOUT_MS, `pool[img:${q}]`)).forEach((p) => add(p.url));
                 } catch { /* next */ }
                 try {
-                    const r = await fetchVisualsForScene([q], false, plan.orientation);
+                    const r = await withTimeout(fetchVisualsForScene([q], false, plan.orientation), POOL_FETCH_TIMEOUT_MS, `pool[image:${q}]`);
                     if (r) add(Array.isArray(r) ? r[0]?.url : r.url);
                 } catch { /* next */ }
             } else {
                 try {
-                    (await searchImages(q, 12, 2, plan.orientation, 1)).forEach((p) => add(p.url));
+                    (await withTimeout(searchImages(q, 12, 2, plan.orientation, 1), POOL_FETCH_TIMEOUT_MS, `pool[img:${q}]`)).forEach((p) => add(p.url));
                 } catch { /* next */ }
                 try {
-                    const r = await fetchVisualsForScene([q], false, plan.orientation);
+                    const r = await withTimeout(fetchVisualsForScene([q], false, plan.orientation), POOL_FETCH_TIMEOUT_MS, `pool[image:${q}]`);
                     if (r) add(Array.isArray(r) ? r[0]?.url : r.url);
                 } catch { /* next */ }
             }
@@ -317,7 +321,11 @@ export async function runAgenticPipeline(
                                 ({
                                     url: a.url,
                                     localPath: '',
-                                    source: 'openverse/pexels',
+                                    // Honest source: derive from the URL host when the
+                                    // fetcher doesn't carry an explicit source. Never
+                                    // hardcode a provider name — matrix QA found a
+                                    // solid-color gradient mislabeled 'openverse/pexels'.
+                                    source: a.url?.startsWith('http') ? sourceFromUrl(a.url) : (a.photographer || 'unknown'),
                                     license: a.license,
                                     licenseUrl: a.licenseUrl,
                                 }) as FetchedVisual,
@@ -386,7 +394,11 @@ export async function runAgenticPipeline(
                         const local = require('path').join(dir, filename.replace(/(\.[^.]+)?$/, '.png'));
                         const def = req.defaultVisual ? useDefaultVisual() : '';
                         if (!def) {
-                            const ph = makePlaceholder([filename.replace(/\.[^.]+$/, '')], 'image');
+                            // Pass a human label, NOT the downloaded filename
+                            // (e.g. 'candidate_1.png') — burning a filename into the
+                            // frame is a defect. The download dep only gets url/dir/
+                            // filename, so use the job title as the fallback label.
+                            const ph = makePlaceholder([req.title || topicNoun || "scene"], "image");
                             try {
                                 require('fs').copyFileSync(ph, local);
                             } catch (e) {
@@ -401,7 +413,10 @@ export async function runAgenticPipeline(
             const local = require('path').join(dir, filename.replace(/(\.[^.]+)?$/, '.png'));
             const def = req.defaultVisual ? useDefaultVisual() : '';
             if (!def) {
-                const ph = makePlaceholder([filename.replace(/\\.[^.]+$/, '')], 'image');
+                // Pass a human label, NOT the downloaded filename (e.g.
+                // 'candidate_1.png') — burning a filename into the frame is a
+                // defect. Use the job title as the fallback label.
+                const ph = makePlaceholder([req.title || topicNoun || "scene"], "image");
                 try {
                     require('fs').copyFileSync(ph, local);
                 } catch (e) {
