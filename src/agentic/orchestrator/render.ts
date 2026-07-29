@@ -357,6 +357,8 @@ export async function renderAgenticSlideshow(
          *  mirrors compose.ts: aspect > orientation > portrait default. */
         orientation?: 'portrait' | 'landscape' | 'square';
         aspect?: '9:16' | '1:1' | '16:9' | 'square';
+        /** When true, print the full ffmpeg command line to stderr before each invocation. */
+        verbose?: boolean;
     } = {},
 ): Promise<string> {
     const ffmpeg: string = require('ffmpeg-static');
@@ -464,6 +466,9 @@ export async function renderAgenticSlideshow(
 
     const runFfmpegSpawn = (args: string[], totalSec = 0): Promise<void> =>
         new Promise<void>((resolve, reject) => {
+            if (opts.verbose) {
+                console.error('[ffmpeg] ' + ffmpeg + ' ' + args.join(' '));
+            }
             const cp = spawn(ffmpeg, args, { stdio: ['ignore', 'ignore', 'pipe'] });
             let lastPct = -1;
             let buf = '';
@@ -864,7 +869,11 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             // boundaries when timestamps are non-monotonic (the classic
             // concat-copy pitfall). Segments are all libx264/yuv420p/25fps so
             // stream-copy is safe once timestamps are normalized.
-            execFile(ffmpeg, ['-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', silent], (err: any) =>
+            const concatArgs = ['-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', silent];
+            if (opts.verbose) {
+                console.error('[ffmpeg concat] ' + ffmpeg + ' ' + concatArgs.join(' '));
+            }
+            execFile(ffmpeg, concatArgs, (err: any) =>
                 err ? reject(new Error('concat failed: ' + err)) : resolve());
         });
         // BUG (cleanup leak): _seg_* intermediates and the _concat_*.txt list are
@@ -1038,6 +1047,91 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             console.warn(`  ⚠ Logo watermark skipped`);
             if (fs.existsSync(logoOut)) fs.rmSync(logoOut, { force: true });
         }
+        }
+    }
+
+    // ── Subtitle export (SRT + VTT alongside the final mp4) ──
+    const srtOut = out.replace(/\.mp4$/i, '') + '.srt';
+    const vttOut = out.replace(/\.mp4$/i, '') + '.vtt';
+    {
+        const cues: string[] = [];
+        const vttCues: string[] = ['WEBVTT', ''];
+        let t = introClip ? (opts.intro!.durationSec ?? 2.5) : 0;
+        let n = 1;
+        for (const a of visuals) {
+            const dur = a.durationSec ?? 4;
+            const raw = a.captionSegments?.length
+                ? a.captionSegments
+                : [{ text: res.plan.scenes[a.sceneIndex]?.voiceoverText ?? '', startMs: 0, endMs: Math.round(dur * 1000) }];
+            const segs = chunkCues(raw);
+            for (const s of segs) {
+                const start = t + s.startMs / 1000;
+                const end = t + s.endMs / 1000;
+                const startStr = fmtSrt(start);
+                const endStr = fmtSrt(end);
+                cues.push(`${n}\n${startStr} --> ${endStr}\n${s.text.replace(/\n/g, ' ')}\n`);
+                // VTT uses '.' as millisecond separator instead of ','
+                vttCues.push(`${startStr.replace(',', '.')} --> ${endStr.replace(',', '.')}\n${s.text.replace(/\n/g, ' ')}\n`);
+                n++;
+            }
+            t += dur;
+        }
+        if (cues.length) {
+            fs.writeFileSync(srtOut, cues.join('\n'), 'utf8');
+            fs.writeFileSync(vttOut, vttCues.join('\n') + '\n', 'utf8');
+            logInfo(`  📝 Subtitles exported: ${path.basename(srtOut)}, ${path.basename(vttOut)}`);
+        }
+    }
+
+    // ── Chapter markers (ffmpeg chapter metadata from scene titles) ──
+    {
+        const chapters: { startMs: number; title: string }[] = [];
+        let accT = 0;
+        // Intro chapter
+        const introDur = introClip ? (opts.intro!.durationSec ?? 2.5) : 0;
+        if (introDur > 0) {
+            chapters.push({ startMs: 0, title: opts.intro?.title ?? 'Intro' });
+            accT = introDur;
+        }
+        // Scene chapters
+        for (let i = 0; i < visuals.length; i++) {
+            const sceneTitle = (res.plan.scenes[i]?.voiceoverText ?? '').slice(0, 60).trim();
+            chapters.push({ startMs: Math.round(accT * 1000), title: sceneTitle || `Scene ${i + 1}` });
+            accT += visuals[i].durationSec ?? 4;
+        }
+        if (chapters.length > 1) {
+            const metaFile = path.join(path.dirname(out), `_chapters_${res.workspace.jobId}.txt`);
+            const metaLines: string[] = [';FFMETADATA1'];
+            for (let i = 0; i < chapters.length; i++) {
+                const ch = chapters[i];
+                const endMs = i + 1 < chapters.length ? chapters[i + 1].startMs : ch.startMs + 60000;
+                metaLines.push(
+                    '[CHAPTER]',
+                    'TIMEBASE=1/1000',
+                    `START=${ch.startMs}`,
+                    `END=${endMs}`,
+                    `title=${ch.title}`,
+                );
+            }
+            fs.writeFileSync(metaFile, metaLines.join('\n'), 'utf8');
+            const chapterTmp = path.join(path.dirname(out), `_chapters_tmp_${res.workspace.jobId}.mp4`);
+            try {
+                const chArgs = ['-i', out, '-i', metaFile, '-map_metadata', '1', '-codec', 'copy', '-y', chapterTmp];
+                if (opts.verbose) {
+                    console.error('[ffmpeg chapters] ' + ffmpeg + ' ' + chArgs.join(' '));
+                }
+                await new Promise<void>((resolve, reject) => {
+                    execFile(ffmpeg, chArgs, (err: any) => err ? reject(err) : resolve());
+                });
+                fs.rmSync(out, { force: true });
+                fs.renameSync(chapterTmp, out);
+                logInfo(`  📑 ${chapters.length} chapter markers embedded`);
+            } catch (e) {
+                console.warn(`  ⚠ Chapter markers skipped: ${(e as Error).message}`);
+                if (fs.existsSync(chapterTmp)) fs.rmSync(chapterTmp, { force: true });
+            } finally {
+                try { fs.rmSync(metaFile, { force: true }); } catch { /* ignore */ }
+            }
         }
     }
 

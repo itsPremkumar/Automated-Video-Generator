@@ -51,6 +51,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execFileSync } from 'child_process';
 import { estimateAudioDurationSafe } from '../../agentic/orchestrator/ffmpeg.js';
+import { normalizeJobId } from '../../shared/identifiers.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -125,22 +126,12 @@ function outputFor(jobId: string) {
     return path.join(OUTPUT_DIR, jobId);
 }
 
-/**
- * Normalize a job ID to match the convention used by agentic-batch.ts:
- * lowercase, hyphens/dots/spaces → underscores, max 64 chars.
- * Cross-entry-point (modular vs batch) consistency ensures that edit,
- * rerender, and compose can find the same workspace by ID.
- */
-function normalizeId(raw: string): string {
-    return raw.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 64);
-}
-
 // ─── Stage 1: Plan ─────────────────────────────────────────────────────────
 
 async function runPlan(cliArgs: CliArgs) {
     const jobs = readJobJson();
     for (const job of jobs) {
-        const id = normalizeId(job.id || `job_${Date.now()}`);
+        const id = normalizeJobId(job.id || `job_${Date.now()}`);
         const ws = workspaceFor(id);
         const title = job.title || id;
         const topic = job.topic || title;
@@ -231,7 +222,7 @@ async function runPlan(cliArgs: CliArgs) {
 async function runVisuals(cliArgs: CliArgs) {
     const jobs = readJobJson();
     for (const job of jobs) {
-        const id = normalizeId(job.id || `job_${Date.now()}`);
+        const id = normalizeJobId(job.id || `job_${Date.now()}`);
         const ws = workspaceFor(id);
         const meta = readJson(ws.root, 'job-meta.json') || {};
         const plan = readJson(ws.root, 'plan.json');
@@ -422,7 +413,7 @@ async function runVisuals(cliArgs: CliArgs) {
 async function runVoice(cliArgs: CliArgs) {
     const jobs = readJobJson();
     for (const job of jobs) {
-        const id = normalizeId(job.id || `job_${Date.now()}`);
+        const id = normalizeJobId(job.id || `job_${Date.now()}`);
         const ws = workspaceFor(id);
         const meta = readJson(ws.root, 'job-meta.json') || {};
         const plan = readJson(ws.root, 'plan.json');
@@ -566,7 +557,7 @@ async function runVoice(cliArgs: CliArgs) {
 async function runRender(cliArgs: CliArgs) {
     const jobs = readJobJson();
     for (const job of jobs) {
-        const id = normalizeId(job.id || `job_${Date.now()}`);
+        const id = normalizeJobId(job.id || `job_${Date.now()}`);
         const ws = workspaceFor(id);
         const meta = readJson(ws.root, 'job-meta.json') || {};
         const plan = readJson(ws.root, 'plan.json');
@@ -741,7 +732,7 @@ async function runEdit(cliArgs: CliArgs) {
 
     const jobs = readJobJson();
     for (const job of jobs) {
-        const id = normalizeId(job.id || `job_${Date.now()}`);
+        const id = normalizeJobId(job.id || `job_${Date.now()}`);
         const ws = workspaceFor(id);
         const plan = readJson(ws.root, 'plan.json');
 
@@ -986,7 +977,14 @@ async function runEdit(cliArgs: CliArgs) {
                         if (probe.status === 0 && fs.existsSync(sheet)) {
                             console.log(`  🖼 contact-sheet: ${sheet}`);
                         }
-                    } catch { /* contact-sheet is best-effort */ }
+                    } catch (err: any) {
+                        // ENOENT means ffmpeg-static is not installed — inform user
+                        if (err?.code === 'ENOENT' || err?.message?.includes('ENOENT') || err?.message?.includes('ffmpeg')) {
+                            console.warn(`  ⚠ contact-sheet skipped: ffmpeg not available (run: npm install)`);
+                        } else {
+                            console.warn(`  ⚠ contact-sheet skipped: ${err?.message ?? err}`);
+                        }
+                    }
 
                     // Gap C fix: swap the regenerated scene INTO the existing
                     // master in-place (editing, not full re-render). Prefer the
@@ -1031,7 +1029,7 @@ async function runEdit(cliArgs: CliArgs) {
 async function runList() {
     const jobs = readJobJson();
     for (const job of jobs) {
-        const id = normalizeId(job.id || `job_${Date.now()}`);
+        const id = normalizeJobId(job.id || `job_${Date.now()}`);
         const ws = workspaceFor(id);
         const plan = readJson(ws.root, 'plan.json');
         const sceneData = readJson(ws.root, 'scene-data.json');
@@ -1148,7 +1146,7 @@ async function runDoctor() {
 
     // 5. Workspace jobs
     for (const job of jobs) {
-        const id = normalizeId(job.id || `job_${Date.now()}`);
+        const id = normalizeJobId(job.id || `job_${Date.now()}`);
         const ws = workspaceFor(id);
         const plan = readJson(ws.root, 'plan.json');
         const manifest = readJson(ws.root, 'render-manifest.json');
@@ -1204,7 +1202,7 @@ async function runReorder(cliArgs: CliArgs) {
     const order = orderRaw.split(',').map((s) => parseInt(s.trim(), 10)).filter((n) => n >= 1);
 
     for (const job of jobs) {
-        const id = normalizeId(job.id || `job_${Date.now()}`);
+        const id = normalizeJobId(job.id || `job_${Date.now()}`);
         const ws = workspaceFor(id);
         const plan = readJson(ws.root, 'plan.json');
         if (!plan) {
@@ -1235,7 +1233,7 @@ async function runReorder(cliArgs: CliArgs) {
 async function runCritique(cliArgs: CliArgs) {
     const jobs = readJobJson();
     for (const job of jobs) {
-        const id = normalizeId(job.id || `job_${Date.now()}`);
+        const id = normalizeJobId(job.id || `job_${Date.now()}`);
         const ws = workspaceFor(id);
         const planPath = path.join(ws.root, 'plan.json');
         const outDir = outputFor(id);
@@ -1272,7 +1270,7 @@ async function runCritique(cliArgs: CliArgs) {
 async function runRevise(cliArgs: CliArgs) {
     const jobs = readJobJson();
     for (const job of jobs) {
-        const id = normalizeId(job.id || `job_${Date.now()}`);
+        const id = normalizeJobId(job.id || `job_${Date.now()}`);
         const notes = (cliArgs.notes as string) || (cliArgs.auto ? 'auto-critique fixes' : 'manual revision');
         const { reviseJob, critiqueAndRevise } = await import('../../agentic/operations/revise.js');
         let report;

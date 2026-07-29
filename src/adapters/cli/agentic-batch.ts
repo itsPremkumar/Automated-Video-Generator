@@ -37,6 +37,7 @@ import { AgentBrain } from '../../agentic/ai/brain.js';
 import { buildPipelineRequest } from './cli-job.js';
 import type { AgenticCliJob } from './cli-job.js';
 import { runSingleFeature, type SingleFeatureMode } from '../../agentic/operations/single-feature.js';
+import { normalizeJobId } from '../../shared/identifiers.js';
 
 const INPUT_DIR = path.join(process.cwd(), 'input', 'scripts');
 const SCRIPTS_FILE = path.join(INPUT_DIR, 'agentic-scripts.json');
@@ -101,10 +102,7 @@ async function main() {
         if (preview) {
             console.log(`\n📋 Previewing generated jobs...\n`);
             for (const job of jobs) {
-                const id = (job.id || `job_${Date.now()}`)
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, '_')
-                    .slice(0, 64);
+                const id = normalizeJobId(job.id || `job_${Date.now()}`);
                 const topic = job.topic ?? job.title ?? 'Untitled video';
                 const report = await generatePreview(job, id, topic);
                 printPreview(report);
