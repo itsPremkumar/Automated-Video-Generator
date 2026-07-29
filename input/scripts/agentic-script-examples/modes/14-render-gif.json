@@ -1,0 +1,14 @@
+[
+  {
+    "id": "feature-render-gif",
+    "mode": "render-gif",
+    "title": "Render GIF Mode",
+    "description": "Mode file for rendering a short animated GIF from a video workspace. Copy to agentic-scripts.json and run: npm run agentic:mode:rerender (with mode=render-gif in single-feature.ts).",
+    "script": "This mode renders a GIF instead of an MP4.",
+    "orientation": "portrait",
+    "voice": "en-US-GuyNeural",
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "quality": "draft"
+  }
+]

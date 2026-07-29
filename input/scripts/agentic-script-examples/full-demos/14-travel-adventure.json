@@ -1,0 +1,39 @@
+[
+  {
+    "id": "demo-travel-adventure",
+    "title": "Ultimate Travel Bucket List",
+    "description": "Travel adventure video with high energy, vivid grading, and motion effects. Demonstrates travel content vertical with kinetic text and punchy transitions.",
+    "script": "Every journey begins with a single step. [Visual: airplane wing sunset clouds] [Transition: fade] [Grade: warm]\nThe Northern Lights in Iceland will leave you speechless. [Visual: aurora borealis northern lights] [Transition: slide] [Kinetic: on]\nWander through the ancient streets of Kyoto. [Visual: Kyoto Japan traditional temple] [Transition: fade] [Grade: warm]\nDive crystal clear waters in the Maldives. [Visual: Maldives underwater coral reef] [Transition: slide] [Grade: vivid]\nHike the Inca Trail to Machu Picchu. [Visual: Machu Picchu ancient ruins] [Transition: fade] [Kinetic: on]\nSafari at sunrise in the Serengeti. [Visual: Serengeti safari animals] [Transition: slide] [Grade: warm]\nThe world is waiting \u2014 go explore it. [Visual: world map travel pins] [Transition: fade] [Grade: cinematic]",
+    "orientation": "portrait",
+    "platform": "reels",
+    "videoType": "story",
+    "voice": "en-US-ChristopherNeural",
+    "preset": "cinematic",
+    "transition": "mixed",
+    "grade": "warm",
+    "captions": "burned",
+    "captionTheme": "softCard",
+    "sfx": true,
+    "sfxOnCut": true,
+    "kineticText": true,
+    "kenBurns": true,
+    "musicIntensity": "energetic",
+    "musicQuery": "epic cinematic travel adventure",
+    "format": "square",
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "quality": "high",
+    "outro": {
+      "ctaText": "Save this for your next adventure",
+      "showSubscribe": true,
+      "hashtags": [
+        "#travel",
+        "#adventure",
+        "#bucketlist",
+        "#wanderlust",
+        "#explore"
+      ],
+      "durationSec": 3
+    }
+  }
+]

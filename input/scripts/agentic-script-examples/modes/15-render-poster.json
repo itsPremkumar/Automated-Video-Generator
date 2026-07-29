@@ -1,0 +1,14 @@
+[
+  {
+    "id": "feature-render-poster",
+    "mode": "render-poster",
+    "title": "Render Poster Mode",
+    "description": "Mode file for generating a poster/thumbnail image from a rendered video. Copy to agentic-scripts.json and run with the appropriate mode.",
+    "script": "Generates poster frame from rendered video output.",
+    "orientation": "landscape",
+    "voice": "en-US-GuyNeural",
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "quality": "draft"
+  }
+]

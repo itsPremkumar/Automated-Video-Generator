@@ -1,0 +1,24 @@
+[
+  {
+    "id": "feature-silent-mute",
+    "title": "Silent Mode \u2014 No Music, No SFX",
+    "description": "Demonstrates no-music, no-SFX, no-ducking, no-ken-burns mode. Pure narration only. Useful for voice-only content, internal reviews, or accessibility-first videos.",
+    "script": "This video has no background music or sound effects. [Visual: quiet peaceful library] [Transition: fade]\nAudio ducking is disabled so voice stays at full volume. [Visual: audio waveform flat line] [Transition: slide]\nKen Burns zoom effect is disabled for static presentation. [Visual: static photo frame] [Transition: fade]\nNo kinetic text animations \u2014 clean and simple captions only. [Visual: minimal text caption] [Transition: fade]\nUse this mode for interviews, presentations, and voice-only content. [Visual: professional speaking stage] [Transition: slide]\nPerfect for internal reviews and accessibility needs. [Visual: diverse audience inclusive] [Transition: fade] [Grade: neutral]",
+    "orientation": "landscape",
+    "platform": "youtube",
+    "videoType": "tutorial",
+    "voice": "en-US-JennyNeural",
+    "preset": "neutral",
+    "transition": "fade",
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "sfx": false,
+    "musicIntensity": "off",
+    "noDucking": true,
+    "noKenBurns": true,
+    "noKinetic": true,
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "quality": "draft"
+  }
+]

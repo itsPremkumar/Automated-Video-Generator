@@ -1,0 +1,29 @@
+[
+  {
+    "id": "feature-localization",
+    "title": "Multi-Language Subtitles Demo",
+    "description": "Shows subtitle localization with translations. Generates SRT sidecars in multiple languages alongside the native subtitle track.",
+    "script": "This video demonstrates our multi-language subtitle system. [Visual: language translation globe] [Transition: fade]\nSubtitles are automatically generated in your chosen language. [Visual: subtitles on video screen] [Transition: slide]\nAdditional SRT sidecars can be produced for any language. [Visual: multiple language speech bubbles] [Transition: fade]\nSpanish, French, Hindi, Tamil, and more are supported. [Visual: world map language regions] [Transition: slide]\nEach translation is written as a standalone .srt file. [Visual: document files with translations] [Transition: fade]\nMake your content accessible to a global audience. [Visual: global audience devices] [Transition: slide] [Grade: warm]",
+    "orientation": "portrait",
+    "platform": "reels",
+    "videoType": "facts",
+    "voice": "en-US-GuyNeural",
+    "preset": "neutral",
+    "transition": "fade",
+    "captions": "burned",
+    "subtitles": true,
+    "targetLanguages": [
+      "es",
+      "fr",
+      "hi",
+      "ta",
+      "de"
+    ],
+    "sfx": true,
+    "musicIntensity": "calm",
+    "musicQuery": "world music global documentary",
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "quality": "medium"
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "demo-photo-slideshow",
+    "title": "Nature's Beauty \u2014 Photo Slideshow",
+    "description": "Image-only slideshow with still photos and Ken Burns effect. Uses images:true flag for static visual mode. Perfect for landscape photography, travel highlights, and portfolio showcases.",
+    "script": "Nature's beauty surrounds us every day. [Visual: majestic mountain sunrise landscape] [Transition: fade] [Grade: warm]\nFrom the deepest oceans to the highest peaks. [Visual: deep blue ocean waves crashing] [Transition: slide] [Grade: cool]\nEvery season paints its own masterpiece. [Visual: autumn forest golden leaves] [Transition: fade] [Grade: warm]\nWildlife thrives in the most unexpected places. [Visual: wild eagle flying mountains] [Transition: slide]\nDeserts hold secrets beneath their sands. [Visual: vast desert sand dunes sunset] [Transition: fade] [Grade: warm]\nRainforests are the lungs of our planet. [Visual: tropical rainforest waterfall] [Transition: slide] [Grade: vivid]\nProtect our planet \u2014 every action counts. [Visual: earth from space blue marble] [Transition: fade] [Grade: cinematic]",
+    "orientation": "landscape",
+    "platform": "youtube",
+    "videoType": "nature",
+    "voice": "en-US-JennyNeural",
+    "preset": "documentary",
+    "transition": "fade",
+    "grade": "warm",
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "images": true,
+    "kenBurns": true,
+    "sfx": true,
+    "musicIntensity": "calm",
+    "musicQuery": "ambient nature peaceful documentary",
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "quality": "high",
+    "intro": {
+      "title": "Nature's Beauty",
+      "subtitle": "A Photographic Journey",
+      "durationSec": 3
+    },
+    "outro": {
+      "ctaText": "Subscribe for more nature content",
+      "showSubscribe": true,
+      "hashtags": [
+        "#nature",
+        "#photography",
+        "#landscape",
+        "#wildlife",
+        "#planet"
+      ],
+      "durationSec": 3
+    }
+  }
+]

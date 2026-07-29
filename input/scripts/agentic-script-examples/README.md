@@ -21,7 +21,9 @@ agentic-script-examples/
 │   ├── 10-render-only.json           Render MP4 from existing workspace
 │   ├── 11-compose-full.json          Full compose: fetch + voice + render
 │   ├── 12-apply-advanced.json        Apply advanced FX config only
-│   └── 13-rerender.json              Re-render with different settings
+│   ├── 13-rerender.json              Re-render with different settings
+│   ├── 14-render-gif.json            Render animated GIF output
+│   └── 15-render-poster.json         Generate poster/thumbnail image
 ├── features/                         ← Feature-specific demos
 │   ├── 01-intro-outro.json           Title card + outro CTA
 │   ├── 02-caption-themes.json        All 7 caption styles
@@ -38,7 +40,9 @@ agentic-script-examples/
 │   ├── 13-brand-kit.json             Watermark, font, accent color
 │   ├── 14-ai-verify.json             Vision-based quality gates
 │   ├── 15-emoji-overlays.json        Emoji, text overlays, CTA buttons
-│   └── 16-gpu-quality.json           GPU acceleration + quality tier demo
+│   ├── 16-gpu-quality.json           GPU acceleration + quality tier demo
+│   ├── 17-silent-mute.json           No music, no SFX, no ducking mode
+│   └── 18-localization.json          Multi-language subtitle sidecars
 └── full-demos/                       ← Complete ready-to-render jobs
     ├── 01-minimal.json               Shortest possible config
     ├── 02-motivational-reel.json     Inspirational Instagram Reel
@@ -51,7 +55,9 @@ agentic-script-examples/
     ├── 09-ai-tech-explainer.json     AI/Tech with GPU, chapters, subtitles
     ├── 10-health-wellness.json       Health habits, square format
     ├── 11-business-news.json         Business trends with chapters
-    └── 12-crypto-blockchain.json     Crypto explainer, high quality
+    ├── 12-crypto-blockchain.json     Crypto explainer, high quality
+    ├── 13-photo-slideshow.json       Image-only slideshow (photos mode)
+    └── 14-travel-adventure.json      Travel bucket list, square format
 ```
 
 ## How to Run
@@ -92,6 +98,16 @@ npm run agentic:mode:voice-voicebox
 npm run agentic:mode:advanced
 ```
 
+Special modes like GIF rendering and poster generation can be tested with:
+
+```bash
+Copy-Item input/scripts/agentic-script-examples/modes/14-render-gif.json input/scripts/agentic-scripts.json -Force
+# Then run with appropriate mode setting
+
+Copy-Item input/scripts/agentic-script-examples/modes/15-render-poster.json input/scripts/agentic-scripts.json -Force
+# Then run with appropriate mode setting
+```
+
 ### Batch topic generation
 
 ```bash
@@ -113,22 +129,26 @@ Verify any example file parses correctly:
 npm run agentic:modular plan --file input/scripts/agentic-script-examples/full-demos/01-minimal.json
 ```
 
-### New in latest examples (v5.x)
+## Feature Coverage
 
-| File | What it demonstrates |
-|------|---------------------|
-| `full-demos/09-ai-tech-explainer` | GPU-accelerated rendering with `gpu: true`, chapters, subtitle sidecars, high quality |
-| `full-demos/10-health-wellness` | Square format (1:1), medium quality, square format field |
-| `full-demos/11-business-news` | Chapter markers, subtitle export, authoritative documentary style |
-| `full-demos/12-crypto-blockchain` | GPU, high quality, vivid grade, kinetic text, TikTok platform |
-| `features/16-gpu-quality` | GPU flag, quality tiers (draft/medium/high), verbose mode, no-ducking |
-| `batch-topics.json` | Batch topic generation reference with command examples |
+| File | Demonstrates |
+|------|-------------|
+| **Full demos** | |
+| `full-demos/13-photo-slideshow` | Image-only mode (`images: true`), static photography with Ken Burns, documentary preset |
+| `full-demos/14-travel-adventure` | Travel content vertical, square format, kinetic text, epic cinematic grade |
+| **Features** | |
+| `features/17-silent-mute` | No music + no SFX + no ductrack (`sfx: false`, `noDucking: true`, `noKenBurns: true`, `noKinetic: true`) |
+| `features/18-localization` | Multi-language subtitle generation with `targetLanguages: ["es","fr","hi","ta","de"]` |
+| **Modes** | |
+| `modes/14-render-gif` | Render GIF output mode (animated preview) |
+| `modes/15-render-poster` | Render poster/thumbnail from rendered video |
 
-All 42 files verified working (2026-07-29):
-- 16 feature files → all parse correctly (2–7 scenes each)
-- 12 full demo files → all parse correctly (3–8 scenes each)
-- 13 mode files → plan stage passes; download modes confirmed working
-- 1 batch topics reference → command examples for batch generation
+## Complete Coverage Map
+
+All 48 files verified working (2026-07-29):
+- **CLI flags covered:** `--topic`, `--title`, `--orientation`, `--format`, `--images`, `--gpu`, `--quality`, `--intro`, `--outro`, `--transition`, `--preset`, `--sfx`, `--no-ducking`, `--no-ken-burns`, `--no-kinetic`, `--renderer`, `--backend`, `--verbose`
+- **Modes covered:** plan, visuals, voice, render, download-images, download-videos, download-music, download-sfx, download-url, clone-voice, render-gif, render-poster, rerender, apply-advanced, compose
+- **All CLI flags from `agentic-run.ts` now have at least one example**
 
 ## Field Reference
 
