@@ -120,6 +120,9 @@ _create_test_job.js
 _add_jobs.js
 test-advanced.json
 src/agentic/operations/_test_*.ts
+# Stray shell artifacts and temp dirs
+$null
+empty-dir-*/
 # In-repo Python venv for the vendored speech backend (created via
 # `python -m venv venv` + `pip install -r src/speech/requirements.txt`).
 # Heavy + machine-specific — NEVER commit. The code lives in src/speech/ (tracked).

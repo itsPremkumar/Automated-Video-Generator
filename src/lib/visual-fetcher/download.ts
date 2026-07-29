@@ -33,12 +33,18 @@ export const DOWNLOAD_STALL_TIMEOUT_MS = Math.max(
 function isDownloadRetryable(err: unknown): boolean {
     if (!err || typeof err !== 'object') return false;
     const e = err as { status?: number; response?: { status?: number }; code?: unknown; message?: string; name?: string };
+    // Never retry on content-too-large (maxContentLength) — the file is
+    // genuinely too big and will never succeed on retry. Without this guard
+    // an AxiosError with "maxContentLength" in the message hits the
+    // `e.name === 'AxiosError'` catch-all below and gets retried 3+ times,
+    // wasting minutes per oversized asset.
+    if (typeof e.message === 'string' && /maxContentLength|content.length|too large|size exceeded/i.test(e.message)) return false;
     const status = Number(e.status ?? e.response?.status ?? 0);
     if (status === 429 || (status >= 500 && status < 600)) return true;
     const code = String(e.code ?? '');
     if (['ECONNRESET', 'ETIMEDOUT', 'ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'ECONNABORTED'].includes(code))
         return true;
-    if (typeof e.message === 'string' && /timeout|stall|reset|aborted|network|econn|429/i.test(e.message)) return true;
+    if (typeof e.message === 'string' && /timeout|stall|reset|aborted|network|econn/i.test(e.message)) return true;
     return e.name === 'AxiosError' || e.name === 'FetchError' || e.name === 'TimeoutError';
 }
 
