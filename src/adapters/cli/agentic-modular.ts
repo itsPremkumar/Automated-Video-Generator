@@ -52,6 +52,7 @@ import * as path from 'path';
 import { execFileSync } from 'child_process';
 import { estimateAudioDurationSafe } from '../../agentic/orchestrator/ffmpeg.js';
 import { normalizeJobId } from '../../shared/identifiers.js';
+import { getAgenticWorkspace } from '../../agentic/management/workspace.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -99,16 +100,7 @@ function readJobJson(): any[] {
 }
 
 function workspaceFor(jobId: string) {
-    const root = path.join(process.cwd(), 'workspace', 'jobs', jobId);
-    return {
-        root,
-        assetsDir: path.join(root, 'assets'),
-        imagesDir: path.join(root, 'assets', 'images'),
-        videosDir: path.join(root, 'assets', 'videos'),
-        musicDir: path.join(root, 'assets', 'music'),
-        audioDir: path.join(root, 'audio'),
-        verificationDir: path.join(root, 'verification'),
-    };
+    return getAgenticWorkspace(jobId);
 }
 
 function readJson(dir: string, file: string): any {
@@ -124,6 +116,26 @@ function writeJson(dir: string, file: string, data: any): void {
 
 function outputFor(jobId: string) {
     return path.join(OUTPUT_DIR, jobId);
+}
+
+// ─── Dry-run helpers ──────────────────────────────────────────────────────────
+
+type DryRunDetail = {
+    stage: string;
+    details: string[];
+};
+
+function printDryRun(job: any, title: string, details: DryRunDetail[]): void {
+    console.log(`\n  ── DRY-RUN ──`);
+    console.log(`  Job: ${title}`);
+    console.log(`  ─────────────────`);
+    for (const d of details) {
+        console.log(`\n  [${d.stage}]`);
+        for (const line of d.details) {
+            console.log(`    ${line}`);
+        }
+    }
+    console.log(`\n  ✅ Dry-run complete — no changes made.\n`);
 }
 
 // ─── Stage 1: Plan ─────────────────────────────────────────────────────────
@@ -175,6 +187,29 @@ async function runPlan(cliArgs: CliArgs) {
             variablePacing: job.variablePacing ?? true,
             brain,
         });
+
+        // ── Dry-run: show the scenes but don't write anything ──
+        if (cliArgs['dry-run']) {
+            const details: DryRunDetail[] = [{
+                stage: 'PLAN',
+                details: [
+                    `Title: ${title}`,
+                    `Topic: ${topic}`,
+                    `Voice: ${job.voice ?? 'default'}`,
+                    `Orientation: ${job.orientation ?? 'portrait'}`,
+                    `Scenes: ${plan.scenes.length}`,
+                    '',
+                    ...plan.scenes.map((s: any) =>
+                        `  [${s.sceneNumber}] ${(s.voiceoverText || '…').slice(0, 60).padEnd(62)} ${(s.durationSec || '?').toFixed(1)}s${s.visualPreference === 'video' ? ' 🎬' : ''}`,
+                    ),
+                    '',
+                    `Total duration: ${plan.totalDurationSec?.toFixed(1) ?? '?'}s`,
+                    `(plan.json would be written to workspace)`,
+                ],
+            }];
+            printDryRun(job, title, details);
+            continue;
+        }
 
         writeJson(ws.root, 'plan.json', plan);
         writeJson(ws.root, 'job-meta.json', {
@@ -235,6 +270,31 @@ async function runVisuals(cliArgs: CliArgs) {
         console.log(`\n═══════════════════════════════════════════`);
         console.log(`  [VISUALS] ${job.title || id}`);
         console.log(`═══════════════════════════════════════════`);
+
+        // ── Dry-run: show what would be acquired ──
+        if (cliArgs['dry-run']) {
+            const sceneVisuals = plan.scenes.map((s: any) => {
+                const kw = s.searchKeywords?.join(', ') || s.localAsset || 'auto';
+                const pref = s.visualPreference === 'video' ? 'video' : 'image';
+                return `  [${s.sceneNumber}] ${kw.slice(0, 60).padEnd(62)} ${pref}  ${(s.durationSec || '?').toFixed(1)}s`;
+            });
+            const details: DryRunDetail[] = [{
+                stage: 'VISUALS',
+                details: [
+                    `Job: ${job.title || id}`,
+                    `Orientation: ${job.orientation ?? 'portrait'}`,
+                    `Candidates per asset: ${job.candidatesPerAsset ?? 2}`,
+                    `Scenes needing visuals: ${plan.scenes.length}`,
+                    '',
+                    ...sceneVisuals,
+                    '',
+                    `Music query: ${job.musicQuery || (job.backgroundMusic || 'auto')}`,
+                    `(assets would be downloaded to workspace; render-manifest.json would be written)`,
+                ],
+            }];
+            printDryRun(job, job.title || id, details);
+            continue;
+        }
 
         // B2: --no-acquire — all visuals are pre-supplied locally via [Visual: file]
         // bindings in the script. Skip the network acquire/gateway stage entirely and
@@ -488,6 +548,34 @@ async function runVoice(cliArgs: CliArgs) {
             }
         }
 
+        // ── Dry-run: show which scenes need voice ──
+        if (cliArgs['dry-run']) {
+            const sceneVoices = plan.scenes.map((s: any) => {
+                const voiceLabel = s.voiceOverride || job.voice || 'default';
+                const hasExisting = (() => {
+                    const wav = path.join(ws.audioDir, `scene_${s.sceneNumber}_voice.wav`);
+                    const mp3 = path.join(ws.audioDir, `scene_${s.sceneNumber}_voice.mp3`);
+                    return fs.existsSync(wav) || fs.existsSync(mp3);
+                })();
+                return `  [${s.sceneNumber}] ${voiceLabel.padEnd(30)} ${(s.voiceoverText || '...').slice(0, 45).padEnd(48)} ${hasExisting ? '✅ cached' : '❓ needs generation'}`;
+            });
+            const details: DryRunDetail[] = [{
+                stage: 'VOICE',
+                details: [
+                    `Job: ${job.title || id}`,
+                    `Default voice: ${job.voice || 'default'}`,
+                    `Target scene: ${targetScene ? `scene ${targetScene}` : 'all'}`,
+                    `Scenes: ${plan.scenes.length}`,
+                    '',
+                    ...sceneVoices,
+                    '',
+                    `(voiceovers would be generated to workspace audio dir)`,
+                ],
+            }];
+            printDryRun(job, job.title || id, details);
+            continue;
+        }
+
         let voiceovers;
         try {
             const vres = await runVoiceStageSafe(plan, rootWs, job.voice, undefined, clonedProfileId);
@@ -577,6 +665,39 @@ async function runRender(cliArgs: CliArgs) {
             console.error(`✖ No manifest found for job "${id}". Run "visuals" stage first.`);
             continue;
         }
+
+        // ── Dry-run: show what would be rendered ──
+        if (cliArgs['dry-run']) {
+            const sceneData = plan.scenes.map((s: any) => {
+                const hasVisual = !!s.localAsset || manifest.assets?.some((a: any) => a.sceneIndex === s.sceneNumber - 1 && a.localPath);
+                const hasVoice = (() => {
+                    const wav = path.join(ws.audioDir, `scene_${s.sceneNumber}_voice.wav`);
+                    const mp3 = path.join(ws.audioDir, `scene_${s.sceneNumber}_voice.mp3`);
+                    return fs.existsSync(wav) || fs.existsSync(mp3);
+                })();
+                return `  [${s.sceneNumber}] ${(s.voiceoverText || '...').slice(0, 50).padEnd(52)} ${(s.durationSec || '?').toFixed(1)}s  ${hasVisual ? '🖼' : '❌'} ${hasVoice ? '🎙' : '🔇'}`;
+            });
+            const details: DryRunDetail[] = [{
+                stage: 'RENDER',
+                details: [
+                    `Job: ${job.title || id}`,
+                    `Workspace: ${ws.root}`,
+                    `Scenes: ${plan.scenes.length}`,
+                    `Total duration: ${plan.totalDurationSec?.toFixed(1) ?? '?'}s`,
+                    `Orientation: ${job.orientation ?? 'portrait'}`,
+                    `Captions: ${(job.captions || meta.captions) !== 'none' ? 'burned' : 'none'}`,
+                    `Assets in manifest: ${manifest.assets?.length ?? 0}`,
+                    '',
+                    ...sceneData,
+                    '',
+                    `Output dir: ${outputFor(id)}`,
+                    `(video would be rendered via ffmpeg)`,
+                ],
+            }];
+            printDryRun(job, job.title || id, details);
+            continue;
+        }
+
         const voiceoverMeta = readJson(ws.root, 'voiceover-meta.json');
         const result: any = {
             backend: job.backend ?? 'agent',
@@ -1309,6 +1430,11 @@ async function main() {
         console.log(`    voice             Generate voiceovers`);
         console.log(`    render            Render video from workspace`);
         console.log(`    edit              Edit specific scenes (--scene N --visual kw --voice name)`);
+        console.log(`  `);
+        console.log(`  Global flags:`);
+        console.log(`    --dry-run         Preview what would happen without making changes`);
+        console.log(`    --file <path>     Use a custom job JSON file (default: input/scripts/agentic-scripts.json)`);
+        console.log(`    --job <id>        Target a specific job by id`);
         console.log(`    reorder           Reorder scenes (--order 4,1,2,3) then re-render`);
         console.log(`    critique          Director's Critique of the rendered MP4 (black/clip/aspect)`);
         console.log(`    revise            Re-edit a delivered job from change notes (--auto to self-heal)`);

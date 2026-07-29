@@ -111,7 +111,7 @@
     "agentic:reorder": "tsx src/adapters/cli/agentic-modular.ts reorder",
     "agentic:batch": "tsx src/adapters/cli/agentic-batch.ts",
     "agentic:batch:parallel": "tsx src/adapters/cli/agentic-batch.ts --parallel 3",
-    "agentic:preview": "tsx src/adapters/cli/agentic-batch.ts --preview",
+    "agentic:preview": "tsx src/adapters/cli/agentic-preview.ts",
     "agentic:generate": "tsx src/adapters/cli/agentic-batch.ts --generate --topics \"AI coding,Video editing,Photography,Web development,Data science\"",
     "agentic:generate:preview": "tsx src/adapters/cli/agentic-batch.ts --generate --preview --topics \"AI coding,Video editing,Photography,Web development,Data science\"",
     "agentic:mode:plan": "tsx src/adapters/cli/agentic-batch.ts --mode plan",

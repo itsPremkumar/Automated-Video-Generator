@@ -798,7 +798,10 @@ function concatAudio(files: string[], out: string): void {
     // the output is an .aac container, so a stream copy always fails (and used
     // to silently drop the voiceover from the final mix). Encoding produces a
     // valid concatenated voice track.
-    try { execFileSync(ff(), ['-y', '-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', list, '-c:a', 'aac', '-b:a', '192k', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 }); } catch (e: any) { console.warn(`  ⚠ audio concat failed: ${String(e?.stderr ?? e?.message).slice(0, 300)}`); }
+    try { execFileSync(ff(), ['-y', '-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', list, '-c:a', 'aac', '-b:a', '192k', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 }); } catch (e: any) {
+        const detail = String(e?.stderr ?? e?.message ?? e).slice(0, 300);
+        throw new Error(`audio concat failed: ${detail}`);
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

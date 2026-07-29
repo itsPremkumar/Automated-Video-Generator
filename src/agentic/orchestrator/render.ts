@@ -359,6 +359,8 @@ export async function renderAgenticSlideshow(
         aspect?: '9:16' | '1:1' | '16:9' | 'square';
         /** When true, print the full ffmpeg command line to stderr before each invocation. */
         verbose?: boolean;
+        /** When true, auto-detect the best available GPU encoder (nvenc/amf/qsv) for HW-accelerated encoding. */
+        gpu?: boolean;
     } = {},
 ): Promise<string> {
     const ffmpeg: string = require('ffmpeg-static');
@@ -394,6 +396,39 @@ export async function renderAgenticSlideshow(
         }
         return FONT_ARG;
     }
+
+    // ── GPU encoder detection (cached once per process via module-level var) ──
+    let _gpuEncoder: string | undefined;
+    function resolveGpuEncoder(): string {
+        if (!opts.gpu) return 'libx264';
+        if (_gpuEncoder !== undefined) return _gpuEncoder;
+        try {
+            const { execFileSync } = require('child_process');
+            const encoders = execFileSync(ffmpeg, ['-encoders'], { timeout: 10000, encoding: 'utf8' }) as string;
+            for (const enc of ['h264_nvenc', 'h264_amf', 'h264_qsv']) {
+                if (encoders.includes(enc)) {
+                    _gpuEncoder = enc;
+                    logInfo(`  ⚡ GPU encoder detected: ${enc}`);
+                    return enc;
+                }
+            }
+        } catch {
+            /* probe failed, fall through to libx264 */
+        }
+        _gpuEncoder = 'libx264';
+        logInfo('  ℹ No HW encoder found, falling back to libx264 (CPU)');
+        return 'libx264';
+    }
+    function gpuExtra(encoder: string): string[] {
+        if (encoder === 'h264_nvenc') return ['-preset', 'p7'];
+        if (encoder === 'h264_amf') return ['-quality', 'speed'];
+        return [];
+    }
+    // Pre-resolve the GPU encoder once so every use site reads the cached value.
+    const GPU_ENCODER = resolveGpuEncoder();
+    const GPU_EXTRA = gpuExtra(GPU_ENCODER);
+    const GPU_HWACCEL = opts.gpu ? ['-hwaccel', 'auto'] : [];
+
     const outDir = res.workspace.root + '/render';
     fs.mkdirSync(outDir, { recursive: true });
     const out = opts.outPath ?? outDir + '/' + res.workspace.jobId + '.mp4';
@@ -428,7 +463,7 @@ export async function renderAgenticSlideshow(
             s ? `drawtext=${FONT_ARG}text='${s}':fontcolor=${fg}@0.8:fontsize=30:x=(w-text_w)/2:y=h/2+50` : '',
         ].filter(Boolean).join(',');
         await new Promise<void>((resolve, reject) => {
-            execFile(ffmpeg, ['-f', 'lavfi', '-i', vf, '-t', String(dur), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-y', outPath],
+            execFile(ffmpeg, ['-f', 'lavfi', '-i', vf, '-t', String(dur), '-c:v', GPU_ENCODER, ...GPU_EXTRA, '-pix_fmt', 'yuv420p', '-y', outPath],
                 (err: any, _stdout: string, stderr: string) =>
                     err ? reject(new Error('card render failed: ' + (stderr || '').trim())) : resolve());
         });
@@ -464,7 +499,7 @@ export async function renderAgenticSlideshow(
     const xf = opts.crossfadeSec ?? 0.5;
     const burn = opts.burnCaptions ?? true;
 
-    const runFfmpegSpawn = (args: string[], totalSec = 0): Promise<void> =>
+    const runFfmpegSpawn = (args: string[], totalSec = 0, sceneDurations?: number[]): Promise<void> =>
         new Promise<void>((resolve, reject) => {
             if (opts.verbose) {
                 console.error('[ffmpeg] ' + ffmpeg + ' ' + args.join(' '));
@@ -478,7 +513,24 @@ export async function renderAgenticSlideshow(
                 if (m && totalSec > 0) {
                     const secs = +m[1] * 3600 + +m[2] * 60 + parseFloat(m[3]);
                     const pct = Math.min(99, Math.round((secs / totalSec) * 100));
-                    if (pct !== lastPct) { lastPct = pct; logInfo(`  · render ${pct}%`); }
+                    if (pct !== lastPct) {
+                        lastPct = pct;
+                        if (sceneDurations && sceneDurations.length > 1) {
+                            // Compute which scene we're currently rendering
+                            let accum = 0;
+                            let sceneIdx = 0;
+                            for (let i = 0; i < sceneDurations.length; i++) {
+                                if (secs < accum + sceneDurations[i]) {
+                                    sceneIdx = i;
+                                    break;
+                                }
+                                accum += sceneDurations[i];
+                            }
+                            logInfo(`  · Scene ${sceneIdx + 1}/${sceneDurations.length} ${pct}%`);
+                        } else {
+                            logInfo(`  · render ${pct}%`);
+                        }
+                    }
                 }
                 if (buf.length > 4096) buf = buf.slice(-2048);
             });
@@ -841,8 +893,8 @@ const volFilter = volOverride && volOverride > 0 && volOverride !== 1 ? `,volume
 const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             const fc = vfChain + ';' + af;
             const args: string[] = [
-                ...inputs, '-filter_complex', fc, '-map', '[v]', '-map', '[a]',
-                '-t', String(dur), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', '25',
+                ...GPU_HWACCEL, ...inputs, '-filter_complex', fc, '-map', '[v]', '-map', '[a]',
+                '-t', String(dur), '-c:v', GPU_ENCODER, ...GPU_EXTRA, '-pix_fmt', 'yuv420p', '-r', '25',
                 '-c:a', 'aac', '-b:a', '192k', '-y', seg,
             ];
             let lastErr: any;
@@ -890,17 +942,18 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
         expectedDur = totalSec;
         silent = outDir + '/_av_' + res.workspace.jobId + '.mp4';
         const pass1: string[] = [
-            ...videoInputs, ...audioInputArgs,
+            ...GPU_HWACCEL, ...videoInputs, ...audioInputArgs,
             '-filter_complex', [...vfArgs, ...(audioFilter ? [audioFilter] : [])].join(';'),
             '-map', videoMap, ...(audioMap.length ? audioMap : []),
-            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', '25',
+            '-c:v', GPU_ENCODER, ...GPU_EXTRA, '-pix_fmt', 'yuv420p', '-r', '25',
             ...(audioMap.length ? ['-c:a', 'aac', '-b:a', '192k'] : ['-an']),
             '-t', totalSec.toFixed(2), '-y', silent,
         ];
         if (process.env.DEBUG_FF) {
             console.error('FILTER_COMPLEX:\n' + [...vfArgs, ...(audioFilter ? [audioFilter] : [])].join(';\n'));
         }
-        await runFfmpegSpawn(pass1, totalSec);
+        const sceneDurations = visuals.map((a: any) => a.durationSec ?? 4);
+        await runFfmpegSpawn(pass1, totalSec, sceneDurations);
     }
 
     let sfxLayer: string | null = null;
@@ -1134,6 +1187,29 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             }
         }
     }
+
+    // ── Auto temp cleanup — delete intermediate render files older than 24h ──
+    // Scans outDir for orphaned _av_*, _seg_*, _concat_*, _intro_*, _outro_*
+    // files that may have been left behind by previous aborted runs.
+    try {
+        const cleanupPatterns = ['_av_', '_seg_', '_concat_', '_intro_', '_outro_'];
+        const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+        const allFiles = fs.readdirSync(outDir);
+        let cleaned = 0;
+        for (const f of allFiles) {
+            const matched = cleanupPatterns.some((p) => f.startsWith(p));
+            if (!matched) continue;
+            const fpath = path.join(outDir, f);
+            try {
+                const st = fs.statSync(fpath);
+                if (st.isFile() && st.mtimeMs < cutoff) {
+                    fs.rmSync(fpath, { force: true });
+                    cleaned++;
+                }
+            } catch { /* skip unreadable entries */ }
+        }
+        if (cleaned > 0) logInfo(`  🧹 temp cleanup: removed ${cleaned} stale intermediate file(s)`);
+    } catch { /* cleanup is best-effort */ }
 
     await writeOutputArtifacts(res, out, outDir, opts.aiVerify, opts.languages, opts.exportAspects);
     fs.rmSync(srtPath, { force: true });
