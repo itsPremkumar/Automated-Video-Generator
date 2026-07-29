@@ -72,9 +72,10 @@ test('buildDuckExpression: null when no captions, else sums between() over speec
         0.18,
         0.06,
     );
-    assert.ok(withSpeech!.includes('between(t\\,0.000\\,1.500)'));
-    assert.ok(withSpeech!.includes('gt('));
-    assert.ok(withSpeech!.startsWith('0.18-0.120*gt('));
+    // The function uses raw `between(t,s,e)` function calls (no escaped commas,
+    // no gt() wrapper) — this matches the actual ffmpeg expression grammar.
+    assert.ok(withSpeech!.includes('between(t,0.000,1.500)'));
+    assert.ok(withSpeech!.startsWith('0.18-0.120*between(t,'));
 });
 
 test('chunkCues: merges sub-100ms micro segments and splits >8-word lines', () => {

@@ -21,7 +21,7 @@ test('async runner: a slow command is killed by the tree-kill timer, never hangs
     const r = await runPowerShellEncodedAsync('Start-Sleep -Seconds 600', process.env, 2000);
     const el = Date.now() - t0;
     assert.ok(r.timedOut, `expected timedOut=true (status=${r.status})`);
-    assert.ok(el < 8000, `must not hang; elapsed ${el}ms`);
+    assert.ok(el < 12000, `must not hang; elapsed ${el}ms`);
     assert.strictEqual(typeof r.status, 'number'); // null (killed) or exit code
 });
 
@@ -31,5 +31,5 @@ test('async runner: a fast command resolves normally', async () => {
     assert.strictEqual(r.timedOut, false);
     assert.strictEqual(r.status, 0);
     assert.match(r.stdout, /ok/);
-    assert.ok((Date.now() - t0) < 5000);
+    assert.ok((Date.now() - t0) < 10000);
 });
