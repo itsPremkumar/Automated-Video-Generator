@@ -39,6 +39,7 @@ and error responses.
 | `PEXELS_API_KEY` | — | Pexels API key for stock video and image source. Get one at https://www.pexels.com/api/ |
 | `PIXABAY_API_KEY` | — | Pixabay API key for alternative stock media. |
 | `YOUTUBE_API_KEY` | — | YouTube metadata source. |
+| `GPU_ACCEL` | `false` | Set to `true` to enable GPU-accelerated rendering. Selects best available encoder automatically (AMF / NVENC / QSV). |
 | `OPENVERSE_ENABLED` | `true` | Enable Openverse CC-licensed image fallback (no API key required). Set to `false` to disable. |
 | `MAX_DOWNLOAD_BYTES` | `157286400` (150 MB) | Reject downloads exceeding this byte limit. |
 | `DOWNLOAD_STALL_TIMEOUT_MS` | `30000` | Stall guard timeout for streamed downloads (milliseconds). |
@@ -79,12 +80,12 @@ and error responses.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `TTS_PROVIDER` | `edge-tts` | Voice synthesis backend: `edge-tts`, `voicebox`, `xtts`, or `openai-local`. |
+| `TTS_PROVIDER` | `voicebox` | Voice synthesis backend: `voicebox` (default, in-repo vendored), `edge-tts`, `xtts`, or `openai-local`. When unset, the pipeline auto-spawns the vendored `src/speech/` backend. Falls back to Edge-TTS if unavailable. |
 | `EDGE_TTS_PATH` | — | Absolute path to the edge-tts Python executable (or venv python) if not on PATH. |
 | `VOICEBOX_API_URL` | `http://127.0.0.1:17493` | Voicebox backend API URL. |
 | `VOICEBOX_ENGINE` | `kokoro` | Voicebox TTS engine (e.g. `kokoro`, `chatterbox_turbo`). |
 | `VOICEBOX_PROFILE_ID` | — | Voicebox voice profile ID. Keep in `.env` — the placeholder `<your-voicebox-profile-id-here>` is treated as unset. |
-| `VOICEBOX_BACKEND_DIR` | `voicebox/` (relative to cwd) | Directory containing the Voicebox backend source. |
+| `VOICEBOX_BACKEND_DIR` | `src/` (project root `src/` contains the vendored `speech/` package) | Directory containing the Voicebox backend source. The backend is vendored in-repo at `src/speech/` (MIT, sourced from jamiepine/voicebox). |
 | `VOICEBOX_PYTHON` | `<backendDir>/.venv/Scripts/python.exe` | Path to the Python executable for the Voicebox backend. |
 | `VOICEBOX_PORT` | `17493` | Port for the Voicebox backend server. |
 | `XTTS_API_URL` | `http://127.0.0.1:8020` | Local XTTS API server URL. |
@@ -100,6 +101,7 @@ and error responses.
 | Variable | Default | Purpose |
 |---|---|---|
 | `AGENTIC_RENDER_SOFTEN` | — | Set to `1` to enable softer/higher-quality render settings. |
+| `AGENTIC_MAX_RUN_MS` | `1800000` (30 min) | Global watchdog timeout for the full pipeline run. When a run exceeds this, it is hard-aborted. Set `0` to disable. |
 | `AGENTIC_SEGMENTED` | `1` (enabled) | Set to `0` to disable segmented rendering. |
 | `AGENTIC_NORMALIZE_MUSIC` | — | Set to `1` to enable music normalization in the render pipeline. |
 | `AGENTIC_KEEP_WORKSPACES` | `25` | Maximum number of temporary workspaces to retain after pipeline runs. |

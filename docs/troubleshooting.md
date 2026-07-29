@@ -20,6 +20,29 @@ Try `python` instead of `py`, or install Python from [python.org](https://python
 - Check that FFmpeg is accessible (the project bundles `ffmpeg-static`)
 - For Docker: ensure Chromium is installed
 
+### GPU acceleration not working (`--gpu` flag)
+- Run with `--verbose` to see encoder selection logs
+- Check your GPU: AMD (AMF), NVIDIA (NVENC), or Intel (QSV) required
+- Falls back to software encoding automatically if no GPU detected
+- Set `GPU_ACCEL=true` in `.env` for persistent GPU mode
+
+### Pipeline hangs or takes too long
+- The built-in 30-minute watchdog (`AGENTIC_MAX_RUN_MS`) will abort stuck runs
+- Check network connectivity for media downloads
+- Set `AGENTIC_MAX_RUN_MS=0` to disable the watchdog (not recommended)
+- Run with `--dry-run` to verify the plan before full execution
+
+### Placeholder images appearing in output (solid colors)
+- The pipeline now auto-rejects uniform-color images via `isUniformPlaceholderImage`
+- This happens when stock providers return low-quality or missing visuals
+- Try adding `PEXELS_API_KEY` for better stock media quality
+- Add local assets to `input/visuals/` as a fallback
+
+### Source attribution says "unknown" in rendered frames
+- The pipeline now derives provider names from URL hosts (`sourceFromUrl`)
+- If a URL doesn't match known providers, it falls back to `unknown`
+- This is cosmetic only — the video renders correctly
+
 ### Portal doesn't open
 - Check the terminal for errors
 - Ensure port 3001 is not in use
@@ -29,9 +52,19 @@ Try `python` instead of `py`, or install Python from [python.org](https://python
 - Run `npx tsc --noEmit` for detailed error output
 - Ensure you're using Node.js 18+
 
+### agentic:clean leaves some files
+- Run with `npm run agentic:clean` to clean temp workspace files
+- Old workspaces up to `AGENTIC_KEEP_WORKSPACES` (default 25) are preserved
+- Manually delete `workspace/jobs/` if disk space is critical
+
 ## Debugging
 
-Enable verbose logging by checking the terminal output. The project logs to stdout and `logs.txt`.
+Enable verbose logging:
+- Set `DEBUG_FF=1` in `.env` for verbose ffmpeg stderr
+- Pass `--verbose` to `npm run agentic` for detailed pipeline logs
+- Check `workspace/jobs/<jobId>/decisions-report.txt` for asset decisions
+
+The project logs to stdout and `logs.txt`.
 
 ## Getting Help
 

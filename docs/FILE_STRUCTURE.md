@@ -14,6 +14,7 @@ This document shows the current repository structure and explains what each area
 ```text
 src/        main backend and shared runtime code
 electron/   desktop runtime integration
+bin/        CLI entry points (agentic-run, agentic-batch, batch-10, etc.)
 docs/       project and architecture documentation
 assets/     desktop and repository branding assets
 public/     STATIC shipped assets (git-tracked, served at `/`)
@@ -338,6 +339,7 @@ agentic/
 ```
 
 - `acquire.ts`: Asset acquisition (images, video, audio) with fallback
+- `asset-validators.ts`: Content-level media validation (uniform-placeholder detection via ffmpeg signalstats)
 - `agent.ts`: Agent decision-making core
 - `ai-verify.ts`: AI-powered content verification
 - `archive.ts`: Pipeline archiving
@@ -423,7 +425,7 @@ orchestrate/
 - `remotion.ts`: Remotion rendering orchestration
 - `captions.ts`: Caption orchestration
 - `artifacts.ts`: Artifact management
-- `source.ts`: Source resolution
+- `source.ts`: URL-to-provider resolution (honest source labeling)
 - `types.ts`: Shared orchestration types
 
 ### `src/agentic/plugins/`

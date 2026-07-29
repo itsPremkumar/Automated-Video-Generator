@@ -1,6 +1,6 @@
 # Quick Start — 5 Minutes to Your First Video
 
-Choose the path that fits your setup:
+Choose the path that fits your setup. The **agentic pipeline** is the recommended way — zero API keys, fully offline.
 
 ---
 
@@ -12,6 +12,22 @@ Choose the path that fits your setup:
 4. Paste a script → Click **Generate Video** → Done
 
 **No Node.js, Python, or terminal needed.** Everything is bundled.
+
+---
+
+## 🤖 Agentic Pipeline — Any Platform (1 minute)
+
+```bash
+# Clone (one-time)
+git clone https://github.com/itsPremkumar/Automated-Video-Generator.git
+cd Automated-Video-Generator
+npm install
+
+# Generate your first video — no API keys needed
+npm run agentic -- --topic "5 benefits of drinking water" --orientation portrait
+```
+
+Output lands in `workspace/jobs/job_<id>/render/job_<id>.mp4`.
 
 ---
 
@@ -76,6 +92,17 @@ npx automated-video-generator
 ```
 
 Connect Claude Desktop or Claude Code for AI-driven video creation.
+
+---
+
+### Next Steps
+
+- See the full [CLI Reference](cli-reference.md) for all 50+ commands and flags
+- Enable GPU acceleration: `npm run agentic -- --topic "..." --gpu`
+- Dry-run to preview: `npm run agentic -- --topic "..." --dry-run`
+- Batch generate: `npm run agentic:generate -- --topics "Topic A,Topic B"`
+- Clean temp workspaces: `npm run agentic:clean`
+
 
 ---
 

@@ -48,6 +48,20 @@ one **headless FastAPI server** with a REST API. The key features:
 - **7 engines bundled:** Qwen3-TTS, Chatterbox Multilingual, Chatterbox Turbo,
   LuxTTS, HumeAI TADA, Kokoro, and Qwen CustomVoice
 
+### Integrated in-repo (no separate clone needed)
+
+The Voicebox backend is **vendored in-repo** at `src/speech/` (MIT license,
+clean copy from upstream jamiepine/voicebox, commit 52f8d8d, vendored
+2026-07-20). This means:
+
+- **No separate `git clone`** — everything lives under this project
+- **Auto-start** — the pipeline spawns it as `python -m speech.main` using the
+  project's in-repo venv (`venv/Scripts/python.exe`)
+- **Auto-fallback** — if the backend can't start (missing deps, no GPU),
+  the pipeline gracefully falls back to Edge-TTS
+- **Data isolated** — voice profiles and generated audio go to
+  `workspace/cache/voicebox/` (gitignored, outside the repo)
+
 ---
 
 ## 2. System Requirements
@@ -73,37 +87,36 @@ one **headless FastAPI server** with a REST API. The key features:
 
 ## 3. One-Time Installation
 
-### 3.1 Clone & venv setup
+### 3.1 Quick setup (in-repo venv)
+
+Since the Voicebox backend is **vendored in-repo** at `src/speech/`, you only
+need to set up the project's Python virtual environment.
 
 ```bash
-# Clone Voicebox (shallow = faster)
-git clone --depth 1 https://github.com/jamiepine/voicebox.git C:/one/voicebox
-cd C:/one/voicebox
+# From project root
+uv venv --python 3.11 venv
 
-# Create venv with uv (faster than pip)
-uv venv --python 3.11 .venv
-
-# Install CPU deps
-env PYTHONPATH= uv pip install --python .venv/Scripts/python.exe \
-  --extra-index-url https://download.pytorch.org/whl/cpu \
-  -r requirements-minimal-cpu.txt
-
-# Install CUDA pytorch (for GPU acceleration)
-env PYTHONPATH= TMPDIR=C:/tmp UV_CACHE_DIR=C:/tmp/uvcache \
-  uv pip install --python .venv/Scripts/python.exe \
+# Install torch with CUDA (for GPU acceleration)
+uv pip install --python venv/Scripts/python.exe \
   --index-url https://download.pytorch.org/whl/cu126 \
   "torch==2.13.0+cu126" "torchaudio==2.11.0+cu126"
+
+# Install Voicebox dependencies
+uv pip install --python venv/Scripts/python.exe \
+  -r src/speech/requirements.txt
 ```
 
-> **⚠️ IMPORTANT:** Always run Voicebox commands with `PYTHONPATH=` cleared
-> (empty). The Hermes agent sets `PYTHONPATH` to include its own venv, which
-> contains a CPU-only pytorch. Clearing it ensures Voicebox uses its own
-> CUDA-capable pytorch from its `.venv`.
+> **⚠️ CPU-only fallback:** If you don't have an NVIDIA GPU, install CPU pytorch:
+> ```bash
+> uv pip install --python venv/Scripts/python.exe \
+>   --extra-index-url https://download.pytorch.org/whl/cpu \
+>   torch torchaudio
+> ```
 
 ### 3.2 Verify GPU detection
 
 ```bash
-C:/one/voicebox/.venv/Scripts/python.exe -c "
+venv/Scripts/python.exe -c "
 import torch
 print('CUDA available:', torch.cuda.is_available())
 print('PyTorch:', torch.__version__)
@@ -119,14 +132,13 @@ PyTorch: 2.13.0+cu126
 If `CUDA available: False`, check:
 - Your NVIDIA driver is up to date
 - CUDA 12.6 toolkit is installed (or matching your pytorch wheel)
-- You ran with `PYTHONPATH=` cleared
 
 ### 3.3 Manual start test (before pipeline integration)
 
 ```bash
-cd C:/one/voicebox
-env PYTHONPATH= .venv/Scripts/python.exe -m backend.main \
-  --host 127.0.0.1 --port 17493 --data-dir C:/one/voicebox/.voicebox-data
+cd src
+../venv/Scripts/python.exe -m speech.main \
+  --host 127.0.0.1 --port 17493 --data-dir ../workspace/cache/voicebox
 ```
 
 You should see in the log:
@@ -136,7 +148,8 @@ Backend: PYTORCH
 Ready
 ```
 
-Keep this running and open a **second terminal** to continue.
+The pipeline's `speech-backend.ts` will do this automatically — this is just
+a manual smoke test to verify everything works.
 
 ---
 
@@ -216,7 +229,7 @@ curl -s "http://127.0.0.1:17493/audio/<GENERATION_ID>" -o test_voice.wav
 
 ## 5. Pipeline Integration (Env Vars)
 
-Set these in **`C:/one/Automated-Video-Generator/.env`**:
+Set these in **your project `.env`**:
 
 ```env
 # ─── Voicebox as active TTS provider ──────────────────────────────────────────
@@ -229,9 +242,10 @@ VOICEBOX_ENGINE=chatterbox_turbo
 # ─── Your cloned voice profile (from step 4) ──────────────────────────────────
 VOICEBOX_PROFILE_ID=9d484367-edf8-427b-b0b3-1f7a38479229
 
-# ─── Auto-start settings (pipeline spawns Voicebox if not already running) ────
-VOICEBOX_BACKEND_DIR=C:/one/voicebox
-VOICEBOX_PYTHON=C:/one/voicebox/.venv/Scripts/python.exe
+# ─── Auto-start settings (pipeline spawns Voicebox from vendored src/)
+# Defaults (no need to set these unless customizing):
+# VOICEBOX_BACKEND_DIR=src    — vendored speech/ package lives under src/
+# VOICEBOX_PYTHON=venv/Scripts/python.exe  — in-repo venv
 ```
 
 > **What's safe to share?** `VOICEBOX_PROFILE_ID` is a UUID — it's a profile
@@ -270,10 +284,10 @@ generation:
 
    ┌─── If NOT RUNNING (cold start) ───────────────────────────────┐
    │   → Spawns:                                                    │
-   │     C:/one/voicebox/.venv/Scripts/python.exe                  │
-   │       -m backend.main --host 127.0.0.1 --port 17493           │
-   │     with PYTHONPATH= (to avoid CPU torch pollution)            │
-   │   → Polls /models/status every 1s (up to 40s)                 │
+   │     <project>/venv/Scripts/python.exe                         │
+   │       -m speech.main --host 127.0.0.1 --port 17493           │
+   │   → Polls /models/status every 1s (up to 120s)               │
+   │   → on success: ready for synthesis                           │
    │   → Server starts on CUDA (~7-15s)                            │
    │   ✅ Voicebox is now ready                                     │
    └───────────────────────────────────────────────────────────────┘
@@ -449,11 +463,12 @@ taskkill -F -PID <PID>
 
 **Cause:** `PYTHONPATH` includes Hermes's venv which has a CPU-only pytorch.
 
-**Fix:** Ensure Voicebox is spawned with `PYTHONPATH=` cleared. The pipeline
-does this automatically (via `voicebox-lifecycle.ts`). If starting manually:
+**Fix:** The pipeline spawns with `cwd=src` so `-m speech.main` resolves correctly
+(the vendored backend is at `src/speech/`). If starting manually from project root:
 
 ```bash
-env PYTHONPATH= .venv/Scripts/python.exe -m backend.main
+cd src
+../venv/Scripts/python.exe -m speech.main --host 127.0.0.1 --port 17493
 ```
 
 ### 10.2 Voice sounds unclear / noisy
@@ -469,15 +484,16 @@ ffprobe -v error -select_streams a:0 -show_entries stream=bit_rate output.mp4
 
 ### 10.3 Voicebox fails to start (ModuleNotFoundError)
 
-**Cause:** The spawn `cwd` was set to `backend/` directory, but `python -m
-backend.main` needs the Voicebox root directory.
+**Cause:** The Python module `speech.main` needs `cwd` set to `src/` so that
+`src/speech/` resolves as a package. The pipeline's `speech-backend.ts` handles
+this automatically.
 
 **Fix:** Already applied — `cwd` is now the Voicebox root dir. If manually
 debugging:
 
 ```bash
-cd C:/one/voicebox   # NOT C:/one/voicebox/backend/
-env PYTHONPATH= .venv/Scripts/python.exe -m backend.main
+cd <project-root>
+venv/Scripts/python.exe -m speech.main
 ```
 
 ### 10.4 CUDA out of memory

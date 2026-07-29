@@ -42,30 +42,29 @@ lives in:
 - `src/lib/voice-engine.ts` — `getVoiceEngineStatus()` health reporting
 - `src/constants/config.ts` — env-var declarations
 
-| Provider key | Engine | Default port | Clones? | Code status |
+| **Provider key** | **Engine** | **Default port** | **Clones?** | **Code status** |
 | :--- | :--- | :--- | :--- | :--- |
-| `voicebox` | jamiepine/Voicebox (multi-engine) | `17493` | Yes (zero-shot) | ✅ Recommended |
+| `voicebox` | jamiepine/Voicebox (multi-engine) — **vendored in-repo** at `src/speech/` | `17493` | Yes (zero-shot) | ✅ Default & recommended |
 | `xtts` | Coqui XTTS API server | `8020` | Yes (3s clip) | ⚠️ See §6 caveat |
 | `openai-local` | Kokoro (OpenAI-compatible server) | `8880` | No (presets) | ✅ Default narrator |
 
-### 2.1 Voicebox (recommended clone engine)
+### 2.1 Voicebox (default & recommended clone engine — vendored in-repo)
 
-- **Repo:** https://github.com/jamiepine/voicebox — **MIT**, 42k★, actively
-  maintained (pushed within the last week of writing).
+Voicebox is now **vendored directly in the repo** at `src/speech/` (MIT license,
+clean copy of jamiepine/voicebox, commit 52f8d8d, 2026-07-20). No separate clone
+or external install is needed.
+
+- **Repo (upstream):** https://github.com/jamiepine/voicebox — **MIT**, 42k★
 - **What it is:** a local-first AI voice studio — a free/open-source alternative
   to ElevenLabs. It bundles **7 local TTS engines** (Qwen3-TTS, Qwen CustomVoice,
   LuxTTS, Chatterbox Multilingual, Chatterbox Turbo, HumeAI TADA, Kokoro) behind
   one **headless FastAPI server + built-in MCP server + REST API**.
-- **Verified local-only:** I inspected `backend/backends/hume_backend.py` —
-  the HumeAI TADA backend imports `torch` + a local DAC shim and makes **no
-  cloud HTTP call / requires no API key**. All engines run on-device.
-- **Cloning:** zero-shot from a few seconds of reference audio.
-- **Config:**
-  ```env
-  TTS_PROVIDER=voicebox
-  VOICEBOX_API_URL=http://localhost:17493
-  VOICEBOX_PROFILE_ID=your_cloned_voice_profile_id
-  ```
+- **Auto-start:** The pipeline's `speech-backend.ts` spawns it automatically as
+  `python -m speech.main` from the in-repo venv (`venv/Scripts/python.exe`).
+- **Auto-fallback:** If the backend can't start (missing deps, no GPU), the
+  pipeline gracefully falls back to Edge-TTS or sine-tone.
+- **Data location:** Voice profiles and generated audio stored at
+  `workspace/cache/voicebox/` (gitignored, outside repo).
 - **Usage:** open the Voicebox app, clone a voice profile, copy its profile ID,
   paste as `VOICEBOX_PROFILE_ID`. The pipeline calls `POST /speak` / `POST /generate`.
 
@@ -159,7 +158,7 @@ is the deciding filter.
   then unloaded, so normal runs stay light.
 - **Never on this box:** VibeVoice-ASR (15.9 GB), GPT-SoVITS full toolkit
   (~2–3 GB), running all 7 Voicebox engines simultaneously.
-- **Voicebox practical config:** run the headless backend (`python -m backend.main`)
+- **Voicebox practical config:** run the headless backend (`python -m speech.main`)
   with **Kokoro as the active engine** for default narration and a single clone
   engine (Chatterbox Turbo / Qwen3-TTS) loaded on demand.
 
@@ -230,12 +229,13 @@ profile.
 ### 8.1 Voicebox (recommended)
 
 ```bash
-# clone + run headless backend (MIT)
-git clone https://github.com/jamiepine/voicebox
-cd voicebox/backend
-pip install -r requirements.txt
-python -m backend.main --host 127.0.0.1 --port 17493
+This manual clone is **no longer needed** — Voicebox is vendored at
+`src/speech/` in this repo. For reference, the upstream setup was:
 
+```bash
+cd src
+../venv/Scripts/python.exe -m speech.main --host 127.0.0.1 --port 17493
+```
 # in another terminal, generate with a cloned profile via REST
 curl -X POST http://127.0.0.1:17493/generate \
   -H "Content-Type: application/json" \
@@ -285,34 +285,27 @@ Voicebox runs as a **separate, lifecycle-managed headless backend** (its own
 Python process), NOT embedded in the Node pipeline. The pipeline owns its RAM
 lifecycle so no TTS engine stays resident during Remotion render / asset-fetch.
 
-### 10.1 Install (verified working on this box — RTX 3050 4 GB VRAM + CUDA 12.6)
+### 10.1 Install — in-repo vendored Voicebox
+
+The Voicebox backend is **vendored at `src/speech/`** in this repo. No separate
+clone needed. Just set up the project's Python venv:
 
 ```bash
-git clone --depth 1 https://github.com/jamiepine/voicebox.git C:/one/voicebox
-cd C:/one/voicebox
+# From the project root
+uv venv --python 3.11 venv
 
-# 1. Create an ISOLATED venv. IMPORTANT: a global PYTHONPATH env var on this box
-#    leaks the Hermes venv's site-packages into every python, so always run the
-#    backend AND installs with `PYTHONPATH=` cleared (empty) to isolate.
-#    Also: `python -m venv` is broken here (base python is itself a venv), use `uv`.
-uv venv --python 3.11 .venv
+# Install CUDA pytorch for GPU acceleration
+uv pip install --python venv/Scripts/python.exe \
+  --index-url https://download.pytorch.org/whl/cu126 \
+  "torch==2.13.0+cu126" "torchaudio==2.11.0+cu126"
 
-# 2. Install CPU-side deps + the model backends. misaki[en] only (NOT [ja]/[zh])
-#    — the [ja] extra pulls pyopenjtalk which needs cmake + a C compiler.
-env PYTHONPATH= uv pip install --python .venv/Scripts/python.exe \
-  --extra-index-url https://download.pytorch.org/whl/cpu \
-  -r requirements-minimal-cpu.txt
-# requirements-minimal-cpu.txt = fastapi/uvicorn + transformers + kokoro +
-#   misaki[en] + spacy(en_core_web_sm) + fastmcp + pedalboard + pydub + PIL +
-#   qwen-tts + soundfile + numpy + scipy. (If a download times out, re-run — uv resumes.)
-#   NOTE: qwen-tts pulls an old huggingface-hub (1.2.3); that's fine once PYTHONPATH
-#   is cleared so the venv resolves its own pinned version, not Hermes's.
+# Install the Voicebox backend deps
+uv pip install --python venv/Scripts/python.exe \
+  -r src/speech/requirements.txt
+```
 
-# 3. GPU: install CUDA torch so models load into VRAM, not system RAM.
-#    This is what makes it work on a 6 GB-RAM / 4 GB-VRAM laptop — on CPU-only
-#    the 3.5 GB Qwen model OOMs; on GPU, Kokoro-82M uses ~800 MB VRAM.
-env PYTHONPATH= TMPDIR=C:/tmp UV_CACHE_DIR=C:/tmp/uvcache \
-  uv pip install --python .venv/Scripts/python.exe \
+> **CPU only:** If you don't have an NVIDIA GPU, use `--extra-index-url
+> https://download.pytorch.org/whl/cpu` instead of the `--index-url` above.
   --index-url https://download.pytorch.org/whl/cu126 "torch==2.13.0+cu126" "torchaudio==2.11.0+cu126"
 # Verify:  .venv/Scripts/python.exe -c "import torch; print(torch.cuda.is_available())" -> True
 ```
@@ -327,10 +320,9 @@ env PYTHONPATH= TMPDIR=C:/tmp UV_CACHE_DIR=C:/tmp/uvcache \
 ### 10.2 Run headless (no GUI = saves RAM)
 
 ```bash
-cd C:/one/voicebox
-env PYTHONPATH= .venv/Scripts/python.exe -m backend.main \
-  --host 127.0.0.1 --port 17493 --data-dir C:/one/voicebox/.voicebox-data
-# backend log prints:  GPU: CUDA (NVIDIA GeForce RTX 3050 Laptop GPU); Ready
+cd src
+../venv/Scripts/python.exe -m speech.main \
+  --host 127.0.0.1 --port 17493 --data-dir ../workspace/cache/voicebox
 ```
 
 `src/lib/voicebox-lifecycle.ts` `ensureBackend()` spawns exactly this command
@@ -362,9 +354,9 @@ Kokoro-82M on the RTX 3050 (819 MB VRAM used, system RAM untouched).
 ### 10.4 Env vars
 | Var | Default | Purpose |
 | :--- | :--- | :--- |
-| `TTS_PROVIDER` | `edge-tts` | set `voicebox` to use this path |
+| `TTS_PROVIDER` | `voicebox` | set `voicebox` (default) or `edge-tts` |
 | `VOICEBOX_API_URL` | `http://127.0.0.1:17493` | backend base URL |
-| `VOICEBOX_BACKEND_DIR` | `C:/one/voicebox` | repo dir (for spawn) |
+| `VOICEBOX_BACKEND_DIR` | `src/` (vendored `speech/` package) | project root dir (for spawn) |
 | `VOICEBOX_PYTHON` | `<dir>/.venv/Scripts/python.exe` | interpreter |
 | `VOICEBOX_ENGINE` | `kokoro` | engine for narration (`chatterbox-turbo` for clone) |
 | `VOICEBOX_PROFILE_ID` | — | **required** — the Kokoro preset or cloned profile |
@@ -379,10 +371,12 @@ Kokoro-82M on the RTX 3050 (819 MB VRAM used, system RAM untouched).
 - Always launch with `PYTHONPATH=` cleared so the backend uses only `.venv`.
 
 ### 10.6 Lifecycle (managed automatically by the pipeline)
-`src/lib/voicebox-lifecycle.ts`:
-- `ensureBackend()` — spawns `env PYTHONPATH= .venv/Scripts/python.exe -m backend.main`
-  (the §10.2 command) if not already answering `/models/status`; bounded 40 s poll.
-- `isRunning()` / `killBackend()` — health + terminate the process (zero RAM until next run).
+`src/lib/speech-backend.ts`:
+- `ensureBackend()` — spawns `venv/Scripts/python.exe -m speech.main`
+  (the §10.2 command) if not already answering `/health`; bounded 120s poll with
+  early-exit on process death.
+- `isBackendUp()` / `killBackend()` — health check via `/health` or `/models/status`;
+  terminates the process tree with `taskkill /T /F` on Windows.
 
 `src/lib/api-tts-provider.ts` `generateVoiceoverWithVoicebox()`:
 - wakes the backend, `POST /speak` (profile + engine), **polls** the async status

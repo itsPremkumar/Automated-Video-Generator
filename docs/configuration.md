@@ -14,6 +14,7 @@ Copy `.env.example` to `.env` and configure:
 |----------|----------|-------------|
 | `PEXELS_API_KEY` | No* | API key for stock video/images |
 | `PIXABAY_API_KEY` | No | Alternative stock media source |
+| `GPU_ACCEL` | No | Set `true` to enable GPU-accelerated rendering (AMF/NVENC/QSV) |
 | `OPENVERSE_ENABLED` | No | CC-licensed image fallback (default: `true`) |
 | `PORT` | No | Web portal port (default: 3001) |
 | `OUTPUT_DIR` | No | Custom output directory |

@@ -56,6 +56,16 @@ Answer ONLY with a JSON object: {"passes": true/false, "confidence": 0-10, "reas
 
 The catch block returns `{ passes: true, confidence: 5, reason: "AI provider unavailable" }`. The pipeline **continues** — verification is a quality gate, not a hard blocker.
 
+### What about uniform/solid-color placeholders?
+
+The pipeline now has a **content gate** (`isUniformPlaceholderImage` in `src/agentic/pipeline/asset-validators.ts`) that runs **before** AI verification. It uses ffmpeg signalstats to detect near-uniform/gradient images that leaked through from download failures. If detected:
+
+- The image is rejected without calling the AI provider
+- The asset source is labeled `placeholder` instead of a real provider name
+- The pipeline tries the next available source
+
+This prevents solid-color gradients and missing-visual stand-ins from appearing as "verified" real content.
+
 ### What is the confidence threshold?
 
 `MEDIA_VERIFICATION_CONFIDENCE` defaults to 6 (1–10 scale). A result passes only if `result.passes === true && result.confidence >= MEDIA_VERIFICATION_CONFIDENCE`.

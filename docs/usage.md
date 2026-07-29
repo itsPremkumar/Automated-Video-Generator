@@ -1,12 +1,67 @@
 ---
 title: Usage Guide — Automated Video Generator
-description: How to use Automated Video Generator to create AI-generated videos from text scripts. Covers CLI, web portal, batch generation, MCP integration, and director mode.
+description: How to use Automated Video Generator to create AI-generated videos from text scripts. Covers CLI, agentic pipeline, web portal, batch generation, MCP integration, GPU acceleration, and dry-run mode.
 ---
+
 # Usage Guide
 
 How to use Automated Video Generator to create AI-generated videos from text scripts.
 
-## Generate a Video (CLI)
+## Generate a Video (Agentic Pipeline — Recommended)
+
+The agentic pipeline is fully self-contained and requires no API keys:
+
+```bash
+# Single video from topic (all-in-one)
+npm run agentic -- --topic "5 benefits of drinking water" --title "Hydration" --orientation portrait
+
+# With GPU acceleration
+npm run agentic -- --topic "AI in healthcare" --gpu
+
+# Square format for Instagram
+npm run agentic -- --topic "Morning routine tips" --format square
+
+# Dry-run: preview plan without downloading or rendering
+npm run agentic -- --topic "Space exploration" --dry-run
+
+# Landscape video with images (photo slideshow)
+npm run agentic -- --topic "Top 10 coding tools" --orientation landscape --images
+
+# High quality, cinematic preset
+npm run agentic -- --topic "Deep sea creatures" --quality high --preset cinematic
+
+# Disable background music
+npm run agentic -- --topic "Silent film history" --no-sfx
+
+# Remotion renderer (instead of ffmpeg)
+npm run agentic -- --topic "Web development trends" --renderer remotion
+
+# With chapters and verbose ffmpeg logging
+npm run agentic -- --topic "JavaScript basics" --chapters --verbose
+```
+
+### Step-by-Step Pipeline
+
+You can also run individual stages of the pipeline:
+
+```bash
+# 1. Plan — generate the script structure
+npm run agentic:plan -- --topic "Climate change explained" --file input/scripts/agentic-scripts.json
+
+# 2. Download visuals
+npm run agentic:visuals -- --file input/scripts/agentic-scripts.json
+
+# 3. Generate voiceover
+npm run agentic:voice -- --file input/scripts/agentic-scripts.json
+
+# 4. Render the final video
+npm run agentic:render -- --file input/scripts/agentic-scripts.json
+
+# 5. Apply edits (transitions, grades)
+npm run agentic:edit -- --file input/scripts/agentic-scripts.json
+```
+
+## Generate a Video (Legacy CLI)
 
 ```bash
 npm run generate -- --script "Your video script here"
@@ -46,7 +101,7 @@ curl -X POST http://localhost:3001/api/free-video/download \
 **Via MCP:**
 ```json
 search_free_video { "keyword": "space", "source": "all", "count": 3 }
-download_free_video { "url": "...", "title": "clip" }
+download_free_video { "url": "https://...", "title": "clip" }
 ```
 
 **Pipeline fallback:** Free sources activate automatically when Pexels/Pixabay return no results. No config needed.
@@ -59,11 +114,45 @@ Use `[Visual: description]` tags in your script for exact visual control over ea
 
 ## Batch Generation
 
-Place multiple scripts in `input/scripts/input-scripts.json` and run:
+Generate multiple videos from a topic list:
 
 ```bash
-npm run generate
+# Batch generate from topics
+npm run agentic:generate -- --topics "AI coding,Video editing,Photography,Web development"
+
+# Batch with preview (plan-only for each)
+npm run agentic:generate:preview -- --topics "AI coding,Video editing"
+
+# Run specific batch stage
+npm run agentic:mode:plan
+npm run agentic:mode:images
+npm run agentic:mode:voice-edgetts
+npm run agentic:mode:compose
 ```
+
+## GPU Acceleration
+
+Enable hardware-accelerated rendering with the `--gpu` flag or `GPU_ACCEL=true` in `.env`:
+
+```bash
+# CLI flag (auto-selects best encoder)
+npm run agentic -- --topic "Space" --gpu
+
+# Environment variable
+echo "GPU_ACCEL=true" >> .env
+```
+
+Supports AMD (AMF), NVIDIA (NVENC), and Intel (QSV) GPUs. Falls back to software encoding if no compatible GPU is found.
+
+## Dry-Run Mode
+
+Preview the full pipeline without downloading or rendering:
+
+```bash
+npm run agentic -- --topic "Quantum computing" --dry-run
+```
+
+Outputs: title, scene count, orientation, duration, per-scene keywords and voiceover text, and asset decisions — without touching any external service or disk.
 
 ## MCP Integration
 
@@ -75,7 +164,15 @@ claude mcp add automated-video-generator -- npx automated-video-generator
 
 ## Output
 
-Generated videos are saved as MP4 files with optional subtitles, background music, and thumbnails. Supports both portrait (9:16) and landscape (16:9) orientations.
+Generated videos are saved as MP4 files in `workspace/jobs/<jobId>/render/` with:
+- Optional SRT/VTT subtitles
+- Background music with auto-ducking
+- Chapter markers (if `--chapters` is set)
+- Preview thumbnails
+- Contact sheet PNG showing all approved assets
+- Decision report text file
+
+Supports portrait (9:16), landscape (16:9), and square (1:1) orientations.
 
 ## Next Steps
 

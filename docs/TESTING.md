@@ -11,11 +11,12 @@
 
 | Check | Command | Result |
 |-------|---------|--------|
-| Unit + integration tests | `npm run test:unit` | **487+ run · 479+ pass · 0 fail · 8 skipped** |
+| Unit + integration tests | `npm run test:unit` | **~700+ run · ~0 fail · ~8 skipped** |
 | Typecheck | `npm run typecheck` | **clean (exit 0)** |
 | End-to-end render (portrait) | `npm run agentic -- --topic "..." --orientation portrait` | MP4 `720x1280` ✓ |
-| End-to-end render (landscape) | `... --orientation landscape` | MP4 `1280x720` ✓ |
-| End-to-end render (square) | `... --format square` | MP4 `1080x1080` ✓ |
+| End-to-end render (landscape) | `npm run agentic -- --topic "..." --orientation landscape` | MP4 `1280x720` ✓ |
+| End-to-end render (square) | `npm run agentic -- --topic "..." --format square` | MP4 `1080x1080` ✓ |
+| GPU-accelerated render | `npm run agentic -- --topic "..." --gpu` | HW encoder (AMF/NVENC/QSV) ✓ |
 
 The 8 skipped tests are **network-dependent image-provider tests** (Wikimedia /
 MetMuseum) that *skip* when the host is unreachable — see §6. They are NOT failures.
@@ -51,12 +52,12 @@ frozen frames, loudness, no clipping, dimensions, web codec).
 
 The project uses **Node's built-in `node:test`** runner — **not** Jest/Mocha.
 
-### 2.1 The one flag you must never drop
+### 2.1 Test configuration
 
-`package.json` `test:unit` is:
+`package.json` `test:unit`:
 
 ```json
-"test:unit": "node --import tsx --test --test-timeout=120000 --experimental-test-module-mocks \"src/**/*.test.ts\" \"remotion/**/*.test.ts\""
+"test:unit": "node --import tsx --test --test-timeout=240000 --test-concurrency=2 --experimental-test-module-mocks \"src/**/*.test.ts\" \"remotion/**/*.test.ts\" \"tests/**/*.test.ts\""
 ```
 
 `--experimental-test-module-mocks` is **required** for `mock.module(...)` to work.
