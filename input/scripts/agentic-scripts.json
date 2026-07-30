@@ -1,26 +1,51 @@
 [
   {
-    "id": "multi-test-landscape",
-    "title": "Landscape Demo",
-    "script": "The landscape mode is perfect for YouTube. [Visual: nature landscape mountains] [Transition: fade]\nIt delivers cinematic widescreen quality. [Visual: ocean waves sunset]",
+    "id": "how-machines-learn",
+    "title": "How Machines Learn",
+    "description": "AI/Machine Learning explainer video for beginners. Professional blue/cyan theme, calm narrator, ambient music, YouTube 16:9 landscape. Fully curated local asset path.",
+    "script": "Every day, artificial intelligence shapes your world — from the videos you watch to the way you work. [Visual: ml_brain_circuit.mp4] [Transition: fade] [Grade: cool] [CaptionTheme: minimal]\nMachine learning is a type of AI where computers learn from data, not from explicit programming. They find patterns on their own. [Visual: ml_data_streams.mp4] [Transition: slide] [Grade: cool] [Kinetic: on]\nThink of it like teaching a child. You show thousands of examples — photos of cats and dogs — until the computer learns to tell them apart by itself. [Visual: ml_cat_dog.mp4] [Transition: slide] [Grade: neutral]\nYou use ML every day. Netflix recommendations, YouTube suggestions, voice assistants — all powered by algorithms that learn from your behavior. [Visual: ml_smartphone_apps.mp4] [Transition: fade] [Grade: cool] [Kinetic: on]\nThere are three main types: supervised learning uses labeled data, unsupervised finds hidden patterns, and reinforcement learns through trial and error. [Visual: ml_three_types.mp4] [Transition: zoomblur] [Grade: vivid] [CaptionTheme: bold]\nAI is transforming healthcare, education, and business — projected to reach over one point eight trillion dollars by 2030. [Visual: ml_futuristic_city.mp4] [Transition: fade] [Grade: cinematic] [KenBurns: on]\nMachine learning is shaping tomorrow, today. Like and subscribe for more technology explained simply. [Visual: ml_subscribe.mp4] [Transition: fade] [Grade: cool] [CaptionTheme: bold]",
     "orientation": "landscape",
+    "aspect": "16:9",
+    "platform": "youtube",
+    "videoType": "facts",
     "voice": "en-US-GuyNeural",
-    "language": "english"
-  },
-  {
-    "id": "multi-test-portrait",
-    "title": "Portrait Reel",
-    "script": "Portrait mode powers Instagram Reels and TikTok. [Visual: person talking phone] [Transition: slide]\nShort form content is king in social media. [Visual: social media icons people]",
-    "orientation": "portrait",
-    "voice": "en-US-JennyNeural",
-    "language": "english"
-  },
-  {
-    "id": "multi-test-square",
-    "title": "Square Format",
-    "script": "Square videos work great on LinkedIn and Facebook. [Visual: business presentation meeting] [Transition: fade]\nThis format is versatile for multiple platforms. [Visual: analytics dashboard screen]",
-    "orientation": "square",
-    "voice": "en-US-AriaNeural",
-    "language": "english"
+    "language": "english",
+    "preset": "cinematic",
+    "transition": "mixed",
+    "grade": "cool",
+    "kenBurns": true,
+    "vignette": true,
+    "kineticText": true,
+    "progressBar": true,
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "sfx": true,
+    "sfxOnCut": true,
+    "musicIntensity": "calm",
+    "musicQuery": "ambient cinematic technology documentary",
+    "renderer": "ffmpeg",
+    "backend": "agent",
+    "outputQuality": "high",
+    "hardwareEncode": true,
+    "maxAttempts": 2,
+    "intro": {
+      "title": "How Machines Learn",
+      "subtitle": "AI & Machine Learning Explained",
+      "durationSec": 3
+    },
+    "outro": {
+      "ctaText": "Subscribe for more tech explained simply",
+      "showSubscribe": true,
+      "hashtags": [
+        "#AI",
+        "#MachineLearning",
+        "#Technology",
+        "#LearnAI",
+        "#Future"
+      ],
+      "durationSec": 4
+    },
+    "exportAspects": ["16:9"],
+    "posterScene": 0
   }
 ]

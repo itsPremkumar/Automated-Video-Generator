@@ -16,6 +16,8 @@ import { TimelineRoadmap } from './compositions/TimelineRoadmap';
 import { LoadingSpinner } from './compositions/LoadingSpinner';
 import { FlowDiagram } from './compositions/FlowDiagram';
 import { AppUI } from './compositions/AppUI';
+import { PrismDispersion } from './compositions/PrismDispersion';
+import { AuroraShader } from './compositions/AuroraShader';
 
 const FPS = 30;
 
@@ -149,6 +151,22 @@ export const RemotionRoot: React.FC = () => {
         fps={FPS}
         width={1920}
         height={1080}
+      />
+      <Composition
+        id="PrismDispersion"
+        component={PrismDispersion}
+        durationInFrames={120}
+        fps={FPS}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="AuroraShader"
+        component={AuroraShader}
+        durationInFrames={120}
+        fps={FPS}
+        width={1080}
+        height={1920}
       />
     </>
   );

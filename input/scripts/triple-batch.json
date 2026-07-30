@@ -1,0 +1,38 @@
+[
+  {
+    "id": "ocean-deep-sea",
+    "title": "The Hidden Depths of the Ocean",
+    "script": "Beneath the waves lies a world more mysterious than outer space. [Visual: ocean surface aerial waves] [Transition: fade]\nThe deep sea begins where sunlight fades — below 200 meters. [Visual: deep ocean dark blue water] [Transition: slide]\nCreatures here have evolved incredible adaptations. Bioluminescence lights the abyss. [Visual: bioluminescent jellyfish glowing] [Transition: slide]\nSome fish produce their own light through chemical reactions in their bodies. [Visual: anglerfish deep sea] [Transition: slide]\nWe've explored less than 20% of the ocean floor. The deep holds secrets we're only beginning to discover. [Visual: deep sea underwater submarine] [Transition: fade]",
+    "orientation": "landscape",
+    "voice": "en-US-GuyNeural",
+    "language": "english",
+    "sfx": true,
+    "captions": true,
+    "quality": "high",
+    "format": "16:9"
+  },
+  {
+    "id": "ancient-rome-engineering",
+    "title": "Roman Engineering Marvels",
+    "script": "The Romans built structures that still stand 2000 years later. [Visual: roman colosseum ancient architecture] [Transition: fade]\nConcrete was their secret weapon — a mix of volcanic ash and lime that hardens underwater. [Visual: roman concrete aqueduct construction] [Transition: slide]\nThe Pantheon's dome is still the world's largest unreinforced concrete dome. [Visual: pantheon dome rome interior] [Transition: slide]\nRoman roads stretched over 400,000 kilometers across three continents. [Visual: ancient roman road stone path] [Transition: slide]\nTheir engineering legacy shapes our world today — from bridges to arches to city planning. [Visual: modern bridge roman arch influence] [Transition: fade]",
+    "orientation": "landscape",
+    "voice": "en-US-JennyNeural",
+    "language": "english",
+    "sfx": true,
+    "captions": true,
+    "quality": "high",
+    "format": "16:9"
+  },
+  {
+    "id": "aurora-borealis",
+    "title": "The Magic of the Northern Lights",
+    "script": "The Aurora Borealis — nature's most dazzling light show. [Visual: aurora borealis northern lights night sky] [Transition: fade]\nIt begins with charged particles from the sun traveling 150 million kilometers toward Earth. [Visual: solar flare sun eruption corona] [Transition: slide]\nOur magnetic field funnels these particles toward the poles. [Visual: earth magnetic field aurora illustration] [Transition: slide]\nThey collide with oxygen and nitrogen atoms, releasing energy as dancing curtains of light. [Visual: green aurora dancing green sky green landscape] [Transition: slide]\nEach color tells a story — green from oxygen, red from high-altitude oxygen, purple from nitrogen. [Visual: multicolor aurora purple pink green northern lights] [Transition: fade]",
+    "orientation": "portrait",
+    "voice": "en-US-AriaNeural",
+    "language": "english",
+    "sfx": true,
+    "captions": true,
+    "quality": "high",
+    "format": "9:16"
+  }
+]

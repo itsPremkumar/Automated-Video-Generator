@@ -1,0 +1,14 @@
+[
+  {
+    "id": "rainbow-science",
+    "title": "The Science of Rainbows",
+    "script": "Rainbows are nature's most beautiful optical illusion. [Visual: rainbow sky colorful] [Transition: fade]\nIt all starts with sunlight. White light contains every color. [Visual: prism light spectrum refraction] [Transition: slide]\nWhen sunlight hits a raindrop, it bends and reflects inside. [Visual: raindrop macro water droplet refraction] [Transition: slide]\nEach color bends differently — red least, violet most. This is dispersion. [Visual: color spectrum visible light wavelength] [Transition: slide]\nThe result is the stunning arc we call a rainbow. [Visual: double rainbow full rainbow arc landscape] [Transition: fade]",
+    "orientation": "landscape",
+    "voice": "en-US-JennyNeural",
+    "language": "english",
+    "sfx": true,
+    "captions": true,
+    "quality": "high",
+    "format": "16:9"
+  }
+]
