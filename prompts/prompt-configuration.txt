@@ -26,7 +26,7 @@ SCRIPT JSON CONFIG FIELDS
 │ grade            │ No       │ cinematic | warm | cool | vivid | neutral      │
 │ captions         │ No       │ burned | none | karaoke                        │
 │ captionTheme     │ No       │ minimal | bold | highContrast | softCard |     │
-│                  │          │ centerPop | topTag | neon                      │
+│                  │          │ centerPop | topTag                        │
 │ kenBurns         │ No       │ true | false (slow zoom effect)                │
 │ kineticText      │ No       │ true | false (kinetic typography)              │
 │ vignette         │ No       │ true | false (edge darkening)                  │
@@ -66,7 +66,7 @@ overrides win last:
   story:        Fade transition, warm grade, calm music, kinetic text, J-cut 0.6s
   product:      Slide transition, vivid grade, energetic music, SFX on cuts
   motivational: Zoomblur transition, cinematic grade, energetic music, karaoke captions
-  nature:       Fade transition, neutral grade, calm music, no kinetic text
+  nature:       Fade transition, cinematic grade, calm music, no kinetic text
 
 ADVANCED AI VERIFICATION (opt-in)
 
@@ -109,7 +109,7 @@ COMPLETE CONFIGURATION EXAMPLE
   "transition": "mixed",
   "grade": "vivid",
   "captions": "burned",
-  "captionTheme": "neon",
+  "captionTheme": "highContrast",
   "kenBurns": true,
   "kineticText": true,
   "sfx": true,

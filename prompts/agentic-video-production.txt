@@ -56,7 +56,7 @@ Embed structural tags directly in the script text:
 - [Transition: type] — scene transition: fade | slide | zoomblur | cut | mixed
 - [Grade: preset] — color grade: cinematic | warm | cool | vivid | neutral
 - [CaptionTheme: theme] — burned-caption style: minimal | bold | highContrast |
-  softCard | centerPop | topTag | neon
+  softCard | centerPop | topTag
 - [Kinetic: on] — enable kinetic typography animation
 - [KenBurns: on] — enable Ken Burns slow zoom effect
 - [Text: on] — add overlay text for that scene
@@ -74,8 +74,8 @@ If using Remotion motion graphics instead:
   diagram, abstract)
 - [GenMotion: free_description] — write bespoke Remotion TSX using
   <AbsoluteFill>, <Text>, <TransitionSeries>
-- Render via runRemotionController() or renderStillClip()
-  (see src/agentic/media/hermes-remotion-controller.ts)
+- Render via runRemotionController() (src/agentic/media/hermes-remotion-controller.ts:153)
+  or renderStillClip() (src/agentic/media/remotion-sequence.ts:158)
 
 PHASE 6: VOICEOVER GENERATION
 Generate narration via edge-tts (default, no API key) or the configured
@@ -138,7 +138,7 @@ See input/scripts/INPUT_FORMAT.md. Key fields:
 - transition: fade | slide | zoomblur | cut | mixed
 - grade: cinematic | warm | cool | vivid | neutral
 - captions: burned | none | karaoke
-- captionTheme: minimal | bold | highContrast | softCard | centerPop | topTag | neon
+- captionTheme: minimal | bold | highContrast | softCard | centerPop | topTag
 - kenBurns: true | false
 - kineticText: true | false
 - sfx: true | false

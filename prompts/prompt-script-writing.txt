@@ -28,12 +28,11 @@ INLINE TAGS (embed after each sentence inside the script text)
 Tag                 | Values                              | Description
 --------------------|--------------------------------------|--------------------------------------------
 [Visual: kw/file]   | keyword or filename in input/visuals/| Bind a visual to this scene
-[Transition: type]  | fade | slide | zoomblur | cut       | Scene transition effect
+[Transition: type]  | fade | slide | zoomblur | cut | mixed| Scene transition effect
 [Grade: preset]     | cinematic | warm | cool | vivid     | Color grading preset
-                           | neutral                               |
+                    | neutral                             |
 [CaptionTheme: t]   | minimal | bold | highContrast        | Burned-caption style
-                           | softCard | centerPop | topTag         |
-                           | neon                                  |
+                    | softCard | centerPop | topTag        |
 [Kinetic: on]       | on | off                            | Kinetic typography animation
 [KenBurns: on]      | on | off                            | Slow zoom effect
 [Text: on]          | on | off                            | Overlay text for scene
@@ -96,7 +95,7 @@ VIDEO-TYPE TEMPLATES (built into config.ts)
 | story         | Fade, warm, calm music         | Narrative storytelling      |
 | product       | Slide, vivid, energetic        | Product promos              |
 | motivational  | Zoomblur, cinematic, energetic | Inspirational reels         |
-| nature        | Fade, neutral, calm            | Nature/cinematic visuals    |
+| nature        | Fade, cinematic, calm           | Nature/cinematic visuals    |
 
 WORKFLOW
 1. Confirm topic, audience, platform, duration, tone
