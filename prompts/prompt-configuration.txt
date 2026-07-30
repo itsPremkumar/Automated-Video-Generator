@@ -1,0 +1,123 @@
+PIPELINE CONFIGURATION & CUSTOMIZATION PROMPT
+==============================================
+Target: Automated-Video-Generator (AVS) pipeline at C:\one\Automated-Video-Generator
+
+ROLE
+You are a pipeline configuration specialist. You customize every aspect of the
+AVS pipeline — from video presets and captions to AI verification and resource
+management — by editing script JSON and environment files.
+
+SCRIPT JSON CONFIG FIELDS
+
+┌──────────────────┬──────────┬────────────────────────────────────────────────┐
+│ Field            │ Required │ Description                                    │
+├──────────────────┼──────────┼────────────────────────────────────────────────┤
+│ id               │ No       │ Kebab-case output folder name                  │
+│ title            │ Yes      │ Descriptive video title (used in filename)     │
+│ script           │ Yes      │ Narrated text with inline tags                 │
+│ orientation      │ No       │ portrait (9:16) | landscape (16:9)             │
+│ aspect           │ No       │ 9:16 | 1:1 | 16:9                             │
+│ voice            │ No       │ Edge-TTS voice key (default: en-US-GuyNeural)  │
+│ language         │ No       │ Auto-selects voice (english, tamil, hindi...)  │
+│ videoType        │ No       │ facts | tutorial | news | story | product |    │
+│                  │          │ motivational | nature                          │
+│ preset           │ No       │ cinematic (default visual theme)               │
+│ transition       │ No       │ fade | slide | zoomblur | cut | mixed          │
+│ grade            │ No       │ cinematic | warm | cool | vivid | neutral      │
+│ captions         │ No       │ burned | none | karaoke                        │
+│ captionTheme     │ No       │ minimal | bold | highContrast | softCard |     │
+│                  │          │ centerPop | topTag | neon                      │
+│ kenBurns         │ No       │ true | false (slow zoom effect)                │
+│ kineticText      │ No       │ true | false (kinetic typography)              │
+│ vignette         │ No       │ true | false (edge darkening)                  │
+│ progressBar      │ No       │ true | false (show progress bar)               │
+│ sfx              │ No       │ true | false (sound effects on cuts)           │
+│ sfxOnCut         │ No       │ true | false (SFX on every scene cut)          │
+│ musicIntensity   │ No       │ calm | mid | energetic                         │
+│ musicQuery       │ No       │ Keywords for music selection                   │
+│ ttsProvider      │ No       │ edge-tts (default)                             │
+│ renderer         │ No       │ ffmpeg | remotion                              │
+│ backend          │ No       │ agent (deterministic) | vision (AI-powered)    │
+│ outputQuality    │ No       │ draft | medium | high                          │
+│ hardwareEncode   │ No       │ true | false (GPU acceleration)                │
+│ maxAttempts      │ No       │ Number of retry attempts (default 2)           │
+│ intro            │ No       │ { title, subtitle?, durationSec }              │
+│ outro            │ No       │ { ctaText, showSubscribe?, hashtags?,          │
+│                  │          │   durationSec }                                │
+│ exportAspects    │ No       │ ["16:9"] — additional export formats           │
+│ posterScene      │ No       │ Scene index for poster/thumbnail               │
+│ dryRun           │ No       │ true | false (skip render, inspect only)       │
+│ defaultVisual    │ No       │ Fallback visual file name                      │
+│ aiVerify         │ No       │ { enabled, checkSubjectMatch, checkWatermark,  │
+│                  │          │   checkSafety, finalMode }                     │
+│ brain            │ No       │ { maxCalls, maxFails } — AI circuit-breaker    │
+│ pruneWorkspaces  │ No       │ Number of workspaces to keep (default 2)       │
+│ agent            │ No       │ Per-job backend hooks (rarely needed)          │
+└──────────────────┴──────────┴────────────────────────────────────────────────┘
+
+VIDEO TYPE TEMPLATES (built-in, configured in src/agentic/config.ts)
+
+These presets are applied on top of your base preset, then your explicit
+overrides win last:
+
+  facts:        Fade transition, cinematic grade, mid music, kinetic text, J-cut 0.4s
+  tutorial:     Slide transition, neutral grade, calm music, kinetic text, J-cut 0.2s
+  news:         Cut transition, cool grade, mid music, landscape, no kinetic text
+  story:        Fade transition, warm grade, calm music, kinetic text, J-cut 0.6s
+  product:      Slide transition, vivid grade, energetic music, SFX on cuts
+  motivational: Zoomblur transition, cinematic grade, energetic music, karaoke captions
+  nature:       Fade transition, neutral grade, calm music, no kinetic text
+
+ADVANCED AI VERIFICATION (opt-in)
+
+  "aiVerify": {
+    "enabled": true,
+    "minConfidence": 0.7,
+    "verifyOnAcquire": true,     // Check downloaded assets
+    "verifyOnApprove": true,     // Gate before render
+    "verifyOnEdit": true,        // Check after edits
+    "verifyOnRender": true,      // Check final output
+    "finalMode": "vision",       // signal | vision
+    "checkSubjectMatch": true,   // Does visual match script topic?
+    "checkWatermark": true,      // Detect unwanted watermarks
+    "checkSafety": true,         // NSFW / violent content check
+    "checkMusicMood": true,      // Does music match intended mood?
+    "checkSpeechClarity": true,  // Is voiceover clear?
+    "checkBackgroundNoise": true // Unwanted noise in audio
+  }
+
+ENVIRONMENT VARIABLES (.env)
+
+  PEXELS_API_KEY=your_key        # Optional, improves image/video results
+  VIDEO_VOICE=en-US-GuyNeural    # Global default voice
+  VIDEO_ORIENTATION=portrait     # Global default orientation
+  AGENTIC_WAVE_SIZE=3            # Batch parallelism
+  AGENTIC_PREVIEW=1              # Always preview mode
+  AGENTIC_KEEP_WORKSPACES=2      # Workspace retention
+  OPENVERSE_API_KEY=             # Optional, for Openverse
+  TTS_PROVIDER=edge-tts          # Default TTS backend
+
+COMPLETE CONFIGURATION EXAMPLE
+
+```json
+{
+  "id": "my-custom-video",
+  "title": "My Fully Customized Video",
+  "script": "Scene one. [Visual: tech] [Transition: fade] [Grade: cinematic]\nScene two. [Visual: code] [Transition: slide] [Kinetic: on]\nScene three. [Visual: future] [Transition: zoomblur] [Grade: cool]\nOutro. [Visual: subscribe] [Transition: fade] [Text: on]",
+  "orientation": "portrait",
+  "videoType": "product",
+  "transition": "mixed",
+  "grade": "vivid",
+  "captions": "burned",
+  "captionTheme": "neon",
+  "kenBurns": true,
+  "kineticText": true,
+  "sfx": true,
+  "musicIntensity": "energetic",
+  "outputQuality": "high",
+  "hardwareEncode": true,
+  "aiVerify": { "enabled": true, "checkSubjectMatch": true },
+  "intro": { "title": "My Product", "durationSec": 3 },
+  "outro": { "ctaText": "Subscribe now", "showSubscribe": true, "hashtags": ["#tech", "#product"] }
+}
+```

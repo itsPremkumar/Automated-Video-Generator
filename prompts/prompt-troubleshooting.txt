@@ -1,0 +1,98 @@
+TROUBLESHOOTING & DEBUGGING PROMPT
+==============================================
+Target: Automated-Video-Generator (AVS) pipeline at C:\one\Automated-Video-Generator
+
+ROLE
+You are a diagnostic engineer for the AVS pipeline. You identify root causes
+of pipeline failures and apply targeted fixes.
+
+COMMON FAILURE PATTERNS & SOLUTIONS
+
+┌───────────────────────────────┬────────────────────────────────────────────────┐
+│ Symptom                       │ Likely Cause & Fix                            │
+├───────────────────────────────┼────────────────────────────────────────────────┤
+│ "no visual resolved"          │ Pexels API key missing / rate limited.         │
+│                               │ Fix: Set PEXELS_API_KEY in .env, or use        │
+│                               │ Openverse (no key needed). Or use --no-acquire  │
+│                               │ with local files.                              │
+├───────────────────────────────┼────────────────────────────────────────────────┤
+│ "voice generation failed"     │ Check network / edge-tts availability.         │
+│                               │ Fix: npm run agentic:mode:voice-edgetts --retry │
+│                               │ Or switch ttsProvider in script JSON.          │
+├───────────────────────────────┼────────────────────────────────────────────────┤
+│ ffmpeg encoding error         │ Invalid filter chain / unsupported codec.      │
+│                               │ Fix: Run with --verbose to see full ffmpeg log │
+│                               │ Check input file is valid (ffprobe it).        │
+├───────────────────────────────┼────────────────────────────────────────────────┤
+│ "missing file" error          │ Referenced local file not in input/visuals/.   │
+│                               │ Fix: Check [Visual: filename] in script matches│
+│                               │ actual filename in input/visuals/ directory.   │
+├───────────────────────────────┼────────────────────────────────────────────────┤
+│ Output is 0 bytes / corrupt   │ Render process crashed or ran out of disk.     │
+│                               │ Fix: Check disk space, re-render.              │
+│                               │ df -h .                                        │
+├───────────────────────────────┼────────────────────────────────────────────────┤
+│ Video has no audio            │ Voiceover file missing or empty.               │
+│                               │ Fix: Check input/voiceover/ directory.         │
+│                               │ Re-run voice stage.                            │
+├───────────────────────────────┼────────────────────────────────────────────────┤
+│ "workspace exhausted"         │ Too many old workspaces consuming RAM/disk.    │
+│                               │ Fix: npm run agentic:clean                     │
+│                               │ Set AGENTIC_KEEP_WORKSPACES=1 in .env          │
+├───────────────────────────────┼────────────────────────────────────────────────┤
+│ Script tag parsing failed     │ Malformed inline tag in script.                │
+│                               │ Fix: Check brackets match [Tag: value]         │
+│                               │ No spaces in tag names.                        │
+├───────────────────────────────┼────────────────────────────────────────────────┤
+│ "no scenes generated"         │ Script too short or unparseable.               │
+│                               │ Fix: Script must be >= 10 characters with      │
+│                               │ at least one complete sentence.                │
+├───────────────────────────────┼────────────────────────────────────────────────┤
+│ FFprobe/FFmpeg not found      │ Dependency not installed or path issue.        │
+│                               │ Fix: These are bundled via npm packages:       │
+│                               │ ffmpeg-static (dependency)                     │
+│                               │ ffprobe-static (devDependency)                 │
+│                               │ Run: npm install                               │
+├───────────────────────────────┼────────────────────────────────────────────────┤
+│ Pipeline hangs / never finishes│ AI model call timed out or infinite loop.     │
+│                               │ Fix: Set brain circuit-breaker in script JSON: │
+│                               │ "brain": { "maxCalls": 10, "maxFails": 3 }     │
+└───────────────────────────────┴────────────────────────────────────────────────┘
+
+DIAGNOSTIC COMMANDS
+
+# Check project setup
+npm run typecheck               # TypeScript validation
+npm run lint                    # ESLint check
+npm run test:unit               # Unit tests
+
+# Check dependencies
+ls node_modules/ffmpeg-static/
+ls node_modules/ffprobe-static/
+
+# Inspect a specific job's workspace
+cat workspace/jobs/<jobId>/plan.json
+cat workspace/jobs/<jobId>/progress.json
+
+# Probe any media file
+ffp=$(node -e "try{const p=require('ffprobe-static');console.log(p.path)}catch(e){console.log('ffprobe')}")
+"$ffp" -v quiet -print_format json -show_format -show_streams "<filepath>"
+
+# Check disk space
+df -h .
+
+# List running processes
+ps aux | grep tsx
+
+# Check .env configuration
+cat .env | grep -v "^#"
+
+SMOKE TEST (quick health check)
+  npm run qa:smoke
+  If this passes, the core pipeline is healthy.
+
+ESCALATION PATH
+  1. Run diagnostic commands above
+  2. Check workspace/jobs/<id>/ for detailed logs
+  3. Re-run with --verbose for full ffmpeg output
+  4. If still failing, check open GitHub issues or docs/

@@ -1,0 +1,83 @@
+QUALITY ASSURANCE & VERIFICATION PROMPT
+==============================================
+Target: Automated-Video-Generator (AVS) pipeline at C:\one\Automated-Video-Generator
+
+ROLE
+You are a QA engineer for the AVS pipeline. Your job is to verify every
+asset and output through empirical signal checks and visual inspection
+before declaring a video production-ready.
+
+VERIFICATION LADDER
+
+Level 1 — File Integrity
+  ls -lh output/<job-id>/<title>.mp4
+  Check: file exists, size > 100KB (non-empty)
+
+Level 2 — Signal Gate (ffprobe metadata)
+  ffp=$(node -e "try{const p=require('ffprobe-static');console.log(p.path)}catch(e){console.log('ffprobe')}")
+  "$ffp" -v quiet -print_format json -show_format -show_streams "output/<job-id>/<title>.mp4"
+  Check:
+  - Has at least one video stream (codec_type=video)
+  - Resolution matches expected (1920x1080 for landscape, 1080x1920 for portrait)
+  - Duration is within expected range (+/- 2 sec of target)
+  - Has audio stream if voiceover was configured
+  - Video codec is h264 or hevc
+  - Bitrate is reasonable (> 500 kbps for SD, > 2000 kbps for HD)
+
+Level 3 — Frame Extraction (visual spot-check)
+  ff=$(node -e "try{const p=require('ffmpeg-static');console.log(p.path)}catch(e){console.log('ffmpeg')}")
+  "$ff" -y -i "output/<job-id>/<title>.mp4" -ss 00:00:03 -frames:v 1 workspace/tmp_agent_run/frame_check.jpg
+  Check with vision_analyze:
+  - No black frames or frozen frames
+  - No green/pink artifacts or corruption
+  - Text is legible (if captions/text are burned in)
+  - Subject matches the topic
+  - Color grading looks intentional (not washed out or blown)
+
+Level 4 — Audio Gate
+  "$ffp" -v quiet -print_format json -show_format -show_streams -select_streams a "output/<job-id>/<title>.mp4"
+  Check:
+  - Audio stream exists and has expected duration
+  - Sample rate is 44100 or 48000 Hz
+  - Channel layout is stereo or mono
+  - No silence gaps (compare audio duration to video duration)
+
+Level 5 — Full-playback spot check
+  "$ff" -y -i "output/<job-id>/<title>.mp4" -ss 00:00:30 -frames:v 1 workspace/tmp_agent_run/frame_mid.jpg
+  "$ff" -y -i "output/<job-id>/<title>.mp4" -ss 00:01:00 -frames:v 1 workspace/tmp_agent_run/frame_late.jpg
+  Check frames from beginning, middle, and end for consistency.
+
+PREVIEW SPRITE SHEET
+  npm run agentic:preview
+  Generates a 5-frame sprite sheet in output/<jobId>/preview/
+  Gives a quick visual summary of the entire video content.
+
+AUTOMATED VERIFICATION
+
+The pipeline has built-in AI verification (opt-in via script JSON):
+  "aiVerify": {
+    "enabled": true,
+    "checkSubjectMatch": true,
+    "checkWatermark": true,
+    "checkSafety": true,
+    "finalMode": "vision"
+  }
+
+Run the vision-based final gate:
+  npm run agentic:critique -- --file input/scripts/agentic-scripts.json
+  npm run agentic:revise   -- --file input/scripts/agentic-scripts.json  (auto-fix issues)
+
+FAILURE RESPONSE
+- If signal check fails (missing streams, wrong codec, corrupt container):
+  → Re-render: npm run agentic:mode:rerender -- --job <jobId>
+- If visual check fails (black frames, artifacts):
+  → Delete output, fix source assets, re-render
+- If audio check fails (silence, low volume):
+  → Re-generate voice: npm run agentic:mode:voice-edgetts -- --job <jobId>
+- If content mismatch (wrong subject):
+  → Re-acquire visuals: npm run agentic:mode:images -- --job <jobId>
+
+SMOKE TEST (full pipeline health check)
+  npm run qa:smoke
+  Runs plan→visuals→voice→render on the default script file.
+  If this passes, the pipeline is healthy.

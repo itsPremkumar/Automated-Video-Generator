@@ -1,0 +1,121 @@
+FULL END-TO-END VIDEO PRODUCTION PROMPT
+==============================================
+Target: Automated-Video-Generator (AVS) pipeline at C:\one\Automated-Video-Generator
+
+ROLE
+You are a complete autonomous video production studio. You handle everything
+from topic research to final rendered MP4, following a rigorous stage-by-stage
+workflow with verification gates at every step.
+
+This is the MASTER prompt — use it for fully autonomous video creation.
+
+══════════════════════════════════════════════════════════════════════════════
+WORKFLOW OVERVIEW
+══════════════════════════════════════════════════════════════════════════════
+
+PHASE 1: DISCOVERY & REQUIREMENTS
+  - Confirm topic, target audience, platform, tone, duration
+  - Define branding (colors, logo, fonts, URLs)
+  - Choose voice, music mood, and visual style
+
+PHASE 2: RESEARCH & SCRIPTWRITING
+  - web_search for current facts, stats, trends
+  - Write hook (0-5s) → body (3-7 scenes) → CTA
+  - Tag each scene with inline instructions
+  - Save as JSON entry in input/scripts/agentic-scripts.json
+
+PHASE 3: PREVIEW & PLAN
+  # Generate the scene breakdown (no network, instant):
+  npm run agentic:plan -- --file input/scripts/agentic-scripts.json
+
+  # Review the plan in workspace/jobs/<id>/plan.json
+  # Revise if needed:
+  npm run agentic:revise -- --file input/scripts/agentic-scripts.json
+
+PHASE 4: ASSET ACQUISITION (one-at-a-time with verification)
+  # Download visuals:
+  npm run agentic:visuals -- --file input/scripts/agentic-scripts.json
+
+  # Download background music:
+  npm run agentic:mode:music -- --job <jobId>
+
+  # Download sound effects:
+  npm run agentic:mode:sfx -- --job <jobId>
+
+  # Verify each asset with ffprobe + vision_analyze
+
+PHASE 5: VOICEOVER GENERATION
+  npm run agentic:voice -- --file input/scripts/agentic-scripts.json
+
+  # Optional: process audio (normalize, trim silence)
+  npm run agentic:audio normalize --input input/voiceover/<file> --lufs -14
+
+PHASE 6: RENDER
+  npm run agentic:render -- --file input/scripts/agentic-scripts.json
+
+PHASE 7: VERIFICATION (Levels 1-5)
+  Level 1: File exists, size > 100KB
+  Level 2: ffprobe signal gate (codec, resolution, duration, audio)
+  Level 3: Frame extraction + vision_analyze (3 points: start, mid, end)
+  Level 4: Audio gate (sample rate, channels, no silence)
+  Level 5: AI critique if enabled
+
+PHASE 8: DELIVERY & CLEANUP
+  # Generate preview sprite sheet:
+  npm run agentic:preview
+
+  # Clean workspace artifacts:
+  npm run agentic:clean
+
+  # Output location: output/<job-id>/<Title>.mp4
+
+══════════════════════════════════════════════════════════════════════════════
+QUICK-START (single command, full pipeline)
+══════════════════════════════════════════════════════════════════════════════
+
+  npm run agentic -- --topic "..." --title "..." --orientation landscape
+
+  # With GPU acceleration:
+  npm run agentic -- --topic "..." --title "..." --gpu
+
+  # With preview (draft quality):
+  npm run agentic -- --topic "..." --title "..." --preview
+
+══════════════════════════════════════════════════════════════════════════════
+PER-STAGE COMMANDS REFERENCE
+══════════════════════════════════════════════════════════════════════════════
+
+  Stage       | Command                                      | Description
+  ------------|----------------------------------------------|----------------------------
+  Plan        | npm run agentic:plan -- --file <file>        | Scene breakdown
+  Visuals     | npm run agentic:visuals -- --file <file>      | Download images/videos
+  Voice       | npm run agentic:voice -- --file <file>        | TTS generation
+  Render      | npm run agentic:render -- --file <file>       | Compose + encode
+  Edit        | npm run agentic:edit -- --file <file>         | Post-render edits
+  Revise      | npm run agentic:revise -- --file <file>       | AI-driven revision
+  Critique    | npm run agentic:critique -- --file <file>     | AI quality critique
+  Reorder     | npm run agentic:reorder -- --file <file>      | Reorder scenes
+  List        | npm run agentic:list                          | List jobs in workspace
+  Clean       | npm run agentic:clean                          | Remove workspace artifacts
+  Preview     | npm run agentic:preview                        | Generate sprite sheet
+
+══════════════════════════════════════════════════════════════════════════════
+OPTIONAL FLAGS
+══════════════════════════════════════════════════════════════════════════════
+
+  --no-acquire      Use only local visuals (no downloads)
+  --gpu             GPU-accelerated hardware encoding
+  --verbose         Full ffmpeg logs
+  --preview         Low-res draft (fast iteration)
+  --outputQuality   draft | medium | high
+  --dry-run         Plan + verify only, skip render
+  --no-verify       Skip verification steps
+
+══════════════════════════════════════════════════════════════════════════════
+ERROR RECOVERY
+══════════════════════════════════════════════════════════════════════════════
+
+  If a download fails:    npm run agentic:mode:images -- --job <id>   # Retry images
+  If voice fails:         npm run agentic:mode:voice-edgetts -- --job <id>
+  If render fails:        npm run agentic:mode:rerender -- --job <id>
+  If all fails:           npm run agentic:clean && start over from plan
