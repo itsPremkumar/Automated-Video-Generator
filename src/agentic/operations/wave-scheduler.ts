@@ -86,8 +86,9 @@ export async function runBatchWaves(
 
         console.log(`\n  Wave ${waveNumber}/${totalWaves}: jobs ${start + 1}-${end} (${waveJobs.length} concurrent)`);
 
-        // Run all jobs in this wave in parallel
-        const wavePromises = waveJobs.map((job) => runSingleJob(job));
+        // Run all jobs in this wave in parallel (with bounded retries — a
+        // transient network/DNS blip must not permanently kill a job)
+        const wavePromises = waveJobs.map((job) => runSingleJobWithRetry(job));
         const waveResults = await Promise.allSettled(wavePromises);
 
         const waveReport: WaveReport = {
@@ -307,4 +308,33 @@ async function cleanupRam(): Promise<void> {
     } catch {
         /* cleanup is best-effort */
     }
+}
+
+/**
+ * Run a single job, retrying on failure. A transient network/DNS outage
+ * (e.g. `getaddrinfo ENOTFOUND videos.pexels.com`) previously killed a job
+ * permanently — the gate rejected placeholder-card assets and the batch
+ * moved on. Retrying the same job a bounded number of times with a short
+ * backoff lets it succeed once connectivity recovers. Deterministic
+ * failures (bad config, bad topic) simply fail all attempts and surface as
+ * failed.
+ *
+ * Retry count/backoff are tunable via env: AGENTIC_JOB_RETRIES (default 2)
+ * and AGENTIC_RETRY_DELAY_MS (default 15000).
+ */
+async function runSingleJobWithRetry(job: AgenticCliJob): Promise<WaveResult> {
+    const maxRetries = Number(process.env.AGENTIC_JOB_RETRIES ?? 2);
+    const delayMs = Number(process.env.AGENTIC_RETRY_DELAY_MS ?? 15000);
+    let lastResult: WaveResult | null = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        if (attempt > 0) {
+            const wait = delayMs * attempt; // 15s, 30s, …
+            console.log(`    🔁 Retrying "${job.title}" (attempt ${attempt}/${maxRetries}) after ${Math.round(wait / 1000)}s…`);
+            await new Promise((resolve) => setTimeout(resolve, wait));
+        }
+        lastResult = await runSingleJob(job);
+        if (lastResult.success) return lastResult;
+    }
+    return lastResult!;
 }
