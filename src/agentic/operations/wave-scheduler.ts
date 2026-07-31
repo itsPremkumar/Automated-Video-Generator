@@ -252,6 +252,30 @@ async function runSingleJob(job: AgenticCliJob): Promise<WaveResult> {
 async function cleanupRam(): Promise<void> {
     try {
         const { execSync } = require('child_process');
+        // Never kill our own process tree — the batch's tsx/node process can
+        // legitimately exceed 500MB while downloading UHD videos / running
+        // ffmpeg children. Killing it would kill the batch itself.
+        const ownPid = process.pid;
+        let ownTree = new Set<number>([ownPid]);
+        try {
+            // Collect all descendants of our process (children, grandchildren…)
+            let frontier = [ownPid];
+            for (let depth = 0; depth < 8 && frontier.length > 0; depth++) {
+                const csv = String(execSync(
+                    `wmic process where "ParentProcessId=${frontier.join(' or ParentProcessId=')}" get ProcessId /format:csv 2>NUL`,
+                    { encoding: 'utf8', timeout: 5000, stdio: ['pipe', 'pipe', 'pipe'] }
+                ));
+                const kids = csv
+                    .split('\n')
+                    .map((l: string) => l.trim())
+                    .filter((l: string) => l && /^\d+$/.test(l))
+                    .map((l: string) => Number(l));
+                ownTree = new Set([...ownTree, ...kids]);
+                frontier = kids;
+            }
+        } catch {
+            /* descendant enumeration failed — own PID is still protected */
+        }
         // List processes by memory usage, kill any over 500MB
         // This is a best-effort cleanup — failures are silently ignored
         try {
@@ -266,6 +290,8 @@ async function cleanupRam(): Promise<void> {
                     const pid = parts[1]?.trim();
                     const name = parts[2]?.trim();
                     if (pid && name && !name.includes('hermes') && !name.includes('electron')) {
+                        const pidNum = Number(pid);
+                        if (!pidNum || ownTree.has(pidNum)) continue; // never kill ourselves/descendants
                         try {
                             execSync(`taskkill /PID ${pid} /F`, { stdio: 'ignore', timeout: 2000 });
                             console.log(`    🧹 Killed RAM hog: ${name} (PID ${pid})`);

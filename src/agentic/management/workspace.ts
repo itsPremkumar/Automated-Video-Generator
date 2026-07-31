@@ -21,7 +21,10 @@ export interface AgenticWorkspace {
     audioDir: string;
 }
 
-const WORKSPACES_ROOT = resolveProjectPath('workspace', 'jobs');
+const WORKSPACES_ROOT =
+    process.env.AGENTIC_WORKSPACES_ROOT && process.env.AGENTIC_WORKSPACES_ROOT.trim() !== ''
+        ? path.resolve(process.env.AGENTIC_WORKSPACES_ROOT)
+        : resolveProjectPath('workspace', 'jobs');
 export const AGENTIC_OUTPUT_DIR = resolveProjectPath('output');
 export const AGENTIC_TMP_DIR = resolveProjectPath('workspace', 'tmp');
 

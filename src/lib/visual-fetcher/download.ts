@@ -175,7 +175,20 @@ export async function downloadMedia(
             shouldRetry: isDownloadRetryable,
         });
 
-        if (fs.existsSync(partPath)) fs.renameSync(partPath, outputPath);
+        if (fs.existsSync(partPath)) {
+            // On Windows, rename over an existing file fails with EPERM.
+            // A stale outputPath means a previous (possibly concurrent) attempt
+            // produced it — drop it so the fresh download wins.
+            if (fs.existsSync(outputPath)) fs.rmSync(outputPath, { force: true });
+            fs.renameSync(partPath, outputPath);
+        } else if (!fs.existsSync(outputPath)) {
+            // The .part file vanished between streamToFile finishing and the
+            // rename (e.g. a concurrent session pruning workspace/jobs). Treat
+            // it as a clean, retryable failure instead of a raw ENOENT.
+            throw new Error(
+                `download produced no file for ${filename}: .part file vanished after stream completed (concurrent cleanup?)`,
+            );
+        }
 
         // Cache the downloaded file
         const stat = fs.statSync(outputPath);
