@@ -156,9 +156,9 @@ export async function applyBrandKit(
         // Build per-segment scale (+ optional brand filter on the MAIN clip).
         const filterParts: string[] = [];
         segments.forEach((_, i) => {
-            let scale = `[${i}:v]scale=${dims.w}:${dims.h}:force_original_aspect_ratio=increase,crop=${dims.w}:${dims.h}[v${i}]`;
+            let scale = `[${i}:v]scale=${dims.w}:${dims.h}:force_original_aspect_ratio=increase,crop=${dims.w}:${dims.h},setsar=1[v${i}]`;
             if (i === mainIdx && needsVf)
-                scale = `[${i}:v]scale=${dims.w}:${dims.h}:force_original_aspect_ratio=increase,crop=${dims.w}:${dims.h},${vf}[v${i}]`;
+                scale = `[${i}:v]scale=${dims.w}:${dims.h}:force_original_aspect_ratio=increase,crop=${dims.w}:${dims.h},setsar=1,${vf}[v${i}]`;
             filterParts.push(scale);
         });
 

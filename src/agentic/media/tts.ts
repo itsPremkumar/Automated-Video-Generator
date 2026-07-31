@@ -23,6 +23,52 @@ const ffmpeg: string = require('ffmpeg-static');
 const { execFileSync } = require('child_process');
 const os = require('os');
 
+// Voice-group budget: the Windows SAPI fallback can legitimately take ~10s+
+// per scene (PowerShell + synthesis), so a 25s whole-group cap raced it and
+// every scene silently degraded to a sine-tone placeholder. 120s covers a
+// 7-scene SAPI batch; override with AVS_VOICE_GROUP_TIMEOUT_MS if needed.
+const VOICE_GROUP_TIMEOUT_MS = Number(process.env.AVS_VOICE_GROUP_TIMEOUT_MS ?? 120_000);
+// Real speech WAVs (44KB/s @22kHz mono) / MP3s are always > 16KB; the silent
+// fallback (anullsrc) and broken files are far smaller. Used to distinguish
+// genuine speech salvage candidates from junk.
+const VOICE_FILE_MIN_BYTES = 16_384;
+
+/** ffprobe duration of an audio file (seconds), or 0 when unreadable. */
+function probeAudioDurationSec(file: string): number {
+    try {
+        const fp: string = require('ffprobe-static').path ?? require('ffprobe-static');
+        const out = execFileSync(fp, ['-v', 'quiet', '-show_entries', 'format=duration', '-of', 'csv=p=0', file], { encoding: 'utf8', timeout: 15000 });
+        const d = parseFloat(String(out).trim());
+        return isNaN(d) || d <= 0 ? 0 : d;
+    } catch { return 0; }
+}
+
+/**
+ * Re-scan `audioDir` for real speech files (`scene_N_voice.wav/.mp3`) that a
+ * voice-group timeout/cancel may have orphaned on disk, and return them as
+ * usable voiceover entries. Prevents a group failure from degrading EVERY
+ * scene to a sine-tone placeholder when speech was already synthesized.
+ */
+export function salvageVoiceFiles(
+    audioDir: string,
+    scenes: { sceneNumber: number; durationSec: number }[],
+): Map<number, { path: string; duration: number; captionSegments: undefined }> {
+    const out = new Map<number, { path: string; duration: number; captionSegments: undefined }>();
+    for (const s of scenes) {
+        for (const ext of ['wav', 'mp3']) {
+            const cand = path.join(audioDir, `scene_${s.sceneNumber}_voice.${ext}`);
+            if (!fs.existsSync(cand)) continue;
+            try {
+                if (fs.statSync(cand).size > VOICE_FILE_MIN_BYTES) {
+                    out.set(s.sceneNumber, { path: cand, duration: probeAudioDurationSec(cand) || s.durationSec, captionSegments: undefined });
+                    break;
+                }
+            } catch { /* unreadable file — try next */ }
+        }
+    }
+    return out;
+}
+
 export interface SceneVoiceover {
     sceneIndex: number;
     audioPath: string;
@@ -126,12 +172,19 @@ export async function generateAgenticVoiceovers(
             try {
                 const map = await withTimeout(
                     generateVoiceovers(engineScenes as any, audioDir, { voice: v } as any),
-                    25_000,
+                    VOICE_GROUP_TIMEOUT_MS,
                     `voice generation timed out for "${v}"`,
                 );
                 for (const [k, val] of map) allResults.set(k, val);
             } catch (e: any) {
                 errors.push(`${v}: ${e?.message}`);
+                // SALVAGE (BUG FIX): the group promise rejection above discards
+                // the whole batch, but scenes that ALREADY completed — e.g. the
+                // Windows SAPI fallback writing scene_N_voice.wav — are real
+                // speech sitting on disk. Without this re-scan EVERY scene
+                // degrades to a sine-tone placeholder even though speech exists,
+                // silently producing a video with NO spoken voiceover.
+                for (const [sn, entry] of salvageVoiceFiles(audioDir, scenes)) allResults.set(sn, entry);
             }
         }
 

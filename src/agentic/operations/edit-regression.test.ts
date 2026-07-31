@@ -64,7 +64,7 @@ test.before(async () => {
     execFileSync(ffmpeg, ['-y', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=2', '-c:a', 'libmp3lame', tone], { timeout: 60000 });
 });
 
-test.after(() => { try { fs.rmSync(TMP, { recursive: true, force: true }); } catch {} });
+test.after(() => { try { fs.rmSync(TMP, { recursive: true, force: true }); } catch { /* ignore cleanup errors */ } });
 
 const skip = hasFfmpeg() ? {} : { skip: 'ffmpeg-static unavailable' };
 

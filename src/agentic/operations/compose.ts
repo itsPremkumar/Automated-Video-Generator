@@ -514,10 +514,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     const watermarkPath = overlay.watermark ? path.join(inputDir, overlay.watermark) : undefined;
     let withOverlays = baseVideo;
     if (vf.length > 0) {
-        const ov = path.join(outDir, 'overlays.mp4');
-        const args = ['-y', '-i', baseVideo, '-vf', vf.join(','), '-c:v', 'libx264', '-preset', 'veryfast', ov];
-        try { execFileSync(ff(), args, { stdio: 'ignore', timeout: 120000 }); if (fs.existsSync(ov)) withOverlays = ov; }
-        catch (e: any) { console.warn(`  ⚠ overlay ffmpeg failed: ${String(e?.stderr ?? e?.message).slice(0, 300)}`); /* keep base */ }
+        withOverlays = applyOverlays(baseVideo, vf, outDir);
     }
     if (watermarkPath && fs.existsSync(watermarkPath)) {
         const wm = path.join(outDir, 'watermarked.mp4');
@@ -688,6 +685,26 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     return result;
 }
 
+/** Apply a (possibly huge) chain of video filters as burned overlays on top of
+ *  `baseVideo`, producing `overlays.mp4` in `outDir`. Returns the overlay
+ *  output path on success, or the unchanged `baseVideo` on failure.
+ *
+ *  The graph is passed via `-filter_script:v <file>` instead of an inline
+ *  `-vf`: a per-word kinetic caption chain × many scenes easily exceeds the
+ *  Windows 32,767-char command line, and `spawnSync` then throws
+ *  ENAMETOOLONG — which used to silently drop ALL text (captions, intro,
+ *  outro) while keeping the bare base video. */
+export function applyOverlays(baseVideo: string, vf: string[], outDir: string): string {
+    if (vf.length === 0 || !baseVideo || !fs.existsSync(baseVideo)) return baseVideo;
+    const ov = path.join(outDir, 'overlays.mp4');
+    const script = path.join(outDir, 'overlays_filter.txt');
+    fs.writeFileSync(script, vf.join(','));
+    const args = ['-y', '-i', baseVideo, '-filter_script:v', script, '-c:v', 'libx264', '-preset', 'veryfast', ov];
+    try { execFileSync(ff(), args, { stdio: 'ignore', timeout: 120000 }); return fs.existsSync(ov) && fs.statSync(ov).size > 0 ? ov : baseVideo; }
+    catch (e: any) { console.warn(`  ⚠ overlay ffmpeg failed: ${String(e?.stderr ?? e?.message).slice(0, 300)}`); return baseVideo; }
+    finally { try { fs.rmSync(script, { force: true }); } catch { /* ignore */ } }
+}
+
 function estimateDur(sceneCount: number): number {
     return Math.max(6, sceneCount * 3);
 }
@@ -708,7 +725,7 @@ async function buildSlideshow(visuals: string[], audios: string[], W: number, H:
         if (isImg) {
             // Hold each image for its real scene duration at the target resolution.
             try {
-                execFileSync(ff(), ['-y', '-loop', '1', '-i', v, '-t', hold, '-vf', `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}`, '-r', '25', '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-preset', 'veryfast', clip], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 });
+                execFileSync(ff(), ['-y', '-loop', '1', '-i', v, '-t', hold, '-vf', `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},setsar=1`, '-r', '25', '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-preset', 'veryfast', clip], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 });
             } catch (e: any) { console.warn(`  ⚠ scene ${i} image encode failed: ${String(e?.stderr ?? e?.message).slice(0, 300)}`); return; }
         } else {
             // Re-encode clip to target size/rate AND enforce the scene's real
@@ -716,7 +733,7 @@ async function buildSlideshow(visuals: string[], audios: string[], W: number, H:
             // a still-image-derived FX clip that is only 1 frame long) and -t
             // trims longer ones, so every scene matches its voiceover length.
             try {
-                execFileSync(ff(), ['-y', '-stream_loop', '-1', '-i', v, '-t', hold, '-vf', `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H}`, '-r', '25', '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-preset', 'veryfast', clip], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 90000 });
+                execFileSync(ff(), ['-y', '-stream_loop', '-1', '-i', v, '-t', hold, '-vf', `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},setsar=1`, '-r', '25', '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-preset', 'veryfast', clip], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 90000 });
             } catch (e: any) { console.warn(`  ⚠ scene ${i} clip encode failed: ${String(e?.stderr ?? e?.message).slice(0, 300)}`); return; }
         }
         if (fs.existsSync(clip) && fs.statSync(clip).size > 0) sceneClips.push(clip);
@@ -752,7 +769,7 @@ async function buildSlideshow(visuals: string[], audios: string[], W: number, H:
  * Each scene clip is (re)trimmed to its exact hold duration so the xfade
  * offsets line up; the last clip keeps its full hold (no trailing fade).
  */
-function crossfadeSlideshow(clips: string[], W: number, H: number, out: string, durations?: number[], transitions?: (string | undefined)[], defaultTransition: string = 'fade', xfDurByScene?: (i: number) => number, xfCurve?: string): string | undefined {
+export function crossfadeSlideshow(clips: string[], W: number, H: number, out: string, durations?: number[], transitions?: (string | undefined)[], defaultTransition: string = 'fade', xfDurByScene?: (i: number) => number, xfCurve?: string): string | undefined {
     const fps = 25;
     const durOf = (i: number) => Math.max(0.5, durations?.[i] ?? DEFAULT_SCENE_SEC);
     const tDurOf = (i: number) => xfDurByScene ? Math.min(2, Math.max(0.1, xfDurByScene(i))) : 0.4;
@@ -767,11 +784,17 @@ function crossfadeSlideshow(clips: string[], W: number, H: number, out: string, 
     }
     // Build xfade chain. Input k is trimmed[k] (label [k:v]).
     // offset_i = sum(dur_0..dur_{i-1}) - i*segDur  (overlapping fades).
+    // NOTE: the offset must be computed BEFORE emitting transition i —
+    // using the previous loop's offset (as the original code did) puts
+    // transition 0 at t=0 and shifts every later transition one scene
+    // early, which silently truncates the whole chain to ~scene 0 length
+    // (ffmpeg exits 0 on the degenerate graph, so it shipped undetected).
     const segs: string[] = [];
     let offset = 0;
     for (let i = 1; i < trimmed.length; i++) {
         const kind = (transitions?.[i - 1] ?? defaultTransition ?? 'fade');
         const segDur = tDurOf(i - 1);
+        offset += durOf(i - 1) - segDur;
         const prevLabel = i === 1 ? `[0:v]` : `[v${i - 1}]`;
         if (kind === 'cut') {
             // hard cut: xfade with ~0 duration keeps the graph valid.
@@ -790,7 +813,6 @@ function crossfadeSlideshow(clips: string[], W: number, H: number, out: string, 
                 : 'fade';
             segs.push(`${prevLabel}[${i}:v]xfade=transition=${ttype}:duration=${segDur.toFixed(2)}:offset=${offset.toFixed(3)}[v${i}]`);
         }
-        offset += durOf(i - 1) - segDur;
     }
     const last = trimmed.length - 1;
     // Chain the xfade segments with ';' (NOT ',') and apply format to the final
@@ -986,7 +1008,7 @@ function applyAnimatedZoom(clipPath: string, sceneIndex: number, job: any, workD
     const zStart = zoom.start;
     const zEnd = zoom.end;
     // Linear interpolation of zoom factor over the scene duration
-    const filter = `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},zoompan=z='if(lte(zoom,${zEnd}),min(zoom*1.005,${zEnd}),${zEnd})':d=${frames}:s=${W}x${H}:fps=${fps}`;
+    const filter = `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},zoompan=z='if(lte(zoom,${zEnd}),min(zoom*1.005,${zEnd}),${zEnd})':d=${frames}:s=${W}x${H}:fps=${fps},setsar=1`;
     try {
         execFileSync(ff(), ['-y', '-i', clipPath, '-vf', filter, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 90000 });
         return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : null;
@@ -1014,7 +1036,7 @@ function applyPanAnimation(clipPath: string, sceneIndex: number, job: any, workD
     // Use crop with moving origin (pan effect)
     const cropW = Math.min(W, Math.round(W * 0.8));
     const cropH = Math.min(H, Math.round(H * 0.8));
-    const filter = `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${cropW}:${cropH}:x='if(between(n,0,${frames}),${startX}+(${endX}-${startX})*n/${frames},${startX})':y='if(between(n,0,${frames}),${startY}+(${endY}-${startY})*n/${frames},${startY})'`;
+    const filter = `scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${cropW}:${cropH}:x='if(between(n,0,${frames}),${startX}+(${endX}-${startX})*n/${frames},${startX})':y='if(between(n,0,${frames}),${startY}+(${endY}-${startY})*n/${frames},${startY})',setsar=1`;
     try {
         execFileSync(ff(), ['-y', '-i', clipPath, '-vf', filter, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-threads', '1', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 90000 });
         return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : null;

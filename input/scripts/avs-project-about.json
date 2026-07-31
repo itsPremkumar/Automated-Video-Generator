@@ -1,0 +1,41 @@
+[
+  {
+    "id": "meet-automated-video-generator",
+    "title": "Meet Automated Video Generator",
+    "script": "Meet Automated Video Generator — the free, open-source AI pipeline that turns any script into a polished MP4 video. No watermark. No subscription. No API key required. [Visual: video editing software] [Transition: fade] [Grade: cinematic] [CaptionTheme: minimal] [Kinetic: on] [KenBurns: on]\nGive it a script — it fetches relevant stock visuals from Pexels and Pixabay, generates natural-sounding AI voiceovers with Edge-TTS, synchronises everything with Remotion, and exports a ready-to-share video in minutes. [Visual: ai technology] [Transition: slide] [Grade: cool] [CaptionTheme: minimal] [Kinetic: on]\nUnlike expensive paid tools, Automated Video Generator runs entirely on your own machine. No monthly fees, no usage caps, no data leaving your computer. Just your scripts, your hardware, and full creative control. [Visual: laptop coding] [Transition: fade] [Grade: cinematic] [CaptionTheme: bold] [KenBurns: on]\nBuilt with TypeScript and Remotion, it leverages professional-grade rendering from ffmpeg, supports custom transitions, color grades, kinetic typography, Ken Burns effects, and over 400 AI voice options across multiple languages. [Visual: code on screen] [Transition: zoomblur] [Grade: cool] [CaptionTheme: minimal] [Kinetic: on]\nThe modular pipeline lets you run each stage independently — plan your script, acquire visuals, generate voiceovers, render the final video, and even edit individual scenes without re-rendering everything from scratch. [Visual: gears automation] [Transition: slide] [Grade: cinematic] [CaptionTheme: bold] [KenBurns: on]\nFrom educational content and tech explainers to product demos and social media shorts, this self-hosted video factory produces broadcast-quality output with 32 quality checks on every render. [Visual: video production] [Transition: zoomblur] [Grade: vivid] [CaptionTheme: minimal] [Kinetic: on]\nReady to create? Visit the GitHub repository — star it, contribute, and start generating professional videos for free, forever. [Visual: github repository] [Transition: fade] [Grade: cinematic] [CaptionTheme: bold]",
+    "orientation": "landscape",
+    "aspect": "16:9",
+    "videoType": "facts",
+    "voice": "en-US-GuyNeural",
+    "preset": "cinematic",
+    "transition": "mixed",
+    "grade": "cinematic",
+    "kenBurns": true,
+    "vignette": true,
+    "kineticText": true,
+    "progressBar": true,
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "sfx": true,
+    "sfxOnCut": true,
+    "musicIntensity": "cinematic",
+    "musicQuery": "epic cinematic technology documentary corporate",
+    "outputQuality": "medium",
+    "intro": {
+      "title": "Meet Automated Video Generator",
+      "subtitle": "Free & Open-Source AI Text-to-Video Pipeline",
+      "durationSec": 4
+    },
+    "outro": {
+      "ctaText": "Star on GitHub — Free forever",
+      "showSubscribe": true,
+      "hashtags": [
+        "#OpenSource",
+        "#VideoGenerator",
+        "#AI",
+        "#Remotion",
+        "#TypeScript"
+      ]
+    }
+  }
+]

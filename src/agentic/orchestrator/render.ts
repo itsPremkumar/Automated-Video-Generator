@@ -383,7 +383,7 @@ export async function renderAgenticSlideshow(
     // tofu boxes because the default Arial chain has no CJK glyphs. When the
     // text contains CJK codepoints, fall back to a CJK-capable font
     // (msyh.ttc on Windows, Noto CJK on Linux). .ttc collections need fontindex.
-    const CJK_RE = /[぀-ヿ㐀-鿿豈-﫿⼀-⽿　-〿＀-￯]/;
+    const CJK_RE = /[぀-ヿ㐀-鿿\uF900-\uFAFF\u2F00-\u2FDF\u3000-\u303F\uFF00-\uFFEF]/;
     const CJK_FONT_WIN = 'C:/Windows/Fonts/msyh.ttc';
     const CJK_FONT_LINUX = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc';
     const CJK_FONT = process.platform === 'win32' ? CJK_FONT_WIN : CJK_FONT_LINUX;
@@ -941,9 +941,15 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
         const totalSec = Math.max(1, introDur + scenesDur + outroDur - xfadeOverlap);
         expectedDur = totalSec;
         silent = outDir + '/_av_' + res.workspace.jobId + '.mp4';
+        // Same ENAMETOOLONG guard as compose.ts applyOverlays: the full-chain
+        // filter graph (xfade × scenes + per-word kinetic captions + audio) can
+        // exceed the Windows 32,767-char command line. Feed it via
+        // -filter_complex_script so length is not a limit, and clean up after.
+        const fcScript = path.join(outDir, `_fc_${res.workspace.jobId}.txt`);
+        fs.writeFileSync(fcScript, [...vfArgs, ...(audioFilter ? [audioFilter] : [])].join(';'));
         const pass1: string[] = [
             ...GPU_HWACCEL, ...videoInputs, ...audioInputArgs,
-            '-filter_complex', [...vfArgs, ...(audioFilter ? [audioFilter] : [])].join(';'),
+            '-filter_complex_script', fcScript,
             '-map', videoMap, ...(audioMap.length ? audioMap : []),
             '-c:v', GPU_ENCODER, ...GPU_EXTRA, '-pix_fmt', 'yuv420p', '-r', '25',
             ...(audioMap.length ? ['-c:a', 'aac', '-b:a', '192k'] : ['-an']),
@@ -953,7 +959,11 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             console.error('FILTER_COMPLEX:\n' + [...vfArgs, ...(audioFilter ? [audioFilter] : [])].join(';\n'));
         }
         const sceneDurations = visuals.map((a: any) => a.durationSec ?? 4);
-        await runFfmpegSpawn(pass1, totalSec, sceneDurations);
+        try {
+            await runFfmpegSpawn(pass1, totalSec, sceneDurations);
+        } finally {
+            try { fs.rmSync(fcScript, { force: true }); } catch { /* ignore */ }
+        }
     }
 
     let sfxLayer: string | null = null;

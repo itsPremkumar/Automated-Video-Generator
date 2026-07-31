@@ -152,7 +152,7 @@ export function makePlaceholder(keywords: string[], kind: 'image' | 'video' | 'm
     // Burn a human keyword label (never a filename like 'candidate_1' — that
     // leaked into rendered frames when the fallback was called with the
     // downloaded filename as the label). Fall back to a neutral word.
-    const humanLabel = (label || 'video').replace(/[_\-]+/g, ' ').replace(/candidate \d+/i, '').trim() || 'scene';
+    const humanLabel = (label || 'video').replace(/[_-]+/g, ' ').replace(/candidate \d+/i, '').trim() || 'scene';
     const safeLabel = ffmpegDrawtextEscape(humanLabel).slice(0, 40);
     execFileSync(
         ffmpeg,
