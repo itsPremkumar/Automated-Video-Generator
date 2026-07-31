@@ -1,18 +1,15 @@
 [
   {
-    "id": "how-machines-learn",
-    "title": "How Machines Learn",
-    "description": "AI/Machine Learning explainer video for beginners. Professional blue/cyan theme, calm narrator, ambient music, YouTube 16:9 landscape. Fully curated local asset path.",
-    "script": "Every day, artificial intelligence shapes your world — from the videos you watch to the way you work. [Visual: ml_brain_circuit.mp4] [Transition: fade] [Grade: cool] [CaptionTheme: minimal]\nMachine learning is a type of AI where computers learn from data, not from explicit programming. They find patterns on their own. [Visual: ml_data_streams.mp4] [Transition: slide] [Grade: cool] [Kinetic: on]\nThink of it like teaching a child. You show thousands of examples — photos of cats and dogs — until the computer learns to tell them apart by itself. [Visual: ml_cat_dog.mp4] [Transition: slide] [Grade: neutral]\nYou use ML every day. Netflix recommendations, YouTube suggestions, voice assistants — all powered by algorithms that learn from your behavior. [Visual: local_s0.mp4] [Transition: fade] [Grade: cool] [Kinetic: on]\nThere are three main types: supervised learning uses labeled data, unsupervised finds hidden patterns, and reinforcement learns through trial and error. [Visual: ml_three_types.mp4] [Transition: zoomblur] [Grade: vivid] [CaptionTheme: bold]\nAI is transforming healthcare, education, and business — projected to reach over one point eight trillion dollars by 2030. [Visual: ml_futuristic_city.mp4] [Transition: fade] [Grade: cinematic] [KenBurns: on]\nMachine learning is shaping tomorrow, today. Like and subscribe for more technology explained simply. [Visual: ml_subscribe.mp4] [Transition: fade] [Grade: cool] [CaptionTheme: bold]",
+    "id": "future-of-space-exploration",
+    "title": "The Future of Space Exploration",
+    "script": "Space \u2014 the final frontier. But what does the next decade hold for humanity's greatest adventure? [Visual: space] [Transition: fade] [Grade: cinematic] [CaptionTheme: minimal]\nNASA's Artemis program plans to return humans to the Moon by 2027 \u2014 not just to visit, but to stay. [Visual: moon] [Transition: slide] [Grade: cool] [Kinetic: on]\nSpaceX's Starship aims to carry one hundred passengers to Mars, with the first crewed mission targeted for the early 2030s. [Visual: mars] [Transition: zoomblur] [Grade: cinematic] [CaptionTheme: bold]\nThe James Webb Space Telescope is already revealing galaxies formed just 200 million years after the Big Bang. [Visual: telescope] [Transition: fade] [Grade: cool] [KenBurns: on]\nPrivate companies are building space stations, mining asteroids, and launching satellites that beam internet to every corner of Earth. [Visual: satellite] [Transition: slide] [Grade: vivid] [Kinetic: on]\nThe space economy is projected to reach 1.8 trillion dollars by 2035 \u2014 making space more accessible than ever before. [Visual: economy] [Transition: zoomblur] [Grade: cinematic] [CaptionTheme: bold]\nThe next giant leap is ours to take. Subscribe to explore the future with us. [Visual: rocket] [Transition: fade] [Grade: cinematic]",
     "orientation": "landscape",
     "aspect": "16:9",
-    "platform": "youtube",
     "videoType": "facts",
     "voice": "en-US-GuyNeural",
-    "language": "english",
     "preset": "cinematic",
     "transition": "mixed",
-    "grade": "cool",
+    "grade": "cinematic",
     "kenBurns": true,
     "vignette": true,
     "kineticText": true,
@@ -21,31 +18,169 @@
     "captionTheme": "minimal",
     "sfx": true,
     "sfxOnCut": true,
-    "musicIntensity": "calm",
-    "musicQuery": "ambient cinematic technology documentary",
-    "ttsProvider": "edge-tts",
-    "renderer": "ffmpeg",
-    "backend": "agent",
+    "musicIntensity": "cinematic",
+    "musicQuery": "epic cinematic space documentary ambient",
     "outputQuality": "medium",
-    "maxAttempts": 2,
     "intro": {
-      "title": "How Machines Learn",
-      "subtitle": "AI & Machine Learning Explained",
+      "title": "The Future of Space Exploration",
+      "subtitle": "Humanity's Next Giant Leap",
+      "durationSec": 4
+    },
+    "outro": {
+      "ctaText": "Subscribe for more space content",
+      "showSubscribe": true,
+      "hashtags": [
+        "#Space",
+        "#NASA",
+        "#SpaceX",
+        "#Mars",
+        "#Future"
+      ]
+    }
+  },
+  {
+    "id": "why-your-brain-loves-patterns",
+    "title": "Why Your Brain Loves Patterns",
+    "script": "Have you ever wondered why your brain spots faces in clouds or patterns in random noise? [Visual: brain] [Transition: fade] [Grade: warm] [CaptionTheme: minimal]\nIt's called pattern recognition \u2014 and it's the reason humans survived and evolved over millions of years. [Visual: evolution] [Transition: slide] [Grade: warm] [Kinetic: on]\nYour brain processes 11 million bits of information every second, but only 50 bits reach your conscious awareness. [Visual: data] [Transition: zoomblur] [Grade: cool] [CaptionTheme: bold]\nPatterns help your brain take shortcuts \u2014 predicting what happens next based on past experience. [Visual: network] [Transition: fade] [Grade: warm] [KenBurns: on]\nThis is why music feels good \u2014 your brain loves predicting the next note and being rewarded when it's right. [Visual: music] [Transition: slide] [Grade: vivid] [Kinetic: on]\nFrom art to mathematics, from language to love \u2014 pattern recognition is the hidden engine of human intelligence. [Visual: creativity] [Transition: zoomblur] [Grade: warm] [CaptionTheme: minimal]\nThe next time you see a face in a cloud, remember \u2014 that's millions of years of evolution at work. [Visual: cloud] [Transition: fade] [Grade: warm]",
+    "orientation": "portrait",
+    "aspect": "9:16",
+    "videoType": "facts",
+    "voice": "en-US-JennyNeural",
+    "preset": "cinematic",
+    "transition": "mixed",
+    "grade": "warm",
+    "kenBurns": true,
+    "kineticText": true,
+    "captions": "burned",
+    "captionTheme": "softCard",
+    "sfx": true,
+    "musicIntensity": "calm",
+    "musicQuery": "calm piano ambient study relax",
+    "outputQuality": "medium",
+    "intro": {
+      "title": "Why Your Brain Loves Patterns",
+      "subtitle": "The Neuroscience of Pattern Recognition",
       "durationSec": 3
     },
     "outro": {
-      "ctaText": "Subscribe for more tech explained simply",
+      "ctaText": "Follow for more brain facts",
       "showSubscribe": true,
       "hashtags": [
-        "#AI",
-        "#MachineLearning",
-        "#Technology",
-        "#LearnAI",
-        "#Future"
-      ],
+        "#Brain",
+        "#Neuroscience",
+        "#Patterns",
+        "#Psychology",
+        "#Mind"
+      ]
+    }
+  },
+  {
+    "id": "how-solar-panels-work",
+    "title": "How Solar Panels Actually Work",
+    "script": "Solar energy is the fastest growing energy source on the planet \u2014 but how do those shiny panels actually turn sunlight into electricity? [Visual: solar] [Transition: fade] [Grade: warm] [CaptionTheme: minimal]\nIt starts with photons \u2014 tiny particles of light from the sun that carry energy across 93 million miles to reach Earth. [Visual: sun] [Transition: slide] [Grade: warm] [Kinetic: on]\nWhen photons hit a solar panel, they strike silicon atoms and knock electrons loose \u2014 creating an electric current. [Visual: electrons] [Transition: zoomblur] [Grade: vivid] [CaptionTheme: bold]\nThis is called the photovoltaic effect \u2014 discovered in 1839 by a 19-year-old French physicist named Edmond Becquerel. [Visual: science] [Transition: fade] [Grade: cool] [KenBurns: on]\nToday's solar panels convert about 22 percent of sunlight into electricity \u2014 and that number keeps rising every year. [Visual: efficiency] [Transition: slide] [Grade: cool] [Kinetic: on]\nSolar power is now cheaper than coal in most countries, and it creates zero emissions while generating electricity. [Visual: clean] [Transition: zoomblur] [Grade: warm] [CaptionTheme: minimal]\nThe sun gives Earth enough energy in one hour to power the entire world for a year. Subscribe to learn more about renewable energy. [Visual: earth] [Transition: fade] [Grade: warm]",
+    "orientation": "landscape",
+    "aspect": "16:9",
+    "videoType": "tutorial",
+    "voice": "en-GB-SoniaNeural",
+    "preset": "cinematic",
+    "transition": "mixed",
+    "grade": "warm",
+    "kenBurns": true,
+    "kineticText": true,
+    "captions": "burned",
+    "captionTheme": "highContrast",
+    "sfx": true,
+    "musicIntensity": "calm",
+    "musicQuery": "upbeat educational documentary technology",
+    "outputQuality": "medium",
+    "intro": {
+      "title": "How Solar Panels Work",
+      "subtitle": "Solar Energy Explained Simply",
+      "durationSec": 3
+    },
+    "outro": {
+      "ctaText": "Subscribe for more green energy content",
+      "showSubscribe": true,
+      "hashtags": [
+        "#Solar",
+        "#RenewableEnergy",
+        "#GreenEnergy",
+        "#Science",
+        "#Environment"
+      ]
+    }
+  },
+  {
+    "id": "psychology-of-color",
+    "title": "The Psychology of Color",
+    "script": "Color isn't just about aesthetics \u2014 it shapes your emotions, decisions, and even your purchases without you realizing it. [Visual: color] [Transition: fade] [Grade: vivid] [CaptionTheme: minimal]\nRed increases your heart rate and creates urgency \u2014 which is why it's used everywhere from sale signs to stop signals. [Visual: red] [Transition: slide] [Grade: warm] [Kinetic: on]\nBlue builds trust and calm \u2014 the most used color in corporate logos and social media platforms for a reason. [Visual: blue] [Transition: fade] [Grade: cool] [CaptionTheme: bold]\nYellow triggers optimism and creativity \u2014 but too much can cause anxiety. It's the most attention-grabbing color in the spectrum. [Visual: yellow] [Transition: zoomblur] [Grade: warm] [KenBurns: on]\nGreen represents nature, growth, and health \u2014 it's the easiest color for the human eye to process. [Visual: green] [Transition: slide] [Grade: neutral] [Kinetic: on]\nStudies show that 90 percent of snap judgments about products are based on color alone. Brand color increases recognition by 80 percent. [Visual: brand] [Transition: zoomblur] [Grade: vivid] [CaptionTheme: minimal]\nColor speaks louder than words. Like and follow for more design psychology insights. [Visual: palette] [Transition: fade] [Grade: vivid]",
+    "orientation": "portrait",
+    "aspect": "9:16",
+    "videoType": "facts",
+    "voice": "en-US-JennyNeural",
+    "preset": "cinematic",
+    "transition": "mixed",
+    "grade": "vivid",
+    "kenBurns": true,
+    "kineticText": true,
+    "captions": "burned",
+    "captionTheme": "bold",
+    "sfx": true,
+    "sfxOnCut": true,
+    "musicIntensity": "mid",
+    "musicQuery": "modern upbeat corporate design",
+    "outputQuality": "medium",
+    "intro": {
+      "title": "The Psychology of Color",
+      "subtitle": "How Colors Control Your Mind",
+      "durationSec": 3
+    },
+    "outro": {
+      "ctaText": "Follow for more design psychology",
+      "showSubscribe": true,
+      "hashtags": [
+        "#ColorPsychology",
+        "#Design",
+        "#Marketing",
+        "#Psychology",
+        "#Branding"
+      ]
+    }
+  },
+  {
+    "id": "rise-of-autonomous-vehicles",
+    "title": "The Rise of Autonomous Vehicles",
+    "script": "Self-driving cars are no longer science fiction \u2014 they're already on the roads, and they're about to transform everything. [Visual: autonomous] [Transition: fade] [Grade: cool] [CaptionTheme: minimal]\nOver 30 million vehicles on the road today already have some form of autonomous driving technology \u2014 from Tesla to Mercedes. [Visual: traffic] [Transition: slide] [Grade: cool] [Kinetic: on]\nLevel 5 autonomy \u2014 where no human intervention is needed \u2014 could reduce traffic accidents by 94 percent, saving 1.3 million lives per year. [Visual: safety] [Transition: zoomblur] [Grade: cinematic] [CaptionTheme: bold]\nSelf-driving taxis are already operating in San Francisco, Phoenix, and Beijing \u2014 completing millions of paid rides. [Visual: robotaxi] [Transition: fade] [Grade: cool] [KenBurns: on]\nAutonomous trucks could move freight 24/7, cutting delivery times by half and reducing logistics costs by 45 percent. [Visual: truck] [Transition: slide] [Grade: vivid] [Kinetic: on]\nThe autonomous vehicle market is projected to reach 2.2 trillion dollars by 2035 \u2014 reshaping cities, jobs, and daily life. [Visual: future] [Transition: zoomblur] [Grade: cinematic] [CaptionTheme: minimal]\nThe future is driving itself. Subscribe to stay ahead of the tech revolution. [Visual: driving] [Transition: fade] [Grade: cool]",
+    "orientation": "landscape",
+    "aspect": "16:9",
+    "videoType": "news",
+    "voice": "en-US-GuyNeural",
+    "preset": "cinematic",
+    "transition": "mixed",
+    "grade": "cool",
+    "kenBurns": true,
+    "kineticText": true,
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "sfx": true,
+    "musicIntensity": "energetic",
+    "musicQuery": "modern cinematic technology documentary",
+    "outputQuality": "medium",
+    "intro": {
+      "title": "The Rise of Autonomous Vehicles",
+      "subtitle": "How Self-Driving Cars Will Change Everything",
       "durationSec": 4
     },
-    "exportAspects": ["16:9"],
-    "posterScene": 0
+    "outro": {
+      "ctaText": "Subscribe for more tech insights",
+      "showSubscribe": true,
+      "hashtags": [
+        "#SelfDriving",
+        "#AutonomousVehicles",
+        "#Technology",
+        "#Future",
+        "#AI"
+      ]
+    }
   }
 ]
