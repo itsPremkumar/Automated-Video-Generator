@@ -63,6 +63,32 @@ export interface BulkFetchOptions {
     license?: string;
     /** Dominant color hint (CSS color name) used as a soft pre-filter on metadata. */
     palette?: string;
+    /**
+     * Filename stem for written assets (defaults to `kind`). Callers that fetch
+     * per-scene MUST pass a scene-unique label: without it every call writes
+     * `image_001.jpeg` into the same dir and later scenes OVERWRITE the file
+     * earlier scenes point at → several scenes render the same photo.
+     */
+    label?: string;
+    /**
+     * URL-dedupe set shared across calls. Pass one per video so a scene never
+     * reuses an image URL an earlier scene already took (distinct visuals).
+     */
+    sharedSeen?: Set<string>;
+}
+
+/** Sanitize a filename label so it can never collide with or break paths on any OS. */
+export function sanitizeLabel(label: string): string {
+    const s = label
+        .replace(/[^a-zA-Z0-9._-]+/g, '_')
+        .replace(/^[_\-.\s]+|[_\-.\s]+$/g, '')
+        .slice(0, 48);
+    return s || 'media';
+}
+
+/** Compute the filename stem: a caller label when given, else the kind. */
+export function visualStem(kind: string, label?: string): string {
+    return label ? sanitizeLabel(label) : kind;
 }
 
 /**
@@ -78,9 +104,10 @@ export async function runBulkImageFetch(
     opts: BulkFetchOptions = {},
 ): Promise<string[]> {
     fs.mkdirSync(outDir, { recursive: true });
-    const seen = new Set<string>();
+    const seen = opts.sharedSeen ?? new Set<string>();
     const results: string[] = [];
     const extFallback = kind === 'video' ? '.mp4' : '.jpg';
+    const stem = visualStem(kind, opts.label);
 
     const tryCollect = async (collector: () => Promise<{ url: string; source?: string }[]>): Promise<void> => {
         if (results.length >= count) return;
@@ -96,7 +123,7 @@ export async function runBulkImageFetch(
             if (!it?.url || seen.has(it.url)) continue;
             seen.add(it.url);
             const ext = path.extname(it.url).split('?')[0] || extFallback;
-            const filename = `${kind}_${String(results.length + 1).padStart(3, '0')}${ext}`;
+            const filename = `${stem}_${String(results.length + 1).padStart(3, '0')}${ext}`;
             try {
                 const r = await downloadMedia(it.url, outDir, filename);
                 if (!(r.path && fs.existsSync(r.path))) continue;

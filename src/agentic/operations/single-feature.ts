@@ -528,12 +528,19 @@ async function runCompose(job: AgenticCliJob, id: string): Promise<SingleFeature
 
     // 1) Gather scene visuals: try downloaded images, else placeholder frames.
     const sceneVisuals: string[] = [];
+    // Enforce DISTINCT images across scenes: every scene's fetch shares this
+    // URL-dedupe set, so a photo an earlier scene took is never reused. (Bugs
+    // fixed 2026-07-31: shared raw dir + fixed `image_001` filename made every
+    // scene's path collide → several scenes rendered the SAME photo.)
+    const usedVisualUrls = new Set<string>();
     for (let i = 0; i < plan.scenes.length; i++) {
         const scene = plan.scenes[i];
         // Try the bulk-fetch cache for this scene's keyword.
         const kw = scene.searchKeywords.join(' ') || job.searchQuery || 'abstract';
         const fetched = await runBulkImageFetch(kw, 1, path.join(outDir, 'raw'), job.orientation ?? 'portrait', 'image', {
             license: job.licenseFilter, palette: job.paletteFilter,
+            label: `scene_${i}_${kw}`,
+            sharedSeen: usedVisualUrls,
         });
         if (fetched.length > 0) { sceneVisuals.push(fetched[0]); continue; }
         // Fallback: use the job's defaultVisual (a user-supplied brand/cover
