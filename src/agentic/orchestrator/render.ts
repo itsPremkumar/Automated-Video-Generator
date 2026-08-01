@@ -555,7 +555,7 @@ export async function renderAgenticSlideshow(
 
     const runFfmpegSpawn = (args: string[], totalSec = 0, sceneDurations?: number[]): Promise<void> =>
         new Promise<void>((resolve, reject) => {
-            if (opts.verbose || process.env.DEBUG_FF) {
+            if (opts.verbose) {
                 console.error('[ffmpeg] ' + ffmpeg + ' ' + args.join(' '));
             }
             const cp = spawn(ffmpeg, args, { stdio: ['ignore', 'ignore', 'pipe'] });
