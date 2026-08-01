@@ -14,7 +14,7 @@
  */
 
 export type TransitionKind = 'fade' | 'slide' | 'zoomblur' | 'cut';
-export type GradeKind = 'neutral' | 'warm' | 'cool' | 'cinematic' | 'vivid';
+export type GradeKind = 'neutral' | 'warm' | 'cool' | 'cinematic' | 'vivid' | 'noir' | 'sunset' | 'cyberpunk';
 
 export interface KineticCue {
     /** seconds from scene start */
@@ -55,7 +55,7 @@ export interface AgenticStyle {
 }
 
 const TRANSITIONS: TransitionKind[] = ['fade', 'slide', 'zoomblur', 'cut'];
-const GRADES: GradeKind[] = ['cinematic', 'warm', 'cool', 'vivid', 'neutral'];
+const GRADES: GradeKind[] = ['cinematic', 'warm', 'cool', 'vivid', 'neutral', 'noir', 'sunset', 'cyberpunk'];
 
 /** Stable, dependency-free string hash (FNV-1a-ish). */
 function hash(str: string): number {
@@ -191,6 +191,20 @@ export function gradeFilter(kind: GradeKind): string {
             return 'eq=contrast=1.12:brightness=-0.03:saturation=1.1:gamma=0.95';
         case 'vivid':
             return 'eq=contrast=1.08:saturation=1.35';
+        // BUG W5-1: noir / sunset / cyberpunk were declared enums in
+        // INPUT_FORMAT.md but absent from gradeFilter → silently fell into the
+        // default neutral-ish eq (no-op). Add real ffmpeg filters.
+        case 'noir':
+            // grayscale via hue=s=0 (works in YUV, SIMD-optimized) instead of
+            // format=gray (forces a slow RGB→gray colorspace conversion path on
+            // this ffmpeg-static build → pathologically slow per-scene encodes).
+            return 'hue=s=0,eq=contrast=1.35:brightness=-0.02';
+        case 'sunset':
+            // warm tint via hue rotation + saturation (avoid colorbalance: pathologically
+            // slow / near-hang on CPU ffmpeg-static with -threads 1, G6 low-RAM box).
+            return 'eq=contrast=1.05:saturation=1.3:gamma=0.95,hue=h=18:s=1.15';
+        case 'cyberpunk':
+            return 'eq=contrast=1.15:saturation=1.4,hue=h=-22:s=1.25';
         case 'neutral':
         default:
             return 'eq=contrast=1.02:saturation=1.05';

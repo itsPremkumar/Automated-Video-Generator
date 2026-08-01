@@ -861,11 +861,17 @@ async function runRender(cliArgs: CliArgs) {
                         captionSegments: s.captionSegments || [],
                     });
                     // keep manifest asset durations in sync — render.ts sizes
-                    // visuals from `assets[].durationSec`
+                    // visuals from `assets[].durationSec`, and needs the real
+                    // audioPath + captionSegments to mix the narration in
+                    // (mirrors orchestrator/pipeline.ts voice-over-asset wiring)
                     const asset = (result.manifest?.assets ?? []).find(
                         (a: any) => a.kind !== 'music' && a.sceneIndex === s.sceneNumber - 1,
                     );
-                    if (asset) asset.durationSec = dur;
+                    if (asset) {
+                        asset.durationSec = dur;
+                        asset.audioPath = found;
+                        asset.captionSegments = s.captionSegments || [];
+                    }
                 }
             }
         }
@@ -963,6 +969,9 @@ async function runRender(cliArgs: CliArgs) {
             punchInByScene: job.punchInByScene ?? meta.punchInByScene,
             parallaxDepthByScene: job.parallaxDepthByScene ?? meta.parallaxDepthByScene,
             speedRampByScene: job.speedRampByScene ?? meta.speedRampByScene,
+            // BUG W5-1: forward job-level grade (noir/sunset/cyberpunk/warm/cool/...) so
+            // it reaches the style plan (previously ignored → silent neutral grade).
+            grade: job.grade ?? meta.grade,
         });
 
         if (finalMp4 && fs.existsSync(finalMp4)) {
@@ -1659,5 +1668,6 @@ async function main() {
 
 main().catch((e) => {
     console.error(`✖ Fatal: ${e.message}`);
+    if (e?.stack) console.error(e.stack.split('\n').slice(0, 8).join('\n'));
     process.exit(1);
 });

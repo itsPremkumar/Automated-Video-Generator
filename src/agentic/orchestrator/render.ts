@@ -340,6 +340,7 @@ export async function renderAgenticSlideshow(
         dimensions?: { w: number; h: number };
         captions?: 'burned' | 'karaoke' | 'none';
         captionTheme?: string;
+        grade?: string;
         intro?: { title: string; subtitle?: string; durationSec?: number };
         titleCard?: { title: string; subtitle?: string; durationSec?: number };
         lowerThird?: string;
@@ -443,6 +444,10 @@ export async function renderAgenticSlideshow(
     function gpuExtra(encoder: string): string[] {
         if (encoder === 'h264_nvenc') return ['-preset', 'p7'];
         if (encoder === 'h264_amf') return ['-quality', 'speed'];
+        // CPU path (libx264): default threading. NOTE: previously capped to
+        // -threads 1 for G6 low-RAM OOM safety, but the real OOM driver was the
+        // colorbalance grade filter (removed in W5-1); eq/hue/format=gray grades
+        // are light, so default threads keep renders fast on this 6GB box.
         return [];
     }
     // Pre-resolve the GPU encoder once so every use site reads the cached value.
@@ -517,7 +522,16 @@ export async function renderAgenticSlideshow(
     const outroInputIdx = outroClip ? visuals.length + (introClip ? 1 : 0) : -1;
 
     const { computeStylePlan, gradeFilter, xfadeName } = await import('../ai/style-engine.js');
-    const stylePlan = computeStylePlan(res.plan, { preset: (opts.preset as any) ?? 'cinematic', kinetic: opts.kinetic });
+    // BUG W5-1: job-level `grade` was never forwarded into the style plan, so
+    // e.g. "grade":"noir" at the job level did nothing. Map it to a gradeBias
+    // (array, one entry per scene) applied to every scene. Per-scene inline
+    // [Grade:] tags still win in the override loop below.
+    const styleOpts: any = { preset: (opts.preset as any) ?? 'cinematic', kinetic: opts.kinetic };
+    if (opts.grade) {
+        const n = (res.plan.scenes ?? []).length || (visuals.length);
+        styleOpts.gradeBias = Array.from({ length: n }, () => opts.grade as any);
+    }
+    const stylePlan = computeStylePlan(res.plan, styleOpts);
 
     // Apply per-scene overrides from the plan (user-supplied inline tags win over auto)
     for (const sc of stylePlan.scenes) {
@@ -991,7 +1005,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             // boundaries when timestamps are non-monotonic (the classic
             // concat-copy pitfall). Segments are all libx264/yuv420p/25fps so
             // stream-copy is safe once timestamps are normalized.
-            const concatArgs = ['-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', silent];
+            const concatArgs = ['-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', '-y', silent];
             if (opts.verbose) {
                 console.error('[ffmpeg concat] ' + ffmpeg + ' ' + concatArgs.join(' '));
             }
@@ -1002,6 +1016,36 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
         // created per render but never removed. Clean them up now that concat is done.
         for (const seg of segFiles) try { fs.rmSync(seg, { force: true }); } catch { /* ignore */ }
         try { fs.rmSync(list, { force: true }); } catch { /* ignore */ }
+        // BUG (voice never mixed on segmented path): segments are rendered
+        // video-only and the `-c copy` concat carries NO audio stream, so the
+        // final music pass saw silentHasAudio=false and played the music bed
+        // ALONE — the narration was silently dropped (audio = music length).
+        // Attach the voiceover mix (per-scene adelay at each scene's start
+        // time, mirrors the non-segmented pass1 audio) so the concat becomes
+        // voice-bearing and the music pass ducks under real narration.
+        if (voScenes.length > 0) {
+            const vBase = 1; // inputs: 0=silent video, then voice WAVs
+            const vDelays: string[] = [];
+            voScenes.forEach((a, vi) => {
+                const sc = stylePlan.scenes[a.sceneIndex];
+                const jCut = sc?.jCutSec && sc.jCutSec > 0 ? sc.jCutSec : defaultJCut;
+                const picStart = introDur + offsetFor(visuals, vi, xf);
+                const audioStart = Math.max(0, picStart - (vi === 0 ? 0 : jCut));
+                vDelays.push(`[${vBase + vi}:a]adelay=delays=${(audioStart * 1000).toFixed(0)}:all=1[vv${vi}]`);
+            });
+            const vMix = vDelays.join(';') + ';' +
+                vDelays.map((_, vi) => `[vv${vi}]`).join('') +
+                `amix=inputs=${voScenes.length}:duration=longest:normalize=0[vmix];[vmix]apad[vap];[vap]alimiter=limit=0.7:asc=1:level=disabled[voout]`;
+            const voiced = outDir + '/_av_vo_' + res.workspace.jobId + '.mp4';
+            await runFfmpegSpawn([
+                ...GPU_HWACCEL, '-i', silent, ...audioInputArgs,
+                '-filter_complex', vMix,
+                '-map', '0:v:0', '-map', '[voout]',
+                '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-y', voiced,
+            ]);
+            try { fs.rmSync(silent, { force: true }); } catch { /* ignore */ }
+            silent = voiced;
+        }
     } else {
         const introDur = introClip ? (opts.intro!.durationSec ?? 2.5) : 0;
         const outroDur = outroClip ? (opts.outro!.durationSec ?? 3) : 0;
@@ -1134,9 +1178,13 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             fc = `[1:a]${volFilter}[a]`;
             if (sfxLayer && fs.existsSync(sfxLayer)) {
                 inputs.push('-i', sfxLayer);
-                fc += `;[2:a]volume=0.6[sfx];[0:a][a][sfx]amix=inputs=3:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`;
+                // duration=longest + apad (not shortest): the music bed often
+                // ends before the narration; shortest would cut the voiceover
+                // to the music length and -shortest would then truncate the
+                // whole video. longest lets narration carry to the end.
+                fc += `;[2:a]volume=0.6[sfx];[0:a][a][sfx]amix=inputs=3:duration=longest:normalize=0[amixout];[amixout]apad[ap];[ap]alimiter=limit=0.7:asc=1:level=disabled[aout]`;
             } else {
-                fc += `;[0:a][a]amix=inputs=2:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`;
+                fc += `;[0:a][a]amix=inputs=2:duration=longest:normalize=0[amixout];[amixout]apad[ap];[ap]alimiter=limit=0.7:asc=1:level=disabled[aout]`;
             }
         } else {
             // No voiceover audio in the silent track — just play the music (±sfx).
@@ -1165,10 +1213,10 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             console.warn(`ℹ music duck expression unsupported on this ffmpeg build; using flat volume`);
             const flatFc = sfxLayer && fs.existsSync(sfxLayer)
                 ? silentHasAudio
-                    ? `[1:a]volume=${full}[a];[2:a]volume=0.6[sfx];[0:a][a][sfx]amix=inputs=3:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`
-                    : `[1:a]volume=${full}[a];[2:a]volume=0.6[sfx];[a][sfx]amix=inputs=2:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`
+                    ? `[1:a]volume=${full}[a];[2:a]volume=0.6[sfx];[0:a][a][sfx]amix=inputs=3:duration=longest:normalize=0[amixout];[amixout]apad[ap];[ap]alimiter=limit=0.7:asc=1:level=disabled[aout]`
+                    : `[1:a]volume=${full}[a];[2:a]volume=0.6[sfx];[a][sfx]amix=inputs=2:duration=longest:normalize=0[amixout];[amixout]apad[ap];[ap]alimiter=limit=0.7:asc=1:level=disabled[aout]`
                 : silentHasAudio
-                    ? `[1:a]volume=${full}[a];[0:a][a]amix=inputs=2:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`
+                    ? `[1:a]volume=${full}[a];[0:a][a]amix=inputs=2:duration=longest:normalize=0[amixout];[amixout]apad[ap];[ap]alimiter=limit=0.7:asc=1:level=disabled[aout]`
                     : `[1:a]volume=${full}[a];[a]alimiter=limit=0.7:asc=1:level=disabled[aout]`;
             const flatPass2 = [...inputs, '-filter_complex', flatFc, '-map', '0:v:0', '-map', '[aout]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-y', out];
             await runFfmpegSpawn(flatPass2);
@@ -1186,7 +1234,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             vidHasAudio = pr.trim().length > 0;
         } catch { /* best effort */ }
         const fcS = vidHasAudio
-            ? `[1:a]volume=0.6[sfx];[0:a][sfx]amix=inputs=2:duration=shortest[amixout];[amixout]alimiter=limit=0.7:asc=1:level=disabled[aout]`
+            ? `[1:a]volume=0.6[sfx];[0:a][sfx]amix=inputs=2:duration=longest:normalize=0[amixout];[amixout]apad[ap];[ap]alimiter=limit=0.7:asc=1:level=disabled[aout]`
             : `[1:a]volume=0.6[aout]`;
         await runFfmpegSpawn(['-i', silent, '-i', sfxLayer, '-filter_complex', fcS, '-map', '0:v:0', '-map', '[aout]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-y', out]);
         fs.rmSync(silent, { force: true });
