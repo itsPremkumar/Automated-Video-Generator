@@ -349,6 +349,11 @@ export async function renderAgenticSlideshow(
         jCutSec?: number;
         exportAspects?: string[];
         emojiByScene?: Record<string, string>;
+        // BUG W2-1: per-scene motion FX (previously compose.ts-only / video-only)
+        shakeByScene?: Record<number, number>;
+        punchInByScene?: Record<number, number>;
+        parallaxDepthByScene?: Record<number, number>;
+        speedRampByScene?: Record<number, number>;
         paletteFilter?: string;
         aiVerify?: import('../config.js').AgenticConfig['aiVerify'];
         languages?: string[];
@@ -626,7 +631,7 @@ export async function renderAgenticSlideshow(
     const orderedTags: string[] = [];
     const orderedDur: number[] = [];
     const durOf = (a: { sceneIndex: number; durationSec?: number }): number =>
-        (res.plan.scenes[a.sceneIndex] && res.plan.scenes[a.sceneIndex].durationSec) || a.durationSec || 4;
+        a.durationSec || (res.plan.scenes[a.sceneIndex] && res.plan.scenes[a.sceneIndex].durationSec) || 4;
     if (introClip) { orderedTags.push('vintro'); orderedDur.push(opts.intro!.durationSec ?? 2.5); }
     for (let i = 0; i < visuals.length; i++) { orderedTags.push('v' + i); orderedDur.push(durOf(visuals[i])); }
     if (outroClip) { orderedTags.push('voutro'); orderedDur.push(opts.outro!.durationSec ?? 3); }
@@ -863,7 +868,41 @@ else vfArgs.push(`${videoMap}null[vig]`);
                     segAdv.push(`zoompan=z='${expr}':d=1:s=${W}x${H}:fps=25`);
                 }
             }
-            const segAdvStr = segAdv.length ? ',' + segAdv.join(',') : '';
+            // BUG W2-1: shakeByScene / punchInByScene / parallaxDepthByScene /
+            // speedRampByScene were only consumed by compose.ts (advanced-fx.ts) on
+            // the VIDEO-only pre-process path; on the CLI segmented render path they
+            // were silently dropped (image assets were explicitly skipped). Apply
+            // them here as filtergraph strings so they work on BOTH images and
+            // videos, uniformly, on the production render path.
+            if (clip.kind === 'scene') {
+                const si = clip.idx;
+                const shake = opts.shakeByScene?.[si];
+                if (shake) {
+                    const amp = Math.max(1, Math.round(Math.min(1, Number(shake)) * 20)); // 1..20 px
+                    segAdv.push(`scale=${W + amp * 2}:${H + amp * 2}:force_original_aspect_ratio=increase,crop=${W}:${H}:x='${amp}+${amp}*sin(n/7)*sin(n/3)':y='${amp}+${amp}*cos(n/9)*cos(n/5)'`);
+                }
+                const punch = opts.punchInByScene?.[si];
+                if (punch && punch !== 1) {
+                    // animate a subtle zoom-in (scale up then settle) via zoompan
+                    const z = Math.max(1.05, Number(punch));
+                    segAdv.push(`zoompan=z='min(${z}\\,1+0.05*time)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=${W}x${H}:fps=25`);
+                }
+                const par = opts.parallaxDepthByScene?.[si];
+                if (par && par !== 0) {
+                    // horizontal pan: shift the frame left/right across the clip
+                    const px = Math.round(Math.min(0.3, Math.abs(Number(par))) * W);
+                    segAdv.push(`crop=${W}:${H}:x='${px}*sin(2*PI*t/${Math.max(0.1, dur).toFixed(2)})':y=0`);
+                }
+                const ramp = opts.speedRampByScene?.[si];
+                if (ramp && ramp !== 1) {
+                    segAdv.push(`setpts=PTS/${Number(ramp).toFixed(3)},minterpolate=fps=25:mi_mode=blend`);
+                }
+            }
+            // BUG W2-1 (SAR fix): motion FX filters (scale/crop/zoompan) reset the
+            // sample aspect ratio after the early setsar=1 in the base chain, which
+            // produced SAR 12160:12159 and broke downstream concat (G70 class).
+            // Re-pin SAR=1 at the very end of the segment filter chain.
+            const segAdvStr = segAdv.length ? ',' + segAdv.join(',') + ',setsar=1' : '';
             const capStr = segCaptionArg.length ? ',' + segCaptionArg.join(',') : '';
             const kinStr = kin.length ? ',' + kin.join(',') : '';
             const gradeStr = grade ? ',' + grade : '';

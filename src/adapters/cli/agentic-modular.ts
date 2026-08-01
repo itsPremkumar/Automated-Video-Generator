@@ -957,6 +957,12 @@ async function runRender(cliArgs: CliArgs) {
             lowerThird: job.lowerThird ?? meta.lowerThird,
             endCta: job.endCta ?? meta.endCta,
             progressBar: job.progressBar ?? meta.progressBar,
+            // BUG W2-1: forward per-scene motion FX to the modular render path
+            // (previously compose.ts-only / video-only, so image assets dropped them).
+            shakeByScene: job.shakeByScene ?? meta.shakeByScene,
+            punchInByScene: job.punchInByScene ?? meta.punchInByScene,
+            parallaxDepthByScene: job.parallaxDepthByScene ?? meta.parallaxDepthByScene,
+            speedRampByScene: job.speedRampByScene ?? meta.speedRampByScene,
         });
 
         if (finalMp4 && fs.existsSync(finalMp4)) {
