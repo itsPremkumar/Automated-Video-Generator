@@ -1,0 +1,19 @@
+[
+  {
+    "id": "flux3-part",
+    "title": "Temple of Dawn",
+    "orientation": "landscape",
+    "flux3": "auto",
+    "flux3Prompts": [
+      "Cinematic aerial drone shot flying over a misty ancient jungle temple complex at dawn, stone towers breaking through the canopy, golden light rays, photorealistic",
+      "Slow tracking shot down a torch-lit stone corridor inside an ancient temple, carved reliefs on the walls, warm firelight flickering, dust particles in the air"
+    ],
+    "script": "Deep in the jungle, the temple of dawn rises through the mist.\nTorchlight reveals carvings left by a forgotten civilization."
+  },
+  {
+    "id": "stock-part",
+    "title": "Ocean Forces",
+    "orientation": "landscape",
+    "script": "Powerful ocean waves crash against rugged coastal cliffs.\nA humpback whale tail rises above the open ocean surface."
+  }
+]

@@ -13,6 +13,9 @@
  *   pipeline            Run the full end-to-end pipeline (default)
  *   plan                Parse script → build Plan (saves to workspace)
  *   visuals             Acquire + download visuals (saves render-manifest)
+ *   flux3               OPTIONAL backend: generate scene clips via FLUX 3
+ *                       (job field flux3: "auto"|"on" + flux3Prompts[]) —
+ *                       falls back to stock visuals when unavailable
  *   voice               Generate voiceovers for all/selected scenes
  *   render              Render video from existing workspace
  *   edit                Edit a single scene in an existing workspace
@@ -53,6 +56,7 @@ import { execFileSync } from 'child_process';
 import { estimateAudioDurationSafe } from '../../agentic/orchestrator/ffmpeg.js';
 import { normalizeJobId } from '../../shared/identifiers.js';
 import { getAgenticWorkspace } from '../../agentic/management/workspace.js';
+import { flux3Mode, flux3Aspect, flux3PromptForScene, flux3Duration } from './flux3-option.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -299,7 +303,9 @@ async function runVisuals(cliArgs: CliArgs) {
         // B2: --no-acquire — all visuals are pre-supplied locally via [Visual: file]
         // bindings in the script. Skip the network acquire/gateway stage entirely and
         // synthesize the render-manifest directly from plan.json localAssets + music.
-        if (cliArgs['no-acquire'] === true) {
+        // Per-job: a FLUX 3 job (flux3Mode != off) always runs this path (its clips
+        // are local assets); an explicit --no-acquire flag applies to every job.
+        if (cliArgs['no-acquire'] === true || flux3Mode(job) !== 'off') {
             const { resolveFreeBackgroundMusic } = await import('../../lib/free-music.js');
             const { inputAssetPath, inputBgmPath } = await import('../../lib/path-safety.js');
             const assets: any[] = [];
@@ -465,6 +471,121 @@ async function runVisuals(cliArgs: CliArgs) {
             })),
             generatedAt: new Date().toISOString(),
         });
+    }
+}
+
+// ─── Stage 2.5: FLUX 3 (OPTIONAL backend) ───────────────────────────────────
+// An opt-in job field (`flux3: "off" | "auto" | "on"` + optional per-scene
+// `flux3Prompts[]`). "auto" uses FLUX 3 when the bridge reports it available
+// and falls back to the stock visuals stage for any scene that fails; "on"
+// requires FLUX 3 and fails loud. Absent/"off" leaves the pipeline untouched.
+// The bridge runs under the Hermes Agent venv so it reuses Hermes' own Nous
+// Portal auth + managed BFL gateway transport (scripts/flux3-bridge.py).
+
+const FLUX3_BRIDGE = path.join(process.cwd(), 'scripts', 'flux3-bridge.py');
+const DEFAULT_HERMES_PYTHON = 'C:\\Users\\PREM KUMAR\\AppData\\Local\\hermes\\hermes-agent\\venv\\Scripts\\python.exe';
+const HERMES_PYTHON = process.env.HERMES_PYTHON || (fs.existsSync(DEFAULT_HERMES_PYTHON) ? DEFAULT_HERMES_PYTHON : 'python');
+
+function runFlux3Bridge(args: string[], timeoutMs: number): { stdout: string; stderr: string } {
+    try {
+        const r = execFileSync(HERMES_PYTHON, [FLUX3_BRIDGE, ...args], {
+            encoding: 'utf8',
+            timeout: timeoutMs,
+            stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        return { stdout: r || '', stderr: '' };
+    } catch (e: any) {
+        return { stdout: e.stdout ? String(e.stdout) : '', stderr: e.stderr ? String(e.stderr) : String(e.message || e) };
+    }
+}
+
+async function runFlux3(cliArgs: CliArgs) {
+    const jobs = readJobJson();
+    for (const job of jobs) {
+        const mode = flux3Mode(job);
+        if (mode === 'off') continue;
+
+        const id = normalizeJobId(job.id || `job_${Date.now()}`);
+        const ws = workspaceFor(id);
+        const plan = readJson(ws.root, 'plan.json');
+        const title = job.title || id;
+
+        console.log(`\n═══════════════════════════════════════════`);
+        console.log(`  [FLUX3] ${title}  (mode=${mode})`);
+        console.log(`═══════════════════════════════════════════`);
+
+        if (!plan || !Array.isArray(plan.scenes) || plan.scenes.length === 0) {
+            console.error(`  ✖ No plan for job "${id}" — run the "plan" stage first.`);
+            if (mode === 'on') throw new Error(`flux3:"on" — job "${id}" has no plan; run plan first`);
+            continue;
+        }
+
+        // Availability gate (same check Hermes' bfl_flux3_* tools use).
+        const avail = runFlux3Bridge(['available'], 60_000);
+        let available = false;
+        let reason = 'bridge error';
+        try {
+            const j = JSON.parse(avail.stdout);
+            available = !!j.available;
+            reason = j.reason || reason;
+        } catch { /* fall through with defaults */ }
+        if (!available) {
+            if (mode === 'on') {
+                throw new Error(`FLUX 3 requested (flux3:"on") but unavailable: ${reason}`);
+            }
+            console.warn(`  ⚠ FLUX 3 unavailable (${reason}) — falling back to stock visuals for this job.`);
+            continue;
+        }
+        console.log(`  ✓ FLUX 3 available — generating ${plan.scenes.length} scene clip(s)`);
+
+        const prompts: string[] = Array.isArray(job.flux3Prompts) ? job.flux3Prompts : [];
+        const outDir = path.join(ws.root, 'flux3');
+        fs.mkdirSync(outDir, { recursive: true });
+        const clips: any[] = [];
+        let fellBack = 0;
+
+        for (const s of plan.scenes) {
+            const idx = (s.sceneNumber ?? 1) - 1;
+            const out = path.join(outDir, `scene_${s.sceneNumber}.mp4`);
+            const prompt = flux3PromptForScene(s, prompts, idx, title);
+            const duration = flux3Duration(s.durationSec ?? 8);
+
+            console.log(`  … scene ${s.sceneNumber}: submitting FLUX 3 job (${duration}s, ${flux3Aspect(job.orientation)})`);
+            const r = runFlux3Bridge([
+                'generate',
+                '--prompt', prompt,
+                '--aspect', flux3Aspect(job.orientation),
+                '--duration', String(duration),
+                '--audio', '1',
+                '--out', out,
+            ], 960_000); // bridge polls up to 15 min per clip
+
+            let parsed: any = {};
+            try { parsed = JSON.parse(r.stdout); } catch { parsed = { error: r.stderr || r.stdout || 'no output' }; }
+
+            if (parsed.status === 'Ready' && parsed.saved_path && fs.existsSync(out)) {
+                s.localAsset = out; // absolute path — visuals --no-acquire accepts it
+                clips.push({ sceneNumber: s.sceneNumber, jobId: parsed.job_id, prompt, savedPath: out });
+                console.log(`  ✓ scene ${s.sceneNumber}: FLUX 3 clip → ${out}`);
+            } else {
+                fellBack += 1;
+                const why = parsed.error ? String(parsed.error).slice(0, 160) : 'generation did not finish';
+                if (mode === 'on') {
+                    throw new Error(`flux3:"on" — scene ${s.sceneNumber} generation failed: ${why}`);
+                }
+                console.warn(`  ⚠ scene ${s.sceneNumber}: FLUX 3 ${why} — this scene falls back to stock visuals.`);
+            }
+        }
+
+        writeJson(ws.root, 'plan.json', plan);
+        writeJson(ws.root, 'flux3.json', {
+            jobId: id,
+            mode,
+            generatedAt: new Date().toISOString(),
+            clips,
+            fellBackScenes: fellBack,
+        });
+        console.log(`  ✅ FLUX3 stage done: ${clips.length}/${plan.scenes.length} scene(s) generated${fellBack > 0 ? `, ${fellBack} fell back to stock` : ''}`);
     }
 }
 
@@ -1467,6 +1588,9 @@ async function main() {
         case 'visuals':
             await runVisuals(args);
             break;
+        case 'flux3':
+            await runFlux3(args);
+            break;
         case 'voice':
             await runVoice(args);
             break;
@@ -1493,8 +1617,11 @@ async function main() {
             break;
         case 'pipeline':
         default:
-            // Full pipeline: plan → visuals → voice → render
+            // Full pipeline: plan → (optional FLUX 3) → visuals → voice → render.
+            // FLUX 3 jobs resolve their own no-acquire inside runVisuals (per-job);
+            // stock jobs acquire normally even in a mixed job file.
             await runPlan(args);
+            await runFlux3(args);
             await runVisuals(args);
             await runVoice(args);
             await runRender(args);

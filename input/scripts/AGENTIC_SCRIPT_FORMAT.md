@@ -49,6 +49,53 @@ Run: `npm run agentic:modular pipeline --file input/scripts/agentic-scripts.json
 | `aspect` | `string` | `"9:16"` | Aspect ratio override: `9:16`, `16:9`, `1:1` |
 | `backend` | `string` | `"agent"` | AI backend: `agent` (default, no API key), `vision` (opt-in Gemini/Ollama) |
 | `renderer` | `string` | `"ffmpeg"` | Render engine: `ffmpeg`, `remotion` |
+| `flux3` | `string` | `"off"` | **Optional FLUX 3 video backend** (see §3.1): `off` (stock visuals, default), `auto` (FLUX 3 when available, per-scene fallback to stock), `on` (require FLUX 3, fail loud) |
+| `flux3Prompts` | `string[]` | — | Per-scene FLUX 3 prompt overrides, aligned to scene order (index 0 = scene 1). Falls back to scene narration → `searchKeywords` → job `title` |
+
+### 3.1 FLUX 3 Video Backend (optional)
+
+FLUX 3 is an optional AI video generator available through the Hermes Agent
+Nous Portal (free tier: ~10 video generations/day). When enabled it **replaces
+the stock video downloads for the whole job** with AI-generated clips
+that match each scene's narration, and the pipeline falls back to the normal
+visuals stage whenever FLUX 3 is unavailable or a scene fails.
+
+- `flux3: "auto"` — the recommended mode. Uses FLUX 3 when the account is
+  signed in and the gateway responds; if FLUX 3 is unavailable (no sign-in,
+  daily quota exhausted, gateway error) or a single scene's generation fails,
+  that job/scene falls back to the stock visuals pipeline. The run never
+  breaks because of FLUX 3.
+- `flux3: "on"` — hard requirement. Fails the stage with a clear error if FLUX
+  3 is unavailable or any scene fails to generate. Use when the job must be
+  AI-generated.
+- absent / `"off"` — the pipeline is byte-for-byte the current stock behavior;
+  the `flux3` stage is skipped entirely.
+
+How it works: the `flux3` stage (run automatically inside `pipeline`, or
+standalone via `npm run agentic:modular flux3 --file <job.json>`) checks
+availability through `scripts/flux3-bridge.py` (which runs under the Hermes
+Agent venv and reuses Hermes' own Nous Portal auth + managed BFL gateway),
+generates one clip per scene into `workspace/jobs/<id>/flux3/scene_N.mp4`,
+patches `plan.json` so the scenes bind to those clips as local assets, and
+writes a `flux3.json` report (job ids, prompts, which scenes fell back). The
+visuals stage then runs in `--no-acquire` mode — no stock downloads are
+performed for FLUX 3 jobs.
+
+Example:
+
+```json
+{
+  "id": "ai-aurora",
+  "title": "Aurora Over the Fjords",
+  "orientation": "landscape",
+  "flux3": "auto",
+  "flux3Prompts": [
+    "Cinematic aerial shot of green aurora borealis over a Norwegian fjord at night, slow push-in",
+    "Close-up of a lone cabin window glowing warm yellow against the snowy mountains, snow falling"
+  ],
+  "script": "The aurora dances over the fjord.\nA warm cabin glows in the snow."
+}
+```
 
 ---
 

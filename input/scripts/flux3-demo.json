@@ -1,0 +1,13 @@
+[
+  {
+    "id": "flux3-demo",
+    "title": "Aurora Over the Fjords",
+    "orientation": "landscape",
+    "flux3": "auto",
+    "flux3Prompts": [
+      "Cinematic aerial shot of green aurora borealis dancing over a Norwegian fjord at night, snow-capped peaks, slow push-in, photorealistic",
+      "Close-up of a lone wooden cabin window glowing warm yellow against snowy mountains at night, snow falling gently, cinematic"
+    ],
+    "script": "The aurora dances over the fjord, painting the night sky in green ribbons.\nA warm cabin glows in the snow, a single window of light against the dark."
+  }
+]
