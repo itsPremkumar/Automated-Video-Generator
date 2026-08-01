@@ -32,7 +32,7 @@ export function flux3PromptForScene(
     const override = prompts[sceneIndexZeroBased];
     if (override && override.trim()) return override.trim();
     const narration = scene?.voiceoverText;
-    if (narration && narration.trim()) return narration.trim();
+    if (narration?.trim()) return narration.trim();
     const keywords = scene?.searchKeywords;
     if (Array.isArray(keywords) && keywords.length > 0) return keywords.join(', ');
     return (titleFallback || '').trim();

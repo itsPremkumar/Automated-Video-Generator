@@ -1,9 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { spawnSync } from 'child_process';
-// @ts-ignore
+// @ts-ignore - ffmpeg-static has no type declarations (but resolves at runtime)
 import ffmpeg from 'ffmpeg-static';
-// @ts-ignore
+// @ts-expect-error - ffprobe-static has no type declarations
 import ffprobe from 'ffprobe-static';
 import { logInfo, logError } from '../runtime';
 

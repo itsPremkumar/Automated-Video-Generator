@@ -57,7 +57,7 @@ function ffmpegPath(): string {
 function ffprobePath(): string {
     try {
         const p = require('ffprobe-static');
-        if (p && p.path && fs.existsSync(p.path)) return p.path;
+        if (p?.path && fs.existsSync(p.path)) return p.path;
     } catch { /* ffprobe-static not available */ }
     return 'ffprobe';
 }

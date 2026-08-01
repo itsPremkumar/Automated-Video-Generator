@@ -74,7 +74,7 @@ export const calculateSafeTrimAfterFrames = (
     return Math.max(1, durationFrames - SAFE_VIDEO_END_BUFFER_FRAMES);
 };
 
-// @ts-ignore - ffprobe-static types
+// @ts-expect-error - ffprobe-static has no type declarations
 import ffprobePath from 'ffprobe-static';
 
 export async function getVideoMetadata(

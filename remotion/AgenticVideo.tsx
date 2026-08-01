@@ -496,7 +496,7 @@ export const AgenticVideo: React.FC<AgenticVideoProps> = ({
                     )}
                 </Sequence>
             )}
-            {music && music.audioPath && (
+            {music?.audioPath && (
                 <MusicDuck
                     src={music.audioPath}
                     scenes={scenePlan.map((s) => ({ from: s.from, dur: s.dur, hasVoice: s.asset.hasVoice }))}

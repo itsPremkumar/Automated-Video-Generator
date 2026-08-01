@@ -124,10 +124,19 @@ input/voices/
 qa_frames/
 # Scratch test/smoke-test files (local verification only, not project source)
 *_test_advanced_fx.ts
-_create_test_job.js
 _add_jobs.js
 test-advanced.json
 src/agentic/operations/_test_*.ts
+# Agentic batch/sweep/bug-hunt scratch scripts (local verification runs, not source)
+input/scripts/agentic-scripts-*.json
+input/scripts/asset-sweep.json
+input/scripts/bug-hunt-*.json
+input/scripts/five-min.json
+input/scripts/flux3-sweep.json
+input/scripts/fx-sweep.json
+input/scripts/stock-images-sweep.json
+input/scripts/input-scripts.local.json
+scripts/fetch-stock-images.sh
 # Stray shell artifacts and temp dirs
 $null
 empty-dir-*/

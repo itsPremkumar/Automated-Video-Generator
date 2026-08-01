@@ -491,7 +491,7 @@ async function runOne(task: RoutedTask, input: RunInput): Promise<DispatchResult
                 return { kind: task.kind, summary: task.summary, ok: r.ok, output: r.output, detail: r.detail };
             }
             case 'images_to_video': {
-                const folder = f ?? a.folder ?? (input.files && input.files[0]);
+                const folder = f ?? a.folder ?? (input.files?.[0]);
                 if (!folder)
                     return { kind: task.kind, summary: task.summary, ok: false, detail: 'images_to_video needs a folder/files' };
                 const r = await imagesToVideo(folder, input.out, {
@@ -568,7 +568,7 @@ async function runOne(task: RoutedTask, input: RunInput): Promise<DispatchResult
 }
 
 function primaryOutput(r: DispatchResult): string | undefined {
-    return r.output ?? (r.outputs && r.outputs[0]);
+    return r.output ?? (r.outputs?.[0]);
 }
 
 /** Run a chain: each step's primary output feeds the next step's input file. */

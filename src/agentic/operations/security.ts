@@ -26,7 +26,7 @@ function outputRoot(): string {
  *   are rejected with an Error (path traversal guard).
  */
 export function safeOutputPath(out?: string): string | undefined {
-    if (!out || !out.trim()) return undefined;
+    if (!out?.trim()) return undefined;
     const root = outputRoot();
     const resolved = path.isAbsolute(out) ? path.resolve(out) : path.resolve(root, out);
     // Canonical traversal check (platform-independent): the resolved path must

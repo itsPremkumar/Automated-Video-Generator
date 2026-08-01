@@ -53,7 +53,7 @@ export async function withRetry<T>(fn: () => Promise<T>, opts: RetryOptions = {}
             const j = exp * jitter * Math.random();
             const wait = Math.round(exp + j);
             if (opts.label) {
-                // eslint-disable-next-line no-console
+                 
                 console.warn(
                     `[retry] ${opts.label}: attempt ${attempt} failed (${String((err as any)?.message ?? err)}); retrying in ${wait}ms`,
                 );

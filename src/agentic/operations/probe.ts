@@ -10,7 +10,7 @@
  */
 
 // ffprobe-static ships without type declarations.
-// @ts-ignore
+// @ts-expect-error - ffprobe-static/ffmpeg-static have no type declarations
 import ffprobeStatic from 'ffprobe-static';
 
 export interface MediaInfo {

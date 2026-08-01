@@ -12,7 +12,7 @@ import { runFfmpeg } from './edit.js';
 import { resolveFreeBackgroundMusic } from '../../lib/free-music.js';
 import { inputBgmPath } from '../../lib/path-safety.js';
 import { applyAutoDucking } from '../../lib/audio-processor.js';
-// @ts-ignore
+// @ts-expect-error - ffprobe-static/ffmpeg-static have no type declarations
 import ffprobe from 'ffprobe-static';
 
 export interface AudioTrackResult {

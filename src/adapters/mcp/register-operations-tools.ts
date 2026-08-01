@@ -61,7 +61,7 @@ export function registerOperationsTools(server: McpServer) {
                 voice: args.voice,
                 orientation: args.orientation,
             });
-            const primary = res.output ?? (res.outputs && res.outputs[0]);
+            const primary = res.output ?? (res.outputs?.[0]);
             return okr(res.ok, primary, `${res.summary}\n${res.detail}`);
         },
     );

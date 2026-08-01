@@ -46,7 +46,7 @@ export async function aiVerifyAsset(
     transcript?: string,
 ): Promise<AiScore | null> {
     const av = cfg.aiVerify;
-    if (!av || !av.enabled) return null;
+    if (!av?.enabled) return null;
     // Normalise: callers may still pass a legacy AgentBrain. toBridge wraps it as
     // a ModelBridge. The bridge is the unified LLM boundary: DRIVER (MCP) ->
     // configured model -> null. A null result means no AI -> signal gates decide.

@@ -555,7 +555,7 @@ export async function renderAgenticSlideshow(
 
     const runFfmpegSpawn = (args: string[], totalSec = 0, sceneDurations?: number[]): Promise<void> =>
         new Promise<void>((resolve, reject) => {
-            if (opts.verbose) {
+            if (opts.verbose || process.env.DEBUG_FF) {
                 console.error('[ffmpeg] ' + ffmpeg + ' ' + args.join(' '));
             }
             const cp = spawn(ffmpeg, args, { stdio: ['ignore', 'ignore', 'pipe'] });
@@ -1049,7 +1049,12 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
                 ...GPU_HWACCEL, '-i', silent, ...audioInputArgs,
                 '-filter_complex', vMix,
                 '-map', '0:v:0', '-map', '[voout]',
-                '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-y', voiced,
+                // `-shortest` is REQUIRED: the silent video has NO audio track, so
+                // `amix ... duration=longest` keeps the muxer open waiting on the
+                // video's (nonexistent) audio and ffmpeg copies the video stream
+                // forever (observed: 4h+ encode for a 4s source → test timeout
+                // at "render 79%"). `-shortest` caps the output at the video length.
+                '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-y', voiced,
             ]);
             try { fs.rmSync(silent, { force: true }); } catch { /* ignore */ }
             silent = voiced;

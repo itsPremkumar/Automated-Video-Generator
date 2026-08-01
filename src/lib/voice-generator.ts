@@ -29,7 +29,7 @@ import {
 } from './api-tts-provider';
 import { generateVoiceoverWithKokoro } from './api-tts-provider';
 
-// @ts-ignore - ffprobe-static types
+// @ts-expect-error - ffprobe-static has no type declarations
 import ffprobePath from 'ffprobe-static';
 
 import { AudioResult, VoiceConfig, VoiceEngineStatus } from './voice-types';

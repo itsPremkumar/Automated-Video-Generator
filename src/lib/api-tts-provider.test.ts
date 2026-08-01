@@ -80,7 +80,7 @@ test('generateVoiceoverWithVoicebox posts to /speak, polls status, downloads aud
     await generateVoiceoverWithVoicebox('Hello Voicebox', testFile, 'en');
 
     // 1) POST /speak with profile + engine
-    const speakCall = axiosMockCalls.find((c) => c.url && c.url.endsWith('/speak'));
+    const speakCall = axiosMockCalls.find((c) => c.url?.endsWith('/speak'));
     assert.ok(speakCall, 'expected a POST to /speak');
     assert.deepEqual(speakCall.data, {
         text: 'Hello Voicebox',
@@ -90,8 +90,8 @@ test('generateVoiceoverWithVoicebox posts to /speak, polls status, downloads aud
     });
 
     // 2) status polled, then audio downloaded
-    const statusCall = axiosMockCalls.find((c) => c.url && c.url.includes('/status'));
-    const audioCall = axiosMockCalls.find((c) => c.url && c.url.includes('/audio/'));
+    const statusCall = axiosMockCalls.find((c) => c.url?.includes('/status'));
+    const audioCall = axiosMockCalls.find((c) => c.url?.includes('/audio/'));
     assert.ok(statusCall, 'expected a GET to /generate/{id}/status');
     assert.ok(audioCall, 'expected a GET to /audio/{id}');
 

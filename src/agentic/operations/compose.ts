@@ -406,7 +406,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     scenes.forEach((sc, i) => {
         if (!sc) return;
         const overlayText = job.textOverlayByScene?.[i];
-        if (!overlayText || !overlayText.text) return;
+        if (!overlayText?.text) return;
         const start = cumStart[i] ?? 0;
         const end = start + (durations[i] ?? DEFAULT_SCENE_SEC);
         const enable = `gte(t,${start.toFixed(2)})*lt(t,${end.toFixed(2)})`;
@@ -426,7 +426,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     scenes.forEach((sc, i) => {
         if (!sc) return;
         const cta = job.ctaButtonByScene?.[i];
-        if (!cta || !cta.text) return;
+        if (!cta?.text) return;
         const start = cumStart[i] ?? 0;
         const end = start + (durations[i] ?? DEFAULT_SCENE_SEC);
         const enable = `gte(t,${start.toFixed(2)})*lt(t,${end.toFixed(2)})`;
@@ -478,7 +478,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     const maxTextW = Math.floor(frameW * 0.92);
     scenes.forEach((sc, i) => {
         if (!sc) return;
-        const cap = (sc.captionText && sc.captionText.trim()) ? sc.captionText : (sc.voiceoverText ?? '').trim();
+        const cap = (sc.captionText?.trim()) ? sc.captionText : (sc.voiceoverText ?? '').trim();
         if (!cap) return;
         const start = cumStart[i] ?? 0;
         const end = start + (durations[i] ?? DEFAULT_SCENE_SEC);
@@ -972,7 +972,7 @@ function applyLut(clipPath: string, sceneIndex: number, job: any, workDir: strin
  *  time window using drawtext with an enable expression. */
 function applyTextOverlay(clipPath: string, sceneIndex: number, job: any, workDir: string, W: number, H: number, cumStart: number, duration: number): string | null {
     const overlay = job.textOverlayByScene?.[sceneIndex];
-    if (!overlay || !overlay.text) return null;
+    if (!overlay?.text) return null;
     if (!fs.existsSync(clipPath)) return null;
     const out = path.join(workDir, `text_${sceneIndex}.mp4`);
     if (fs.existsSync(out)) fs.rmSync(out, { force: true });
