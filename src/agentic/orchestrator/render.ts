@@ -396,11 +396,23 @@ export async function renderAgenticSlideshow(
     const CJK_FONT_WIN = 'C:/Windows/Fonts/msyh.ttc';
     const CJK_FONT_LINUX = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc';
     const CJK_FONT = process.platform === 'win32' ? CJK_FONT_WIN : CJK_FONT_LINUX;
+    // BUG W3-1: multilingual captions in non-CJK scripts (Devanagari/Hindi,
+    // Tamil, Arabic, etc.) rendered as tofu boxes because pickFontArg only
+    // special-cased CJK. Nirmala UI (Windows) / Noto scripts (Linux) cover
+    // these. Detect the codepoint ranges and fall back to a capable font.
+    const INDIC_ARABIC_RE = /[஀-௿଀-୿ഀ-ിก-๛ༀ-༏က-ၿႀ-Ⴟ\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\u0900-\u097F\u0980-\u09FF\u0A00-\u0A7F\u0A80-\u0AFF\u0B00-\u0B7F\u0B80-\u0BFF\u0C00-\u0C7F\u0C80-\u0CFF\u0D00-\u0D7F]/;
+    const SCRIPT_FONT_WIN = 'C:/Windows/Fonts/Nirmala.ttf';
+    const SCRIPT_FONT_LINUX = '/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf';
+    const SCRIPT_FONT = process.platform === 'win32' ? SCRIPT_FONT_WIN : SCRIPT_FONT_LINUX;
     function pickFontArg(text: string): string {
         if (CJK_RE.test(text) && fs.existsSync(CJK_FONT)) {
             // NOTE: this ffmpeg build rejects drawtext `fontindex`, so just pass
             // the .ttc path directly — the first face renders CJK glyphs fine.
             const p = CJK_FONT.replace(/:/g, '\\:');
+            return `fontfile='${p}':`;
+        }
+        if (INDIC_ARABIC_RE.test(text) && fs.existsSync(SCRIPT_FONT)) {
+            const p = SCRIPT_FONT.replace(/:/g, '\\:');
             return `fontfile='${p}':`;
         }
         return FONT_ARG;
@@ -455,8 +467,13 @@ export async function renderAgenticSlideshow(
     const voiceScenes = res.voiceovers?.scenes ?? [];
     for (const v of visuals) {
         const vs = voiceScenes.find((s) => s.sceneIndex === v.sceneIndex);
-        if (vs && vs.durationSec && vs.durationSec > 0) {
-            v.durationSec = vs.durationSec;
+        if (vs) {
+            if (vs.durationSec && vs.durationSec > 0) v.durationSec = vs.durationSec;
+            // mirror orchestrator/pipeline.ts: attach the real voice track so
+            // the audio mix actually contains the narration (without this,
+            // modular-path renders were music-only, ~60s)
+            if (vs.audioPath && fs.existsSync(vs.audioPath)) v.audioPath = vs.audioPath;
+            if (vs.captionSegments?.length) v.captionSegments = vs.captionSegments;
             continue;
         }
         const sd = res.plan.scenes[v.sceneIndex] && res.plan.scenes[v.sceneIndex].durationSec;
@@ -784,7 +801,7 @@ else vfArgs.push(`${videoMap}null[vig]`);
         visuals.forEach((a, i) =>
             ordered.push({
                 file: a.localPath,
-                dur: res.plan.scenes[i]?.durationSec ?? a.durationSec ?? 4,
+                dur: a.durationSec ?? res.plan.scenes[i]?.durationSec ?? 4,
                 kind: 'scene', idx: i,
             }),
         );
