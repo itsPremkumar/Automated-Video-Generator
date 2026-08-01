@@ -439,7 +439,17 @@ export async function renderAgenticSlideshow(
         throw new Error('Cannot render: final gate did not produce a render manifest (gate.pass=' + res.gate.pass + ').');
 
     const visuals = res.manifest.assets.filter((a) => a.kind !== 'music');
+    // FIX: scene lengths must follow the ACTUAL synthesized speech when a
+    // voiceover exists. The plan's `durationSec` is a pre-voice ESTIMATE
+    // (the agent planner defaults to 8s) — overriding with it truncated a
+    // 16s narration to 8s and capped videos at half their script length.
+    const voiceScenes = res.voiceovers?.scenes ?? [];
     for (const v of visuals) {
+        const vs = voiceScenes.find((s) => s.sceneIndex === v.sceneIndex);
+        if (vs && vs.durationSec && vs.durationSec > 0) {
+            v.durationSec = vs.durationSec;
+            continue;
+        }
         const sd = res.plan.scenes[v.sceneIndex] && res.plan.scenes[v.sceneIndex].durationSec;
         if (sd && sd > 0) v.durationSec = sd;
     }

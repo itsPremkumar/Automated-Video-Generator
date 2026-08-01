@@ -847,13 +847,25 @@ async function runRender(cliArgs: CliArgs) {
                 const mp3File = path.join(audioDir, `scene_${s.sceneNumber}_voice.mp3`);
                 const found = [audioFile, mp3File].find(f => fs.existsSync(f));
                 if (found) {
-                    const dur = s.durationSec || 4;
+                    // FIX: scene length must follow the ACTUAL synthesized
+                    // speech duration (like the orchestrator path does via
+                    // estimateAudioDurationSafe). Previously this used the
+                    // plan's default durationSec (8s) — a 16s narration was
+                    // cut at 8s, capping videos far below their script length.
+                    const realDur = await estimateAudioDurationSafe(found);
+                    const dur = realDur > 0 ? realDur : s.durationSec || 4;
                     voiceScenes.push({
                         sceneIndex: s.sceneNumber - 1,
                         audioPath: found,
                         durationSec: dur,
                         captionSegments: s.captionSegments || [],
                     });
+                    // keep manifest asset durations in sync — render.ts sizes
+                    // visuals from `assets[].durationSec`
+                    const asset = (result.manifest?.assets ?? []).find(
+                        (a: any) => a.kind !== 'music' && a.sceneIndex === s.sceneNumber - 1,
+                    );
+                    if (asset) asset.durationSec = dur;
                 }
             }
         }

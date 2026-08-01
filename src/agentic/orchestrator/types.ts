@@ -16,6 +16,10 @@ export interface PipelineRequest {
     orientation?: 'portrait' | 'landscape' | 'square';
     voice?: string;
     musicQuery?: string;
+    /** Opt out of background music entirely (voice-over only final).
+     *  Defaults to true when musicQuery is set; set false for a
+     *  music-free variety proof. */
+    music?: boolean;
     candidatesPerAsset?: number;
     backend?: AgenticBackend;
     preferVisual?: 'image' | 'video';

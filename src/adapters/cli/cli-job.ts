@@ -21,6 +21,8 @@ export interface AgenticCliJob {
     orientation?: 'portrait' | 'landscape' | 'square';
     voice?: string;
     musicQuery?: string;
+    /** Opt out of background music (voice-only final). Default: music on. */
+    music?: boolean;
     /** Bind files from input/visuals/ to scenes (cycles if fewer than scenes). */
     localAssets?: string[];
     autoLocalAssets?: boolean;
@@ -441,6 +443,7 @@ export function buildPipelineRequest(job: AgenticCliJob, id: string, topic: stri
         orientation: job.orientation ?? 'portrait',
         voice: job.voice,
         musicQuery: job.musicQuery,
+        music: job.music,
         localAssets: job.localAssets,
         autoLocalAssets: job.autoLocalAssets,
         videoClips: job.videoClips,

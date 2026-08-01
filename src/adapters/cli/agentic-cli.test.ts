@@ -35,6 +35,15 @@ test('buildPipelineRequest forwards the control-surface extension fields', () =>
     assert.equal(typeof req.agent?.writeScript, 'function');
 });
 
+test('buildPipelineRequest forwards music opt-out flag', () => {
+    const job: AgenticCliJob = { ...baseJob(), music: false };
+    const req = buildPipelineRequest(job, 't1', 'Test');
+    assert.equal(req.music, false);
+    // default (absent) stays undefined → music on
+    const req2 = buildPipelineRequest(baseJob(), 't1', 'Test');
+    assert.equal(req2.music, undefined);
+});
+
 test('buildPipelineRequest keeps Phase-1 + legacy fields', () => {
     const job: AgenticCliJob = {
         ...baseJob(),

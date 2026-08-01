@@ -100,11 +100,52 @@ function cleanVoiceoverText(text: string): string {
         .trim();
 }
 
+// BUG FIX (voice cache staleness): `resolveExistingAudio` used to reuse ANY
+// existing WAV/MP3 (>1000 bytes) regardless of the script text it was
+// generated from. Re-running a job with a CHANGED script silently kept the
+// old short/narration-mismatched speech (e.g. 2.5s WAVs from a previous
+// run's one-line scenes) — truncating voiceovers without any error. Fix:
+// every generated audio file gets a `.txt-hash` sidecar (hash of the exact
+// voiceover text); a cached file is reused ONLY when its sidecar matches.
+function hashText(text: string): string {
+    let h = 5381;
+    for (let i = 0; i < text.length; i++) {
+        h = ((h << 5) + h + text.charCodeAt(i)) >>> 0;
+    }
+    return h.toString(36);
+}
+
+function audioHashPath(outputPath: string): string {
+    return `${outputPath}.txt-hash`;
+}
+
+function writeAudioHashSidecar(outputPath: string, text: string): void {
+    try {
+        fs.writeFileSync(audioHashPath(outputPath), hashText(text), 'utf8');
+    } catch {
+        /* sidecar is best-effort; missing sidecar only forces a re-synthesis */
+    }
+}
+
 function resolveExistingAudio(outputPath: string, text: string): AudioResult | null {
     if (!fs.existsSync(outputPath)) return null;
     try {
         const stats = fs.statSync(outputPath);
-        if (stats.size > 1000) return { path: outputPath, duration: getAudioDuration(outputPath, text) };
+        if (stats.size > 1000) {
+            // CACHE VALIDATION: reuse only when this file was generated from
+            // the SAME text. Stale files are DELETED so no other provider
+            // path can accidentally reuse them either.
+            const hp = audioHashPath(outputPath);
+            if (fs.existsSync(hp) && fs.readFileSync(hp, 'utf8').trim() === hashText(text)) {
+                return { path: outputPath, duration: getAudioDuration(outputPath, text) };
+            }
+            try {
+                fs.unlinkSync(outputPath);
+            } catch {
+                /* ignore */
+            }
+            return null;
+        }
     } catch {
         // re-generate if cached file looks broken
     }
@@ -257,6 +298,7 @@ async function generateSceneVoiceoverWithKokoroWrapper(scene: Scene, outputDir: 
     try {
         await generateVoiceoverWithKokoro(cleanText, outputPath);
         assertGeneratedAudioFile(outputPath);
+        writeAudioHashSidecar(outputPath, scene.voiceoverText);
         return { path: outputPath, duration: getAudioDuration(outputPath, scene.voiceoverText) };
     } catch (error: any) {
         if (fs.existsSync(outputPath))
@@ -291,6 +333,7 @@ async function generateSceneVoiceoverWithVoiceboxWrapper(
             profileId,
         });
         assertGeneratedAudioFile(outputPath);
+        writeAudioHashSidecar(outputPath, scene.voiceoverText);
         return { path: outputPath, duration: getAudioDuration(outputPath, scene.voiceoverText) };
     } catch (error: any) {
         if (fs.existsSync(outputPath))
@@ -319,6 +362,7 @@ async function generateSceneVoiceoverWithXttsWrapper(
         const language = config.language || 'en';
         await generateVoiceoverWithXtts(cleanText, outputPath, language);
         assertGeneratedAudioFile(outputPath);
+        writeAudioHashSidecar(outputPath, scene.voiceoverText);
         return { path: outputPath, duration: getAudioDuration(outputPath, scene.voiceoverText) };
     } catch (error: any) {
         if (fs.existsSync(outputPath))
@@ -620,6 +664,7 @@ try {
         }
 
         assertGeneratedAudioFile(outputPath);
+        writeAudioHashSidecar(outputPath, scene.voiceoverText);
         return { path: outputPath, duration: getAudioDuration(outputPath, scene.voiceoverText) };
     } catch (error: any) {
         if (fs.existsSync(outputPath))

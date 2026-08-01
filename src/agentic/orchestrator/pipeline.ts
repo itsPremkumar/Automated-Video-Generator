@@ -426,6 +426,14 @@ export async function runAgenticPipeline(
             return def || local;
         },
         fetchMusic: async (query, count) => {
+            // Opt-out: music: false → no background music (voice-only final).
+            // This is the no-music side of the 9:16/1:1/16:9 × music/no-music
+            // variety matrix. Acquire then produces zero music candidates and
+            // compose skips the music mix stage entirely.
+            if (req.music === false) {
+                logInfo('  🎵 Background music disabled (music: false) — voice-only final');
+                return [];
+            }
             // backgroundMusic override: use local file instead of searching
             if (req.backgroundMusic) {
                 const bgmPath = inputAssetPath(req.backgroundMusic);
