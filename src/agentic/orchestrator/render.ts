@@ -446,11 +446,13 @@ export async function renderAgenticSlideshow(
     function gpuExtra(encoder: string): string[] {
         if (encoder === 'h264_nvenc') return ['-preset', 'p7'];
         if (encoder === 'h264_amf') return ['-quality', 'speed'];
-        // CPU path (libx264): default threading. NOTE: previously capped to
-        // -threads 1 for G6 low-RAM OOM safety, but the real OOM driver was the
-        // colorbalance grade filter (removed in W5-1); eq/hue/format=gray grades
-        // are light, so default threads keep renders fast on this 6GB box.
-        return [];
+        // CPU path (libx264): cap threads for G6 low-RAM OOM safety. The
+        // per-scene re-encodes (grade filters + zoompan) malloc heavily; with
+        // default (all-core) threading, 3+ concurrent segment encodes blew
+        // past the 6GB box (RENDER_EXIT=137 SIGKILL observed). -threads 1
+        // bounds it. The earlier 5h "hang" was the d=1 zoompan loop (W5-2),
+        // NOT threads — with that fixed, single-thread is fast enough.
+        return ['-threads', '1'];
     }
     // Pre-resolve the GPU encoder once so every use site reads the cached value.
     const GPU_ENCODER = resolveGpuEncoder();
@@ -627,7 +629,7 @@ export async function renderAgenticSlideshow(
         const dur = a.durationSec ?? 4;
         const sceneKb = res.plan.scenes[i]?.kenBurns;
         const doZoom = a.kind === 'image' && (sceneKb !== false ? opts.kenBurns !== false : false);
-        const zoom = doZoom ? `,zoompan=z=min(zoom+0.0008,1.04):d=${Math.round(dur * 25)}:s=${W}x${H}` : '';
+        const zoom = doZoom ? `,scale=${Math.round(W * 1.04)}:${Math.round(H * 1.04)}:force_original_aspect_ratio=increase,crop=${W}:${H}:x='(iw-${W})*(t/${dur})':y='(ih-${H})*(t/${dur})'` : '';
         const grade = gradeFilter(stylePlan.scenes[i]?.grade ?? 'neutral');
         const tag = '[' + i + ':v]';
         // ═══ Advanced editing (per-scene, additive) — mirrors visual-fx.ts ═══
@@ -830,15 +832,15 @@ else vfArgs.push(`${videoMap}null[vig]`);
             const isVideo = /\.(mp4|webm|mov|m4v)$/i.test(clip.file);
             const sceneKb = clip.kind === 'scene' ? res.plan.scenes[clip.idx]?.kenBurns : undefined;
             const doZoom = clip.kind === 'scene' && !isVideo && (sceneKb !== false ? opts.kenBurns !== false : false);
-            // BUG C3: with a tpad-cloned 25fps stream + d=1 the `zoom` variable
-            // resets every input frame, so zoom+0.0008 never accumulates
-            // (static image). Drive the zoom off `time` instead and anchor at
-            // the center so the Ken Burns drift is actually visible.
-            // BUG W5-2: `d=1` makes zoompan emit only 1 frame per input frame; on
-            // a still image that yields a 1-frame stream and `trim=duration` can't
-            // stretch it -> ffmpeg loops the input forever (multi-hour encode
-            // hang). Set d to the scene's frame count so the pan fills `dur`.
-            const zoom = doZoom ? `,zoompan=z='1+0.04*time':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${Math.round(dur * 25)}:s=${W}x${H}:fps=25` : '';
+            // BUG W5-2: replaced zoompan with a streaming scale+crop pan.
+            // zoompan buffered all `d` frames (~180MB for a 2.6s/25fps scene)
+            // and with d=1 on a still image it looped forever (5h encode).
+            // scale (slightly larger) + crop with a time-based x/y pans over
+            // the tpad-timed stream — streaming, no frame buffer, no loop.
+            const zp = Math.max(1.04, 1 + 0.04); // 4% zoom for the drift
+            const zoom = doZoom
+                ? `,scale=${Math.round(W * zp)}:${Math.round(H * zp)}:force_original_aspect_ratio=increase,crop=${W}:${H}:x='(iw-${W})*(t/${dur})':y='(ih-${H})*(t/${dur})'`
+                : '';
             const grade = clip.kind === 'scene' ? gradeFilter(stylePlan.scenes[clip.idx]?.grade ?? 'neutral') : '';
             const segCaptionArg: string[] = [];
             if (clip.kind === 'scene' && burn) {
@@ -902,7 +904,7 @@ else vfArgs.push(`${videoMap}null[vig]`);
                     // quoted expr are legal.
                     let expr = `${sorted[sorted.length - 1].z}`;
                     for (let k = sorted.length - 1; k >= 0; k--) expr = `if(lte(time,${sorted[k].t}),${sorted[k].z},${expr})`;
-                    segAdv.push(`zoompan=z='${expr}':d=${Math.round(dur * 25)}:s=${W}x${H}:fps=25`);
+                    segAdv.push(`scale='iw*(${expr})':'ih*(${expr})':force_original_aspect_ratio=increase,crop=${W}:${H}:x='(iw-${W})/2':y='(ih-${H})/2'`);
                 }
             }
             // BUG W2-1: shakeByScene / punchInByScene / parallaxDepthByScene /
@@ -920,9 +922,9 @@ else vfArgs.push(`${videoMap}null[vig]`);
                 }
                 const punch = opts.punchInByScene?.[si];
                 if (punch && punch !== 1) {
-                    // animate a subtle zoom-in (scale up then settle) via zoompan
-                    const z = Math.max(1.05, Number(punch));
-                    segAdv.push(`zoompan=z='min(${z}\\\\,1+0.05*time)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${Math.round(dur * 25)}:s=${W}x${H}:fps=25`);
+                    // BUG W5-2: streaming scale+crop punch-in (no zoompan buffer).
+                    // Starts zoomed (scale=punch) and settles to 1x as t->dur.
+                    segAdv.push(`scale=${Math.round(W * punch)}:${Math.round(H * punch)}:force_original_aspect_ratio=increase,crop=${W}:${H}:x='(iw-${W})*(1-(t/${dur}))':y='(ih-${H})*(1-(t/${dur}))'`);
                 }
                 const par = opts.parallaxDepthByScene?.[si];
                 if (par && par !== 0) {
