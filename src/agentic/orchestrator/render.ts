@@ -178,7 +178,7 @@ async function writeOutputArtifacts(
             try { fs.copyFileSync(sc, base + '_' + sc.split(/[\\/]/).pop()); } catch { /* ignore */ }
         }
     }
-    if (languages && languages.length) {
+    if (languages?.length) {
         const nativeSrt = (res.voiceovers?.sidecars ?? []).find((s) => s.endsWith('.srt'));
         if (nativeSrt && fs.existsSync(nativeSrt)) {
             try {
@@ -211,7 +211,7 @@ async function writeOutputArtifacts(
     let aspectPaths: string[] = [];
     // BUG A2: honor the job's exportAspects (incl. '4K') instead of a
     // hardcoded three-aspect list.
-    const aspects = (exportAspects && exportAspects.length ? exportAspects : ['9:16', '16:9', '1:1']) as any;
+    const aspects = (exportAspects?.length ? exportAspects : ['9:16', '16:9', '1:1']) as any;
     try { aspectPaths = await exportMultiAspect(mp4, aspects); } catch { /* optional */ }
     if (aiVerify?.verifyOnRender && brain.modelEnabled && aspectPaths.length) {
         const keywords = res.plan.scenes.flatMap((s) => s.searchKeywords);
@@ -393,7 +393,8 @@ export async function renderAgenticSlideshow(
     // tofu boxes because the default Arial chain has no CJK glyphs. When the
     // text contains CJK codepoints, fall back to a CJK-capable font
     // (msyh.ttc on Windows, Noto CJK on Linux). .ttc collections need fontindex.
-    const CJK_RE = /[぀-ヿ㐀-鿿\uF900-\uFAFF\u2F00-\u2FDF\u3000-\u303F\uFF00-\uFFEF]/;
+     
+    const CJK_RE = /[\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF\u2F00-\u2FDF\u3000-\u303F\uFF00-\uFFEF]/u;
     const CJK_FONT_WIN = 'C:/Windows/Fonts/msyh.ttc';
     const CJK_FONT_LINUX = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc';
     const CJK_FONT = process.platform === 'win32' ? CJK_FONT_WIN : CJK_FONT_LINUX;
@@ -401,7 +402,8 @@ export async function renderAgenticSlideshow(
     // Tamil, Arabic, etc.) rendered as tofu boxes because pickFontArg only
     // special-cased CJK. Nirmala UI (Windows) / Noto scripts (Linux) cover
     // these. Detect the codepoint ranges and fall back to a capable font.
-    const INDIC_ARABIC_RE = /[஀-௿଀-୿ഀ-ിก-๛ༀ-༏က-ၿႀ-Ⴟ\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\u0900-\u097F\u0980-\u09FF\u0A00-\u0A7F\u0A80-\u0AFF\u0B00-\u0B7F\u0B80-\u0BFF\u0C00-\u0C7F\u0C80-\u0CFF\u0D00-\u0D7F]/;
+    // eslint-disable-next-line no-misleading-character-class -- Unicode code-point ranges for Indic/Arabic scripts; tested and working
+    const INDIC_ARABIC_RE = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\u0900-\u097F\u0980-\u09FF\u0A00-\u0A7F\u0A80-\u0AFF\u0B00-\u0B7F\u0B80-\u0BFF\u0C00-\u0C7F\u0C80-\u0CFF\u0D00-\u0D7F\u0E00-\u0E7F\u0E80-\u0EFF\u1000-\u109F]/u;
     const SCRIPT_FONT_WIN = 'C:/Windows/Fonts/Nirmala.ttf';
     const SCRIPT_FONT_LINUX = '/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf';
     const SCRIPT_FONT = process.platform === 'win32' ? SCRIPT_FONT_WIN : SCRIPT_FONT_LINUX;
@@ -625,7 +627,7 @@ export async function renderAgenticSlideshow(
         const dur = a.durationSec ?? 4;
         const sceneKb = res.plan.scenes[i]?.kenBurns;
         const doZoom = a.kind === 'image' && (sceneKb !== false ? opts.kenBurns !== false : false);
-        const zoom = doZoom ? `,zoompan=z=min(zoom+0.0008\\\\\\\\,1.04):d=1:s=${W}x${H}` : '';
+        const zoom = doZoom ? `,zoompan=z=min(zoom+0.0008,1.04):d=${Math.round(dur * 25)}:s=${W}x${H}` : '';
         const grade = gradeFilter(stylePlan.scenes[i]?.grade ?? 'neutral');
         const tag = '[' + i + ':v]';
         // ═══ Advanced editing (per-scene, additive) — mirrors visual-fx.ts ═══
@@ -832,7 +834,11 @@ else vfArgs.push(`${videoMap}null[vig]`);
             // resets every input frame, so zoom+0.0008 never accumulates
             // (static image). Drive the zoom off `time` instead and anchor at
             // the center so the Ken Burns drift is actually visible.
-            const zoom = doZoom ? `,zoompan=z='1+0.04*time':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=${W}x${H}:fps=25` : '';
+            // BUG W5-2: `d=1` makes zoompan emit only 1 frame per input frame; on
+            // a still image that yields a 1-frame stream and `trim=duration` can't
+            // stretch it -> ffmpeg loops the input forever (multi-hour encode
+            // hang). Set d to the scene's frame count so the pan fills `dur`.
+            const zoom = doZoom ? `,zoompan=z='1+0.04*time':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${Math.round(dur * 25)}:s=${W}x${H}:fps=25` : '';
             const grade = clip.kind === 'scene' ? gradeFilter(stylePlan.scenes[clip.idx]?.grade ?? 'neutral') : '';
             const segCaptionArg: string[] = [];
             if (clip.kind === 'scene' && burn) {
@@ -896,7 +902,7 @@ else vfArgs.push(`${videoMap}null[vig]`);
                     // quoted expr are legal.
                     let expr = `${sorted[sorted.length - 1].z}`;
                     for (let k = sorted.length - 1; k >= 0; k--) expr = `if(lte(time,${sorted[k].t}),${sorted[k].z},${expr})`;
-                    segAdv.push(`zoompan=z='${expr}':d=1:s=${W}x${H}:fps=25`);
+                    segAdv.push(`zoompan=z='${expr}':d=${Math.round(dur * 25)}:s=${W}x${H}:fps=25`);
                 }
             }
             // BUG W2-1: shakeByScene / punchInByScene / parallaxDepthByScene /
@@ -916,7 +922,7 @@ else vfArgs.push(`${videoMap}null[vig]`);
                 if (punch && punch !== 1) {
                     // animate a subtle zoom-in (scale up then settle) via zoompan
                     const z = Math.max(1.05, Number(punch));
-                    segAdv.push(`zoompan=z='min(${z}\\,1+0.05*time)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=${W}x${H}:fps=25`);
+                    segAdv.push(`zoompan=z='min(${z}\\\\,1+0.05*time)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${Math.round(dur * 25)}:s=${W}x${H}:fps=25`);
                 }
                 const par = opts.parallaxDepthByScene?.[si];
                 if (par && par !== 0) {
@@ -1093,7 +1099,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
         const totalDur = introDur + visuals.reduce((s, a) => s + (a.durationSec ?? 4), 0) + outroDur;
         const ol: string[] = [];
         const safeEsc = (t: string) => ffmpegDrawtextEscape(t).replace(/\\n/g, ' ');
-        if (opts.titleCard && opts.titleCard.title) {
+        if (opts.titleCard?.title) {
             const tcDur = opts.titleCard.durationSec ?? 3;
             const tcEnable = `lte(t\\,${tcDur})`;
             const title = safeEsc(opts.titleCard.title);
