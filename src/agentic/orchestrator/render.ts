@@ -341,6 +341,10 @@ export async function renderAgenticSlideshow(
         captions?: 'burned' | 'karaoke' | 'none';
         captionTheme?: string;
         intro?: { title: string; subtitle?: string; durationSec?: number };
+        titleCard?: { title: string; subtitle?: string; durationSec?: number };
+        lowerThird?: string;
+        endCta?: string;
+        progressBar?: boolean;
         outro?: { ctaText: string; showSubscribe?: boolean; hashtags?: string[]; durationSec?: number };
         jCutSec?: number;
         exportAspects?: string[];
@@ -973,6 +977,64 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             await runFfmpegSpawn(pass1, totalSec, sceneDurations);
         } finally {
             try { fs.rmSync(fcScript, { force: true }); } catch { /* ignore */ }
+        }
+    }
+
+    // BUG W1-1: global overlays (titleCard / lowerThird / endCta / progressBar)
+    // were forwarded into the render opts but NEVER burned on the modular CLI
+    // path — only compose.ts handled them, so the standard `render` command
+    // silently dropped them. Apply them here as ONE post-process pass on the
+    // fully-concatenated `silent` video. Doing it post-concat (not per-segment
+    // and not in the non-segmented-only vfArgs) guarantees the overlays survive
+    // BOTH render branches and span the whole timeline correctly.
+    {
+        const introDur = opts.intro?.durationSec ?? (introClip ? (opts.intro?.durationSec ?? 2.5) : 0);
+        const outroDur = opts.outro?.durationSec ?? (outroClip ? (opts.outro?.durationSec ?? 3) : 0);
+        const totalDur = introDur + visuals.reduce((s, a) => s + (a.durationSec ?? 4), 0) + outroDur;
+        const ol: string[] = [];
+        const safeEsc = (t: string) => ffmpegDrawtextEscape(t).replace(/\\n/g, ' ');
+        if (opts.titleCard && opts.titleCard.title) {
+            const tcDur = opts.titleCard.durationSec ?? 3;
+            const tcEnable = `lte(t\\,${tcDur})`;
+            const title = safeEsc(opts.titleCard.title);
+            ol.push(`drawtext=${FONT_ARG}text='${title}':fontcolor=white:fontsize=64:box=1:boxcolor=black@0.45:boxborderw=16:x=(w-text_w)/2:y=h/2-40:enable='${tcEnable}'`);
+            if (opts.titleCard.subtitle) {
+                const sub = safeEsc(opts.titleCard.subtitle);
+                ol.push(`drawtext=${FONT_ARG}text='${sub}':fontcolor=white@0.85:fontsize=32:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=h/2+20:enable='${tcEnable}'`);
+            }
+        }
+        if (opts.lowerThird) {
+            const lt = safeEsc(opts.lowerThird);
+            ol.push(`drawtext=${FONT_ARG}text='${lt}':fontcolor=white:fontsize=36:box=1:boxcolor=black@0.5:boxborderw=12:x=40:y=h-text_h-50`);
+        }
+        if (opts.endCta) {
+            const ctaStart = Math.max(0, totalDur - 4);
+            const cta = safeEsc(opts.endCta);
+            ol.push(`drawtext=${FONT_ARG}text='${cta}':fontcolor=yellow:fontsize=48:box=1:boxcolor=black@0.55:boxborderw=14:x=(w-text_w)/2:y=h/2:enable='gte(t\\,${ctaStart})'`);
+        }
+        if (opts.progressBar) {
+            const barH = 8;
+            ol.push(`drawbox=x=0:y=h-${barH}:w='iw*(t/${totalDur.toFixed(2)})':h=${barH}:color=white@0.8:t=fill:enable='gt(t\\,0)'`);
+        }
+        if (ol.length) {
+            const ovOut = outDir + '/_av_ol_' + res.workspace.jobId + '.mp4';
+            const ovArgs = [
+                ...GPU_HWACCEL, '-i', silent,
+                '-vf', ol.join(','),
+                '-c:v', GPU_ENCODER, ...GPU_EXTRA, '-pix_fmt', 'yuv420p', '-r', '25',
+                '-c:a', 'copy', '-y', ovOut,
+            ];
+            try {
+                await runFfmpegSpawn(ovArgs, totalDur);
+                if (fs.existsSync(ovOut) && fs.statSync(ovOut).size > 2048) {
+                    try { fs.rmSync(silent, { force: true }); } catch { /* ignore */ }
+                    silent = ovOut;
+                } else {
+                    console.warn('⚠ global-overlay pass produced no usable file; keeping base render');
+                }
+            } catch (e: any) {
+                console.warn('⚠ global-overlay pass failed (' + (e?.message ?? e) + '); keeping base render');
+            }
         }
     }
 

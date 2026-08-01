@@ -949,6 +949,14 @@ async function runRender(cliArgs: CliArgs) {
             emojiByScene: job.emojiByScene ?? meta.emojiByScene,
             // BUG combo-2: forward job-wide paletteFilter to the modular render path.
             paletteFilter: job.paletteFilter ?? meta.paletteFilter,
+            // BUG W1-1: titleCard / lowerThird / endCta / progressBar were forwarded
+            // into the build request (cli-job.ts) but NEVER consumed by the modular
+            // render path (render.ts) — only compose.ts handles them. The CLI render
+            // silently dropped them. Forward so render.ts can burn them.
+            titleCard: job.titleCard ?? meta.titleCard,
+            lowerThird: job.lowerThird ?? meta.lowerThird,
+            endCta: job.endCta ?? meta.endCta,
+            progressBar: job.progressBar ?? meta.progressBar,
         });
 
         if (finalMp4 && fs.existsSync(finalMp4)) {
