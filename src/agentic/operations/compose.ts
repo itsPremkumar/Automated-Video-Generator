@@ -17,6 +17,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { createHash } from 'crypto';
 import { execFileSync } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
 import type { AgenticCliJob } from '../../adapters/cli/cli-job.js';
@@ -87,6 +88,8 @@ export interface ComposeResult {
     extraAspects?: Record<string, string>;
     sfxUsed: number;
     scenesRendered: number;
+    /** P1#4: scene-index pairs that share an identical source asset. */
+    duplicateScenePairs?: Array<[number, number]>;
 }
 
 function esc(t: string): string {
@@ -211,6 +214,46 @@ export function isReadableVideo(p: string): boolean {
     } catch { return false; }
 }
 
+/**
+ * P1#4: lightweight cross-scene duplicate detection.
+ *
+ * Two scenes that resolve to the SAME source asset (same file path, or same
+ * content hash of the first 256 KB) produce an identical-looking shot back to
+ * back — a real quality regression in long videos. This is NON-FATAL: it only
+ * emits a console warning + returns the offending pairs so the caller can log
+ * them. It never blocks or re-orders the composition.
+ *
+ * Cost is bounded: O(n) file reads of at most 256 KB each, so it stays cheap
+ * even on a 6GB box with many scenes.
+ */
+export function detectDuplicateScenes(visuals: string[]): Array<[number, number]> {
+    const sig = (p: string): string | null => {
+        if (!p || !fs.existsSync(p)) return null;
+        try {
+            const st = fs.statSync(p);
+            if (st.size === 0) return null;
+            const fd = fs.openSync(p, 'r');
+            const buf = Buffer.alloc(Math.min(262144, st.size));
+            const n = fs.readSync(fd, buf, 0, buf.length, 0);
+            fs.closeSync(fd);
+            const h = createHash('sha1').update(buf.subarray(0, n)).digest('hex');
+            // fold in size so two different files that happen to share a header
+            // prefix still differ
+            return `${st.size}:${h}`;
+        } catch { return null; }
+    };
+    const seen = new Map<string, number>();
+    const dups: Array<[number, number]> = [];
+    visuals.forEach((v, i) => {
+        const s = sig(v);
+        if (!s) return;
+        const prev = seen.get(s);
+        if (prev !== undefined) dups.push([prev, i]);
+        else seen.set(s, i);
+    });
+    return dups;
+}
+
 /** Resolve the ffprobe-static binary path (no type decls shipped). */
 function ffprobeStaticPath(): string | undefined {
     try {
@@ -279,6 +322,18 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
         visuals = v2; audios = a2; scenes = s2;
     }
     result.scenesRendered = visuals.length;
+
+    // ── 1a) P1#4: cross-scene duplicate detection (NON-FATAL warning only) ──
+    // Catches identical source assets reused across scenes (back-to-back
+    // identical shots). Never blocks the render; surfaces pairs for review.
+    try {
+        const dupPairs = detectDuplicateScenes(visuals);
+        if (dupPairs.length) {
+            const pairs = dupPairs.map(([a, b]) => `scene ${a} ⟷ scene ${b}`).join(', ');
+            console.warn(`  ⚠ duplicate-scene detection: ${dupPairs.length} pair(s) share an identical source asset — ${pairs}`);
+            (result as ComposeResult & { duplicateScenePairs?: Array<[number, number]> }).duplicateScenePairs = dupPairs;
+        }
+    } catch { /* best-effort, never fatal */ }
 
     // ── 1b) Real per-scene durations from voiceover length (fixes hardcoded 3s
     //        drift). Falls back to plan duration, then DEFAULT_SCENE_SEC. ──

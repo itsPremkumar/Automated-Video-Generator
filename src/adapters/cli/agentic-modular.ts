@@ -57,6 +57,7 @@ import { estimateAudioDurationSafe } from '../../agentic/orchestrator/ffmpeg.js'
 import { normalizeJobId } from '../../shared/identifiers.js';
 import { getAgenticWorkspace } from '../../agentic/management/workspace.js';
 import { flux3Mode, flux3Aspect, flux3PromptForScene, flux3Duration } from './flux3-option.js';
+import { runProviderHealthCommand } from './provider-health.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -1596,6 +1597,8 @@ async function main() {
         console.log(`    revise            Re-edit a delivered job from change notes (--auto to self-heal)`);
         console.log(`    list              Show workspace state`);
         console.log(`    doctor            Check system health`);
+        console.log(`    status            Show provider health (pexels/pixabay/openverse failures this session)`);
+        console.log(`                        --json for machine-readable output`);
         console.log(`    pipeline          Run all stages (default)`);
         console.log(`  `);
         console.log(`  Edit flags: --scene N --visual kw --voice name --volume 0.8`);
@@ -1643,6 +1646,9 @@ async function main() {
             break;
         case 'revise':
             await runRevise(args);
+            break;
+        case 'status':
+            await runProviderHealthCommand({ json: args.json === true || args.json === 'true' });
             break;
         case 'list':
             await runList();

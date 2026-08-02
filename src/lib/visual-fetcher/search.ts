@@ -9,6 +9,7 @@ import { searchOpenverseImages } from '../openverse-fetcher';
 import { freeVideoDownloader, freeVideoAdapter } from '../free-video/index';
 import { freeImageAdapter } from '../free-image/index';
 import { isSafeUrl } from '../net-safety';
+import { recordProviderFailure, recordProviderSuccess } from './provider-health';
 import { MediaAsset, VideoCache } from './types';
 import {
     getCache, saveCache,
@@ -204,6 +205,7 @@ export async function searchVideos(
             await sleep(5000);
             return searchVideos(query, count, page, orientation);
         }
+        recordProviderFailure('pexels', error?.message || String(error));
         console.log(`⚠ [PEXELS] Video search error: ${error?.message || error}`);
         return [];
     }
@@ -259,6 +261,7 @@ export async function searchImages(
             await sleep(5000);
             return searchImages(query, count, page, orientation, minWidth);
         }
+        recordProviderFailure('pexels', error?.message || String(error));
         return [];
     }
 }
@@ -399,6 +402,7 @@ export async function searchPixabayVideos(
             await sleep(5000);
             return searchPixabayVideos(query, count, orientation);
         }
+        recordProviderFailure('pixabay', error?.message || String(error));
         return [];
     }
 }

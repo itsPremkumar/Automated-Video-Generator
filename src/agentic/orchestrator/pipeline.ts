@@ -252,7 +252,9 @@ export async function runAgenticPipeline(
         // Every fallback fetch below MUST be time-bounded. These calls used
         // to run bare (no withTimeout) — one wedged provider request hung the
         // entire pipeline indefinitely (observed twice in matrix QA).
-        const POOL_FETCH_TIMEOUT_MS = 20000;
+        // Bounded to 12s (down from 20s) — on RAM-tight dev rigs, 4 parallel × 20s
+        // was 80s worst-case tail. 12s still catches slow providers without the drag.
+        const POOL_FETCH_TIMEOUT_MS = 12000;
         for (const q of variants) {
             if (preferVideo) {
                 try {
@@ -278,14 +280,30 @@ export async function runAgenticPipeline(
             if (sharedImagePool.length >= 12) break;
         }
         if (sharedImagePool.length === 0) {
+            // P2#1: race multiple loupe candidates in parallel; first hit wins.
+            // Previously a single 12s sequential fallback — multiplied worst-case
+            // cold-start when that one slow provider also timed out.
+            const candidates = [topicNoun, 'nature', 'city', 'technology']
+                .map((s) => (s || '').trim())
+                .filter(Boolean)
+                .slice(0, 3);
             try {
-                const res = await withTimeout(
-                    fetchVisualsForScene([topicNoun], preferVideo, plan.orientation),
-                    12000,
-                    `fetchVisual[topicNoun]`,
+                const res = await Promise.any(
+                    candidates.map((cand) =>
+                        withTimeout(
+                            fetchVisualsForScene([cand], preferVideo, plan.orientation),
+                            10000,
+                            `fetchVisual[lastditch:${cand}]`,
+                        ).then((r) => {
+                            // Reject empty results so Promise.any keeps waiting
+                            const hit = r && (Array.isArray(r) ? r[0]?.url : r.url);
+                            if (!hit) throw new Error('empty');
+                            return r;
+                        }),
+                    ),
                 );
-                if (res) add(Array.isArray(res) ? res[0]?.url : res.url);
-            } catch { /* ignore */ }
+                add(Array.isArray(res) ? res[0]?.url : res.url);
+            } catch { /* all last-ditch candidates failed — pool stays empty */ }
         }
         return sharedImagePool;
     };
