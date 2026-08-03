@@ -36,7 +36,18 @@ jobs:
         # Network-dependent image-provider tests (Wikimedia/MetMuseum) skip
         # automatically when their host is unreachable (see TESTING.md §6), so
         # CI does not require external network access or API keys.
-        run: npm run test:unit
+        # Output is teed to a file and uploaded as an artifact (below) so a
+        # Linux-runner-only failure is diagnosable from the downloaded log when
+        # the in-page step log is not retained.
+        run: npm run test:unit 2>&1 | tee test-suite.log
+
+      - name: Upload test log (diagnostics)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-suite-log
+          path: test-suite.log
+          if-no-files-found: ignore
 
       - name: Coverage
         # Produces a coverage report (lines/functions/branches) and fails CI if
