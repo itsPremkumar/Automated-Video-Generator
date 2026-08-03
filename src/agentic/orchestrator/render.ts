@@ -11,7 +11,7 @@ import { writeJson, readJson } from '../management/workspace.js';
 import { chunkCues, mergeWordsToLines, fmtSrt } from './captions.js';
 import { runFfmpeg, estimateAudioDurationSafe } from './ffmpeg.js';
 
-import { buildPaletteFilter } from '../operations/compose.js';
+import { buildPaletteFilter, resolveCaptionFont, needsComplexScriptShaping, resolveFontFile } from '../operations/compose.js';
 import type { PipelineResult } from './types.js';
 import { AGENTIC_OUTPUT_DIR } from '../management/workspace.js';
 import { logInfo, logWarn, logError } from '../../shared/logging/runtime-logging.js';
@@ -424,6 +424,36 @@ export async function renderAgenticSlideshow(
             return `fontfile='${p}':`;
         }
         return FONT_ARG;
+    }
+
+    // libass (subtitles filter) caption for complex scripts (Tamil/Devanagari/
+    // Arabic) that drawtext cannot shape. Writes a timed ASS to `workDir/caps`
+    // and returns a `subtitles=...` filter pointing fontsdir at the bundled
+    // fonts so headless boxes use the correct Noto font (no fontconfig/DirectWrite).
+    function libassCaption(opts: {
+        text: string; start: number; end: number; size: number; color: string;
+        fontFile: string; workDir: string; idx: number;
+    }): string {
+        const safeText = opts.text.split(String.fromCharCode(10)).join(' ').split(String.fromCharCode(13)).join(' ');
+        const fontName = path.basename(opts.fontFile, '.ttf');
+        const fontsDir = path.dirname(opts.fontFile);
+        const capDir = path.join(opts.workDir, 'caps');
+        fs.mkdirSync(capDir, { recursive: true });
+        const assPath = path.join(capDir, `cap_${opts.idx}.ass`);
+        const isHex = opts.color.startsWith('#') || /^0x?[0-9a-fA-F]{6}$/.test(opts.color);
+        const colorHex = isHex ? (opts.color.startsWith('#') ? opts.color.slice(1) : opts.color) : 'FFFFFF';
+        const startTs = `${Math.floor(opts.start / 3600)}:${String(Math.floor((opts.start % 3600) / 60)).padStart(2, '0')}:${String(Math.floor(opts.start % 60)).padStart(2, '0')}.${String(Math.round((opts.start % 1) * 100)).padStart(2, '0')}`;
+        const endTs = `${Math.floor(opts.end / 3600)}:${String(Math.floor((opts.end % 3600) / 60)).padStart(2, '0')}:${String(Math.floor(opts.end % 60)).padStart(2, '0')}.${String(Math.round((opts.end % 1) * 100)).padStart(2, '0')}`;
+        const ass = [
+            '[Script Info]', 'ScriptType: v4.00', 'PlayResX: 1280', 'PlayResY: 720', '',
+            '[V4+ Styles]',
+            'Format: Name, Fontname, Fontsize, PrimaryColour, Outline, Shadow, Alignment, MarginV',
+            `Style: Cap, ${fontName}, ${opts.size}, &H00${colorHex}B0, 2, 1, 2, 40`,
+            '', '[Events]', 'Format: Layer, Start, End, Style, Text',
+            `Dialogue: 0,${startTs},${endTs},Cap,${safeText}`, '',
+        ].join('\n');
+        fs.writeFileSync(assPath, ass, 'utf-8');
+        return `subtitles='${assPath}':fontsdir='${fontsDir}':force_style='FontName=${fontName},FontSize=${opts.size},PrimaryColour=&H00${colorHex}B0':original_size=1280x720`;
     }
 
     // ── GPU encoder detection (cached once per process via module-level var) ──
@@ -848,6 +878,8 @@ else vfArgs.push(`${videoMap}null[vig]`);
                 : '';
             const grade = clip.kind === 'scene' ? gradeFilter(stylePlan.scenes[clip.idx]?.grade ?? 'neutral') : '';
             const segCaptionArg: string[] = [];
+            // Transient dir for libass ASS files (complex-script captions).
+            const capWorkDir = path.resolve(AGENTIC_OUTPUT_DIR, res.workspace.jobId, 'caps');
             if (clip.kind === 'scene' && burn) {
                 const a = visuals[clip.idx];
                 const raw = a.captionSegments?.length
@@ -869,6 +901,17 @@ else vfArgs.push(`${videoMap}null[vig]`);
                     wrapped.forEach((ln, li) => {
                         const safe = ffmpegDrawtextEscape(ln).replace(/\n/g, ' ');
                         const y = li === 0 ? yExpr : `(${yExpr})-${li * lineH}`;
+                        // Complex scripts (Tamil/Devanagari/Arabic) need HarfBuzz
+                        // shaping that drawtext can't do — use libass instead.
+                        if (needsComplexScriptShaping(ln)) {
+                            const fontFile = resolveCaptionFont(ln) ?? resolveFontFile(undefined);
+                            segCaptionArg.push(libassCaption({
+                                text: ln, start: Number(start), end: Number(end),
+                                size: baseSize, color: fontColor, fontFile,
+                                workDir: capWorkDir, idx: clip.idx * 100 + li,
+                            }));
+                            return;
+                        }
                         segCaptionArg.push(`drawtext=${pickFontArg(safe)}text='${safe}':fontcolor=${fontColor}:fontsize=${baseSize}${boxArgs}:line_spacing=4:x=(w-text_w)/2:y=${y}:enable='between(t\\,${start}\\,${end})'`);
                     });
                 }
@@ -885,10 +928,21 @@ else vfArgs.push(`${videoMap}null[vig]`);
             }
             if (clip.kind === 'scene' && stylePlan && opts.kinetic !== false && opts.captions === 'none') {
                 for (const cue of stylePlan.scenes[clip.idx]?.kinetic ?? []) {
-                    const start = cue.atSec.toFixed(2);
-                    const end = (cue.atSec + (cue.kind === 'wordpop' ? 0.9 : 2.6)).toFixed(2);
+                    const start = cue.atSec;
+                    const end = cue.atSec + (cue.kind === 'wordpop' ? 0.9 : 2.6);
                     const safe = ffmpegDrawtextEscape(cue.text ?? '');
-                    kin.push(`drawtext=${pickFontArg(safe)}text='${safe}':fontcolor=${cue.kind === 'wordpop' ? 'yellow' : 'white'}:fontsize=${cue.kind === 'wordpop' ? 64 : 34}:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=${cue.kind === 'wordpop' ? '(h-text_h)/2' : 'h-text_h-90'}:enable='between(t\\,${start},${end})'`);
+                    // Complex scripts need HarfBuzz shaping → libass.
+                    if (needsComplexScriptShaping(safe)) {
+                        const fontFile = resolveCaptionFont(safe) ?? resolveFontFile(undefined);
+                        kin.push(libassCaption({
+                            text: safe, start, end,
+                            size: cue.kind === 'wordpop' ? 64 : 34,
+                            color: cue.kind === 'wordpop' ? 'yellow' : 'white',
+                            fontFile, workDir: capWorkDir, idx: 9000 + clip.idx,
+                        }));
+                        continue;
+                    }
+                    kin.push(`drawtext=${pickFontArg(safe)}text='${safe}':fontcolor=${cue.kind === 'wordpop' ? 'yellow' : 'white'}:fontsize=${cue.kind === 'wordpop' ? 64 : 34}:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=${cue.kind === 'wordpop' ? '(h-text_h)/2' : 'h-text_h-90'}:enable='between(t\\,${start.toFixed(2)}\\,${end.toFixed(2)})'`);
                 }
             }
             // ═══ Advanced editing (per-scene, additive) — segment branch ═══

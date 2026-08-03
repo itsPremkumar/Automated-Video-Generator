@@ -106,7 +106,7 @@ function escExpr(e: string): string {
 /** Resolve a font family+weight to an installed .ttf path (best-effort).
  * ffmpeg drawtext has no `fontweight` option — bold is selected by the
  * bold font file (e.g. arialbd.ttf). */
-function resolveFontFile(family: string | undefined, weight?: number): string {
+export function resolveFontFile(family: string | undefined, weight?: number): string {
     const bold = (weight ?? 400) >= 600;
     if (process.platform !== 'win32') {
         // Cross-platform: pick the first present common system font.
@@ -209,6 +209,63 @@ export function resolveCaptionFont(text: string, weight?: number): string | null
     else if (/[一-鿿豈-﫿＀-￯]/.test(text)) file = BUNDLED_FONT_FILES.cjk;
     else file = BUNDLED_FONT_FILES.latin;
     return file ? bundledFontPath(file) : null;
+}
+
+/**
+ * Scripts that REQUIRE OpenType shaping (HarfBuzz) to render — ffmpeg's
+ * `drawtext` (libfreetype) cannot shape them and emits empty boxes even when
+ * the glyphs exist in the font. libass (the `subtitles` filter) bundles
+ * HarfBuzz and renders them correctly. Latin and CJK need no shaping, so they
+ * stay on the lighter `drawtext` path.
+ */
+export function needsComplexScriptShaping(text: string): boolean {
+    // Tamil, Devanagari, Arabic, Myanmar, Khmer — all need HarfBuzz shaping.
+    // (Burmese/Myanmar range kept as a literal BMP range to avoid surrogate
+    // pairs, which break the regex literal under TS/ESLint.)
+    return /[஀-௿]|[ऀ-ॿ]|[؀-ۿ]|[က-ၿ]|[ក-៙]/.test(text);
+}
+
+/**
+ * Build a caption filter for a complex-script (Indic/Arabic) string using
+ * libass (the `subtitles` filter) instead of `drawtext`. libass ships HarfBuzz
+ * and shapes these scripts correctly; `drawtext` cannot. The ASS file is
+ * written to `workDir` and `fontsdir` is pointed at the bundled-fonts dir so
+ * headless boxes use the correct Noto font (no system fontconfig/DirectWrite
+ * dependency). Returns the `subtitles=...` filter string.
+ *
+ * `pos` is one of 'top' | 'bottom' | 'center' (vertical placement).
+ */
+export function buildLibassCaptionFilter(
+    text: string,
+    opts: { size: number; color: string; workDir: string; idx: number; pos?: 'top' | 'bottom' | 'center'; enable?: string },
+): string {
+    const safeText = String(text).replace(/[\r\n]/g, ' ');
+    const fontFile = resolveCaptionFont(safeText) ?? resolveFontFile(undefined);
+    const fontName = path.basename(fontFile, '.ttf');
+    const fontsDir = path.dirname(fontFile);
+    const assPath = path.join(opts.workDir, `cap_${opts.idx}.ass`);
+    const isHex = opts.color.startsWith('#') || /^0x?[0-9a-fA-F]{6}$/.test(opts.color);
+    const colorHex = isHex ? (opts.color.startsWith('#') ? opts.color.slice(1) : opts.color) : 'FFFFFF';
+    const ass = [
+        '[Script Info]',
+        'ScriptType: v4.00',
+        `PlayResX: 1280`,
+        `PlayResY: 720`,
+        '',
+        '[V4+ Styles]',
+        `Format: Name, Fontname, Fontsize, PrimaryColour, Outline, Shadow, Alignment, MarginV`,
+        `Style: Cap, ${fontName}, ${opts.size}, &H00${colorHex}B0, 2, 1, 2, 40`,
+        '',
+        '[Events]',
+        'Format: Layer, Start, End, Style, Text',
+        `Dialogue: 0,0:00:00.00,9:59:59.99,Cap,${safeText}`,
+        '',
+    ].join('\n');
+    fs.mkdirSync(opts.workDir, { recursive: true });
+    fs.writeFileSync(assPath, ass, 'utf-8');
+    const styleOverrides = `FontName=${fontName},FontSize=${opts.size},PrimaryColour=&H00${colorHex}B0`;
+    const enable = opts.enable ? `:enable='${escExpr(opts.enable)}'` : '';
+    return `subtitles='${assPath}':fontsdir='${fontsDir}':force_style='${styleOverrides}':original_size=${1280}x${720}${enable}`;
 }
 
 /** Rasterize an emoji to a transparent PNG sticker via ffmpeg, so it can
@@ -1103,7 +1160,12 @@ function applyTextOverlay(clipPath: string, sceneIndex: number, job: any, workDi
     const x = overlay.x ?? '(w-text_w)/2';
     const y = overlay.y ?? '40';
     const fontFile = resolveCaptionFont(overlay.text) ?? resolveFontFile(undefined);
-    const textFilter = `drawtext=fontfile='${fontFile}':text='${esc(overlay.text)}':fontcolor=${color}:fontsize=${fontSize}:x=${x}:y=${y}:box=1:boxcolor=black@0.4:boxborderw=6:enable='${enable}'`;
+    // Complex scripts (Tamil/Devanagari/Arabic) need HarfBuzz shaping that
+    // drawtext can't do — render them via libass (subtitles filter) instead.
+    const complex = needsComplexScriptShaping(overlay.text);
+    const textFilter = complex
+        ? buildLibassCaptionFilter(overlay.text, { size: fontSize, color, workDir, idx: sceneIndex, pos: 'bottom' })
+        : `drawtext=fontfile='${fontFile}':text='${esc(overlay.text)}':fontcolor=${color}:fontsize=${fontSize}:x=${x}:y=${y}:box=1:boxcolor=black@0.4:boxborderw=6:enable='${enable}'`;
     try {
         execFileSync(ff(), ['-y', '-i', clipPath, '-vf', textFilter, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 });
         return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : null;
