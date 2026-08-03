@@ -100,7 +100,7 @@ Choose your path:
 
 ### 🎬 Your first video in 2 commands
 
-No API key required to run — Openverse + free CC sources provide stock footage out of the box, and voiceover uses the vendored Voicebox backend (Kokoro by default) with Edge-TTS fallback. **For best results set `PEXELS_API_KEY`** (free): Pexels is the recommended provider and is skipped in keyless mode, so keyless runs use lower-relevance free sources.
+No API key required to run — Openverse + free CC sources provide stock footage out of the box. Voiceover uses the vendored Voicebox backend (Kokoro by default) with Edge-TTS fallback; **the Kokoro backend needs a one-time setup** — point `VOICEBOX_PYTHON` at a torch/kokoro venv (e.g. `C:/one/voicebox/.venv/Scripts/python.exe`) or it auto-falls back to the built-in Edge-TTS/Kokoro engine. Encoding is automatic: **Windows uses `h264_mf`** (Media Foundation, fast) and other platforms use `libx264`; `--gpu` selects AMF/NVENC/QSV when present. **For best results set `PEXELS_API_KEY`** (free): Pexels is the recommended provider and is skipped in keyless mode, so keyless runs use lower-relevance free sources.
 
 ```bash
 # 1. Install (one time)

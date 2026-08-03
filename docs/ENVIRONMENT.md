@@ -40,6 +40,8 @@ and error responses.
 | `PIXABAY_API_KEY` | — | Pixabay API key for alternative stock media. |
 | `YOUTUBE_API_KEY` | — | YouTube metadata source. |
 | `GPU_ACCEL` | `false` | Set to `true` to enable GPU-accelerated rendering. Selects best available encoder automatically (AMF / NVENC / QSV). |
+
+> **Default encoder:** with `GPU_ACCEL=false` the pipeline encodes with `h264_mf` on Windows (Media Foundation — fast, hardware-assisted) and `libx264` on other platforms. `GPU_ACCEL=true` overrides this with the detected HW encoder (AMF/NVENC/QSV).
 | `OPENVERSE_ENABLED` | `true` | Enable Openverse CC-licensed image fallback (no API key required). Set to `false` to disable. |
 | `MAX_DOWNLOAD_BYTES` | `157286400` (150 MB) | Reject downloads exceeding this byte limit. |
 | `DOWNLOAD_STALL_TIMEOUT_MS` | `30000` | Stall guard timeout for streamed downloads (milliseconds). |
