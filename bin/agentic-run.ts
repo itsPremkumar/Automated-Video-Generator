@@ -59,6 +59,10 @@ async function main() {
     if (noDucking) process.env.AUDIO_DUCK_LEVEL = ''; // empty => ducking expr skipped
     console.log(`\n🎬 Agentic run | backend=${backend} renderer=${renderer} quality=${quality} intro=${introMode} outro=${outroMode}`);
     console.log(`   kenBurns=${!noKenBurns} ducking=${!noDucking} sfx=${sfx} transition=${transition}`);
+    if (!process.env.PEXELS_API_KEY) {
+        console.log(`   ⚠ Keyless mode: Pexels (recommended provider) skipped — using free CC sources only.`);
+        console.log(`     Set PEXELS_API_KEY for higher-relevance stock (free key: https://www.pexels.com/api/).`);
+    }
 
     const onProgress = (p: PipelineProgress) => {
         // single-line progress within the pipeline (Phase 8.3)

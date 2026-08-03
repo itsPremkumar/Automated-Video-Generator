@@ -100,7 +100,7 @@ Choose your path:
 
 ### 🎬 Your first video in 2 commands
 
-No API key required — Openverse finds stock footage automatically; voiceover uses the vendored Voicebox backend (Kokoro by default) with Edge-TTS fallback.
+No API key required to run — Openverse + free CC sources provide stock footage out of the box, and voiceover uses the vendored Voicebox backend (Kokoro by default) with Edge-TTS fallback. **For best results set `PEXELS_API_KEY`** (free): Pexels is the recommended provider and is skipped in keyless mode, so keyless runs use lower-relevance free sources.
 
 ```bash
 # 1. Install (one time)
@@ -327,7 +327,7 @@ Use `[Visual: ...]` tags for frame-perfect scene control:
 | Feature                      | Description                                                                                     |
 | ---------------------------- | ----------------------------------------------------------------------------------------------- |
 | **🎤 400+ Voices**           | Multi-language TTS via Voicebox (Kokoro, default) with Edge-TTS, XTTS fallback |
-| **🖼️ Stock Media**           | Pexels + Pixabay + Openverse (CC images, no API key) + Wikimedia Commons + Internet Archive     |
+| **🖼️ Stock Media**           | Openverse + free CC sources (no key) + Pexels/Pixabay (set `PEXELS_API_KEY`/`PIXABAY_API_KEY` for higher relevance) + Wikimedia Commons + Internet Archive     |
 | **🎵 Background Music**      | Auto-ducking with volume control                                                                |
 | **🔄 Batch Processing**      | Generate dozens of videos from one JSON file                                                    |
 | **🖥️ Web Portal**            | Browser-based UI for generation, preview, download                                              |

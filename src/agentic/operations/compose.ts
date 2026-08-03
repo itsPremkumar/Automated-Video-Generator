@@ -121,7 +121,11 @@ function resolveFontFile(family: string | undefined, weight?: number): string {
             ];
         const ordered = bold ? candidates : [...candidates].reverse();
         for (const c of ordered) { if (fs.existsSync(c)) return c; }
-        return candidates[0]; // best effort — ffmpeg falls back to fontconfig
+        // Headless/CI boxes often lack system fonts AND fontconfig — never
+        // rely on ffmpeg's fontconfig fallback (it errors: "Cannot load
+        // default config file"). Use the bundled Noto Sans instead.
+        const bundled = resolveCaptionFont('', weight);
+        return bundled || candidates[0];
     }
     const base = 'C:\\Windows\\Fonts';
     const map: Record<string, [string, string]> = { // [regular, bold]
@@ -160,6 +164,53 @@ function resolveEmojiFont(): string {
     return resolveFontFile(undefined);
 }
 
+/**
+ * BUNDLED FONTS (fixes headless Fontconfig failure + non-Latin tofu boxes).
+ *
+ * AVS used to resolve captions ONLY to system fonts and, on headless/CI boxes
+ * with no fontconfig, ffmpeg would emit "Cannot load default config file" and
+ * drop all subtitles. Non-Latin scripts (Tamil / Devanagari / CJK) also
+ * rendered as tofu because system fonts lack those glyphs.
+ *
+ * We now bundle permissively-licensed Noto fonts (SIL Open Font License) in
+ * assets/fonts/ and select per-script. Path is resolved from the repo root
+ * (the CLI is always launched from there) with a module-relative fallback.
+ */
+const BUNDLED_FONT_FILES = {
+    latin: 'NotoSans-Regular.ttf',
+    tamil: 'NotoSansTamil-Regular.ttf',
+    devanagari: 'NotoSansDevanagari-Regular.ttf',
+    cjk: 'NotoSansSC-Regular.otf',
+} as const;
+
+function bundledFontPath(file: string): string | null {
+    const roots = [
+        path.join(process.cwd(), 'assets', 'fonts'),
+        path.join(__dirname, '..', '..', '..', 'assets', 'fonts'),
+    ];
+    for (const root of roots) {
+        const p = path.join(root, file);
+        if (fs.existsSync(p)) return p;
+    }
+    return null;
+}
+
+/**
+ * Pick the right bundled font for a caption by detecting its script.
+ * Tamil / Devanagari / CJK get their dedicated Noto; everything else falls
+ * back to Noto Sans (Latin). Returns null when the bundle is missing so the
+ * caller can keep using system fonts.
+ */
+export function resolveCaptionFont(text: string, weight?: number): string | null {
+    void weight;
+    let file: string | undefined;
+    if (/[஀-௿]/.test(text)) file = BUNDLED_FONT_FILES.tamil;
+    else if (/[ऀ-ॿ]/.test(text)) file = BUNDLED_FONT_FILES.devanagari;
+    else if (/[一-鿿豈-﫿＀-￯]/.test(text)) file = BUNDLED_FONT_FILES.cjk;
+    else file = BUNDLED_FONT_FILES.latin;
+    return file ? bundledFontPath(file) : null;
+}
+
 /** Rasterize an emoji to a transparent PNG sticker via ffmpeg, so it can
  *  be composited with the `overlay` filter. On Windows the Segoe UI
  *  Emoji font renders the COLOR glyph when `fontcolor` is set (without
@@ -190,7 +241,7 @@ function drawTextFilter(text: string, x: string, y: string, size: number, color:
     // Emoji glyphs carry their own color; forcing fontcolor blanks them, so
     // omit it for emoji overlays.
     const colorPart = opts?.emoji ? '' : `:fontcolor=${c}`;
-    const ff = opts?.fontFile ?? resolveFontFile(undefined);
+    const ff = opts?.fontFile ?? resolveCaptionFont(text, opts?.weight) ?? resolveFontFile(undefined);
     return `drawtext=fontfile='${ff}':text='${esc(text)}'${colorPart}:fontsize=${size}:x=${x}:y=${y}:box=1:boxcolor=black@0.4:boxborderw=6${shadow}${en}`;
 }
 
@@ -435,17 +486,23 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     // ── 5) Burned overlays (title / lower-third / CTA / emoji / captions) ──
     const overlay = buildOverlayPlan(job);
     const vf: string[] = [];
+    // Respect an explicit font family; otherwise pick a script-aware bundled
+    // Noto so non-Latin captions/title-cards render instead of tofu boxes.
+    const overlayFont = (text: string, weight?: number): string =>
+        overlay.font.family
+            ? resolveFontFile(overlay.font.family, weight)
+            : (resolveCaptionFont(text, weight) ?? resolveFontFile(undefined, weight));
     const txt = (text: string, x: string, y: string, size: number, color: string, opts?: { fontFile?: string; weight?: number; enable?: string }) =>
         drawTextFilter(text, x, y, size, color, { fontFile: opts?.fontFile, weight: opts?.weight, enable: opts?.enable, shadow: overlay.font.shadow });
     if (overlay.titleCard) {
         const tcDur = overlay.titleCard.durationSec ?? 3;
         const tcEnable = `lte(t,${tcDur.toFixed(2)})`;
         // Title (large) + optional subtitle (smaller, below).
-        vf.push(txt(overlay.titleCard.title, '(w-text_w)/2', 'h/2-40', 48, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: tcEnable }));
-        if (overlay.titleCard.subtitle) vf.push(txt(overlay.titleCard.subtitle, '(w-text_w)/2', 'h/2+10', 30, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: 400, enable: tcEnable }));
+        vf.push(txt(overlay.titleCard.title, '(w-text_w)/2', 'h/2-40', 48, overlay.font.color, { fontFile: overlayFont(overlay.titleCard.title, overlay.font.weight), weight: overlay.font.weight, enable: tcEnable }));
+        if (overlay.titleCard.subtitle) vf.push(txt(overlay.titleCard.subtitle, '(w-text_w)/2', 'h/2+10', 30, overlay.font.color, { fontFile: overlayFont(overlay.titleCard.subtitle, 400), weight: 400, enable: tcEnable }));
     }
-    if (overlay.lowerThird) vf.push(txt(overlay.lowerThird, '40', 'H-th-40', 36, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: 'gte(t,1)*lte(t,4)' }));
-    if (overlay.endCta) vf.push(txt(overlay.endCta, '(w-text_w)/2', 'H-th-60', 42, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight }));
+    if (overlay.lowerThird) vf.push(txt(overlay.lowerThird, '40', 'H-th-40', 36, overlay.font.color, { fontFile: overlayFont(overlay.lowerThird, overlay.font.weight), weight: overlay.font.weight, enable: 'gte(t,1)*lte(t,4)' }));
+    if (overlay.endCta) vf.push(txt(overlay.endCta, '(w-text_w)/2', 'H-th-60', 42, overlay.font.color, { fontFile: overlayFont(overlay.endCta, overlay.font.weight), weight: overlay.font.weight }));
     // Outro end-card: CTA text (+ optional SUBSCRIBE + hashtags) shown
     // only in the final `durationSec` window. Previously declared in
     // cli-job.ts but never burned — dead signal. Uses totalDur for the
@@ -453,9 +510,9 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     if (overlay.outro) {
         const oDur = overlay.outro.durationSec ?? 3;
         const oEnable = `gte(t,${Math.max(0, totalDur - oDur).toFixed(2)})`;
-        vf.push(txt(overlay.outro.ctaText, '(w-text_w)/2', 'H-th-70', 42, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: overlay.font.weight, enable: oEnable }));
-        if (overlay.outro.showSubscribe) vf.push(txt('SUBSCRIBE', '(w-text_w)/2', 'H-th-30', 28, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: 400, enable: oEnable }));
-        if (overlay.outro.hashtags?.length) vf.push(txt(overlay.outro.hashtags.join(' '), '(w-text_w)/2', 'h-40', 24, overlay.font.color, { fontFile: resolveFontFile(overlay.font.family, overlay.font.weight), weight: 400, enable: oEnable }));
+        vf.push(txt(overlay.outro.ctaText, '(w-text_w)/2', 'H-th-70', 42, overlay.font.color, { fontFile: overlayFont(overlay.outro.ctaText, overlay.font.weight), weight: overlay.font.weight, enable: oEnable }));
+        if (overlay.outro.showSubscribe) vf.push(txt('SUBSCRIBE', '(w-text_w)/2', 'H-th-30', 28, overlay.font.color, { fontFile: overlayFont('SUBSCRIBE', 400), weight: 400, enable: oEnable }));
+        if (overlay.outro.hashtags?.length) vf.push(txt(overlay.outro.hashtags.join(' '), '(w-text_w)/2', 'h-40', 24, overlay.font.color, { fontFile: overlayFont(overlay.outro.hashtags.join(' '), 400), weight: 400, enable: oEnable }));
     }
     // Phase 2: per-scene text overlays (from textOverlayByScene)
     scenes.forEach((sc, i) => {
@@ -469,7 +526,7 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
         const color = overlayText.color ?? 'white';
         const x = overlayText.x ?? '(w-text_w)/2';
         const y = overlayText.y ?? '40';
-        const fontFile = resolveFontFile(undefined);
+        const fontFile = resolveCaptionFont(overlayText.text) ?? resolveFontFile(undefined);
         vf.push(drawTextFilter(overlayText.text, x, y, fontSize, color, {
             fontFile,
             weight: 700,
@@ -1039,8 +1096,8 @@ function applyTextOverlay(clipPath: string, sceneIndex: number, job: any, workDi
     const color = overlay.color ?? 'white';
     const x = overlay.x ?? '(w-text_w)/2';
     const y = overlay.y ?? '40';
-    const fontFile = resolveFontFile(undefined);
-    const textFilter = `drawtext=fontfile='${fontFile}':text='${overlay.text.replace(/'/g, "'\\''")}':fontcolor=${color}:fontsize=${fontSize}:x=${x}:y=${y}:box=1:boxcolor=black@0.4:boxborderw=6:enable='${enable}'`;
+    const fontFile = resolveCaptionFont(overlay.text) ?? resolveFontFile(undefined);
+    const textFilter = `drawtext=fontfile='${fontFile}':text='${esc(overlay.text)}':fontcolor=${color}:fontsize=${fontSize}:x=${x}:y=${y}:box=1:boxcolor=black@0.4:boxborderw=6:enable='${enable}'`;
     try {
         execFileSync(ff(), ['-y', '-i', clipPath, '-vf', textFilter, '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', out], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 60000 });
         return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : null;
