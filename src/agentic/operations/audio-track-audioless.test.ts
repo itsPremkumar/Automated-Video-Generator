@@ -19,7 +19,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { execFileSync } from 'child_process';
 import { applyAutoDucking } from '../../lib/audio-processor.js';
-import { addAudioTrack, addMusic } from './audio-track.js';
+import { addAudioTrack } from './audio-track.js';
 
 const ffmpeg: string = require('ffmpeg-static');
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'avs-audioless-'));

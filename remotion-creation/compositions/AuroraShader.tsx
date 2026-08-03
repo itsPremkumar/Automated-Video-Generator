@@ -1,4 +1,4 @@
-import { AbsoluteFill, useCurrentFrame, interpolate, interpolateColors } from 'remotion';
+import { AbsoluteFill, useCurrentFrame, interpolate } from 'remotion';
 
 const W = 1080;
 const H = 1920;
@@ -23,7 +23,6 @@ export const AuroraShader: React.FC<{
     const opacity = 0.15 + l * 0.08;
     const sway = Math.sin(t * 0.3 + offset * 1.2) * 120 + Math.sin(t * 0.15 + offset) * 60;
     const hump = Math.sin(t * 0.2 + offset * 0.8) * 80;
-    const waveY = H * 0.25 + l * 120 + Math.sin(t * 0.5 + l) * 30;
 
     curtains.push(
       <div

@@ -13,7 +13,6 @@
  */
 
 import * as fs from 'fs';
-import * as path from 'path';
 // @ts-expect-error - ffprobe-static has no type declarations
 import ffprobePath from 'ffprobe-static';
 import { logInfo } from '../shared/logging/runtime-logging.js';

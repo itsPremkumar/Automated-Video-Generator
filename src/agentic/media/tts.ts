@@ -21,7 +21,6 @@ import { resolveProjectPath } from '../../shared/runtime/paths.js';
 
 const ffmpeg: string = require('ffmpeg-static');
 const { execFileSync } = require('child_process');
-const os = require('os');
 
 // Voice-group budget: the Windows SAPI fallback can legitimately take ~10s+
 // per scene (PowerShell + synthesis), so a 25s whole-group cap raced it and

@@ -17,7 +17,7 @@
 import 'dotenv/config';
 import * as fs from 'fs';
 import * as path from 'path';
-import { execFileSync, execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { normalizeJobId } from '../../shared/identifiers.js';
 import { getAgenticWorkspace } from '../../agentic/management/workspace.js';
 

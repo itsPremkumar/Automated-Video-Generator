@@ -55,7 +55,6 @@ export interface AgenticStyle {
 }
 
 const TRANSITIONS: TransitionKind[] = ['fade', 'slide', 'zoomblur', 'cut'];
-const GRADES: GradeKind[] = ['cinematic', 'warm', 'cool', 'vivid', 'neutral', 'noir', 'sunset', 'cyberpunk'];
 
 /** Stable, dependency-free string hash (FNV-1a-ish). */
 function hash(str: string): number {

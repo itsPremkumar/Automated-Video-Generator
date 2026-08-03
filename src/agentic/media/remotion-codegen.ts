@@ -284,13 +284,6 @@ export const Scene${spec.index}: React.FC = () => {
         y: 300 + (i % 2 === 0 ? -v * 40 : v * 40),
       }));
       const polyline = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${Math.round(p.x)},${Math.round(p.y)}`).join(' ');
-      const dotPos = (t: number) => {
-        const totalSegs = points.length - 1;
-        const seg = Math.min(Math.floor(t * totalSegs), totalSegs - 1);
-        const frac = (t * totalSegs) - seg;
-        const p0 = points[seg], p1 = points[seg + 1];
-        return { x: p0.x + (p1.x - p0.x) * frac, y: p0.y + (p1.y - p0.y) * frac };
-      };
       return `${head}
 export const Scene${spec.index}: React.FC = () => {
   const frame = useCurrentFrame();

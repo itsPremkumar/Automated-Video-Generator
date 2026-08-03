@@ -1,4 +1,4 @@
-import { AbsoluteFill, useCurrentFrame, spring, interpolate, interpolateColors } from 'remotion';
+import { AbsoluteFill, useCurrentFrame, spring, interpolate } from 'remotion';
 
 const W = 1920;
 const H = 1080;
@@ -100,7 +100,6 @@ export const PrismDispersion: React.FC = () => {
         const delay = 50 + i * 5;
         const opacity = frame > delay ? Math.min((frame - delay) / 15, 1) : 0;
         const yOffset = (i - (COLORS.length - 1) / 2) * 18;
-        const beamLen = 400 + i * 20;
 
         return (
           <div

@@ -60,7 +60,6 @@ describe('agentic/tts (Phase 2 + 4.2)', () => {
             assert.ok(Array.isArray(s.captionSegments) && s.captionSegments.length > 0, 'caption segments present');
         }
         // Sidecars — SRT + VTT when real TTS is used, at least SRT in fallback
-        const ws = { root: result.scenes[0].audioPath };
         const audioDir = path.dirname(result.scenes[0].audioPath);
         const srt = path.join(audioDir, 'subtitles.srt');
         const vtt = path.join(audioDir, 'subtitles.vtt');

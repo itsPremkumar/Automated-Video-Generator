@@ -14,7 +14,7 @@ import { runFfmpeg, estimateAudioDurationSafe } from './ffmpeg.js';
 import { buildPaletteFilter, resolveCaptionFont, needsComplexScriptShaping, resolveFontFile } from '../operations/compose.js';
 import type { PipelineResult } from './types.js';
 import { AGENTIC_OUTPUT_DIR } from '../management/workspace.js';
-import { logInfo, logWarn, logError } from '../../shared/logging/runtime-logging.js';
+import { logInfo } from '../../shared/logging/runtime-logging.js';
 
 /* eslint-disable no-control-regex -- intentional: the \x00-\x1F\x7F char-class
    strips control characters from logged ffmpeg args (log-injection defense,

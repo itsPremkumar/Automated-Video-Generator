@@ -96,7 +96,7 @@ test('agentic-editor speed-graph: audio-less input renders with [0:a] branch ski
   } catch { oldCrashed = true; }
   assert.ok(oldCrashed, 'OLD [0:a] graph must crash on audio-less input (baseline)');
   // NEW graph (guarded):       [0:v]setpts=2*PTS[v]  only
-  const r = execFileSync(ffmpeg, ['-i', src, '-filter_complex', '[0:v]setpts=2*PTS[v]', '-map', '[v]', '-c:v', 'libx264', out, '-y'], { stdio: 'ignore' });
+  execFileSync(ffmpeg, ['-i', src, '-filter_complex', '[0:v]setpts=2*PTS[v]', '-map', '[v]', '-c:v', 'libx264', out, '-y'], { stdio: 'ignore' });
   assert.ok(fs.existsSync(out), 'NEW guarded graph must produce output on audio-less input');
   const s = probeStreams(out);
   assert.ok(s.video && !s.audio, 'guarded speed output: video present, no audio (correct)');

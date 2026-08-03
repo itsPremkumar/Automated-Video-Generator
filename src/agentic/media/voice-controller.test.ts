@@ -1,5 +1,3 @@
-
-
 import { test } from 'node:test';
 import * as assert from 'node:assert/strict';
 import * as fs from 'fs';
@@ -7,7 +5,7 @@ import * as path from 'path';
 import { runVoiceStage } from './voice-controller.js';
 import { AgenticWorkspace } from '../management/workspace.js';
 import { ensureBackend, killBackend } from '../../lib/speech-backend.js';
-import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../shared/runtime/paths.js';
+import { makeWorkspaceTempDir } from '../../shared/runtime/paths.js';
 
 // Ensure the controller targets the voicebox provider + real python.
 process.env.TTS_PROVIDER = 'voicebox';
@@ -45,7 +43,9 @@ test('runVoiceStage generates real WAVs via live speech backend (auto-provisione
     // Integration test: skip (not fail) in CI or when the vendored voicebox
     // backend cannot be started (no torch/kokoro venv). Keeps the suite green
     // offline/headless while still exercising the real TTS path when the
-    // backend IS provisioned locally.
+    // backend IS provisioned locally. (Mocked-backend coverage is tracked as a
+    // follow-up — node:test mock.module did not reliably intercept the Python
+    // spawn in this environment.)
     if (process.env.CI) {
         t.skip('voice integration skipped in CI');
         return;
