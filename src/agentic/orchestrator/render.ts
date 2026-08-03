@@ -10,6 +10,17 @@ import { resolveBridge, type LlmBridge, type DriverLlmCallback } from '../ai/bri
 import { writeJson, readJson } from '../management/workspace.js';
 import { chunkCues, mergeWordsToLines, fmtSrt } from './captions.js';
 import { runFfmpeg, estimateAudioDurationSafe } from './ffmpeg.js';
+
+/**
+ * Strip CR/LF from a string before logging it. ffmpeg args can contain
+ * user-derived paths/text; newlines in a logged line let an attacker forge
+ * log entries (log-injection / CRLF log forging). CodeQL: js/log-injection.
+ */
+function safeLog(s: string): string {
+    const nl = String.fromCharCode(10);
+    const cr = String.fromCharCode(13);
+    return String(s).split(cr).join('').split(nl).join(' ');
+}
 import { buildPaletteFilter } from '../operations/compose.js';
 import type { PipelineResult } from './types.js';
 import { AGENTIC_OUTPUT_DIR } from '../management/workspace.js';
@@ -411,11 +422,11 @@ export async function renderAgenticSlideshow(
         if (CJK_RE.test(text) && fs.existsSync(CJK_FONT)) {
             // NOTE: this ffmpeg build rejects drawtext `fontindex`, so just pass
             // the .ttc path directly — the first face renders CJK glyphs fine.
-            const p = CJK_FONT.replace(/:/g, '\\:');
+            const p = ffmpegDrawtextEscape(CJK_FONT);
             return `fontfile='${p}':`;
         }
         if (INDIC_ARABIC_RE.test(text) && fs.existsSync(SCRIPT_FONT)) {
-            const p = SCRIPT_FONT.replace(/:/g, '\\:');
+            const p = ffmpegDrawtextEscape(SCRIPT_FONT);
             return `fontfile='${p}':`;
         }
         return FONT_ARG;
@@ -556,7 +567,7 @@ export async function renderAgenticSlideshow(
     const runFfmpegSpawn = (args: string[], totalSec = 0, sceneDurations?: number[]): Promise<void> =>
         new Promise<void>((resolve, reject) => {
             if (opts.verbose) {
-                console.error('[ffmpeg] ' + ffmpeg + ' ' + args.join(' '));
+                console.error(safeLog('[ffmpeg] ' + ffmpeg + ' ' + args.join(' ')));
             }
             const cp = spawn(ffmpeg, args, { stdio: ['ignore', 'ignore', 'pipe'] });
             let lastPct = -1;
@@ -882,7 +893,7 @@ else vfArgs.push(`${videoMap}null[vig]`);
                 for (const cue of stylePlan.scenes[clip.idx]?.kinetic ?? []) {
                     const start = cue.atSec.toFixed(2);
                     const end = (cue.atSec + (cue.kind === 'wordpop' ? 0.9 : 2.6)).toFixed(2);
-                    const safe = String(cue.text ?? '').replace(/'/g, '’').replace(/:/g, '\\:');
+                    const safe = ffmpegDrawtextEscape(cue.text ?? '');
                     kin.push(`drawtext=${pickFontArg(safe)}text='${safe}':fontcolor=${cue.kind === 'wordpop' ? 'yellow' : 'white'}:fontsize=${cue.kind === 'wordpop' ? 64 : 34}:box=1:boxcolor=black@0.45:boxborderw=12:x=(w-text_w)/2:y=${cue.kind === 'wordpop' ? '(h-text_h)/2' : 'h-text_h-90'}:enable='between(t\\,${start},${end})'`);
                 }
             }
@@ -1015,7 +1026,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             // stream-copy is safe once timestamps are normalized.
             const concatArgs = ['-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', '-y', silent];
             if (opts.verbose) {
-                console.error('[ffmpeg concat] ' + ffmpeg + ' ' + concatArgs.join(' '));
+                console.error(safeLog('[ffmpeg concat] ' + ffmpeg + ' ' + concatArgs.join(' ')));
             }
             execFile(ffmpeg, concatArgs, (err: any) =>
                 err ? reject(new Error('concat failed: ' + err)) : resolve());
@@ -1370,7 +1381,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             try {
                 const chArgs = ['-i', out, '-i', metaFile, '-map_metadata', '1', '-codec', 'copy', '-y', chapterTmp];
                 if (opts.verbose) {
-                    console.error('[ffmpeg chapters] ' + ffmpeg + ' ' + chArgs.join(' '));
+                    console.error(safeLog('[ffmpeg chapters] ' + ffmpeg + ' ' + chArgs.join(' ')));
                 }
                 await new Promise<void>((resolve, reject) => {
                     execFile(ffmpeg, chArgs, (err: any) => err ? reject(err) : resolve());
