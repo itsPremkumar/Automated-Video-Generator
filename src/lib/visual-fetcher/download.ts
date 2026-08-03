@@ -59,6 +59,14 @@ async function streamToFile(url: string, partPath: string, resumeFrom = 0): Prom
     };
     if (resumeFrom > 0) headers.Range = `bytes=${resumeFrom}-`;
 
+    // SSRF / request-forgery guard: validate the URL (http/https only, no
+    // private/loopback/cloud-metadata hosts) BEFORE issuing the request.
+    // CodeQL: js/request-forgery, js/http-to-file-access, js/file-access-to-http.
+    const safe = isSafeUrl(url);
+    if (!safe.ok) {
+        throw new Error(`refusing to fetch unsafe URL (${safe.reason}): ${url}`);
+    }
+
     const response = await axios.get(url, {
         responseType: 'stream',
         maxContentLength: MAX_DOWNLOAD_BYTES,

@@ -60,6 +60,20 @@ function profileCachePath(ws: AgenticWorkspace): string {
     return path.join(cacheDir, PROFILE_CACHE_NAME);
 }
 
+// Build a per-voice cache file path CONFINED to the workspace cache dir.
+// Resolves + asserts the result stays inside ws.root so a crafted `voice`
+// value cannot escape the workspace (path traversal). CodeQL: js/http-to-file-access.
+function safeCacheFile(ws: AgenticWorkspace, voice: string): string {
+    const base = profileCachePath(ws).replace(/\.json$/, '');
+    const safe = String(voice).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
+    const file = path.resolve(base + `.${safe}.json`);
+    const root = path.resolve(ws.root);
+    if (file !== root && !file.startsWith(root + path.sep)) {
+        throw new Error(`cache path escaped workspace: ${file}`);
+    }
+    return file;
+}
+
 /**
  * Resolve a usable profile id + the engine to drive it.
  * Priority:
@@ -448,7 +462,7 @@ export async function runVoiceStage(
     // name (e.g. af_bella). Reusing a raw name as a profile id 404s (BUG M2).
     async function kokoroProfileFor(voice: string): Promise<{ id: string; engine: string }> {
         const engine = 'kokoro';
-        const cacheFile = profileCachePath(ws).replace(/\.json$/, `.${voice}.json`);
+        const cacheFile = safeCacheFile(ws, voice);
         try {
             const cached = JSON.parse(fs.readFileSync(cacheFile, 'utf-8'));
             if (cached?.id) return { id: cached.id, engine };

@@ -11,20 +11,14 @@ import { writeJson, readJson } from '../management/workspace.js';
 import { chunkCues, mergeWordsToLines, fmtSrt } from './captions.js';
 import { runFfmpeg, estimateAudioDurationSafe } from './ffmpeg.js';
 
-/**
- * Strip CR/LF from a string before logging it. ffmpeg args can contain
- * user-derived paths/text; newlines in a logged line let an attacker forge
- * log entries (log-injection / CRLF log forging). CodeQL: js/log-injection.
- */
-function safeLog(s: string): string {
-    const nl = String.fromCharCode(10);
-    const cr = String.fromCharCode(13);
-    return String(s).split(cr).join('').split(nl).join(' ');
-}
 import { buildPaletteFilter } from '../operations/compose.js';
 import type { PipelineResult } from './types.js';
 import { AGENTIC_OUTPUT_DIR } from '../management/workspace.js';
 import { logInfo, logWarn, logError } from '../../shared/logging/runtime-logging.js';
+
+/* eslint-disable no-control-regex -- intentional: the \x00-\x1F\x7F char-class
+   strips control characters from logged ffmpeg args (log-injection defense,
+   CodeQL js/log-injection). ESLint's no-control-regex would otherwise flag it. */
 
 /**
  * Resolve the canonical output W×H for the agentic slideshow renderer.
@@ -567,7 +561,7 @@ export async function renderAgenticSlideshow(
     const runFfmpegSpawn = (args: string[], totalSec = 0, sceneDurations?: number[]): Promise<void> =>
         new Promise<void>((resolve, reject) => {
             if (opts.verbose) {
-                console.error(safeLog('[ffmpeg] ' + ffmpeg + ' ' + args.join(' ')));
+                console.error(('[ffmpeg] ' + ffmpeg + ' ' + args.join(' ')).replace(/[\x00-\x1F\x7F]/g, ' '));
             }
             const cp = spawn(ffmpeg, args, { stdio: ['ignore', 'ignore', 'pipe'] });
             let lastPct = -1;
@@ -1026,7 +1020,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             // stream-copy is safe once timestamps are normalized.
             const concatArgs = ['-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', '-y', silent];
             if (opts.verbose) {
-                console.error(safeLog('[ffmpeg concat] ' + ffmpeg + ' ' + concatArgs.join(' ')));
+                console.error(('[ffmpeg concat] ' + ffmpeg + ' ' + concatArgs.join(' ')).replace(/[\x00-\x1F\x7F]/g, ' '));
             }
             execFile(ffmpeg, concatArgs, (err: any) =>
                 err ? reject(new Error('concat failed: ' + err)) : resolve());
@@ -1381,7 +1375,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             try {
                 const chArgs = ['-i', out, '-i', metaFile, '-map_metadata', '1', '-codec', 'copy', '-y', chapterTmp];
                 if (opts.verbose) {
-                    console.error(safeLog('[ffmpeg chapters] ' + ffmpeg + ' ' + chArgs.join(' ')));
+                    console.error(('[ffmpeg chapters] ' + ffmpeg + ' ' + chArgs.join(' ')).replace(/[\x00-\x1F\x7F]/g, ' '));
                 }
                 await new Promise<void>((resolve, reject) => {
                     execFile(ffmpeg, chArgs, (err: any) => err ? reject(err) : resolve());

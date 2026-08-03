@@ -103,7 +103,7 @@ export function ensureBundledTracks(bundleDir?: string, min = 3): number {
                 continue;
             }
         }
-        if (fs.existsSync(mp3) && !fs.existsSync(sidecar)) {
+        if (fs.existsSync(mp3)) {
             const meta = {
                 title: spec.title,
                 creator: 'AVS bundled (procedural)',
@@ -115,6 +115,10 @@ export function ensureBundledTracks(bundleDir?: string, min = 3): number {
                 licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
                 tags: ['bundled', 'cc0', 'procedural', ...spec.mood],
             };
+            // Write directly (idempotent). Avoiding a !existsSync(sidecar)
+            // check-then-write removes the TOCTOU race flagged by CodeQL
+            // (js/file-system-race): the sidecar could appear between the
+            // check and the write. CodeQL: js/file-system-race.
             fs.writeFileSync(sidecar, JSON.stringify(meta, null, 2));
         }
     }

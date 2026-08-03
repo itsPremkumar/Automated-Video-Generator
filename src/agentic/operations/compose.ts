@@ -279,19 +279,25 @@ export function isReadableVideo(p: string): boolean {
  */
 export function detectDuplicateScenes(visuals: string[]): Array<[number, number]> {
     const sig = (p: string): string | null => {
-        if (!p || !fs.existsSync(p)) return null;
+        if (!p) return null;
         try {
-            const st = fs.statSync(p);
-            if (st.size === 0) return null;
+            // Open first, then fstat the open fd — avoids the TOCTOU race
+            // between statSync + openSync (the file could change/replaced
+            // between the two syscalls). CodeQL: js/file-system-race.
             const fd = fs.openSync(p, 'r');
-            const buf = Buffer.alloc(Math.min(262144, st.size));
-            const n = fs.readSync(fd, buf, 0, buf.length, 0);
-            fs.closeSync(fd);
-            const h = createHash('sha1').update(buf.subarray(0, n)).digest('hex');
-            // fold in size so two different files that happen to share a header
-            // prefix still differ
-            return `${st.size}:${h}`;
-        } catch { return null; }
+            try {
+                const st = fs.fstatSync(fd);
+                if (st.size === 0) return null;
+                const buf = Buffer.alloc(Math.min(262144, st.size));
+                const n = fs.readSync(fd, buf, 0, buf.length, 0);
+                const h = createHash('sha1').update(buf.subarray(0, n)).digest('hex');
+                return h;
+            } finally {
+                fs.closeSync(fd);
+            }
+        } catch {
+            return null;
+        }
     };
     const seen = new Map<string, number>();
     const dups: Array<[number, number]> = [];

@@ -172,8 +172,8 @@ function parseScriptLocally(script: string): ParsedScript {
             // following char is not an opening bracket.
             // FIX: When splitting orphans a [Visual:] tag onto only the LAST fragment,
             // propagate all tags to every fragment so they get the keywords too.
-            const allVisualTags = [...line.matchAll(/\[Visual:?\s*.*?\]/gis)].map(m => m[0]);
-            const allOtherTags = [...line.matchAll(/\[(?:Transition|Grade|KenBurns|Text|Style|Color|FadeIn|FadeOut|Voice|Music|Volume|CaptionTheme|Sfx|JCut|Vignette|Kinetic|MusicIntensity):?\s*.*?\]/gis)].map(m => m[0]);
+            const allVisualTags = [...line.matchAll(/\[Visual:?\s*[^\]]*\]/gis)].map(m => m[0]);
+            const allOtherTags = [...line.matchAll(/\[(?:Transition|Grade|KenBurns|Text|Style|Color|FadeIn|FadeOut|Voice|Music|Volume|CaptionTheme|Sfx|JCut|Vignette|Kinetic|MusicIntensity):?\s*[^\]]*\]/gis)].map(m => m[0]);
             const allTags = [...allVisualTags, ...allOtherTags];
             // B1: if the line carries an explicit local-asset binding ([Visual: file]),
             // treat the whole line as ONE scene unit — do not sentence-split it. This

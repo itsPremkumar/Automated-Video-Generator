@@ -134,12 +134,17 @@ export async function generateSilence(duration: number, outputDir: string, scene
  */
 /** True when the file has at least one audio stream (ffprobe probe). */
 function hasAudioStream(file: string): boolean {
-    // Guard against path-injection: reject NUL bytes and absolute/relative
-    // traversal that could redirect the probe to an unexpected file.
-    if (file.includes('\u0000') || file.includes('..')) return false;
-    if (!fs.existsSync(file)) return false;
+    // Guard against path-injection / traversal: reject NUL bytes and `..`
+    // segments, then resolve and confine the path to the project root so a
+    // crafted path cannot redirect the ffprobe probe to an unexpected file.
+    // CodeQL: js/path-injection.
+    if (typeof file !== 'string' || file.includes('\u0000') || file.includes('..')) return false;
+    const root = path.resolve(process.cwd());
+    const resolved = path.resolve(root, file);
+    if (resolved !== root && !resolved.startsWith(root + path.sep)) return false;
+    if (!fs.existsSync(resolved)) return false;
     try {
-        const out = runFfprobe(['-v', 'quiet', '-show_entries', 'stream=codec_type', '-of', 'csv=p=0', file]);
+        const out = runFfprobe(['-v', 'quiet', '-show_entries', 'stream=codec_type', '-of', 'csv=p=0', resolved]);
         return out.split('\n').some((l) => l.trim() === 'audio');
     } catch {
         return false;

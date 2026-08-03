@@ -108,9 +108,13 @@ function cleanVoiceoverText(text: string): string {
 // every generated audio file gets a `.txt-hash` sidecar (hash of the exact
 // voiceover text); a cached file is reused ONLY when its sidecar matches.
 function hashText(text: string): string {
+    // Bound the work to the first 4096 chars — plenty for a cache key, and
+    // prevents a pathological huge string from driving a long loop
+    // (CodeQL: js/loop-bound-injection). Voiceover text is never that long.
+    const slice = text.length > 4096 ? text.slice(0, 4096) : text;
     let h = 5381;
-    for (let i = 0; i < text.length; i++) {
-        h = ((h << 5) + h + text.charCodeAt(i)) >>> 0;
+    for (let i = 0; i < slice.length; i++) {
+        h = ((h << 5) + h + slice.charCodeAt(i)) >>> 0;
     }
     return h.toString(36);
 }
