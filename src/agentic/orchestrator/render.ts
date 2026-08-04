@@ -591,7 +591,7 @@ export async function renderAgenticSlideshow(
     const runFfmpegSpawn = (args: string[], totalSec = 0, sceneDurations?: number[]): Promise<void> =>
         new Promise<void>((resolve, reject) => {
             if (opts.verbose) {
-                console.error(('[ffmpeg] ' + ffmpeg + ' ' + args.join(' ')).replace(/[\x00-\x1F\x7F]/g, ' '));
+                console.error(('[ffmpeg] ' + ffmpeg + ' ' + args.join(' ')).replace(/[\r\n]/g, ' '));
             }
             const cp = spawn(ffmpeg, args, { stdio: ['ignore', 'ignore', 'pipe'] });
             let lastPct = -1;
@@ -1074,7 +1074,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             // stream-copy is safe once timestamps are normalized.
             const concatArgs = ['-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', '-y', silent];
             if (opts.verbose) {
-                console.error(('[ffmpeg concat] ' + ffmpeg + ' ' + concatArgs.join(' ')).replace(/[\x00-\x1F\x7F]/g, ' '));
+                console.error(('[ffmpeg concat] ' + ffmpeg + ' ' + concatArgs.join(' ')).replace(/[\r\n]/g, ' '));
             }
             execFile(ffmpeg, concatArgs, (err: any) =>
                 err ? reject(new Error('concat failed: ' + err)) : resolve());
@@ -1429,7 +1429,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             try {
                 const chArgs = ['-i', out, '-i', metaFile, '-map_metadata', '1', '-codec', 'copy', '-y', chapterTmp];
                 if (opts.verbose) {
-                    console.error(('[ffmpeg chapters] ' + ffmpeg + ' ' + chArgs.join(' ')).replace(/[\x00-\x1F\x7F]/g, ' '));
+                    console.error(('[ffmpeg chapters] ' + ffmpeg + ' ' + chArgs.join(' ')).replace(/[\r\n]/g, ' '));
                 }
                 await new Promise<void>((resolve, reject) => {
                     execFile(ffmpeg, chArgs, (err: any) => err ? reject(err) : resolve());
