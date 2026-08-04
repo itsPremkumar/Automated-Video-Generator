@@ -126,7 +126,11 @@
     "agentic:mode:advanced": "tsx src/adapters/cli/agentic-batch.ts --mode apply-advanced",
     "agentic:mode:rerender": "tsx src/adapters/cli/agentic-batch.ts --mode rerender",
     "agentic:mode:compose": "tsx src/adapters/cli/agentic-batch.ts --mode compose",
-    "agentic:fetch": "tsx src/adapters/cli/agentic-batch.ts --search"
+    "agentic:fetch": "tsx src/adapters/cli/agentic-batch.ts --search",
+    "verify:control-surface": "tsx scripts/verify-control-surface.ts",
+    "verify:variety": "tsx scripts/gen-variety.ts --silent-only && tsx scripts/verify-visual.ts output/variety",
+    "verify:visual": "tsx scripts/verify-visual.ts",
+    "verify:monitor": "tsx scripts/monitor.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
