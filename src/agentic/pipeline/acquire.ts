@@ -327,7 +327,7 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
             if (poolEntry) {
                 const ext = path.extname(poolEntry).toLowerCase();
                 const isVideo = ['.mp4', '.mov', '.webm', '.m4v'].includes(ext);
-                const destName = `candidate_1${ext}`;
+                const destName = `candidate_${i + 1}${ext}`;
                 const destPath = path.join(dir, destName);
                 fs.mkdirSync(dir, { recursive: true });
                 if (!fs.existsSync(destPath)) fs.copyFileSync(poolEntry, destPath);
