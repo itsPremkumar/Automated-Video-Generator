@@ -132,8 +132,8 @@ export const LOCALE_TO_LANGUAGE_NAME: Record<string, string> = {
 /** Featured voice presets grouped by language key and gender */
 export const AVAILABLE_VOICES: Record<string, { male: string[]; female: string[] }> = {
     english: {
-        male: ['en-US-GuyNeural', 'en-US-ChristopherNeural', 'en-GB-RyanNeural', 'en-IN-PrabhatNeural'],
-        female: ['en-US-JennyNeural', 'en-US-AriaNeural', 'en-US-SaraNeural', 'en-GB-SoniaNeural'],
+        male: ['en-US-GuyNeural', 'en-US-ChristopherNeural', 'en-GB-RyanNeural', 'en-IN-PrabhatNeural', 'en-US-BrianNeural', 'en-AU-WilliamNeural'],
+        female: ['en-US-JennyNeural', 'en-US-AriaNeural', 'en-US-SaraNeural', 'en-GB-SoniaNeural', 'en-US-MichelleNeural', 'en-AU-NatashaNeural'],
     },
     tamil: {
         male: ['ta-IN-ValluvarNeural'],
@@ -167,6 +167,54 @@ export const AVAILABLE_VOICES: Record<string, { male: string[]; female: string[]
         male: ['kn-IN-GaganNeural'],
         female: ['kn-IN-SapnaNeural'],
     },
+    italian: {
+        male: ['it-IT-DiegoNeural', 'it-IT-BeniaminoNeural'],
+        female: ['it-IT-ElsaNeural', 'it-IT-IsabellaNeural'],
+    },
+    japanese: {
+        male: ['ja-JP-KeitaNeural', 'ja-JP-DaichiNeural'],
+        female: ['ja-JP-NanamiNeural', 'ja-JP-AoiNeural'],
+    },
+    korean: {
+        male: ['ko-KR-InJoonNeural'],
+        female: ['ko-KR-SunHiNeural'],
+    },
+    portuguese: {
+        male: ['pt-BR-AntonioNeural', 'pt-PT-DuarteNeural'],
+        female: ['pt-BR-FranciscaNeural', 'pt-PT-RaquelNeural'],
+    },
+    russian: {
+        male: ['ru-RU-DmitryNeural'],
+        female: ['ru-RU-SvetlanaNeural'],
+    },
+    arabic: {
+        male: ['ar-SA-HamedNeural', 'ar-EG-ShakirNeural'],
+        female: ['ar-SA-ZariyahNeural', 'ar-EG-SalmaNeural'],
+    },
+    chinese: {
+        male: ['zh-CN-YunxiNeural', 'zh-CN-YunyangNeural'],
+        female: ['zh-CN-XiaoxiaoNeural', 'zh-CN-XiaoyiNeural'],
+    },
+    bengali: {
+        male: ['bn-IN-BashkarNeural'],
+        female: ['bn-IN-TanishaaNeural'],
+    },
+    gujarati: {
+        male: ['gu-IN-NiranjanNeural'],
+        female: ['gu-IN-DhwaniNeural'],
+    },
+    marathi: {
+        male: ['mr-IN-ManoharNeural'],
+        female: ['mr-IN-AarohiNeural'],
+    },
+    punjabi: {
+        male: ['pa-IN-ByomNeural'],
+        female: ['pa-IN-CharleenNeural'],
+    },
+    urdu: {
+        male: ['ur-IN-SalmanNeural'],
+        female: ['ur-IN-GulNeural'],
+    },
 };
 
 /** Default voice per language key */
@@ -177,6 +225,18 @@ export const LANGUAGE_DEFAULTS: Record<string, string> = {
     french: 'fr-FR-DeniseNeural',
     german: 'de-DE-KatjaNeural',
     english: 'en-US-JennyNeural',
+    italian: 'it-IT-ElsaNeural',
+    japanese: 'ja-JP-NanamiNeural',
+    korean: 'ko-KR-SunHiNeural',
+    portuguese: 'pt-BR-FranciscaNeural',
+    russian: 'ru-RU-SvetlanaNeural',
+    arabic: 'ar-SA-ZariyahNeural',
+    chinese: 'zh-CN-XiaoxiaoNeural',
+    bengali: 'bn-IN-TanishaaNeural',
+    gujarati: 'gu-IN-DhwaniNeural',
+    marathi: 'mr-IN-AarohiNeural',
+    punjabi: 'pa-IN-CharleenNeural',
+    urdu: 'ur-IN-GulNeural',
 };
 
 /** Language key → Windows SAPI culture tag */

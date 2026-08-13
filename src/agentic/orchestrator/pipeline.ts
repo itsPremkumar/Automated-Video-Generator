@@ -500,6 +500,8 @@ export async function runAgenticPipeline(
         acquireDeps.cfg = cfg as any;
         acquireDeps.bridge = bridge;
     }
+    // Local material pool (off by default): bind scenes to input/visuals files.
+    if (req.localPool) acquireDeps.localPool = true;
     const { workspace, candidates } = await acquireAssets(plan, acquireDeps, req.candidatesPerAsset ?? 2);
     emit({ stage: 'acquire', percent: 100, message: `Acquired ${candidates.length} candidates` });
     writeJson(workspace, 'plan.json', plan);

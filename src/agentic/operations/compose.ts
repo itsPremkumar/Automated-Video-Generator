@@ -931,6 +931,41 @@ async function buildSlideshow(visuals: string[], audios: string[], W: number, H:
 }
 
 /**
+ * Map a transition preset name to a native ffmpeg `xfade=transition=` kind.
+ * Pure + exported so the mapping is unit-testable. Unknown kinds fall back
+ * to 'fade' so a typo in a job file can never break the render graph.
+ */
+export function resolveXfadeKind(kind: string | undefined): string {
+    switch (kind) {
+        case 'slide': return 'slideleft';
+        case 'slideup': return 'slideup';
+        case 'slidedown': return 'slidedown';
+        case 'zoomblur':
+        case 'zoomin': return 'zoomin';
+        case 'zoomout': return 'zoomout';
+        case 'dissolve': return 'dissolve';
+        case 'wipeleft': return 'wipeleft';
+        case 'wiperight': return 'wiperight';
+        case 'wipeup': return 'wipeup';
+        case 'wipedown': return 'wipedown';
+        case 'circlecrop': return 'circlecrop';
+        case 'smoothleft': return 'smoothleft';
+        case 'smoothup': return 'smoothup';
+        case 'smoothdown': return 'smoothdown';
+        case 'radial': return 'radial';
+        case 'glitch': return 'pixelize';
+        case 'whippan':
+        case 'whip-pan': return 'hblur';
+        case 'morphcut':
+        case 'morph-cut': return 'smoothleft';
+        case 'lightleak':
+        case 'light-leak':
+        case 'flash': return 'fadewhite';
+        default: return 'fade';
+    }
+}
+
+/**
  * Build a slideshow with smooth transitions between scenes using the xfade
  * filter. Returns the output path on success, or undefined on any failure
  * (caller should fall back to plain concat).
@@ -975,17 +1010,11 @@ export function crossfadeSlideshow(clips: string[], W: number, H: number, out: s
             // hard cut: xfade with ~0 duration keeps the graph valid.
             segs.push(`${prevLabel}[${i}:v]xfade=transition=fade:duration=0.001:offset=${offset.toFixed(3)}[v${i}]`);
         } else {
-            // Extended plugin transitions map to native ffmpeg xfade kinds:
-            // glitch→pixelize, whippan→hblur (motion streak), morphcut→smoothleft,
-            // lightleak→fadewhite (bright flash). Falls back to fade for unknown.
-            const ttype =
-                kind === 'slide' ? 'slideleft'
-                : kind === 'zoomblur' ? 'zoomin'
-                : kind === 'glitch' ? 'pixelize'
-                : kind === 'whippan' || kind === 'whip-pan' ? 'hblur'
-                : kind === 'morphcut' || kind === 'morph-cut' ? 'smoothleft'
-                : kind === 'lightleak' || kind === 'light-leak' ? 'fadewhite'
-                : 'fade';
+            // Extended plugin transitions map to native ffmpeg xfade kinds via
+            // resolveXfadeKind (glitch→pixelize, whippan→hblur, morphcut→smoothleft,
+            // lightleak/flash→fadewhite, plus wipe/dissolve/circle/radial/zoom
+            // presets). Falls back to fade for unknown.
+            const ttype = resolveXfadeKind(kind);
             segs.push(`${prevLabel}[${i}:v]xfade=transition=${ttype}:duration=${segDur.toFixed(2)}:offset=${offset.toFixed(3)}[v${i}]`);
         }
     }

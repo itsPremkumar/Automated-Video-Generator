@@ -1,0 +1,27 @@
+[
+  {
+    "id": "local-pool-smoke",
+    "title": "Local Pool Smoke Test",
+    "script": "This video uses only local footage from your own material pool. [Visual: red] [Transition: dissolve] [CaptionTheme: minimal]\nNo stock fetching happens at all. [Visual: blue] [Transition: circlecrop] [CaptionTheme: minimal]",
+    "orientation": "portrait",
+    "aspect": "9:16",
+    "videoType": "facts",
+    "voice": "en-US-JennyNeural",
+    "preset": "cinematic",
+    "transition": "dissolve",
+    "captions": "burned",
+    "captionTheme": "minimal",
+    "music": false,
+    "localPool": true,
+    "outputQuality": "low",
+    "intro": {
+      "title": "Local Pool",
+      "subtitle": "Feature test",
+      "durationSec": 2
+    },
+    "outro": {
+      "ctaText": "Done",
+      "durationSec": 2
+    }
+  }
+]

@@ -104,6 +104,15 @@ export interface AcquireDeps {
     cfg?: import('../config.js').AgenticConfig;
     bridge?: import('../ai/bridge.js').LlmBridge;
     brain?: import('../ai/brain.js').AgentBrain;
+    /**
+     * OPTIONAL — local material pool (off by default). When true, scenes with
+     * no explicit `localAsset` bind round-robin to media files found under
+     * input/visuals/ (any .mp4/.mov/.webm/.m4v/.jpg/.jpeg/.png/.webp),
+     * skipping stock fetching entirely. This is the "use my own footage"
+     * mode (MoneyPrinter-style local material selection), zero-cost + offline.
+     * False/absent → stock pipeline byte-for-byte unchanged.
+     */
+    localPool?: boolean;
 }
 
 /**
@@ -192,6 +201,48 @@ export interface AcquireResult {
     candidates: AssetCandidate[];
 }
 
+/** Media extensions accepted from the local material pool. */
+const POOL_EXTENSIONS = new Set(['.mp4', '.mov', '.webm', '.m4v', '.jpg', '.jpeg', '.png', '.webp']);
+
+/** Scanned pool files (lazy, once per process). Sorted for deterministic order. */
+let _poolCache: string[] | null = null;
+
+/**
+ * Return the media file at `sceneIndex` in the local material pool
+ * (input/visuals/), round-robin when scenes outnumber files. Returns null when
+ * the pool is empty or unreadable — the caller then falls through to stock.
+ * Deterministic: the pool is scanned once and sorted, so repeated runs and
+ * multi-scene jobs bind the same files to the same scenes.
+ */
+function localPoolEntry(sceneIndex: number): string | null {
+    if (_poolCache === null) scanPool();
+    if (_poolCache!.length === 0) return null;
+    const chosen = _poolCache![sceneIndex % _poolCache!.length];
+    // A stale cache entry (files deleted since scan) must not break a scene:
+    // re-scan once, then fall through to stock if still empty.
+    if (!fs.existsSync(chosen)) {
+        scanPool();
+        if (_poolCache!.length === 0) return null;
+        return _poolCache![sceneIndex % _poolCache!.length];
+    }
+    return chosen;
+}
+
+/** (Re)scan input/visuals for media files. Sorted for deterministic order. */
+function scanPool(): void {
+    try {
+        const dir = inputAssetPath();
+        _poolCache = fs.existsSync(dir)
+            ? fs.readdirSync(dir)
+                  .filter((f) => POOL_EXTENSIONS.has(path.extname(f).toLowerCase()))
+                  .sort()
+                  .map((f) => path.join(dir, f))
+            : [];
+    } catch {
+        _poolCache = [];
+    }
+}
+
 export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPerAsset = 2): Promise<AcquireResult> {
     const ws = createAgenticWorkspace(plan.jobId);
     const candidates: AssetCandidate[] = [];
@@ -203,6 +254,35 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
         const scene = plan.scenes[i];
         const kind = scene.visualPreference;
         const dir = kind === 'image' ? sceneImageDir(ws, i) : sceneVideoDir(ws, i);
+
+        // P1b — local material pool (off by default): when enabled and the
+        // scene has no explicit localAsset, bind round-robin to media files
+        // found under input/visuals/ so users can drive videos from their own
+        // footage without stock fetching. Skipped when a file is missing so
+        // the stock ladder below still runs (never blocks a scene).
+        if (deps.localPool && !scene.localAsset) {
+            const poolEntry = localPoolEntry(i);
+            if (poolEntry) {
+                const ext = path.extname(poolEntry).toLowerCase();
+                const isVideo = ['.mp4', '.mov', '.webm', '.m4v'].includes(ext);
+                const destName = `candidate_1${ext}`;
+                const destPath = path.join(dir, destName);
+                fs.mkdirSync(dir, { recursive: true });
+                if (!fs.existsSync(destPath)) fs.copyFileSync(poolEntry, destPath);
+                candidates.push({
+                    kind: isVideo ? 'video' : 'image',
+                    sceneIndex: i,
+                    candidateIndex: 1,
+                    localPath: destPath,
+                    url: `local-pool://${path.basename(poolEntry)}`,
+                    source: 'local-pool',
+                    license: 'User-supplied — owner attribution',
+                    licenseUrl: '',
+                    keywords: scene.searchKeywords,
+                });
+                continue; // done with this scene
+            }
+        }
 
         // P1a — local asset reuse: if this scene is bound to a user file in
         // input/visuals/, copy it in directly and skip stock fetching.

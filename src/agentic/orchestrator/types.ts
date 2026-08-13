@@ -21,6 +21,9 @@ export interface PipelineRequest {
      *  music-free variety proof. */
     music?: boolean;
     candidatesPerAsset?: number;
+    /** Local material pool: bind scenes to media files under input/visuals/
+     *  (round-robin) instead of stock fetching. Off by default. */
+    localPool?: boolean;
     backend?: AgenticBackend;
     preferVisual?: 'image' | 'video';
     agent?: Partial<AgentBackendConfig>;

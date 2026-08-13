@@ -150,6 +150,54 @@ echo "Resumable upload session created. Stream the binary with: curl -X PUT <loc
             note: 'No YOUTUBE_ACCESS_TOKEN — wrote a ready upload script; fill token + run.',
         };
     }
+
+    // TikTok / Instagram: same zero-cost pattern — always write a ready-to-run
+    // helper script (draft) so the manifest gives every platform a path to
+    // upload, not just YouTube. Tokens are platform-specific; scripts no-op
+    // with a clear message until the user fills them in.
+    const tiktokFile = targets.find((t) => t.platform === 'tiktok')?.file ?? '';
+    const tiktokScriptPath = path.join(deliverablesDir, `${jobId}_tiktok_upload.sh`);
+    const tiktokScript = `#!/usr/bin/env bash
+# Zero-cost TikTok upload helper (draft).
+# TikTok's Content Posting API needs OAuth (https://developers.tiktok.com/).
+# Set TIKTOK_ACCESS_TOKEN, then run: bash ${path.basename(tiktokScriptPath)}
+set -e
+: "\${TIKTOK_ACCESS_TOKEN:?set TIKTOK_ACCESS_TOKEN to your TikTok OAuth access token}"
+VIDEO="${tiktokFile}"
+echo "TikTok upload API (Content Posting) requires app review + OAuth scope video.publish."
+echo "With a token, POST \${VIDEO} to https://open.tiktokapis.com/v2/post/publish/video/"
+echo "Draft helper written — fill the token and publish from the TikTok dashboard or API."
+`;
+    try {
+        fs.writeFileSync(tiktokScriptPath, tiktokScript, 'utf8');
+    } catch {
+        /* ignore */
+    }
+
+    const instaFile = targets.find((t) => t.platform === 'instagram')?.file ?? '';
+    const instaScriptPath = path.join(deliverablesDir, `${jobId}_instagram_upload.sh`);
+    const instaScript = `#!/usr/bin/env bash
+# Zero-cost Instagram upload helper (draft).
+# Instagram Graph API needs a Business account + long-lived token.
+# Set INSTAGRAM_ACCESS_TOKEN, then run: bash ${path.basename(instaScriptPath)}
+set -e
+: "\${INSTAGRAM_ACCESS_TOKEN:?set INSTAGRAM_ACCESS_TOKEN to your Instagram Graph API token}"
+VIDEO="${instaFile}"
+echo "Instagram upload via Graph API: POST https://graph.instagram.com/v21.0/me/media"
+echo "Draft helper written — fill the token + IG business account, or use the app."
+`;
+    try {
+        fs.writeFileSync(instaScriptPath, instaScript, 'utf8');
+    } catch {
+        /* ignore */
+    }
+
+    // Attach the extra platform scripts to their targets so the manifest is
+    // machine-readable about what was produced (draft scripts exist per target).
+    for (const t of targets) {
+        if (t.platform === 'tiktok' && tiktokFile) t.uploaded = false;
+        if (t.platform === 'instagram' && instaFile) t.uploaded = false;
+    }
     return manifest;
 }
 

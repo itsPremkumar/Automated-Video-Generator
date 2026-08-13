@@ -13,7 +13,32 @@
 
 export type Orientation = 'portrait' | 'landscape';
 export type AspectKind = '9:16' | '1:1' | '16:9';
-export type TransitionPref = 'fade' | 'slide' | 'zoomblur' | 'cut' | 'mixed';
+export type TransitionPref =
+    | 'fade'
+    | 'slide'
+    | 'zoomblur'
+    | 'cut'
+    | 'mixed'
+    // Extended presets (map to native ffmpeg xfade kinds; unknown falls back to fade):
+    | 'dissolve'
+    | 'wipeleft'
+    | 'wiperight'
+    | 'wipeup'
+    | 'wipedown'
+    | 'circlecrop'
+    | 'smoothleft'
+    | 'smoothup'
+    | 'smoothdown'
+    | 'radial'
+    | 'zoomin'
+    | 'zoomout'
+    | 'slideup'
+    | 'slidedown'
+    | 'flash'
+    | 'glitch'
+    | 'whippan'
+    | 'morphcut'
+    | 'lightleak';
 export type GradePref = 'cinematic' | 'warm' | 'cool' | 'vivid' | 'neutral';
 export type CaptionStyle = 'burned' | 'none' | 'karaoke';
 export type VideoType = 'facts' | 'tutorial' | 'news' | 'story' | 'product' | 'motivational' | 'nature';

@@ -386,6 +386,7 @@ async function runVisuals(cliArgs: CliArgs) {
             videoClips: job.videoClips,
             candidatesPerAsset: job.candidatesPerAsset ?? 2,
             defaultVisual: job.defaultVisual,
+            localPool: job.localPool ?? false,
         };
 
         // Rebuild the pipeline deps
@@ -399,6 +400,7 @@ async function runVisuals(cliArgs: CliArgs) {
         const sharedImagePool: { url: string }[] = [];
 
         const acquireDeps: any = {
+            localPool: job.localPool ?? false,
             fetchVisual: async (keywords: string[], kind: boolean, orientation: string, sceneIndex = 0) => {
                 // Simplified fetch (stolen from pipeline.ts)
                 const DEAD_HOSTS = /flickr\.com|staticflickr\.com|live\.staticflickr/i;
