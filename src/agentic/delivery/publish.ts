@@ -160,3 +160,100 @@ export function writePublishManifest(input: PublishInput): PublishManifest {
     fs.writeFileSync(outPath, JSON.stringify(manifest, null, 2), 'utf8');
     return manifest;
 }
+
+/**
+ * Real, OPTIONAL YouTube upload (Feature 2).
+ *
+ * Performs a resumable upload via the FREE YouTube Data API v3. It is a NO-OP
+ * (returns { uploaded: false, reason: 'no-token' }) unless `YOUTUBE_ACCESS_TOKEN`
+ * is set — so the pipeline never blocks on publishing. If a refresh token +
+ * client credentials are present, the access token is refreshed automatically.
+ *
+ * Token precedence: explicit `accessToken` arg > `YOUTUBE_ACCESS_TOKEN` env.
+ * Returns a structured result; never throws (failures are reported, not raised).
+ */
+export interface YouTubeUploadResult {
+    uploaded: boolean;
+    videoId?: string;
+    note?: string;
+    reason?: string;
+}
+
+function ytHeaders(token: string): Record<string, string> {
+    return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+}
+
+async function refreshYoutubeToken(): Promise<string | null> {
+    const refresh = process.env.YOUTUBE_REFRESH_TOKEN;
+    const clientId = process.env.YOUTUBE_CLIENT_ID;
+    const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
+    if (!refresh || !clientId || !clientSecret) return null;
+    try {
+        const r = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                client_id: clientId,
+                client_secret: clientSecret,
+                refresh_token: refresh,
+                grant_type: 'refresh_token',
+            }).toString(),
+        });
+        if (!r.ok) return null;
+        const j = (await r.json()) as any;
+        return j.access_token || null;
+    } catch {
+        return null;
+    }
+}
+
+export async function publishToYouTube(opts: {
+    videoPath: string;
+    title: string;
+    description: string;
+    tags?: string[];
+    privacyStatus?: 'private' | 'public' | 'unlisted';
+    accessToken?: string;
+}): Promise<YouTubeUploadResult> {
+    const accessToken = opts.accessToken || process.env.YOUTUBE_ACCESS_TOKEN || (await refreshYoutubeToken());
+    if (!accessToken) {
+        return { uploaded: false, reason: 'no-token', note: 'Set YOUTUBE_ACCESS_TOKEN (or refresh creds) to enable real upload.' };
+    }
+    if (!fs.existsSync(opts.videoPath)) {
+        return { uploaded: false, reason: 'missing-file', note: `Video not found: ${opts.videoPath}` };
+    }
+    try {
+        // 1) Init resumable upload session.
+        const init = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {
+            method: 'POST',
+            headers: ytHeaders(accessToken),
+            body: JSON.stringify({
+                snippet: {
+                    title: opts.title,
+                    description: opts.description,
+                    tags: (opts.tags || []).map((t) => t.replace(/^#/, '')),
+                    categoryId: '28',
+                },
+                status: { privacyStatus: opts.privacyStatus || 'private' },
+            }),
+        });
+        const uploadUrl = init.headers.get('location');
+        if (!init.ok || !uploadUrl) {
+            return { uploaded: false, reason: `init-failed:${init.status}`, note: 'YouTube rejected the upload session init.' };
+        }
+        // 2) Stream the binary.
+        const bin = fs.readFileSync(opts.videoPath);
+        const put = await fetch(uploadUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'video/*', 'Content-Length': String(bin.length) },
+            body: bin,
+        });
+        if (!put.ok) {
+            return { uploaded: false, reason: `upload-failed:${put.status}`, note: 'Resumable upload PUT failed.' };
+        }
+        const j = (await put.json()) as any;
+        return { uploaded: true, videoId: j?.id, note: `Uploaded as ${j?.id}` };
+    } catch (e) {
+        return { uploaded: false, reason: 'exception', note: (e as Error)?.message ?? String(e) };
+    }
+}

@@ -24,6 +24,7 @@ import { trimBlackFrames } from '../../lib/media-downloader.js';
 import { getCached, putCache } from '../operations/asset-cache.js';
 import { isUniformPlaceholderImage } from './asset-validators.js';
 import { isGenEnabled, generateSceneImage, buildGenPrompt } from '../../lib/gen-image.js';
+import { isVideoGenEnabled, generateSceneVideo, buildVideoGenPrompt } from '../../lib/gen-video.js';
 
 /**
  * Run async producers with a bounded concurrency. `tasks` is an array of
@@ -197,7 +198,7 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
     const ws = createAgenticWorkspace(plan.jobId);
     const candidates: AssetCandidate[] = [];
     const sceneFetches: Array<
-        () => Promise<{ i: number; kind: 'image' | 'video' | 'gen'; dir: string; scene: ScenePlan; fetched: FetchedVisual[] }>
+        () => Promise<{ i: number; kind: 'image' | 'video' | 'gen' | 'video-gen'; dir: string; scene: ScenePlan; fetched: FetchedVisual[] }>
     > = [];
 
     for (let i = 0; i < plan.scenes.length; i++) {
@@ -233,7 +234,37 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
             }
             // Fall through to stock fetch with kind coerced to 'image'.
         }
-        const effectiveKind: 'image' | 'video' = kind === 'gen' ? 'image' : kind;
+        // Feature 1 — AI-generated MOTION (text-to-video) 'video-gen': when a
+        // T2V key is configured, produce a short clip via an OpenAI-compatible
+        // /videos/generations (or Kling/Seedream/Runway/Luma) endpoint; otherwise
+        // treat exactly like 'video' (stock fallback). Failures return '' so the
+        // stock ladder below runs normally.
+        if (kind === 'video-gen' && isVideoGenEnabled()) {
+            fs.mkdirSync(dir, { recursive: true });
+            const genPath = await generateSceneVideo({
+                prompt: buildVideoGenPrompt(scene.searchKeywords, scene.voiceoverText || '', plan.orientation, scene.durationSec),
+                outDir: dir,
+                filename: 'candidate_1.mp4',
+                orientation: plan.orientation,
+                durationSec: scene.durationSec,
+            });
+            if (genPath) {
+                candidates.push({
+                    kind: 'video',
+                    sceneIndex: i,
+                    candidateIndex: 1,
+                    localPath: genPath,
+                    url: `gen://${path.basename(genPath)}`,
+                    source: 'ai-generated-video',
+                    license: 'AI-generated — owner holds rights under provider ToS',
+                    licenseUrl: '',
+                    keywords: scene.searchKeywords,
+                });
+                continue; // done; skip stock fetch
+            }
+            // Fall through to stock fetch with kind coerced to 'video'.
+        }
+        const effectiveKind: 'image' | 'video' = kind === 'gen' ? 'image' : kind === 'video-gen' ? 'video' : kind;
 
         // P1a — local asset reuse: if this scene is bound to a user file in
         // input/visuals/, copy it in directly and skip stock fetching.
@@ -281,7 +312,7 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
 
     for (const { i, kind: rawKind, dir, scene, fetched } of results) {
         // Coerce 'gen' → 'image' for all registration/fallback paths below.
-        const kind = rawKind === 'gen' ? 'image' : rawKind;
+        const kind = rawKind === 'gen' ? 'image' : rawKind === 'video-gen' ? 'video' : rawKind;
         // No stock candidates for this scene → generate an offline fallback
         // (asset-creator / ffmpeg) instead of leaving the scene blank.
         if (fetched.length === 0) {

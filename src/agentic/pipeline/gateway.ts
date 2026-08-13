@@ -39,9 +39,10 @@ async function reAcquireScene(
 ): Promise<AssetCandidate | null> {
     const scene = plan.scenes[sceneIndex];
     if (!scene) return null; // defensive: scene dropped
-    // Coerce 'gen' → 'image' for the re-acquire path (a gen scene that reached
-    // the gateway behaves exactly like an image scene).
-    const kind: AssetKind = scene.visualPreference === 'gen' ? 'image' : scene.visualPreference;
+    // Coerce 'gen' → 'image' and 'video-gen' → 'video' for the re-acquire path
+    // (a gen scene that reached the gateway behaves exactly like its stock kind).
+    const vp = scene.visualPreference;
+    const kind: AssetKind = vp === 'gen' ? 'image' : vp === 'video-gen' ? 'video' : vp;
     const dir =
         kind === 'image'
             ? require('../management/workspace.js').sceneImageDir(ws, sceneIndex)

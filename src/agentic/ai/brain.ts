@@ -270,6 +270,15 @@ export class AgentBrain {
     }
 
     /**
+     * Generic JSON completion through the budget + circuit-breaker guard.
+     * Returns parsed JSON or null (when tripped / over-budget / unparseable).
+     * Operations like hook/SEO optimization call this for optional LLM help.
+     */
+    async completeJSONTask<T>(system: string, prompt: string, schemaHint = '{}'): Promise<T | null> {
+        return this.guarded(() => completeJSON<T>(this.o, system, prompt, schemaHint));
+    }
+
+    /**
      * Budget + circuit-breaker guard around any model call.
      *  - If tripped or over budget, returns null WITHOUT touching the network.
      *  - On a null/undefined result, counts a consecutive failure; trips after
