@@ -22,7 +22,7 @@ export interface PipelineRequest {
     music?: boolean;
     candidatesPerAsset?: number;
     backend?: AgenticBackend;
-    preferVisual?: 'image' | 'video';
+    preferVisual?: 'image' | 'video' | 'gen';
     agent?: Partial<AgentBackendConfig>;
     dryRun?: boolean;
     localAssets?: string[];

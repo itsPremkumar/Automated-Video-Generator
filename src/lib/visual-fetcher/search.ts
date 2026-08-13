@@ -9,6 +9,7 @@ import { searchOpenverseImages } from '../openverse-fetcher';
 import { freeVideoDownloader, freeVideoAdapter } from '../free-video/index';
 import { freeImageAdapter } from '../free-image/index';
 import { isSafeUrl } from '../net-safety';
+import { searchPinterestImages, downloadPinterestImage } from '../pinflow';
 import { recordProviderFailure, recordProviderSuccess } from './provider-health';
 import { MediaAsset, VideoCache } from './types';
 import {
@@ -542,6 +543,37 @@ export async function fetchVisualsForScene(
                     saveCache(cache);
                     return freeAsset;
                 }
+                // ── PINTEREST (free, no-key 4th surface) ──────────────────
+                // Added to match competitor VUZA's unique free Pinterest source.
+                // Returns [] when offline/blocked/disabled, so it never blocks
+                // the existing free ladder. Bounded + host-guarded in pinflow.ts.
+                try {
+                    const pins = await searchPinterestImages(q, 5);
+                    if (pins.length > 0) {
+                        const pin = pins[Math.min(resultIndex, pins.length - 1)];
+                        if (pin?.url) {
+                            const local = await downloadPinterestImage(
+                                pin.url,
+                                resolveProjectPath('workspace', 'cache', 'free-images'),
+                                `${(q || 'pin').replace(/[^a-z0-9]+/gi, '_').slice(0, 32)}_pinterest.jpg`,
+                            );
+                            if (local) {
+                                console.log(`  ⚡ FALLBACK [Pinterest] Downloaded candidate for "${q}"`);
+                                const asset: MediaAsset = {
+                                    type: 'image',
+                                    url: local,
+                                    width: 0,
+                                    height: 0,
+                                    photographer: pin.source,
+                                    localPath: local,
+                                };
+                                cache[cacheKey] = asset;
+                                saveCache(cache);
+                                return asset;
+                            }
+                        }
+                    }
+                } catch { /* next source / placeholder */ }
             }
         } catch (e) {
             console.log(`⚠ [FETCH] Error querying "${q}": ${(e as Error).message}`);

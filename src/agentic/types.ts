@@ -23,8 +23,8 @@ export interface ScenePlan {
     captionText?: string;
     /** Keywords used to fetch candidate visuals for this scene. */
     searchKeywords: string[];
-    /** 'image' = prefer a still; 'video' = prefer motion. */
-    visualPreference: 'image' | 'video';
+    /** 'image' = prefer a still; 'video' = prefer motion; 'gen' = AI-generated image (key-gated, falls back to stock). */
+    visualPreference: 'image' | 'video' | 'gen';
     durationSec: number;
     /** User-supplied local media file (from input/visuals/) bound to this
      *  scene. When set, the acquire stage uses this file directly instead of

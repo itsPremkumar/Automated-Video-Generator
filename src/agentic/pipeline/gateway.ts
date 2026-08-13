@@ -16,7 +16,7 @@ import * as fs from 'fs';
 import { AgenticWorkspace, getAgenticWorkspace, writeJson, readJson } from '../management/workspace.js';
 import { acquireAssets, AcquireDeps, FetchedVisual } from './acquire.js';
 import { verifyAll, VerifyDeps, VERIFY_PASS_CONFIDENCE } from './verify.js';
-import { AssetCandidate, AssetDecision, Plan, RenderManifest } from '../types.js';
+import { AssetCandidate, AssetDecision, Plan, RenderManifest, AssetKind } from '../types.js';
 import { computeApprovedHashes } from '../ai/agent.js';
 
 export type Decider = (
@@ -39,7 +39,9 @@ async function reAcquireScene(
 ): Promise<AssetCandidate | null> {
     const scene = plan.scenes[sceneIndex];
     if (!scene) return null; // defensive: scene dropped
-    const kind = scene.visualPreference;
+    // Coerce 'gen' → 'image' for the re-acquire path (a gen scene that reached
+    // the gateway behaves exactly like an image scene).
+    const kind: AssetKind = scene.visualPreference === 'gen' ? 'image' : scene.visualPreference;
     const dir =
         kind === 'image'
             ? require('../management/workspace.js').sceneImageDir(ws, sceneIndex)

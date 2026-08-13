@@ -264,7 +264,7 @@ export interface AgenticConfig {
     platform?: 'tiktok' | 'youtube' | 'instagram' | 'reels';
 
     /** ── Sourcing ── */
-    preferVisual?: 'image' | 'video';
+    preferVisual?: 'image' | 'video' | 'gen';
     candidatesPerAsset?: number; // assets fetched per scene (default 4)
     videoType?: VideoType; // template selector (Phase: templates)
     /** Use the user's OWN media from input/visuals/ instead of (or in

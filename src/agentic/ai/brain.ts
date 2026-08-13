@@ -36,7 +36,32 @@ export interface BrainOptions {
     maxCalls?: number;
     /** Consecutive failures that trip the circuit-breaker (stops all model calls). Off/undefined = disabled. */
     maxFails?: number;
+    /** ── Additional OpenAI-compatible providers (Feature E) ──
+     *  Gemini / DeepSeek / Qwen / Moonshot all expose an OpenAI-compatible
+     *  /v1/chat/completions surface, so one generic sender covers all of them.
+     *  Each entry: { baseUrl, apiKey, model }. When any is present the brain
+     *  can answer JSON prompts without OpenRouter. All optional + offline-safe. */
+    providers?: BrainProvider[];
 }
+
+/** An OpenAI-compatible chat provider (Gemini/DeepSeek/Qwen/Moonshot/…). */
+export interface BrainProvider {
+    /** Display name, e.g. 'gemini' | 'deepseek' | 'qwen' | 'moonshot'. */
+    name: string;
+    /** Base URL, e.g. 'https://api.openai.com/v1' or 'https://generativelanguage.googleapis.com/v1beta/openai'. */
+    baseUrl: string;
+    /** API key (free tier keys are fine). */
+    apiKey?: string;
+    /** Model id, e.g. 'gemini-2.5-flash' | 'deepseek-chat' | 'qwen-plus' | 'moonshot-v1-8k'. */
+    model: string;
+}
+
+const PROVIDER_PRESETS: Record<string, { baseUrl: string; model: string; envKey: string }> = {
+    gemini: { baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash', envKey: 'GEMINI_API_KEY' },
+    deepseek: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', envKey: 'DEEPSEEK_API_KEY' },
+    qwen: { baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-plus', envKey: 'QWEN_API_KEY' },
+    moonshot: { baseUrl: 'https://api.moonshot.cn/v1', model: 'moonshot-v1-8k', envKey: 'MOONSHOT_API_KEY' },
+};
 
 const DEFAULT_OR_MODEL = 'meta-llama/llama-3.1-8b-instruct:free';
 const DEFAULT_VISION_MODEL = 'google/gemini-2.0-flash-thinking-exp-1219:free';
@@ -49,11 +74,72 @@ export function envOpts(): BrainOptions {
         ollamaModel: process.env.OLLAMA_MODEL || 'llama3.1',
         visionModel: process.env.OPENROUTER_VISION_MODEL || DEFAULT_VISION_MODEL,
         timeoutMs: Number(process.env.BRAIN_TIMEOUT_MS || 20000),
+        // Feature E: auto-discover OpenAI-compatible providers from env.
+        providers: resolveEnvProviders(),
     };
 }
 
+/** Build the provider list from env vars (Gemini/DeepSeek/Qwen/Moonshot).
+ *  Offline-safe: only providers whose API key env var is set are included. */
+export function resolveEnvProviders(): BrainProvider[] {
+    const out: BrainProvider[] = [];
+    for (const [name, preset] of Object.entries(PROVIDER_PRESETS)) {
+        const key = process.env[preset.envKey];
+        if (key) {
+            out.push({
+                name,
+                baseUrl: preset.baseUrl,
+                apiKey: key,
+                model: process.env[`${name.toUpperCase()}_MODEL`] || preset.model,
+            });
+        }
+    }
+    return out;
+}
+
 export function hasModel(o: BrainOptions): boolean {
-    return Boolean(o.openRouterKey || o.ollamaUrl);
+    return Boolean(o.openRouterKey || o.ollamaUrl || (o.providers && o.providers.length > 0));
+}
+
+/** Generic OpenAI-compatible chat/completions sender (Feature E).
+ *  Covers Gemini / DeepSeek / Qwen / Moonshot and any other /v1-compatible
+ *  endpoint. Returns parsed JSON or null on any failure. */
+async function completeWithProvider<T>(
+    p: BrainProvider,
+    timeout: number,
+    system: string,
+    prompt: string,
+    schemaHint: string,
+): Promise<T | null> {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeout);
+    try {
+        const res = await fetch(`${p.baseUrl.replace(/\/$/, '')}/chat/completions`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${p.apiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: p.model,
+                messages: [
+                    {
+                        role: 'system',
+                        content: system + '\nReturn ONLY valid minified JSON matching this shape: ' + schemaHint,
+                    },
+                    { role: 'user', content: prompt },
+                ],
+                temperature: 0.7,
+            }),
+            signal: ctrl.signal,
+        });
+        clearTimeout(t);
+        if (!res.ok) return null;
+        const j = await res.json();
+        const text = j?.choices?.[0]?.message?.content ?? '';
+        return extractJSON<T>(text);
+    } catch {
+        return null;
+    } finally {
+        clearTimeout(t);
+    }
 }
 
 /** Call a free text model and parse JSON. Returns null on any failure. */
@@ -111,6 +197,13 @@ async function completeJSON<T>(o: BrainOptions, system: string, prompt: string, 
             const j = await res.json();
             const text = j?.message?.content ?? '';
             return extractJSON<T>(text);
+        }
+        // Feature E: try each configured OpenAI-compatible provider in order.
+        if (o.providers && o.providers.length > 0) {
+            for (const p of o.providers) {
+                const r = await completeWithProvider<T>(p, timeout, system, prompt, schemaHint);
+                if (r) return r;
+            }
         }
     } catch {
         return null;
