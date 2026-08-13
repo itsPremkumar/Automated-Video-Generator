@@ -24,7 +24,7 @@ export interface ScenePreview {
     voiceoverText: string;
     durationSec: number;
     searchKeywords: string[];
-    visualPreference: 'image' | 'video';
+    visualPreference: 'image' | 'video' | 'gen' | 'video-gen';
     localAsset?: string;
     localAssetExists: boolean;
     estimatedFileSizeKb: number;

@@ -25,7 +25,15 @@ export interface PipelineRequest {
      *  (round-robin) instead of stock fetching. Off by default. */
     localPool?: boolean;
     backend?: AgenticBackend;
-    preferVisual?: 'image' | 'video';
+    preferVisual?: 'image' | 'video' | 'gen' | 'video-gen';
+    /** Feature 3: LLM rewrite of opening hook (heuristic always runs). */
+    optimizeHook?: boolean;
+    /** Feature 4A: LLM SEO metadata (heuristic always runs). */
+    seo?: boolean;
+    /** Feature 4B: AI-generated attractive thumbnail (key-gated). */
+    aiThumbnail?: boolean;
+    /** Feature 2: real YouTube upload when a token is present. */
+    publishYouTube?: boolean;
     agent?: Partial<AgentBackendConfig>;
     dryRun?: boolean;
     localAssets?: string[];

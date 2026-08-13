@@ -48,6 +48,21 @@ and error responses.
 | `FREE_VIDEO_DOWNLOAD_STALL_TIMEOUT_MS` | `30000` | Stall guard timeout specifically for free video sources. |
 | `AGENTIC_FFMPEG_TIMEOUT_MS` | `30000` | Hard timeout for ffmpeg operations in the agentic pipeline (milliseconds). |
 | `AGENTIC_FFPROBE_TIMEOUT_MS` | `15000` | Hard timeout for ffprobe operations (milliseconds). |
+| `PINTEREST_ENABLED` | `true` | Enable the free, no-key Pinterest image source as an extra fallback in `fetchVisualsForScene`. Set to `false` to disable. Offline/blocked → silently skipped. |
+| `IMAGE_GEN_PROVIDER` | `openai` | Selects the AI image-generation backend for `visualPreference: 'gen'`. One of `openai` \| `dashscope` (WAN/Seedream). No effect unless a key is set. |
+| `IMAGE_GEN_API_KEY` / `OPENAI_API_KEY` / `DASHSCOPE_API_KEY` | — | API key for the selected AI image generator. When unset, `gen` scenes fall back to stock automatically. |
+| `IMAGE_GEN_MODEL` | provider default | Override the image model (e.g. `gpt-image-1`, `wanx2.1-t2i-turbo`). |
+| `IMAGE_GEN_BASE_URL` | provider default | Override the OpenAI-compatible `/images/generations` base URL. |
+| `IMAGE_GEN_TIMEOUT_MS` | `60000` | Timeout for a single image generation call. |
+| `VIDEO_GEN_PROVIDER` | `openai` | Selects the text-to-video backend for `visualPreference: 'video-gen'`. One of `openai` (Sora) \| `kling` \| `seedream` (WANx T2V) \| `runway` \| `luma`. No effect unless a key is set. |
+| `VIDEO_GEN_API_KEY` / `OPENAI_API_KEY` / `DASHSCOPE_API_KEY` / `KLING_API_KEY` / `RUNWAY_API_KEY` / `LUMA_API_KEY` | — | API key for the selected T2V provider. When unset, `video-gen` scenes fall back to stock video automatically. |
+| `VIDEO_GEN_MODEL` | provider default | Override the video model (e.g. `sora-2`, `kling-v1-6`, `wanx2.1-t2v-turbo`, `gen3a-turbo`, `ray-2`). |
+| `VIDEO_GEN_BASE_URL` | provider default | Override the OpenAI-compatible `/videos/generations` base URL. |
+| `VIDEO_GEN_TIMEOUT_MS` | `120000` | Timeout for a single video generation call (async polling up to this bound). |
+| `YOUTUBE_ACCESS_TOKEN` | — | OAuth access token for real YouTube upload (`publishYouTube: true`). When unset, only the publish manifest + helper script are written (never blocks the run). |
+| `YOUTUBE_REFRESH_TOKEN` / `YOUTUBE_CLIENT_ID` / `YOUTUBE_CLIENT_SECRET` | — | Optional OAuth refresh credentials; when present, an expired `YOUTUBE_ACCESS_TOKEN` is refreshed automatically before upload. |
+
+**Advanced optional features (all OFF by default — set in `AgenticConfig` / `PipelineRequest`):** `optimizeHook` (LLM retention-hook rewrite; heuristic fallback always runs), `seo` (LLM title/description/tags; heuristic fallback), `aiThumbnail` (AI-generated thumbnail via the image generator; key-gated), `publishYouTube` (real upload when `YOUTUBE_ACCESS_TOKEN` is set). None require a key to run; they degrade gracefully.
 
 ## AI Verification
 
@@ -133,6 +148,18 @@ and error responses.
 | `OPENROUTER_API_KEY` | — | API key for OpenRouter (enables cloud LLM calls from the agentic brain). |
 | `OPENROUTER_MODEL` | `meta-llama/llama-3.1-8b-instruct:free` | OpenRouter text model for the agentic brain. |
 | `OPENROUTER_VISION_MODEL` | `google/gemini-2.0-flash-thinking-exp-1219:free` | OpenRouter vision-capable model for visual analysis. |
+
+## Additional LLM Providers (Feature E — Agentic Brain)
+
+The agentic brain can also use any OpenAI-compatible chat provider **without OpenRouter**. Set the key for the provider(s) you want; each is auto-discovered. All optional and offline-safe.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `GEMINI_API_KEY` | — | Google Gemini (OpenAI-compatible) chat provider. Model default `gemini-2.5-flash`. |
+| `DEEPSEEK_API_KEY` | — | DeepSeek chat provider. Model default `deepseek-chat`. |
+| `QWEN_API_KEY` | — | Alibaba Qwen (DashScope) chat provider. Model default `qwen-plus`. |
+| `MOONSHOT_API_KEY` | — | Moonshot chat provider. Model default `moonshot-v1-8k`. |
+| `GEMINI_MODEL` / `DEEPSEEK_MODEL` / `QWEN_MODEL` / `MOONSHOT_MODEL` | provider default | Override the model id for that provider. |
 
 ## Debug / Electron
 

@@ -289,7 +289,9 @@ export interface AgenticConfig {
     platform?: 'tiktok' | 'youtube' | 'instagram' | 'reels';
 
     /** ── Sourcing ── */
-    preferVisual?: 'image' | 'video';
+    preferVisual?: 'image' | 'video' | 'gen' | 'video-gen';
+    /** Feature 1: when preferVisual is 'video-gen', generate AI motion clips
+     *  instead of stock video. Key-gated (VIDEO_GEN_*). Off when no key. */
     candidatesPerAsset?: number; // assets fetched per scene (default 4)
     videoType?: VideoType; // template selector (Phase: templates)
     /** Use the user's OWN media from input/visuals/ instead of (or in
@@ -349,6 +351,24 @@ export interface AgenticConfig {
     /** J-cut: next scene's voiceover leads its picture by this many seconds
      *  (audio cuts early, picture follows) — the #1 "human editor" tell. */
     jCutSec?: number;
+
+    /** ── Advanced optional features (all OFF by default; safe to ignore) ── */
+    /** Feature 3: rewrite the opening line into a retention hook. Heuristic
+     *  always runs; if true AND an LLM is configured, the brain writes a
+     *  stronger hook (falls back to heuristic on any failure). Default false. */
+    optimizeHook?: boolean;
+    /** Feature 4A: write SEO title/description/tags. Heuristic always runs; if
+     *  true AND an LLM is configured, the brain writes stronger metadata.
+     *  Default false. */
+    seo?: boolean;
+    /** Feature 4B: generate an AI-attractive thumbnail via the image generator
+     *  (key-gated, IMAGE_GEN_*). Falls back to frame-grab when off/no key.
+     *  Default false. */
+    aiThumbnail?: boolean;
+    /** Feature 2: actually upload to YouTube via the Data API when a token is
+     *  present (YOUTUBE_ACCESS_TOKEN). When false, only the manifest + helper
+     *  script are written (never blocks the run). Default false. */
+    publishYouTube?: boolean;
 
     /** ── Self-heal / automation ── */
     backend?: 'agent' | 'vision';

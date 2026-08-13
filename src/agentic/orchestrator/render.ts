@@ -260,16 +260,41 @@ async function writeOutputArtifacts(
         );
     } catch { /* optional */ }
     try {
-        const { writePublishManifest } = await import('../delivery/publish.js');
+        const { writePublishManifest, publishToYouTube } = await import('../delivery/publish.js');
+        const { optimizeSeo } = await import('../operations/seo.js');
+        const { generateThumbnail } = await import('../../lib/gen-thumbnail.js');
+        const { AgentBrain } = await import('../ai/brain.js');
         const fm = generateFreeMetadata(res.plan);
+        // Feature flags live on the plan (carried from AgenticConfig).
+        const fcfg = res.plan as unknown as import('../config.js').AgenticConfig;
+        // Feature 4A — SEO metadata (heuristic always; LLM when cfg.seo + model).
+        const brain = new AgentBrain();
+        const seo = await optimizeSeo(
+            { topic: fm.title, title: fm.title, script: (res.plan.scenes || []).map((s) => s.voiceoverText || '').join(' '), hashtags: fm.hashtags },
+            { useLlm: Boolean(fcfg.seo), brain: brain.modelEnabled ? brain : undefined },
+        );
+        const metaTitle = seo.title ?? fm.title;
+        const metaDesc = seo.description ?? fm.description;
+        const metaHash = seo.tags.length ? seo.tags.map((t) => `#${t}`).join(' ') : fm.hashtags;
+        // Feature 4B — AI thumbnail (key-gated; falls back to frame-grab inside publish).
+        if (fcfg.aiThumbnail) {
+            const thumb = await generateThumbnail({ topic: metaTitle, title: metaTitle, keywords: seo.tags, outDir: outDir, orientation: res.plan.orientation ?? 'portrait' });
+            if (thumb) logInfo(`🖼 AI thumbnail → ${thumb}`);
+        }
         const manifest = writePublishManifest({
             jobId: res.workspace.jobId,
             deliverablesDir: outDir,
             cfg: res.plan as unknown as import('../config.js').AgenticConfig,
-            title: fm.title, description: fm.description, hashtags: fm.hashtags, languages: languages ?? [],
+            title: metaTitle, description: metaDesc, hashtags: metaHash, languages: languages ?? [],
         });
         logInfo(`📤 publish manifest: ${manifest.targets.length} platform target(s) → ${res.workspace.jobId}_publish-manifest.json`);
-    } catch (e: any) { console.warn(`⚠ publish manifest skipped: ${e?.message ?? e}`); }
+        // Feature 2 — real YouTube upload (token-gated; never blocks the run).
+        if (fcfg.publishYouTube) {
+            const yt = await publishToYouTube({ videoPath: mp4, title: metaTitle, description: metaDesc, tags: seo.tags, privacyStatus: 'private' });
+            if (yt.uploaded) logInfo(`⬆️ uploaded to YouTube: ${yt.videoId}`);
+            else logInfo(`⬆️ YouTube upload skipped: ${yt.reason} (${yt.note ?? ''})`);
+        }
+    } catch (e: any) { console.warn(`⚠ publish step skipped: ${e?.message ?? e}`); }
     try {
         const { archiveJob } = await import('../delivery/archive.js');
         const arch = archiveJob(res.workspace, mp4);

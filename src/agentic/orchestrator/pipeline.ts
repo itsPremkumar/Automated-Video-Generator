@@ -89,6 +89,18 @@ export async function runAgenticPipeline(
         )?.script ??
         writeScriptHeuristic(req.topic, req.title);
 
+    // Feature 3 — retention hook: rewrite the opening line when requested.
+    // Heuristic always runs; if cfg.optimizeHook AND a brain model is available,
+    // the brain writes a stronger hook (falls back to heuristic on any failure).
+    const { optimizeHook } = await import('../operations/hook.js');
+    const firstLine = script.split(/\n|\. |\.|\? |\?|! |!/)[0] ?? script;
+    const hooked = await optimizeHook(firstLine, { useLlm: Boolean(req.optimizeHook), brain: brain.modelEnabled ? brain : undefined });
+    const finalScript = hooked.hook !== firstLine.trim()
+        ? script.replace(firstLine, hooked.hook)
+        : script;
+    if (hooked.method === 'llm') logInfo(`🪝 retention hook (LLM): "${hooked.hook}"`);
+    else logInfo(`🪝 retention hook (heuristic)`);
+
     // Language → voice resolution (same as legacy pipeline)
     const resolvedVoice =
         req.language && !req.voice
@@ -96,7 +108,7 @@ export async function runAgenticPipeline(
             : req.voice;
 
     const plan = await buildPlan(
-        script,
+        finalScript,
         {
             jobId,
             title: req.title,

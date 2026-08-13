@@ -523,7 +523,7 @@ export interface BatchItem {
     topic: string;
     videoType?: import('../config.js').VideoType;
     preset?: string;
-    preferVisual?: 'image' | 'video';
+    preferVisual?: 'image' | 'video' | 'gen';
 }
 export interface BatchReport {
     total: number;
