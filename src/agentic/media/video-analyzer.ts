@@ -102,7 +102,14 @@ function probeBin(): string {
 }
 
 function mppegArgs(mp4: string, filter: string): string[] {
-    return ['-i', mp4, '-filter:v', filter, '-f', 'null', '-'];
+    // `-v error` is REQUIRED here: at ffmpeg's default `info` loglevel the
+    // blackdetect/freezedetect filters emit a whole-clip false positive
+    // (black_start≈0, black_end≈duration) for videos that are visibly NOT
+    // black — the filter never sees a closing non-black frame before EOF under
+    // the verbose progress logging. Running at `-v error` makes detection
+    // deterministic and matches the real (clean) result. See critique.ts false
+    // positive on v1 (Spanish/local-pool render).
+    return ['-v', 'error', '-i', mp4, '-filter:v', filter, '-f', 'null', '-'];
 }
 
 /**
@@ -119,8 +126,21 @@ export async function detectBlackFrames(mp4: string, minDur = 0.3): Promise<Blac
     const frames: BlackFrame[] = [];
     const re = /black_start:([\d.]+)\s+black_end:([\d.]+)\s+black_duration:([\d.]+)/g;
     let m: RegExpExecArray | null;
+    // Total duration (used to reject whole-clip false positives).
+    let totalDur = 0;
+    const durM = out.match(/Duration:\s*(\d+):(\d+):([\d.]+)/);
+    if (durM) totalDur = (+durM[1]) * 3600 + (+durM[2]) * 60 + parseFloat(durM[3]);
     while ((m = re.exec(out))) {
-        frames.push({ start: parseFloat(m[1]), end: parseFloat(m[2]), duration: parseFloat(m[3]) });
+        const start = parseFloat(m[1]);
+        const end = parseFloat(m[2]);
+        const duration = parseFloat(m[3]);
+        // GUARD: a single black stretch that covers essentially the WHOLE clip
+        // (start≈0 and end≈total duration) is a ffmpeg blackdetect artifact, not
+        // a real defect — it fires on visibly-non-black videos (e.g. when the
+        // null muxer doesn't flush a closing frame). Such a "gap" is impossible
+        // for a real video that has visible content, so we drop it.
+        if (totalDur > 0 && start < 0.5 && end > totalDur * 0.95) continue;
+        frames.push({ start, end, duration });
     }
     return frames;
 }
@@ -134,8 +154,19 @@ export async function detectFreezeFrames(mp4: string, minDur = 0.5): Promise<Fre
     const frames: FreezeFrame[] = [];
     const re = /freeze_start:([\d.]+)\s+freeze_end:([\d.]+)\s+freeze_duration:([\d.]+)/g;
     let m: RegExpExecArray | null;
+    // Total duration (used to reject whole-clip false positives).
+    let totalDur = 0;
+    const durM = out.match(/Duration:\s*(\d+):(\d+):([\d.]+)/);
+    if (durM) totalDur = (+durM[1]) * 3600 + (+durM[2]) * 60 + parseFloat(durM[3]);
     while ((m = re.exec(out))) {
-        frames.push({ start: parseFloat(m[1]), end: parseFloat(m[2]), duration: parseFloat(m[3]) });
+        const start = parseFloat(m[1]);
+        const end = parseFloat(m[2]);
+        const duration = parseFloat(m[3]);
+        // GUARD: a single freeze stretch covering essentially the WHOLE clip is
+        // a freezedetect artifact (null muxer not flushing the final frame),
+        // not a real stall. Drop it the same way as blackdetect.
+        if (totalDur > 0 && start < 0.5 && end > totalDur * 0.95) continue;
+        frames.push({ start, end, duration });
     }
     return frames;
 }
