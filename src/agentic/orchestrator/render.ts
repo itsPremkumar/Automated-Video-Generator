@@ -878,7 +878,22 @@ else vfArgs.push(`${videoMap}null[vig]`);
         if (introClip) ordered.push({ file: introClip, dur: introDur, kind: 'card', idx: -1 });
         visuals.forEach((a, i) =>
             ordered.push({
-                file: a.localPath,
+                file: a.localPath && fs.existsSync(a.localPath) ? a.localPath : (() => {
+                    // GUARD (production robustness): a scene with no resolvable
+                    // visual (e.g. stock download failed in a sandboxed env) must
+                    // never reach ffmpeg as `-i undefined` — that aborts the whole
+                    // render. Substitute a generated solid-color placeholder clip so
+                    // the pipeline degrades gracefully instead of crashing.
+                    const ph = path.join(outDir, `_placeholder_${i}.mp4`);
+                    if (!fs.existsSync(ph)) {
+                        try {
+                            const { execFileSync } = require('child_process');
+                            const ff: string = require('ffmpeg-static');
+                            execFileSync(ff, ['-y', '-f', 'lavfi', '-i', `color=c=navy:s=${W}x${H}:r=25:d=${a.durationSec ?? 4}`, '-t', String(a.durationSec ?? 4), '-pix_fmt', 'yuv420p', ph], { timeout: 30000 });
+                        } catch { /* best effort */ }
+                    }
+                    return fs.existsSync(ph) ? ph : a.localPath;
+                })(),
                 dur: a.durationSec ?? res.plan.scenes[i]?.durationSec ?? 4,
                 kind: 'scene', idx: i,
             }),
