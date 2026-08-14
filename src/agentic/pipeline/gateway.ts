@@ -42,7 +42,7 @@ async function reAcquireScene(
     // Coerce 'gen' → 'image' and 'video-gen' → 'video' for the re-acquire path
     // (a gen scene that reached the gateway behaves exactly like its stock kind).
     const vp = scene.visualPreference;
-    const kind: AssetKind = vp === 'gen' ? 'image' : vp === 'video-gen' ? 'video' : vp;
+    const kind: AssetKind = vp === 'gen' ? 'image' : vp === 'video-gen' ? 'video' : vp === 'gen-local' ? 'image' : vp === 'video-gen-local' ? 'video' : vp;
     const dir =
         kind === 'image'
             ? require('../management/workspace.js').sceneImageDir(ws, sceneIndex)
