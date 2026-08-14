@@ -1,0 +1,27 @@
+[
+  {
+    "id": "ai-gen-test",
+    "title": "AI Generation Test",
+    "script": "Testing the AI generation suite. This video verifies that local AI providers integrate correctly. [Visual: technology] [Transition: fade] [Grade: cinematic]\nFirst scene tests image generation. [Visual: computer] [Transition: slide] [Grade: cool]\nSecond scene tests video generation. [Visual: robot] [Transition: zoomblur] [Grade: cinematic]\nFinal scene confirms the pipeline works. [Visual: checkmark] [Transition: fade] [Grade: warm]",
+    "orientation": "landscape",
+    "aspect": "16:9",
+    "videoType": "facts",
+    "voice": "en-US-GuyNeural",
+    "preset": "cinematic",
+    "transition": "mixed",
+    "grade": "cinematic",
+    "kenBurns": true,
+    "vignette": true,
+    "kineticText": true,
+    "captions": "burned",
+    "sfx": true,
+    "musicIntensity": "calm",
+    "musicQuery": "calm ambient technology",
+    "outputQuality": "low",
+    "intro": {
+      "title": "AI Generation Test",
+      "subtitle": "Verifying Local AI Integration",
+      "durationSec": 3
+    }
+  }
+]

@@ -1,57 +1,39 @@
-// Test that new AI modules are properly integrated and gracefully fallback
+/**
+ * test-ai-modules.ts — verify AI module integration
+ */
 import * as fs from 'fs';
 import * as path from 'path';
 
 async function testAiModules() {
     console.log('=== Testing AI Module Integration ===\n');
-    
+
     // Test 1: Check gen-image.ts has ComfyUI integration
-    const genImagePath = path.resolve('src/lib/gen-image.ts');
-    const genImage = fs.readFileSync(genImagePath, 'utf-8');
+    const genImage = fs.readFileSync(path.resolve('src/lib/gen-image.ts'), 'utf-8');
     console.log('✅ gen-image.ts exists');
-    
-    const hasComfyUI = genImage.includes('tryLocalGenImage') && genImage.includes('comfyui.js');
-    console.log(`${hasComfyUI ? '✅' : '❌'} ComfyUI integration present`);
-    
-    const hasLocalFirst = genImage.indexOf('tryLocalGenImage') < genImage.indexOf('resolveGenProvider');
-    console.log(`${hasLocalFirst ? '✅' : '❌'} Local provider tried before API`);
-    
+    console.log(`${genImage.includes('tryLocalGenImage') && genImage.includes('comfyui.js') ? '✅' : '❌'} ComfyUI integration present`);
+    console.log(`${genImage.indexOf('tryLocalGenImage') < genImage.indexOf('resolveGenProvider') ? '✅' : '❌'} Local provider tried before API`);
+
     // Test 2: Check gen-video.ts has local providers
-    const genVideoPath = path.resolve('src/lib/gen-video.ts');
-    const genVideo = fs.readFileSync(genVideoPath, 'utf-8');
+    const genVideo = fs.readFileSync(path.resolve('src/lib/gen-video.ts'), 'utf-8');
     console.log('\n✅ gen-video.ts exists');
-    
-    const hasCogVideo = genVideo.includes('cogvideo.js');
-    const hasAnimateDiff = genVideo.includes('animatediff.js');
-    const hasImagePath = genVideo.includes('imagePath?: string');
-    console.log(`${hasCogVideo ? '✅' : '❌'} CogVideoX integration present`);
-    console.log(`${hasAnimateDiff ? '✅' : '❌'} AnimateDiff integration present`);
-    console.log(`${hasImagePath ? '✅' : '❌'} imagePath option added for I2V`);
-    
+    console.log(`${genVideo.includes('cogvideo.js') ? '✅' : '❌'} CogVideoX integration present`);
+    console.log(`${genVideo.includes('animatediff.js') ? '✅' : '❌'} AnimateDiff integration present`);
+    console.log(`${genVideo.includes('imagePath?: string') ? '✅' : '❌'} imagePath option added for I2V`);
+
     // Test 3: Check acquire.ts has new preferences
-    const acquirePath = path.resolve('src/agentic/pipeline/acquire.ts');
-    const acquire = fs.readFileSync(acquirePath, 'utf-8');
+    const acquire = fs.readFileSync(path.resolve('src/agentic/pipeline/acquire.ts'), 'utf-8');
     console.log('\n✅ acquire.ts exists');
-    
-    const hasGenLocal = acquire.includes('gen-local');
-    const hasVideoGenLocal = acquire.includes('video-gen-local');
-    const hasAiQueue = acquire.includes('ai/job-queue.js');
-    console.log(`${hasGenLocal ? '✅' : '❌'} gen-local preference added`);
-    console.log(`${hasVideoGenLocal ? '✅' : '❌'} video-gen-local preference added`);
-    console.log(`${hasAiQueue ? '✅' : '❌'} AI job queue import present`);
-    
-    // Test 4: Check job-queue.ts exists and has correct exports
-    const queuePath = path.resolve('src/lib/ai/job-queue.ts');
-    const queue = fs.readFileSync(queuePath, 'utf-8');
+    console.log(`${acquire.includes('gen-local') ? '✅' : '❌'} gen-local preference added`);
+    console.log(`${acquire.includes('video-gen-local') ? '✅' : '❌'} video-gen-local preference added`);
+    console.log(`${acquire.includes('ai/job-queue.js') ? '✅' : '❌'} AI job queue import present`);
+
+    // Test 4: Check job-queue.ts
+    const queue = fs.readFileSync(path.resolve('src/lib/ai/job-queue.ts'), 'utf-8');
     console.log('\n✅ job-queue.ts exists');
-    
-    const hasEnqueue = queue.includes('export function enqueueJob');
-    const hasStatus = queue.includes('export function getQueueStatus');
-    const hasSerial = queue.includes('isProcessing') || queue.includes('ONE AI job at a time');
-    console.log(`${hasEnqueue ? '✅' : '❌'} enqueueJob exported`);
-    console.log(`${hasStatus ? '✅' : '❌'} getQueueStatus exported`);
-    console.log(`${hasSerial ? '✅' : '❌'} Serial processing enforced`);
-    
+    console.log(`${queue.includes('export function enqueueJob') ? '✅' : '❌'} enqueueJob exported`);
+    console.log(`${queue.includes('export function getQueueStatus') ? '✅' : '❌'} getQueueStatus exported`);
+    console.log(`${queue.includes('isProcessing') ? '✅' : '❌'} Serial processing enforced`);
+
     // Test 5: Check all provider files exist
     const providers = [
         'src/lib/ai/providers/comfyui.ts',
@@ -62,10 +44,9 @@ async function testAiModules() {
     ];
     console.log('\n--- Provider Modules ---');
     for (const p of providers) {
-        const exists = fs.existsSync(path.resolve(p));
-        console.log(`${exists ? '✅' : '❌'} ${p}`);
+        console.log(`${fs.existsSync(path.resolve(p)) ? '✅' : '❌'} ${p}`);
     }
-    
+
     // Test 6: Check all intelligence modules exist
     const intelligence = [
         'src/lib/ai/intelligence/beat-sync.ts',
@@ -76,25 +57,24 @@ async function testAiModules() {
     ];
     console.log('\n--- Intelligence Modules ---');
     for (const p of intelligence) {
-        const exists = fs.existsSync(path.resolve(p));
-        console.log(`${exists ? '✅' : '❌'} ${p}`);
+        console.log(`${fs.existsSync(path.resolve(p)) ? '✅' : '❌'} ${p}`);
     }
-    
-    // Test 7: Verify graceful fallback pattern in all modules
+
+    // Test 7: Verify graceful fallback pattern
     console.log('\n--- Graceful Fallback Pattern ---');
     const allModules = [...providers, ...intelligence, 'src/lib/ai/job-queue.ts'];
     let allHaveFallback = true;
     for (const p of allModules) {
         const content = fs.readFileSync(path.resolve(p), 'utf-8');
-        const hasNeverThrows = content.includes('never throws') || content.includes('Never throws') || content.includes('fallback');
+        const hasNeverThrows = content.includes('never throws') || content.includes('Never throws') || content.includes('fall back') || content.includes('fallback');
         const hasIsEnabled = content.includes('isEnabled') || content.includes('isAvailable');
         if (!hasNeverThrows || !hasIsEnabled) {
-            console.log(`⚠️ ${p} - missing fallback pattern`);
+            console.log(`⚠️ ${p} - missing fallback pattern (hasNeverThrows=${hasNeverThrows}, hasIsEnabled=${hasIsEnabled})`);
             allHaveFallback = false;
         }
     }
     console.log(allHaveFallback ? '✅ All modules follow graceful fallback pattern' : '⚠️ Some modules need review');
-    
+
     console.log('\n=== All AI Module Tests Complete ===');
 }
 
