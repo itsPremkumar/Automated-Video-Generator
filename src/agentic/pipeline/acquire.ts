@@ -47,6 +47,39 @@ export async function mapWithConcurrencyLimit<T>(tasks: (() => Promise<T>)[], li
 }
 
 /**
+ * Download an asset with a HARD timeout. A dead/slow stock host (e.g. a sandbox
+ * with no egress, or a provider that hangs instead of 404-ing) must NOT stall
+ * the whole acquire stage for minutes — the earlier behaviour was a 400s hang
+ * that produced zero candidates. On timeout (or any download error) we return
+ * null so the caller can fall back to the offline ffmpeg placeholder instead of
+ * leaving the scene asset-less. Default budget 30s; tunable via env.
+ */
+async function downloadWithTimeout(
+    deps: AcquireDeps,
+    url: string,
+    dir: string,
+    filename: string,
+): Promise<string | null> {
+    const budgetMs = Number(process.env.AGENTIC_DOWNLOAD_TIMEOUT_MS || 30000);
+    let timer: NodeJS.Timeout | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`download timeout after ${budgetMs}ms`)), budgetMs);
+    });
+    try {
+        const localPath = await Promise.race([
+            deps.download(url, dir, filename),
+            timeout,
+        ]);
+        return localPath;
+    } catch (e) {
+        console.warn(`⚠ download timed out/failed (${url.slice(0, 60)}…): ${(e as Error)?.message ?? e}`);
+        return null;
+    } finally {
+        if (timer) clearTimeout(timer);
+    }
+}
+
+/**
  * Resolve the LLM bridge for acquire-stage AI verification, honouring the
  * standing "driver first" rule:
  *   deps.bridge (already driver-aware) -> ModelBridge(deps.brain) -> NullBridge.
@@ -428,6 +461,7 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                 // re-downloading (saves network + RAM in batch mode).
                 const destPath = path.join(dir, filename);
                 let localPath = destPath;
+                let usedFallback = false;
                 try {
                     // Check shared cache first
                     if (f.url && f.url.startsWith('http')) {
@@ -442,9 +476,19 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                             // Store in cache for future jobs
                             putCache(f.url, f.localPath, { source: f.source, license: f.license, licenseUrl: f.licenseUrl });
                         } else {
-                            localPath = await deps.download(f.url, dir, filename);
+                            localPath = await downloadWithTimeout(deps, f.url, dir, filename);
+                            // Download hung/failed → fall back to the offline
+                            // ffmpeg placeholder so the scene still gets a real
+                            // asset instead of a blank/undefined path.
+                            if (!localPath) {
+                                const fb = generateFallbackVisual(scene, kind, dir, c);
+                                if (fb) {
+                                    localPath = fb.localPath;
+                                    usedFallback = true;
+                                }
+                            }
                             // Store in cache for future jobs
-                            if (fs.existsSync(localPath)) {
+                            if (localPath && fs.existsSync(localPath)) {
                                 putCache(f.url, localPath, { source: f.source, license: f.license, licenseUrl: f.licenseUrl });
                             }
                         }
@@ -452,7 +496,14 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                         fs.mkdirSync(dir, { recursive: true });
                         fs.copyFileSync(f.localPath, destPath);
                     } else {
-                        localPath = await deps.download(f.url, dir, filename);
+                        localPath = await downloadWithTimeout(deps, f.url, dir, filename);
+                        if (!localPath) {
+                            const fb = generateFallbackVisual(scene, kind, dir, c);
+                            if (fb) {
+                                localPath = fb.localPath;
+                                usedFallback = true;
+                            }
+                        }
                     }
                 } catch (e) {
                     console.warn(`⚠ asset materialise failed for scene ${i}: ${(e as Error)?.message ?? e}`);
@@ -508,7 +559,11 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                 // (degenerate swatch visuals). Matrix QA found a flat gradient
                 // being accepted as a real scene image. Skip it so the scene
                 // falls through to the next source, or a proper fallback.
-                if (effectiveKind === 'image' && isUniformPlaceholderImage(localPath)) {
+                // NOTE: the offline asset-creator fallback is a DELIBERATE,
+                // labeled placeholder — it is exempt from this gate so graceful
+                // degradation actually yields a usable asset instead of being
+                // re-rejected as a "swatch".
+                if (effectiveKind === 'image' && !usedFallback && isUniformPlaceholderImage(localPath)) {
                     console.warn(
                         `⚠ scene ${i} cand ${c + 1}: near-uniform placeholder (no real content) — skipped; trying next source`,
                     );
@@ -554,13 +609,13 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                         localPath = f.localPath;
                         putCache(f.url, f.localPath, { source: f.source, license: f.license, licenseUrl: f.licenseUrl });
                     } else {
-                        localPath = await deps.download(f.url, ws.musicDir, filename);
-                        if (fs.existsSync(localPath)) {
+                        localPath = await downloadWithTimeout(deps, f.url, ws.musicDir, filename);
+                        if (localPath && fs.existsSync(localPath)) {
                             putCache(f.url, localPath, { source: f.source, license: f.license, licenseUrl: f.licenseUrl });
                         }
                     }
                 } else {
-                    localPath = f.localPath && fs.existsSync(f.localPath) ? f.localPath : await deps.download(f.url, ws.musicDir, filename);
+                    localPath = f.localPath && fs.existsSync(f.localPath) ? f.localPath : await downloadWithTimeout(deps, f.url, ws.musicDir, filename);
                 }
             } catch (e) {
                 console.warn(`⚠ music materialise failed for cand ${c + 1}: ${(e as Error)?.message ?? e}`);

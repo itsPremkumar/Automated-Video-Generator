@@ -25,18 +25,26 @@ const ffprobe: string = require('ffprobe-static').path;
 
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'avs-brand-'));
 
-function mkAudioVideo(name: string, dur: number): string {
+function mkBase(name: string, dur: number, withAudio: boolean): string {
+  // Generate a self-contained base clip in TMP — do NOT depend on a committed
+  // fixture (input/visuals is gitignored, so input/visuals/a.mp4 is never in
+  // the repo and the tests fail on a fresh clone). This keeps the suite green
+  // everywhere without committing binaries.
   const p = path.join(TMP, name);
-  const tone = path.join(TMP, 'tone.wav');
-  execFileSync(ffmpeg, ['-f', 'lavfi', '-i', `sine=frequency=440:duration=${dur}`, '-c:a', 'pcm_s16le', '-t', String(dur), '-y', tone], { stdio: 'ignore' });
-  // copy a.mp4 video + add the tone audio
-  execFileSync(ffmpeg, ['-i', 'input/visuals/a.mp4', '-i', tone, '-c:v', 'copy', '-c:a', 'aac', '-map', '0:v:0', '-map', '1:a:0', '-t', String(dur), '-y', p], { stdio: 'ignore' });
+  const args = ['-f', 'lavfi', '-i', `testsrc=s=1280x720:d=${dur}:r=25`];
+  if (withAudio) args.push('-f', 'lavfi', '-i', `sine=frequency=440:duration=${dur}`);
+  args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p');
+  if (withAudio) args.push('-c:a', 'aac', '-map', '0:v:0', '-map', '1:a:0');
+  else args.push('-an');
+  args.push('-t', String(dur), '-y', p);
+  execFileSync(ffmpeg, args, { stdio: 'ignore' });
   return p;
 }
+function mkAudioVideo(name: string, dur: number): string {
+  return mkBase(name, dur, true);
+}
 function mkSilentVideo(name: string, dur: number): string {
-  const p = path.join(TMP, name);
-  execFileSync(ffmpeg, ['-i', 'input/visuals/a.mp4', '-c:v', 'copy', '-an', '-t', String(dur), '-y', p], { stdio: 'ignore' });
-  return p;
+  return mkBase(name, dur, false);
 }
 function probeStreams(file: string): string[] {
   const out = execFileSync(ffprobe, ['-v', 'quiet', '-show_entries', 'stream=codec_type', '-of', 'csv=p=0', file], { encoding: 'utf8' });

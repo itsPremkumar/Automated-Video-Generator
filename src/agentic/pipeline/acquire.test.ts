@@ -134,6 +134,41 @@ test('generateFallbackVisual produces a real offline video fallback', () => {
     fs.rmSync(dir, { recursive: true, force: true });
 });
 
+// Regression test for fix #2: a HANGING download (dead/slow stock host) must NOT
+// stall the whole acquire stage. downloadWithTimeout bounds it and the code
+// falls back to the offline ffmpeg placeholder so the scene still gets a real
+// asset instead of a blank/undefined path. Previously this hung the pipeline
+// for ~400s and produced zero candidates.
+test('acquireAssets: a hanging download is timed out and falls back to offline placeholder', async () => {
+    const ws = fakeWs();
+    const plan = fakePlan([{ kind: 'image' }]);
+    const realEnv = process.env.AGENTIC_DOWNLOAD_TIMEOUT_MS;
+    process.env.AGENTIC_DOWNLOAD_TIMEOUT_MS = '300';
+    const deps = {
+        fetchVisual: async () => [
+            { url: 'http://hang.example.com/stuck.jpg', localPath: '', source: 'pexels' },
+        ],
+        // Never resolves → simulates a dead host. Without the timeout this would hang forever.
+        download: async () => new Promise<string>(() => {}),
+        fetchMusic: async () => [],
+    } as any;
+
+    const start = Date.now();
+    const { candidates } = await acquireAssets(plan, deps, 1);
+    const elapsed = Date.now() - start;
+    if (realEnv === undefined) delete process.env.AGENTIC_DOWNLOAD_TIMEOUT_MS;
+    else process.env.AGENTIC_DOWNLOAD_TIMEOUT_MS = realEnv;
+
+    // Must return quickly (well under a multi-second hang), not stall.
+    assert.ok(elapsed < 5000, `acquire returned in ${elapsed}ms (must not hang)`);
+    // The hung download is replaced by the offline fallback, so the scene still
+    // has a usable candidate rather than a blank/undefined path.
+    assert.equal(candidates.length, 1, 'fallback candidate expected after timeout');
+    assert.equal(candidates[0].source, 'asset-creator');
+    assert.ok(fs.existsSync(candidates[0].localPath), 'fallback file should exist on disk');
+    fs.rmSync(ws.root, { recursive: true, force: true });
+});
+
 test('acquireAssets sorts candidates: music last, then by scene/candidate index', async () => {
     const ws = fakeWs();
     const plan = fakePlan([{}, {}]);

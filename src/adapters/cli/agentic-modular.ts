@@ -104,6 +104,31 @@ function readJobJson(): any[] {
     return JSON.parse(fs.readFileSync(target, 'utf-8'));
 }
 
+/**
+ * Resolve the jobs to process, honouring an optional `--job <id>` filter.
+ * Without `--job`, returns every job (batch behaviour). With `--job`, returns
+ * only the matching job so a single job in a multi-job file can be run in
+ * isolation — previously the `pipeline` command planned/acquired/rendered
+ * EVERY job in the file even when `--job` was given, which was both slow and
+ * confusing. Matching is by exact id OR normalized id (the same normalization
+ * used for workspace dirs).
+ */
+function selectJobs(cliArgs: CliArgs): any[] {
+    const all = readJobJson();
+    const jobArg = typeof cliArgs.job === 'string' ? cliArgs.job : '';
+    if (!jobArg) return all;
+    const want = normalizeJobId(jobArg);
+    const hit = all.find((j) => {
+        const id = normalizeJobId(j.id || `job_${Date.now()}`);
+        return id === want;
+    });
+    if (!hit) {
+        console.error(`✖ No job matching --job "${jobArg}" in the job file.`);
+        process.exit(1);
+    }
+    return [hit];
+}
+
 function workspaceFor(jobId: string) {
     return getAgenticWorkspace(jobId);
 }
@@ -146,7 +171,7 @@ function printDryRun(job: any, title: string, details: DryRunDetail[]): void {
 // ─── Stage 1: Plan ─────────────────────────────────────────────────────────
 
 async function runPlan(cliArgs: CliArgs) {
-    const jobs = readJobJson();
+    const jobs = selectJobs(cliArgs);
     for (const job of jobs) {
         const id = normalizeJobId(job.id || `job_${Date.now()}`);
         const ws = workspaceFor(id);
@@ -260,7 +285,7 @@ async function runPlan(cliArgs: CliArgs) {
 // ─── Stage 2: Visuals ──────────────────────────────────────────────────────
 
 async function runVisuals(cliArgs: CliArgs) {
-    const jobs = readJobJson();
+    const jobs = selectJobs(cliArgs);
     for (const job of jobs) {
         const id = normalizeJobId(job.id || `job_${Date.now()}`);
         const ws = workspaceFor(id);
@@ -503,7 +528,7 @@ function runFlux3Bridge(args: string[], timeoutMs: number): { stdout: string; st
 }
 
 async function runFlux3(cliArgs: CliArgs) {
-    const jobs = readJobJson();
+    const jobs = selectJobs(cliArgs);
     for (const job of jobs) {
         const mode = flux3Mode(job);
         if (mode === 'off') continue;
@@ -595,7 +620,7 @@ async function runFlux3(cliArgs: CliArgs) {
 // ─── Stage 3: Voice ─────────────────────────────────────────────────────────
 
 async function runVoice(cliArgs: CliArgs) {
-    const jobs = readJobJson();
+    const jobs = selectJobs(cliArgs);
     for (const job of jobs) {
         const id = normalizeJobId(job.id || `job_${Date.now()}`);
         const ws = workspaceFor(id);
@@ -767,7 +792,7 @@ async function runVoice(cliArgs: CliArgs) {
 // ─── Stage 4: Render ────────────────────────────────────────────────────────
 
 async function runRender(cliArgs: CliArgs) {
-    const jobs = readJobJson();
+    const jobs = selectJobs(cliArgs);
     for (const job of jobs) {
         const id = normalizeJobId(job.id || `job_${Date.now()}`);
         const ws = workspaceFor(id);
