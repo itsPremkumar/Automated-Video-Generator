@@ -431,6 +431,7 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
         // No stock candidates for this scene → generate an offline fallback
         // (asset-creator / ffmpeg) instead of leaving the scene blank.
         if (fetched.length === 0) {
+            console.warn(`DBG3 fetched.length=0 for scene ${i}, generating offline fallback (no usedFallback flag)`);
             const fb = generateFallbackVisual(scene, kind, dir, 0);
             if (fb) {
                 candidates.push({
@@ -478,11 +479,13 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                             // Store in cache for future jobs
                             putCache(f.url, f.localPath, { source: f.source, license: f.license, licenseUrl: f.licenseUrl });
                         } else {
-                            localPath = await downloadWithTimeout(deps, f.url, dir, filename);
+                            const downloaded1 = await downloadWithTimeout(deps, f.url, dir, filename);
                             // Download hung/failed → fall back to the offline
                             // ffmpeg placeholder so the scene still gets a real
                             // asset instead of a blank/undefined path.
-                            if (!localPath) {
+                            if (downloaded1) {
+                                localPath = downloaded1;
+                            } else {
                                 const fb = generateFallbackVisual(scene, kind, dir, c);
                                 if (fb) {
                                     localPath = fb.localPath;
@@ -498,8 +501,10 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                         fs.mkdirSync(dir, { recursive: true });
                         fs.copyFileSync(f.localPath, destPath);
                     } else {
-                        localPath = await downloadWithTimeout(deps, f.url, dir, filename);
-                        if (!localPath) {
+                        const downloaded2 = await downloadWithTimeout(deps, f.url, dir, filename);
+                        if (downloaded2) {
+                            localPath = downloaded2;
+                        } else {
                             const fb = generateFallbackVisual(scene, kind, dir, c);
                             if (fb) {
                                 localPath = fb.localPath;
@@ -566,6 +571,7 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                 // degradation actually yields a usable asset instead of being
                 // re-rejected as a "swatch".
                 if (effectiveKind === 'image' && !usedFallback && isUniformPlaceholderImage(localPath)) {
+                    console.warn(`DBG usedFallback=${usedFallback} localPath=${localPath} exists=${localPath ? fs.existsSync(localPath) : false} uniform=${isUniformPlaceholderImage(localPath)}`);
                     console.warn(
                         `⚠ scene ${i} cand ${c + 1}: near-uniform placeholder (no real content) — skipped; trying next source`,
                     );
@@ -597,7 +603,7 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
         downloadTasks.push(async () => {
             const ext = path.extname(f.url).split('?')[0] || '.mp3';
             const filename = `candidate_${c + 1}${ext}`;
-            let localPath;
+            let localPath: string | undefined;
             try {
                 // Check shared cache first for music too
                 if (f.url && f.url.startsWith('http')) {
@@ -611,17 +617,23 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                         localPath = f.localPath;
                         putCache(f.url, f.localPath, { source: f.source, license: f.license, licenseUrl: f.licenseUrl });
                     } else {
-                        localPath = await downloadWithTimeout(deps, f.url, ws.musicDir, filename);
-                        if (localPath && fs.existsSync(localPath)) {
-                            putCache(f.url, localPath, { source: f.source, license: f.license, licenseUrl: f.licenseUrl });
+                        const downloaded = await downloadWithTimeout(deps, f.url, ws.musicDir, filename);
+                        if (downloaded) {
+                            localPath = downloaded;
+                            if (fs.existsSync(localPath)) {
+                                putCache(f.url, localPath, { source: f.source, license: f.license, licenseUrl: f.licenseUrl });
+                            }
                         }
                     }
                 } else {
-                    localPath = f.localPath && fs.existsSync(f.localPath) ? f.localPath : await downloadWithTimeout(deps, f.url, ws.musicDir, filename);
+                    localPath = f.localPath && fs.existsSync(f.localPath) ? f.localPath : await downloadWithTimeout(deps, f.url, ws.musicDir, filename) ?? undefined;
                 }
             } catch (e) {
                 console.warn(`⚠ music materialise failed for cand ${c + 1}: ${(e as Error)?.message ?? e}`);
-                return; // skip this music candidate; never register a ghost (unwritten) path
+                return;
+            }
+            if (!localPath) {
+                return;
             }
             const lic = normalizeLicense(f);
             // OPT-IN AI music-mood check (acquire stage): music has no speech
