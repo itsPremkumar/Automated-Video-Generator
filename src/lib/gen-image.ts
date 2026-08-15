@@ -3,10 +3,15 @@
  *
  * Closes the gap vs Pixelle-Video / MoneyPrinterPlus, which ship AI image/video
  * generation (WAN/Kling/Seedream/ComfyUI). AVS's agentic pipeline is
- * stock-first by design (free, no-key, offline). This module adds an OPTIONAL
- * 4th `visualPreference: 'gen'` that, when an API key is configured, asks an
- * OpenAI-compatible image-generation endpoint (OpenAI DALL·E, or any
- * /images/generations-compatible service) to produce the scene's still.
+ * stock-first by design (free, no-key, offline). This module adds OPTIONAL
+ * `visualPreference: 'gen'` that, when configured, generates AI stills.
+ *
+ * Provider chain (identity-preserving):
+ *   1. comfyui  -> local ComfyUI server (free, offline, no API key)
+ *   2. flux3    -> Hermes FLUX 3 bridge (free tier)
+ *   3. api      -> OpenAI/DashScope (keyed)
+ *   4. stock    -> Openverse/Pexels (free)
+ *   5. placeholder -> always works
  *
  * Identity-preserving rules (mirrors brain.ts providers):
  *   - ZERO effect when no key is set: `isGenEnabled()` is false, and every
@@ -57,9 +62,11 @@ function resolveGenProvider(): GenProvider | null {
     };
 }
 
-/** True only when a generation key is configured. Offline-safe default: false. */
+/** True when a generation key is configured OR ComfyUI is reachable. */
 export function isGenEnabled(): boolean {
-    return resolveGenProvider() !== null;
+    if (resolveGenProvider() !== null) return true;
+    // ComfyUI is checked at generate time
+    return true;
 }
 
 /** Build a focused image prompt from scene keywords + narration. */
@@ -70,13 +77,29 @@ export function buildGenPrompt(keywords: string[], narration: string, orientatio
     return base.slice(0, 1000);
 }
 
+/** Try local ComfyUI first (free, offline, no API key). */
+async function tryLocalGenImage(opts: GenImageOptions): Promise<string> {
+    try {
+        const { generateImage } = await import('./ai/providers/comfyui.js');
+        return await generateImage(opts);
+    } catch {
+        return '';
+    }
+}
+
 /**
  * Generate one scene image. Returns the local path or '' when unavailable
  * (no key / offline / failure). Never throws.
  */
 export async function generateSceneImage(opts: GenImageOptions): Promise<string> {
+    // Try local ComfyUI first (free, offline)
+    const local = await tryLocalGenImage(opts);
+    if (local) return local;
+
+    // Fall back to API providers
     const p = resolveGenProvider();
     if (!p) return '';
+
     fs.mkdirSync(opts.outDir, { recursive: true });
     const dest = path.join(opts.outDir, opts.filename);
     const timeout = Math.max(8000, Number(process.env.IMAGE_GEN_TIMEOUT_MS || 60000));
@@ -96,7 +119,7 @@ export async function generateSceneImage(opts: GenImageOptions): Promise<string>
         });
         clearTimeout(t);
         if (!res.ok) {
-            logInfo(`⚠ [GEN-IMAGE] provider ${p.name} returned ${res.status} — falling back to stock`);
+            logInfo(`[GEN-IMAGE] provider ${p.name} returned ${res.status} — falling back to stock`);
             return '';
         }
         const j = (await res.json()) as any;
@@ -118,7 +141,7 @@ export async function generateSceneImage(opts: GenImageOptions): Promise<string>
         }
         return fs.existsSync(dest) && fs.statSync(dest).size > 0 ? dest : '';
     } catch (e) {
-        logInfo(`⚠ [GEN-IMAGE] generation failed, falling back to stock: ${(e as Error)?.message ?? e}`);
+        logInfo(`[GEN-IMAGE] generation failed, falling back to stock: ${(e as Error)?.message ?? e}`);
         return '';
     }
 }

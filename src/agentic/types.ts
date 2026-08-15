@@ -24,7 +24,7 @@ export interface ScenePlan {
     /** Keywords used to fetch candidate visuals for this scene. */
     searchKeywords: string[];
     /** 'image' = prefer a still; 'video' = prefer motion; 'gen' = AI-generated image (key-gated, falls back to stock); 'video-gen' = AI-generated motion clip (key-gated, falls back to stock video). */
-    visualPreference: 'image' | 'video' | 'gen' | 'video-gen';
+    visualPreference: 'image' | 'video' | 'gen' | 'video-gen' | 'gen-local' | 'video-gen-local';
     durationSec: number;
     /** User-supplied local media file (from input/visuals/) bound to this
      *  scene. When set, the acquire stage uses this file directly instead of

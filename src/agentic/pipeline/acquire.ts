@@ -25,6 +25,8 @@ import { getCached, putCache } from '../operations/asset-cache.js';
 import { isUniformPlaceholderImage } from './asset-validators.js';
 import { isGenEnabled, generateSceneImage, buildGenPrompt } from '../../lib/gen-image.js';
 import { isVideoGenEnabled, generateSceneVideo, buildVideoGenPrompt } from '../../lib/gen-video.js';
+import { enqueueJob, getJobResult } from '../../lib/ai/job-queue.js';
+import type { AiJobKind } from '../../lib/ai/types.js';
 
 /**
  * Run async producers with a bounded concurrency. `tasks` is an array of
@@ -282,7 +284,7 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
     const ws = createAgenticWorkspace(plan.jobId);
     const candidates: AssetCandidate[] = [];
     const sceneFetches: Array<
-        () => Promise<{ i: number; kind: 'image' | 'video' | 'gen' | 'video-gen'; dir: string; scene: ScenePlan; fetched: FetchedVisual[] }>
+        () => Promise<{ i: number; kind: 'image' | 'video' | 'gen' | 'video-gen' | 'gen-local' | 'video-gen-local'; dir: string; scene: ScenePlan; fetched: FetchedVisual[] }>
     > = [];
 
     for (let i = 0; i < plan.scenes.length; i++) {
@@ -348,7 +350,7 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
             }
             // Fall through to stock fetch with kind coerced to 'video'.
         }
-        const effectiveKind: 'image' | 'video' = kind === 'gen' ? 'image' : kind === 'video-gen' ? 'video' : kind;
+        const effectiveKind: 'image' | 'video' = kind === 'gen' ? 'image' : kind === 'video-gen' ? 'video' : kind === 'gen-local' ? 'image' : kind === 'video-gen-local' ? 'video' : kind;
 
         // P1b — local material pool (off by default): when enabled and the
         // scene has no explicit localAsset, bind round-robin to media files
@@ -425,7 +427,7 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
 
     for (const { i, kind: rawKind, dir, scene, fetched } of results) {
         // Coerce 'gen' → 'image' for all registration/fallback paths below.
-        const kind = rawKind === 'gen' ? 'image' : rawKind === 'video-gen' ? 'video' : rawKind;
+        const kind = rawKind === 'gen' ? 'image' : rawKind === 'video-gen' ? 'video' : rawKind === 'gen-local' ? 'image' : rawKind === 'video-gen-local' ? 'video' : rawKind;
         // No stock candidates for this scene → generate an offline fallback
         // (asset-creator / ffmpeg) instead of leaving the scene blank.
         if (fetched.length === 0) {
