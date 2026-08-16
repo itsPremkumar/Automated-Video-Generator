@@ -490,11 +490,15 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                                 if (fb) {
                                     localPath = fb.localPath;
                                     usedFallback = true;
+                                    console.warn(`DBGFB localPath=${localPath} exists=${fs.existsSync(localPath)} usedFallback=${usedFallback}`);
                                 }
                             }
-                            // Store in cache for future jobs
-                            if (localPath && fs.existsSync(localPath)) {
-                                putCache(f.url, localPath, { source: f.source, license: f.license, licenseUrl: f.licenseUrl });
+                            // Store in cache for future jobs — only a REAL download,
+                            // never the offline fallback (caching a fallback under the
+                            // URL key would make a later run treat the placeholder as
+                            // the URL's content and re-fail the content gate).
+                            if (downloaded1 && fs.existsSync(downloaded1)) {
+                                putCache(f.url, downloaded1, { source: f.source, license: f.license, licenseUrl: f.licenseUrl });
                             }
                         }
                     } else if (f.localPath && fs.existsSync(f.localPath)) {
@@ -510,6 +514,10 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                                 localPath = fb.localPath;
                                 usedFallback = true;
                             }
+                        }
+                        // Only cache a REAL download, never the offline fallback.
+                        if (downloaded2 && fs.existsSync(downloaded2)) {
+                            putCache(f.url, downloaded2, { source: f.source, license: f.license, licenseUrl: f.licenseUrl });
                         }
                     }
                 } catch (e) {

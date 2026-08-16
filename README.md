@@ -162,7 +162,14 @@ cp .env.example .env
 # Edit .env — add PEXELS_API_KEY (free, get one at pexels.com/api)
 # No API key? Set OPENVERSE_ENABLED=true (it's the default)
 
-# 5. Start the web portal
+# 5. (Optional) Local AI generation — ComfyUI, CogVideoX, Real-ESRGAN, rembg
+#    Install the AI providers you want (all optional, all free, all offline):
+#    pip install diffusers transformers accelerate torch        # CogVideoX (T2V)
+#    pip install realesrgan basicsr                            # Real-ESRGAN (upscale)
+#    pip install rembg                                         # Background removal
+#    git clone https://github.com/comfyanonymous/ComfyUI.git  # ComfyUI (image/I2V)
+
+# 6. Start the web portal
 npm run dev
 ```
 
@@ -337,6 +344,9 @@ Use `[Visual: ...]` tags for frame-perfect scene control:
 | **📱 Portrait + Landscape**  | YouTube Shorts, TikTok, Reels, and widescreen support                                           |
 | **↩️ Resumable Rendering**   | Cancel and resume without losing progress                                                       |
 | **🎬 Remotion Studio**       | Preview and tweak video compositions                                                            |
+| **🤖 Local AI Generation**   | ComfyUI (SD1.5/SDXL), CogVideoX (T2V), AnimateDiff (I2V), Real-ESRGAN (upscale), rembg (bg removal) |
+| **🧠 AI Intelligence**       | Beat-sync, CLIP semantic matching, script enhancement, multi-language subs, storyboard gen      |
+| **🔌 AI Job Queue**          | Serial AI processing — runs one AI job at a time (6GB RAM safe)                                 |
 
 ---
 
@@ -384,6 +394,17 @@ npm run electron:pack         # Create unpacked release for testing
 npm run docker:build          # Build Docker image
 npm run docker:run            # Run Docker container
 npm run batch                 # Batch mode alias
+npm run agentic:upscale       # Upscale an image (AI, Real-ESRGAN)
+npm run agentic:remove-bg     # Remove background (AI, rembg)
+```
+
+**AI Tool Commands:**
+```bash
+# Upscale an image 2x-4x using Real-ESRGAN
+npx tsx src/adapters/cli/agentic-modular.ts upscale --input photo.jpg --output photo_4k.jpg --factor 2
+
+# Remove background using rembg
+npx tsx src/adapters/cli/agentic-modular.ts remove-bg --input photo.jpg --output photo_nobg.png --model u2net
 ```
 
 [Full CLI docs →](docs/cli-reference.md)
