@@ -579,12 +579,12 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                 // degradation actually yields a usable asset instead of being
                 // re-rejected as a "swatch".
                 if (effectiveKind === 'image' && !usedFallback && isUniformPlaceholderImage(localPath)) {
-                    console.warn(`DBG usedFallback=${usedFallback} localPath=${localPath} exists=${localPath ? fs.existsSync(localPath) : false} uniform=${isUniformPlaceholderImage(localPath)}`);
                     console.warn(
                         `⚠ scene ${i} cand ${c + 1}: near-uniform placeholder (no real content) — skipped; trying next source`,
                     );
                     return;
                 }
+                console.warn(`DBGPUSH effectiveKind=${effectiveKind} usedFallback=${usedFallback} localPath=${localPath} exists=${localPath ? fs.existsSync(localPath) : false}`);
                 candidates.push({
                     kind: effectiveKind,
                     sceneIndex: i,
@@ -691,5 +691,6 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
     });
 
     writeJson(ws, 'candidates.json', candidates);
+    console.warn(`DBGFINAL candidates.length=${candidates.length}`);
     return { workspace: ws, candidates };
 }
