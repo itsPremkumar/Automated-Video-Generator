@@ -164,7 +164,13 @@ test('acquireAssets: a hanging download is timed out and falls back to offline p
     // The hung download is replaced by the offline fallback, so the scene still
     // has a usable candidate rather than a blank/undefined path.
     assert.equal(candidates.length, 1, 'fallback candidate expected after timeout');
-    assert.equal(candidates[0].source, 'asset-creator');
+    // The fallback is a generated offline placeholder (honestly labeled
+    // 'placeholder' for uniform gradients, or 'asset-creator' otherwise) — either
+    // way it is NOT the original fetched source, and the file must exist.
+    assert.ok(
+        candidates[0].source === 'asset-creator' || candidates[0].source === 'placeholder',
+        `fallback source expected, got "${candidates[0].source}"`,
+    );
     assert.ok(fs.existsSync(candidates[0].localPath), 'fallback file should exist on disk');
     fs.rmSync(ws.root, { recursive: true, force: true });
 });

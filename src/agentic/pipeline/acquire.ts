@@ -431,7 +431,6 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
         // No stock candidates for this scene → generate an offline fallback
         // (asset-creator / ffmpeg) instead of leaving the scene blank.
         if (fetched.length === 0) {
-            console.warn(`DBG3 fetched.length=0 for scene ${i}, generating offline fallback (no usedFallback flag)`);
             const fb = generateFallbackVisual(scene, kind, dir, 0);
             if (fb) {
                 candidates.push({
@@ -473,6 +472,12 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                             fs.mkdirSync(dir, { recursive: true });
                             fs.copyFileSync(cached.localPath, destPath);
                             localPath = destPath;
+                            // A cached OFFLINE fallback (asset-creator/placeholder) keeps
+                            // its usedFallback flag so the uniform-content gate below does
+                            // not re-reject it as a "swatch".
+                            if (cached.source === 'asset-creator' || cached.source === 'placeholder') {
+                                usedFallback = true;
+                            }
                         } else if (f.localPath && fs.existsSync(f.localPath)) {
                             fs.mkdirSync(dir, { recursive: true });
                             fs.copyFileSync(f.localPath, destPath);
@@ -490,7 +495,6 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                                 if (fb) {
                                     localPath = fb.localPath;
                                     usedFallback = true;
-                                    console.warn(`DBGFB localPath=${localPath} exists=${fs.existsSync(localPath)} usedFallback=${usedFallback}`);
                                 }
                             }
                             // Store in cache for future jobs — only a REAL download,
@@ -584,7 +588,6 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                     );
                     return;
                 }
-                console.warn(`DBGPUSH effectiveKind=${effectiveKind} usedFallback=${usedFallback} localPath=${localPath} exists=${localPath ? fs.existsSync(localPath) : false}`);
                 candidates.push({
                     kind: effectiveKind,
                     sceneIndex: i,
@@ -691,6 +694,5 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
     });
 
     writeJson(ws, 'candidates.json', candidates);
-    console.warn(`DBGFINAL candidates.length=${candidates.length}`);
     return { workspace: ws, candidates };
 }
