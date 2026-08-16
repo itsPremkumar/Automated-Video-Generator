@@ -17,7 +17,7 @@ export const TRANSITION_EFFECTS: Record<TransitionEffect, TransitionConfig> = {
     none: { name: 'None', duration: 0, ffmpegFilter: '' },
     fade: { name: 'Fade', duration: 1.0, ffmpegFilter: 'fade=t=in:st=0:d=1,fade=t=out:st=9:d=1' },
     slide: { name: 'Slide', duration: 0.5, ffmpegFilter: 'slide=side=left:duration=0.5' },
-    zoomblur: { name: 'Zoom Blur', duration: 0.8, ffmpegFilter: 'zoompan=z='min(zoom+0.0015,1.5)':d=1:s=1080x1920:fps=30' },
+    zoomblur: { name: 'Zoom Blur', duration: 0.8, ffmpegFilter: 'zoompan=z="min(zoom+0.0015,1.5)":d=1:s=1080x1920:fps=30' },
     glitch: { name: 'Glitch', duration: 0.3, ffmpegFilter: 'noise=alls=20:allf=t+u,eq=brightness=0.1:contrast=1.5' },
     lightleak: { name: 'Light Leak', duration: 1.0, ffmpegFilter: 'colorchannelmixer=rr=1.2:gg=0.9:bb=0.8,eq=brightness=0.1:contrast=1.1' },
     whippan: { name: 'Whip Pan', duration: 0.4, ffmpegFilter: 'minterpolate=fps=60:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1' },
