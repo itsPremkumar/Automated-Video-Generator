@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  avs-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    image: avs-gpu:latest
+    container_name: avs-gpu
+    ports:
+      - "3000:3000"
+      - "8080:8080"
+    volumes:
+      - ./workspace:/app/workspace
+      - ./input:/app/input
+      - ./output:/app/output
+      - ./resource:/app/resource
+    environment:
+      - NODE_ENV=production
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s

@@ -1,0 +1,45 @@
+# Dockerfile.gpu — GPU-accelerated Docker image for AVS
+# Requires: NVIDIA Docker toolkit, CUDA 11.8+
+
+FROM nvidia/cuda:11.8.0-devel-ubuntu22.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV NODE_VERSION=20
+ENV PYTHON_VERSION=3.11
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y     curl     wget     git     build-essential     python${PYTHON_VERSION}     python${PYTHON_VERSION}-venv     python3-pip     ffmpeg     libsm6     libxext6     libgl1-mesa-glx     && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js
+RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -     && apt-get install -y nodejs     && npm install -g npm@latest
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install Node dependencies
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Build the project
+RUN npm run build
+
+# Install Python dependencies for AI services
+RUN pip3 install --no-cache-dir     torch     torchvision     torchaudio     --index-url https://download.pytorch.org/whl/cu118
+
+# Install AI/ML packages
+RUN pip3 install --no-cache-dir     onnxruntime-gpu     opencv-python-headless     numpy     pillow     scipy
+
+# Expose ports
+EXPOSE 3000 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3     CMD curl -f http://localhost:3000/health || exit 1
+
+# Start command
+CMD ["npm", "start"]
