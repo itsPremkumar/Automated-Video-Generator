@@ -34,14 +34,17 @@ test('job-queue.ts exports and serial processing', async () => {
     const jobId = enqueueJob('image-gen', { prompt: 'test', outDir: '/tmp', filename: 'test.jpg' });
     assert.ok(jobId.startsWith('ai-job-'), 'jobId has correct prefix');
 
-    // Check queue status
-    const status = getQueueStatus();
-    assert.ok(status.queueLength >= 1, 'queue has at least 1 job');
+    // Wait for auto-processing to complete
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Job result should be pending (not completed yet)
+    // Check queue status - job should have been processed (completed or failed)
+    const status = getQueueStatus();
+    assert.ok(status.completedCount + status.failedCount >= 1, 'job was processed');
+
+    // Job result should be available (not pending anymore)
     const result = getJobResult(jobId);
-    // Job may or may not be done by now, but should not throw
-    assert.ok(result === null || typeof result.ok === 'boolean', 'result is null or has ok field');
+    assert.ok(result !== null, 'result is available');
+    assert.ok(typeof result.ok === 'boolean', 'result has ok field');
 });
 
 test('job-queue.ts enforces serial processing', async () => {
@@ -53,9 +56,9 @@ test('job-queue.ts enforces serial processing', async () => {
         ids.push(enqueueJob('image-gen', { prompt: `test-${i}`, outDir: '/tmp', filename: `test${i}.jpg` }));
     }
 
-    // Queue should have 3 pending
+    // Queue should have at least 3 jobs total (pending + completed + failed)
     const status = getQueueStatus();
-    assert.ok(status.queueLength >= 3, 'queue has at least 3 jobs');
+    assert.ok(status.queueLength + status.completedCount + status.failedCount >= 3, 'queue has at least 3 jobs');
 });
 
 // ─── Provider: ComfyUI ─────────────────────────────────────────────────────
