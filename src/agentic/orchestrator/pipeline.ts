@@ -582,18 +582,106 @@ export async function runAgenticPipeline(
     emit({ stage: 'gate', percent: 100, message: gate.pass ? 'GATE PASS' : 'GATE FAIL' });
 
     // ── OFFLINE FALLBACK: if gate failed due to missing visuals, retry with bundled assets ──
+    let offlineFallback = false;
     if (!gate.pass) {
         const hasVisuals = candidates.some((c) => c.kind !== 'music' && c.url);
         if (!hasVisuals) {
             try {
                 const bundled = await import('../media/bundled-media.js');
-                // ESM dynamic import: functions are on .default or top-level depending on interop
                 const check = bundled.isOfflineModeAvailable ?? bundled.default?.isOfflineModeAvailable;
                 if (check && check()) {
                     logInfo('⚠ No network visuals available — falling back to bundled offline assets');
                     const { createOfflinePlan } = await import('../media/offline-mode.js');
                     const offlinePlan = createOfflinePlan(req, finalScript);
+                    offlineFallback = true;
                     logInfo(`📦 Offline plan ready: ${offlinePlan.scenes.length} scenes from bundled assets`);
+                    
+                    // Generate voiceovers for offline plan
+                    let offlineVoiceovers: any = null;
+                    try {
+                        const { runVoiceStage } = await import('../media/voice-controller.js');
+                        offlineVoiceovers = await runVoiceStage(offlinePlan, workspace, req.voice, () => {});
+                    } catch {
+                        offlineVoiceovers = await generateAgenticVoiceovers(offlinePlan, workspace, req.voice);
+                    }
+                    
+                    // Build manifest for offline plan
+                    const offlineManifest = {
+                        assets: offlinePlan.scenes.map((s: any, i: number) => ({
+                            sceneNumber: s.sceneNumber,
+                            kind: s.visualPreference === 'video' ? 'video' : 'image',
+                            localPath: s.localPath,
+                            durationSec: s.durationSec || 5,
+                        })),
+                        voiceoverDriven: offlineVoiceovers?.voiceoverDriven ?? false,
+                    };
+                    
+                    // Write offline scene data
+                    writeJson(workspace, 'scene-data.json', {
+                        jobId: `offline_${Date.now()}`,
+                        title: req.title,
+                        backend,
+                        voiceoverDriven: offlineVoiceovers?.voiceoverDriven ?? false,
+                        scenes: offlinePlan.scenes.map((s: any) => ({
+                            sceneNumber: s.sceneNumber,
+                            voiceoverText: s.voiceoverText,
+                            searchKeywords: s.searchKeywords,
+                            visualPreference: s.visualPreference,
+                            durationSec: s.durationSec || 5,
+                            voiceover: offlineVoiceovers?.scenes?.[s.sceneNumber - 1]?.audioPath ?? null,
+                            captionSegments: offlineVoiceovers?.scenes?.[s.sceneNumber - 1]?.captionSegments ?? [],
+                        })),
+                        decisions: [],
+                        gate: [],
+                        generatedAt: new Date().toString(),
+                        offline: true,
+                    });
+                    
+                    // Render with bundled assets
+                    const { renderAgenticSlideshow } = await import('./render.js');
+                    const renderOpts = {
+                        preset: req.preset ?? 'cinematic',
+                        sfx: req.sfx ?? false,
+                        kinetic: req.kineticText !== false,
+                        kenBurns: req.kenBurns !== false,
+                        crossfadeSec: 0.5,
+                        captions: req.captions ?? 'burned',
+                        dimensions: req.orientation === 'landscape' ? { w: 1280, h: 720 } : req.orientation === 'square' ? { w: 1080, h: 1080 } : { w: 720, h: 1280 },
+                        intro: req.intro,
+                        outro: req.outro,
+                    };
+                    
+                    const offlineResult = await renderAgenticSlideshow({
+                        backend,
+                        plan: offlinePlan,
+                        workspace,
+                        candidates: [],
+                        decisions: [],
+                        gate: { pass: true, checks: [] },
+                        manifest: offlineManifest as any,
+                        voiceovers: offlineVoiceovers,
+                        fullyAgentDriven: false,
+                    } as any, renderOpts);
+                    
+                    emit({
+                        stage: 'gate',
+                        percent: 100,
+                        message: `OFFLINE RENDER → ${offlineResult}`,
+                    });
+                    
+                    // Return offline result
+                    const res: PipelineResult = {
+                        backend,
+                        plan: offlinePlan,
+                        workspace,
+                        candidates: [],
+                        decisions: [],
+                        gate: { pass: true, checks: [], offlineFallback: true } as any,
+                        manifest: offlineManifest as any,
+                        voiceovers: offlineVoiceovers,
+                        fullyAgentDriven: false,
+                    };
+                    return res;
                 }
             } catch {
                 // offline module not available, skip fallback

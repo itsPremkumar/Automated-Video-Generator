@@ -13,7 +13,8 @@ import * as ana from '../media/video-analyzer.js';
 
 export interface GateReport {
     pass: boolean;
-    checks: { id: string; label: string; pass: boolean; detail: string }[];
+    offlineFallback?: boolean;
+    checks: { id: string; label: string; pass: boolean; detail: string; severity?: 'block' | 'warn' }[];
 }
 
 export interface GateOptions {
