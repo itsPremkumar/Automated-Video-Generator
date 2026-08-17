@@ -112,7 +112,7 @@ export async function createContactSheet(
     fs.mkdirSync(PREVIEW_DIR, { recursive: true });
     const outPath = path.join(PREVIEW_DIR, `contact-${Date.now()}.jpg`);
 
-    const filter = `select=not(mod(n\,200)),scale=${width}:-1,tile=${cols}x${rows}`;
+    const filter = `select=not(mod(n,200)),scale=${width}:-1,tile=${cols}x${rows}`;
 
     return new Promise((resolve, reject) => {
         const proc = spawn('ffmpeg', [

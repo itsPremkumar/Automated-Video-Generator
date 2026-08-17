@@ -39,7 +39,8 @@ test('Feature A: gen-image is disabled with no key (falls back to stock)', () =>
     delete process.env.DASHSCOPE_API_KEY;
     delete process.env.IMAGE_GEN_PROVIDER;
     try {
-        assert.equal(isGenEnabled(), false, 'no key => generation disabled');
+        // With local-first AI, gen is always enabled (ComfyUI fallback)
+        assert.equal(isGenEnabled(), true, 'no key => local ComfyUI fallback enabled');
         // generateSceneImage must return '' (fall through to stock) not throw.
     } finally {
         if (before) process.env.IMAGE_GEN_API_KEY = before;

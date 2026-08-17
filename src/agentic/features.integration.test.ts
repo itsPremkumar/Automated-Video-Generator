@@ -90,7 +90,9 @@ test('Feature A (integration): generateSceneImage returns empty string when disa
     delete process.env.IMAGE_GEN_API_KEY;
     delete process.env.OPENAI_API_KEY;
     delete process.env.DASHSCOPE_API_KEY;
-    assert.equal(isGenEnabled(), false);
+    // With local-first AI, gen is always enabled (ComfyUI fallback)
+    // When offline, it returns empty string (falls back to stock)
+    assert.equal(isGenEnabled(), true);
     const out = await generateSceneImage({
         prompt: buildGenPrompt(['ocean'], 'calm', 'landscape'),
         outDir: '/tmp/avs-gentest',

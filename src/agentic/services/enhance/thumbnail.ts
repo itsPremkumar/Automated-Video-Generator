@@ -77,7 +77,7 @@ export async function generateThumbnail(options: ThumbnailOptions): Promise<stri
         border = `,drawbox=x=0:y=0:w=iw:h=ih:color=${borderColor}:t=4`;
     }
 
-    const vf = `select=eq(n\,0),scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2${drawtext}${overlay}${border}`;
+    const vf = `select=eq(n,0),scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2${drawtext}${overlay}${border}`;
 
     return new Promise((resolve, reject) => {
         const proc = spawn('ffmpeg', [
