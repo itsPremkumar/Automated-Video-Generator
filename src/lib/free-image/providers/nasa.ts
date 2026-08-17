@@ -73,12 +73,20 @@ export class NasaImageProvider implements ImageProvider {
                         }
                     }
 
-                    // Fallback: use the collection API URL only as last resort
+                    // Fallback: use the collection API URL only as last resort.
+                    // Validate it's a real http(s) URL — NASA sometimes returns
+                    // local paths (observed: c:\... on Windows) that would fail
+                    // the SSRF guard downstream with a confusing error.
                     if (!downloadUrl && item.href) {
-                        downloadUrl = item.href;
+                        const href = item.href.trim();
+                        if (/^https?:\/\//i.test(href)) {
+                            downloadUrl = href;
+                        }
                     }
 
                     if (!downloadUrl) continue;
+                    // Final safety check: skip any non-http(s) URL (local paths, etc.)
+                    if (!/^https?:\/\//i.test(downloadUrl)) continue;
 
                     results.push({
                         id: `nasa-${itemData.nasa_id ?? title.replace(/\s+/g, '-')}`,

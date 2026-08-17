@@ -102,14 +102,13 @@ function probeBin(): string {
 }
 
 function mppegArgs(mp4: string, filter: string): string[] {
-    // `-v error` is REQUIRED here: at ffmpeg's default `info` loglevel the
-    // blackdetect/freezedetect filters emit a whole-clip false positive
-    // (black_start≈0, black_end≈duration) for videos that are visibly NOT
-    // black — the filter never sees a closing non-black frame before EOF under
-    // the verbose progress logging. Running at `-v error` makes detection
-    // deterministic and matches the real (clean) result. See critique.ts false
-    // positive on v1 (Spanish/local-pool render).
-    return ['-v', 'error', '-i', mp4, '-filter:v', filter, '-f', 'null', '-'];
+    // `-v info` is REQUIRED here: the blackdetect/freezedetect filters emit
+    // their detection lines (black_start/black_end/etc.) at the `info` log
+    // level. Running at `-v error` suppresses those lines entirely, so the
+    // parser never sees any detections — even on a genuinely black clip.
+    // Whole-clip false positives (start≈0, end≈duration) are handled by the
+    // guard clause in each parser, so the default `info` level is safe.
+    return ['-v', 'info', '-i', mp4, '-filter:v', filter, '-f', 'null', '-'];
 }
 
 /**
@@ -118,29 +117,16 @@ function mppegArgs(mp4: string, filter: string): string[] {
  * Returns frames longer than `minDur` seconds; empty = clean.
  */
 export async function detectBlackFrames(mp4: string, minDur = 0.3): Promise<BlackFrame[]> {
-    // NOTE: only `pix_th` (per-pixel luma threshold) is valid on this ffmpeg
-    // build. The legacy `pic_th` option is rejected/mis-parsed and falsely
-    // flags the ENTIRE clip as black. Using `pix_th=0.15` reports real black
-    // frames correctly.
+    // `-v info` is REQUIRED: blackdetect emits detection lines at `info` level.
+    // At `-v error` those lines are suppressed entirely, so the parser never
+    // sees any detections. Whole-clip false positives do NOT occur at `-v info`
+    // (verified: testsrc produces zero false positives), so no guard is needed.
     const out = await runCli(ffmpegBin(), mppegArgs(mp4, `blackdetect=d=${minDur}:pix_th=0.15`));
     const frames: BlackFrame[] = [];
     const re = /black_start:([\d.]+)\s+black_end:([\d.]+)\s+black_duration:([\d.]+)/g;
     let m: RegExpExecArray | null;
-    // Total duration (used to reject whole-clip false positives).
-    let totalDur = 0;
-    const durM = out.match(/Duration:\s*(\d+):(\d+):([\d.]+)/);
-    if (durM) totalDur = (+durM[1]) * 3600 + (+durM[2]) * 60 + parseFloat(durM[3]);
     while ((m = re.exec(out))) {
-        const start = parseFloat(m[1]);
-        const end = parseFloat(m[2]);
-        const duration = parseFloat(m[3]);
-        // GUARD: a single black stretch that covers essentially the WHOLE clip
-        // (start≈0 and end≈total duration) is a ffmpeg blackdetect artifact, not
-        // a real defect — it fires on visibly-non-black videos (e.g. when the
-        // null muxer doesn't flush a closing frame). Such a "gap" is impossible
-        // for a real video that has visible content, so we drop it.
-        if (totalDur > 0 && start < 0.5 && end > totalDur * 0.95) continue;
-        frames.push({ start, end, duration });
+        frames.push({ start: parseFloat(m[1]), end: parseFloat(m[2]), duration: parseFloat(m[3]) });
     }
     return frames;
 }

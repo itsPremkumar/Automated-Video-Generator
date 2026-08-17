@@ -1,0 +1,42 @@
+[
+  {
+    "id": "visual_image",
+    "title": "Image Visuals",
+    "topic": "photo content",
+    "script": "Image mode fetches stock photos for each scene. [Visual: photo camera]\\nKenBurns effect adds motion to still images. [Visual: pan zoom]\\nPerfect for slideshow-style videos. [Visual: photo slideshow]",
+    "orientation": "portrait",
+    "preferVisual": "image",
+    "voice": "en-US-JennyNeural",
+    "preset": "cinematic",
+    "videoType": "tutorial",
+    "captionTheme": "bold",
+    "captions": "burned",
+    "transition": "fade",
+    "hookFirst": true,
+    "variablePacing": true,
+    "kineticText": true,
+    "kenBurns": true,
+    "sfx": false,
+    "musicIntensity": "mid"
+  },
+  {
+    "id": "visual_video",
+    "title": "Video Visuals",
+    "topic": "video content",
+    "script": "Video mode fetches stock video clips. [Visual: video camera]\\nEach scene gets a short video segment. [Visual: film strip]\\nBest for dynamic, fast-paced content. [Visual: action scene]",
+    "orientation": "portrait",
+    "preferVisual": "video",
+    "voice": "en-US-JennyNeural",
+    "preset": "cinematic",
+    "videoType": "tutorial",
+    "captionTheme": "bold",
+    "captions": "burned",
+    "transition": "fade",
+    "hookFirst": true,
+    "variablePacing": true,
+    "kineticText": true,
+    "kenBurns": true,
+    "sfx": false,
+    "musicIntensity": "mid"
+  }
+]

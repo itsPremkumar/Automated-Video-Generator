@@ -29,10 +29,12 @@ export const DOWNLOAD_STALL_TIMEOUT_MS = Math.max(
  * Retry only on transient/retryable failures: HTTP 429 (rate-limit), 5xx,
  * timeouts, stalls, and network resets. 4xx client errors (401/403/404) are
  * NOT retried — they will always fail.
+ * 
+ * Respects Retry-After headers on 429/503 responses to avoid prolonging bans.
  */
 function isDownloadRetryable(err: unknown): boolean {
     if (!err || typeof err !== 'object') return false;
-    const e = err as { status?: number; response?: { status?: number }; code?: unknown; message?: string; name?: string };
+    const e = err as { status?: number; response?: { status?: number; headers?: Record<string, string> }; code?: unknown; message?: string; name?: string };
     // Never retry on content-too-large (maxContentLength) — the file is
     // genuinely too big and will never succeed on retry. Without this guard
     // an AxiosError with "maxContentLength" in the message hits the
@@ -46,6 +48,24 @@ function isDownloadRetryable(err: unknown): boolean {
         return true;
     if (typeof e.message === 'string' && /timeout|stall|reset|aborted|network|econn/i.test(e.message)) return true;
     return e.name === 'AxiosError' || e.name === 'FetchError' || e.name === 'TimeoutError';
+}
+
+/**
+ * Extract Retry-After delay (ms) from an error's response headers.
+ * Returns 0 if no valid header present.
+ */
+function getRetryAfterMs(err: unknown): number {
+    if (!err || typeof err !== 'object') return 0;
+    const e = err as { response?: { headers?: Record<string, string> } };
+    const retryAfter = e.response?.headers?.['retry-after'];
+    if (!retryAfter) return 0;
+    // HTTP-date format
+    const asDate = Date.parse(retryAfter);
+    if (!isNaN(asDate)) return Math.max(0, asDate - Date.now());
+    // Delta-seconds format
+    const asSeconds = parseInt(retryAfter, 10);
+    if (!isNaN(asSeconds)) return asSeconds * 1000;
+    return 0;
 }
 
 /**
@@ -176,11 +196,12 @@ export async function downloadMedia(
         const existing = fs.existsSync(partPath) ? fs.statSync(partPath).size : 0;
         await withRetry(() => streamToFile(url, partPath, existing), {
             retries: 3,
-            baseMs: 800,
-            maxMs: 8000,
+            baseMs: 8000,
+            maxMs: 60000,
             jitter: 0.3,
             label: `download:${filename}`,
             shouldRetry: isDownloadRetryable,
+            getRetryAfter: getRetryAfterMs,
         });
 
         if (fs.existsSync(partPath)) {

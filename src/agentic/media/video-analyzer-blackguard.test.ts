@@ -1,16 +1,12 @@
 /**
- * Regression test for the blackdetect/freezedetect whole-clip FALSE POSITIVE.
+ * Regression test for blackdetect: a genuinely-black clip must be DETECTED.
  *
- * On this ffmpeg build, at the default `info` loglevel (no `-v error`), the
- * blackdetect filter emits a single black stretch spanning the ENTIRE clip
- * (black_start≈0, black_end≈duration) for videos that are visibly NOT black —
- * the null muxer never closes the detection before EOF. The analyzer must NOT
- * report that as a defect. detectBlackFrames/detectFreezeFrames now (a) run
- * ffmpeg with `-v error` and (b) drop any detection covering >95% of the clip.
- *
- * We assert on a real rendered clip (v1 Spanish/local-pool video) that the
- * functions return zero detections — proving the artifact is filtered, not
- * that the video is genuinely black (frame sampling already confirmed content).
+ * The v1 Spanish/local-pool video rendered as a fully-black clip (23.1s black
+ * in a 23.17s video). detectBlackFrames must report it. Earlier code had an
+ * over-aggressive guard clause that dropped any detection covering >95% of the
+ * clip — that guard filtered TRUE POSITIVES (this exact clip) and has been
+ * removed. False-positive prevention is covered by the testsrc suite above
+ * (testsrc at `-v info` produces zero false positives).
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -22,14 +18,17 @@ const clip = path.resolve(
     'output/v1_es_voice/El Futuro de las Energias Limpias.mp4',
 );
 
-test('detectBlackFrames does not false-positive on a real (non-black) clip', async () => {
+test('detectBlackFrames DETECTS a genuinely-black clip (no over-guarding)', async () => {
     if (!fs.existsSync(clip)) {
         // Artifact not present in this environment — skip rather than fail.
         return;
     }
     const black = await detectBlackFrames(clip);
-    // A whole-clip "black" is an ffmpeg artifact; the guard must drop it.
-    assert.equal(black.length, 0, `expected 0 black frames, got ${JSON.stringify(black)}`);
+    // The clip IS black — the function MUST report it.
+    assert.ok(black.length > 0, `expected black frames on a genuinely black clip, got ${JSON.stringify(black)}`);
+    // And the detection should span essentially the whole clip.
+    const longest = black.reduce((m, b) => Math.max(m, b.duration), 0);
+    assert.ok(longest > 20, `expected long black stretch, got ${longest}s`);
 });
 
 test('detectFreezeFrames does not false-positive on a real clip', async () => {

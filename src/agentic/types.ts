@@ -210,6 +210,15 @@ export interface PipelineResult {
     fullyAgentDriven: boolean;
     postRender?: import('./pipeline/gate.js').PostRenderCheck;
     aiVerify?: import('./config.js').AgenticConfig['aiVerify'];
+    /** Present only when dryRun=true — summarizes what the agent would do. */
+    dryRunInfo?: {
+        voice: string;
+        musicQuery?: string;
+        musicEnabled: boolean;
+        searchQueries: string[][];
+        orientation: string;
+        estimatedDurationSec: number;
+    };
 }
 
 export interface PipelineProgress {

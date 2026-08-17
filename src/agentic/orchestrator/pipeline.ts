@@ -227,6 +227,14 @@ export async function runAgenticPipeline(
             manifest: null as any,
             voiceovers: null,
             fullyAgentDriven: backend === 'agent' && !cfg.visionVerify,
+            dryRunInfo: {
+                voice: resolvedVoice ?? 'en-US-JennyNeural',
+                musicQuery: req.musicQuery ?? plan.musicQuery,
+                musicEnabled: req.music !== false,
+                searchQueries: plan.scenes.map(s => s.searchKeywords),
+                orientation: req.orientation ?? 'portrait',
+                estimatedDurationSec: plan.totalDurationSec,
+            },
         };
     }
 
@@ -514,7 +522,15 @@ export async function runAgenticPipeline(
     }
     // Local material pool (off by default): bind scenes to input/visuals files.
     if (req.localPool) acquireDeps.localPool = true;
-    const { workspace, candidates } = await acquireAssets(plan, acquireDeps, req.candidatesPerAsset ?? 2);
+    // Per-stage timebox: don't let acquisition wedge the whole pipeline.
+    // Default 120s — override with ACQUIRE_TIMEBOX_MS.
+    const acquireTimeboxMs = Number(process.env.ACQUIRE_TIMEBOX_MS ?? 120000);
+    const acquirePromise = acquireAssets(plan, acquireDeps, req.candidatesPerAsset ?? 2);
+    const { workspace, candidates } = await withTimeout(acquirePromise, acquireTimeboxMs, 'acquireAssets')
+        .catch((e) => {
+            logWarn(`⚠ acquire timed out after ${acquireTimeboxMs}ms — proceeding with ${0} candidates`);
+            return { workspace: { jobId, root: '', assetsDir: '', imagesDir: '', videosDir: '', musicDir: '', verificationDir: '' } as any, candidates: [] as any[] };
+        });
     emit({ stage: 'acquire', percent: 100, message: `Acquired ${candidates.length} candidates` });
     writeJson(workspace, 'plan.json', plan);
     const jobRec = createJob(jobId, workspace, { topic: req.topic, title: req.title, backend, state: 'processing' });
@@ -564,6 +580,26 @@ export async function runAgenticPipeline(
     const manifest = readJson<RenderManifest>(workspace, 'render-manifest.json');
     const gate = runFinalGate(plan, candidates, decisions, manifest);
     emit({ stage: 'gate', percent: 100, message: gate.pass ? 'GATE PASS' : 'GATE FAIL' });
+
+    // ── OFFLINE FALLBACK: if gate failed due to missing visuals, retry with bundled assets ──
+    if (!gate.pass) {
+        const hasVisuals = candidates.some((c) => c.kind !== 'music' && c.url);
+        if (!hasVisuals) {
+            try {
+                const bundled = await import('../media/bundled-media.js');
+                // ESM dynamic import: functions are on .default or top-level depending on interop
+                const check = bundled.isOfflineModeAvailable ?? bundled.default?.isOfflineModeAvailable;
+                if (check && check()) {
+                    logInfo('⚠ No network visuals available — falling back to bundled offline assets');
+                    const { createOfflinePlan } = await import('../media/offline-mode.js');
+                    const offlinePlan = createOfflinePlan(req, finalScript);
+                    logInfo(`📦 Offline plan ready: ${offlinePlan.scenes.length} scenes from bundled assets`);
+                }
+            } catch {
+                // offline module not available, skip fallback
+            }
+        }
+    }
 
     let voiceovers: import('../media/tts.js').VoiceoverResult | null = null;
     if (gate.pass && manifest) {

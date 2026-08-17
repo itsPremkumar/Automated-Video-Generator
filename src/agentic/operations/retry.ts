@@ -19,6 +19,10 @@ export interface RetryOptions {
     label?: string;
     /** return true to retry this error, false to bail immediately. */
     shouldRetry?: (err: unknown) => boolean;
+    /** if provided, returns the Retry-After delay (ms) from an error's
+     *  response headers (e.g. HTTP 429 Retry-After). When > 0, this
+     *  overrides the computed exponential backoff. */
+    getRetryAfter?: (err: unknown) => number;
 }
 
 const isRetryable = (err: unknown): boolean => {
@@ -41,6 +45,7 @@ export async function withRetry<T>(fn: () => Promise<T>, opts: RetryOptions = {}
     const max = opts.maxMs ?? 8000;
     const jitter = opts.jitter ?? 0.3;
     const shouldRetry = opts.shouldRetry ?? isRetryable;
+    const getRetryAfter = opts.getRetryAfter;
 
     let lastErr: unknown;
     for (let attempt = 1; attempt <= retries; attempt++) {
@@ -49,13 +54,20 @@ export async function withRetry<T>(fn: () => Promise<T>, opts: RetryOptions = {}
         } catch (err) {
             lastErr = err;
             if (attempt >= retries || !shouldRetry(err)) break;
-            const exp = Math.min(max, base * 2 ** (attempt - 1));
-            const j = exp * jitter * Math.random();
-            const wait = Math.round(exp + j);
+            // Respect Retry-After header if present (e.g. HTTP 429)
+            const retryAfterMs = getRetryAfter ? getRetryAfter(err) : 0;
+            let wait: number;
+            if (retryAfterMs > 0) {
+                wait = Math.min(max, retryAfterMs);
+            } else {
+                const exp = Math.min(max, base * 2 ** (attempt - 1));
+                const j = exp * jitter * Math.random();
+                wait = Math.round(exp + j);
+            }
             if (opts.label) {
-                 
+                const reason = retryAfterMs > 0 ? `Retry-After ${wait}ms` : `backoff ${wait}ms`;
                 console.warn(
-                    `[retry] ${opts.label}: attempt ${attempt} failed (${String((err as any)?.message ?? err)}); retrying in ${wait}ms`,
+                    `[retry] ${opts.label}: attempt ${attempt} failed (${String((err as any)?.message ?? err)}); retrying in ${reason}`,
                 );
             }
             await new Promise((r) => setTimeout(r, wait));
