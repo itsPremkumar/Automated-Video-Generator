@@ -144,6 +144,16 @@ async function main() {
     console.log(`\n🎉 DONE → ${out}\n   backend=${res.backend} fullyAgentDriven=${res.fullyAgentDriven}`);
     console.log(`   🖼  See every approved asset: ${cs}`);
     console.log(`   📝 Decision report:         ${dr}`);
+
+    // Production hardening: the pipeline leaves dangling handles (undrained
+    // ffmpeg stdio pipes, fetch keep-alive sockets, provider probes). Node
+    // then idles forever AFTER all work is done — observed twice in matrix
+    // QA where outputs were complete but the CLI never exited. Exit
+    // explicitly on success; AGENTIC_NO_EXIT=1 keeps the old hang-behavior
+    // for interactive debugging.
+    if (process.env.AGENTIC_NO_EXIT !== '1') {
+        process.exit(0);
+    }
 }
 
 main().catch((e) => {

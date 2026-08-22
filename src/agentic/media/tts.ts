@@ -259,10 +259,14 @@ function toCaptionScenes(
     scenes: SceneVoiceover[],
 ): { text: string; durationSeconds: number; captionSegments?: CaptionSegment[] }[] {
     const byIdx = new Map(scenes.map((s) => [s.sceneIndex, s]));
+    // Strip directive tags ([Visual: …] etc.) — scene-data round-trips can carry
+    // the RAW script line, and sidecar subtitles must never show bracket syntax.
+    const clean = (t: string | undefined) =>
+        (t ?? '').replace(/\[[^\]]*\]/g, ' ').replace(/\s+/g, ' ').trim();
     return plan.scenes.map((s) => {
         const v = byIdx.get(s.sceneNumber - 1);
         return {
-            text: s.voiceoverText,
+            text: clean(s.voiceoverText),
             durationSeconds: v?.durationSec ?? s.durationSec,
             captionSegments: v?.captionSegments?.length ? v.captionSegments : undefined,
         };

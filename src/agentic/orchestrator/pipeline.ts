@@ -356,44 +356,61 @@ export async function runAgenticPipeline(
             if (keywords.length > 1) ladder.push([keywords[0]]);
             ladder.push([topicNoun || 'nature', 'city', 'technology'].slice(0, 1));
             const seen = new Set<string>();
+            // Provider-level retry: one 12s attempt per hop burned scenes on
+            // flaky networks (observed: 3-5 hops × timeout = scene starved).
+            // Two attempts with short backoff + jitter doubles the success
+            // window without meaningfully extending the worst case.
+            const FETCH_ATTEMPTS = Number(process.env.ACQUIRE_FETCH_ATTEMPTS ?? 2);
             for (const raw of ladder) {
                 const q = raw.filter(Boolean);
                 const key = q.join(' ');
                 if (seen.has(key)) continue;
                 seen.add(key);
-                try {
-                    const resultIndex = sceneIndex;
-                    const res = await withTimeout(
-                        fetchVisualsForScene(q, kind === 'video', orientation, undefined, resultIndex),
-                        12000,
-                        `fetchVisual[${q.join(' ')}]`,
-                    );
-                    const arr = !res ? [] : Array.isArray(res) ? res : [res];
-                    const DEAD_HOSTS = /flickr\.com|staticflickr\.com|live\.staticflickr/i;
-                    const usable = arr.filter(
-                        (a) => a && typeof a.url === 'string' && a.url.length > 0 && !DEAD_HOSTS.test(a.url),
-                    );
-                    if (usable.length > 0) {
-                        return usable.map(
-                            (a) =>
-                                ({
-                                    url: a.url,
-                                    localPath: '',
-                                    // Honest source: derive from the URL host when the
-                                    // fetcher doesn't carry an explicit source. Never
-                                    // hardcode a provider name — matrix QA found a
-                                    // solid-color gradient mislabeled 'openverse/pexels'.
-                                    source: a.url?.startsWith('http') ? sourceFromUrl(a.url) : (a.photographer || 'unknown'),
-                                    license: a.license,
-                                    licenseUrl: a.licenseUrl,
-                                    // Source title (Wikimedia file title etc.) — feeds
-                                    // the acquire-stage key-free relevance gate.
-                                    title: (a as any).title,
-                                }) as FetchedVisual,
+                let usable: FetchedVisual[] | null = null;
+                for (let attempt = 1; attempt <= Math.max(1, FETCH_ATTEMPTS); attempt++) {
+                    try {
+                        const resultIndex = sceneIndex;
+                        const res = await withTimeout(
+                            fetchVisualsForScene(q, kind === 'video', orientation, undefined, resultIndex),
+                            12000,
+                            `fetchVisual[${q.join(' ')}]`,
                         );
+                        const arr = !res ? [] : Array.isArray(res) ? res : [res];
+                        const DEAD_HOSTS = /flickr\.com|staticflickr\.com|live\.staticflickr/i;
+                        const found = arr.filter(
+                            (a) => a && typeof a.url === 'string' && a.url.length > 0 && !DEAD_HOSTS.test(a.url),
+                        );
+                        if (found.length > 0) {
+                            // Honest source: derive from the URL host when the
+                            // fetcher doesn't carry an explicit source. Never
+                            // hardcode a provider name — matrix QA found a
+                            // solid-color gradient mislabeled 'openverse/pexels'.
+                            usable = found.map(
+                                (a) =>
+                                    ({
+                                        url: a.url,
+                                        localPath: '',
+                                        source: a.url?.startsWith('http') ? sourceFromUrl(a.url) : (a.photographer || 'unknown'),
+                                        license: a.license,
+                                        licenseUrl: a.licenseUrl,
+                                        // Source title (Wikimedia file title etc.) — feeds
+                                        // the acquire-stage key-free relevance gate.
+                                        title: (a as any).title,
+                                    }) as FetchedVisual,
+                            );
+                            break;
+                        }
+                    } catch (e) {
+                        console.warn(`⚠ fetchVisual failed for "${q.join(' ')}" (attempt ${attempt}/${FETCH_ATTEMPTS}): ${(e as Error).message}`);
                     }
-                } catch (e) {
-                    console.warn(`⚠ fetchVisual failed for "${q.join(' ')}": ${(e as Error).message}`);
+                    if (attempt < FETCH_ATTEMPTS) {
+                        // Backoff + jitter: 600-1100ms after attempt 1. Short —
+                        // the ladder itself is the bigger retry mechanism.
+                        await new Promise((r) => setTimeout(r, 600 + Math.floor(Math.random() * 500)));
+                    }
+                }
+                if (usable && usable.length > 0) {
+                    return usable;
                 }
             }
 

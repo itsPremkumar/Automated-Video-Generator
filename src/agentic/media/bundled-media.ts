@@ -44,16 +44,25 @@ export function bundledImages(): BundledAsset[] {
     return out;
 }
 
-/** Bundled video clips (loopable B-roll). */
-export function bundledVideos(): BundledAsset[] {
+/**
+ * Bundled video clips (loopable B-roll), optionally filtered to an orientation.
+ * All shipped clips are 1280x720 landscape masters; portrait/square jobs get
+ * them center-cropped by the renderer, so no separate portrait pack is needed.
+ * Sorted alphabetically so scene rotation (scene i → clip i % N) is stable.
+ */
+export function bundledVideos(orientation?: 'portrait' | 'landscape' | 'square'): BundledAsset[] {
     const dir = path.join(BUNDLED_DIR, 'videos');
     if (!exists(dir)) return [];
     const out: BundledAsset[] = [];
-    for (const f of fs.readdirSync(dir)) {
+    for (const f of fs.readdirSync(dir).sort()) {
         if (/\.(mp4|webm|mov|m4v)$/i.test(f)) {
-            out.push({ path: path.join(dir, f), width: 1920, height: 1080, durationSec: 10 });
+            out.push({ path: path.join(dir, f), width: 1280, height: 720, durationSec: 6 });
         }
     }
+    // Orientation note: every clip is a landscape master; the renderer's
+    // scale+crop handles portrait/square. No filtering needed — rotation
+    // across the full pack maximizes per-scene visual variety.
+    void orientation;
     return out;
 }
 
