@@ -440,7 +440,19 @@ export async function fetchVisualsForScene(
     }
 
     if (cache[cacheKey]) {
-        return cache[cacheKey];
+        // Cache entries written before title-threading lack `.title`. Backfill
+        // from the URL filename so the acquire-stage relevance gate can judge
+        // cached hits too (a "Gorilla in Kinigi" cache hit must be rejectable
+        // for a volcano scene, not silently trusted forever).
+        const hit = cache[cacheKey];
+        if (!hit.title) {
+            try {
+                const urlPath = new URL(hit.url).pathname;
+                const base = decodeURIComponent(urlPath.split('/').pop() || '');
+                if (base) hit.title = base.replace(/\.[a-z0-9]+$/i, '');
+            } catch { /* non-URL — leave untitled */ }
+        }
+        return hit;
     }
 
     // Deduplicate individual queries

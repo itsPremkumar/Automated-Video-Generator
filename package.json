@@ -116,6 +116,7 @@
     "agentic:generate:preview": "tsx src/adapters/cli/agentic-batch.ts --generate --preview --topics \"AI coding,Video editing,Photography,Web development,Data science\"",
     "agentic:mode:plan": "tsx src/adapters/cli/agentic-batch.ts --mode plan",
     "agentic:variants": "tsx src/adapters/cli/agentic-batch.ts --variants 3",
+    "agentic:perspectives": "tsx bin/agentic-perspectives.ts",
     "agentic:post": "tsx src/adapters/cli/agentic-batch.ts --post",
     "version:check": "tsx src/agentic/services/version-checker.ts",
     "cache:stats": "tsx src/agentic/services/material-cache.ts --stats",
