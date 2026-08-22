@@ -653,7 +653,13 @@ export async function composeVideo(input: ComposeInput): Promise<ComposeResult> 
     const maxTextW = Math.floor(frameW * 0.92);
     scenes.forEach((sc, i) => {
         if (!sc) return;
-        const cap = (sc.captionText?.trim()) ? sc.captionText : (sc.voiceoverText ?? '').trim();
+        // Strip directive tags ([Visual: …], [Text: …], …) defensively — some
+        // upstream paths (scene-data round-trip) carry the RAW script line in
+        // voiceoverText, and burned captions must never show bracket syntax.
+        const cap = ((sc.captionText?.trim()) ? sc.captionText : (sc.voiceoverText ?? ''))
+            .replace(/\[[^\]]*\]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
         if (!cap) return;
         const start = cumStart[i] ?? 0;
         const end = start + (durations[i] ?? DEFAULT_SCENE_SEC);
