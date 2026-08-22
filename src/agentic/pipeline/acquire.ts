@@ -169,6 +169,12 @@ export function generateFallbackVisual(
     index: number,
 ): FetchedVisual | null {
     try {
+        // Match the placeholder orientation policy (see makePlaceholder).
+        if (!process.env.AGENTIC_PLACEHOLDER_ORIENTATION) {
+            process.env.AGENTIC_PLACEHOLDER_ORIENTATION = String(
+                process.env.AGENTIC_JOB_ORIENTATION ?? 'portrait',
+            ) as string;
+        }
         fs.mkdirSync(dir, { recursive: true });
         const out = path.join(dir, `candidate_${index + 1}${kind === 'video' ? '.mp4' : '.jpg'}`);
 
@@ -425,12 +431,15 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
         );
     }
     const MAX_CONCURRENT_FETCHES = 6;
-    // Soft deadline for the FETCH phase (default 60s, env-tunable, 0 disables).
+    // Soft deadline for the FETCH phase (default 150s, env-tunable, 0 disables).
     // The pipeline's outer hard timebox abandons the WHOLE acquireAssets promise
     // on expiry — discarding every already-fetched candidate and leaving this
     // function running as a zombie that later writes into the same workspace.
-    // Racing the fetch phase with a deadline lets us flush partial results
-    // instead (the download phase below has its own soft deadline too).
+    // Racing the fetch phase with a deadline lets us flush PARTIAL results:
+    // each completed scene-fetch pushes into `partial` as it settles, so on
+    // expiry we resolve with whatever actually finished (previously this
+    // resolved [] — discarding everything and forcing offline mode even when
+    // half the scenes had usable candidates).
     const FETCH_SOFT_DEADLINE_MS = Number(process.env.ACQUIRE_FETCH_DEADLINE_MS ?? 150000);
     let results: {
         i: number;
@@ -439,26 +448,41 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
         scene: ScenePlan;
         fetched: FetchedVisual[];
     }[] = [];
+    const partial: {
+        i: number;
+        kind: 'image' | 'video' | 'gen' | 'video-gen' | 'gen-local' | 'video-gen-local';
+        dir: string;
+        scene: ScenePlan;
+        fetched: FetchedVisual[];
+    }[] = [];
+    // Wrap every scene-fetch so completion is observable even if the overall
+    // race times out. Rejections were already isolated inside each task.
+    const trackedFetches = sceneFetches.map((task) => () =>
+        task().then((r) => {
+            partial.push(r);
+            return r;
+        }),
+    );
     if (FETCH_SOFT_DEADLINE_MS > 0) {
-        results = await new Promise((resolve) => {
-            let settled = false;
-            const finish = (v: typeof results) => {
-                if (settled) return;
-                settled = true;
-                clearTimeout(timer);
-                resolve(v);
-            };
+        await new Promise<void>((resolve) => {
             const timer = setTimeout(() => {
                 console.warn(
-                    `⚠ acquire fetch soft deadline (${FETCH_SOFT_DEADLINE_MS}ms) — proceeding with scenes fetched so far`,
+                    `⚠ acquire fetch soft deadline (${FETCH_SOFT_DEADLINE_MS}ms) — flushing ${partial.length}/${sceneFetches.length} scene fetches`,
                 );
-                finish([]);
+                resolve();
             }, FETCH_SOFT_DEADLINE_MS);
-            mapWithConcurrencyLimit(sceneFetches, MAX_CONCURRENT_FETCHES).then(
-                (v) => finish(v),
-                () => finish([]),
+            mapWithConcurrencyLimit(trackedFetches, MAX_CONCURRENT_FETCHES).then(
+                () => {
+                    clearTimeout(timer);
+                    resolve();
+                },
+                () => {
+                    clearTimeout(timer);
+                    resolve();
+                },
             );
         });
+        results = partial;
     } else {
         results = await mapWithConcurrencyLimit(sceneFetches, MAX_CONCURRENT_FETCHES);
     }

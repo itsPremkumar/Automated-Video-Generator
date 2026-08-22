@@ -35,7 +35,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const SRC = 'C:/one/voicebox/backend';
+const SRC = process.env.VOICEBOX_SRC_DIR ?? path.resolve('..', 'voicebox', 'backend');
 const ROOT = path.resolve('src/adapters/real-voice-backend');
 const DST = path.join(ROOT, 'backend');
 
@@ -102,7 +102,9 @@ else warn('cloud router lines NOT found in routes/__init__.py — verify manuall
 fs.writeFileSync(initPath, init);
 
 // ---- 5. Retain LICENSE + attribution (MIT obligation) ----
-const licenseSrc = 'C:/one/voicebox/LICENSE';
+const licenseSrc = process.env.VOICEBOX_SRC_DIR
+    ? path.join(path.dirname(process.env.VOICEBOX_SRC_DIR), 'LICENSE')
+    : path.resolve('..', 'voicebox', 'LICENSE');
 const licenseDst = path.join(ROOT, 'LICENSE');
 if (fs.existsSync(licenseSrc)) {
   fs.copyFileSync(licenseSrc, licenseDst);

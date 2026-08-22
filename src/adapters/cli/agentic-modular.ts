@@ -51,6 +51,7 @@
  */
 import 'dotenv/config';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { execFileSync } from 'child_process';
 import { estimateAudioDurationSafe } from '../../agentic/orchestrator/ffmpeg.js';
@@ -511,7 +512,12 @@ async function runVisuals(cliArgs: CliArgs) {
 // Portal auth + managed BFL gateway transport (scripts/flux3-bridge.py).
 
 const FLUX3_BRIDGE = path.join(process.cwd(), 'scripts', 'flux3-bridge.py');
-const DEFAULT_HERMES_PYTHON = 'C:\\Users\\PREM KUMAR\\AppData\\Local\\hermes\\hermes-agent\\venv\\Scripts\\python.exe';
+// Portable Hermes-venv discovery: never hardcode a username. Check HERMES_PYTHON,
+// then the standard per-user install location under os.homedir(), then bare python.
+const DEFAULT_HERMES_PYTHON = path.join(
+    os.homedir(),
+    'AppData', 'Local', 'hermes', 'hermes-agent', 'venv', 'Scripts', 'python.exe',
+);
 const HERMES_PYTHON = process.env.HERMES_PYTHON || (fs.existsSync(DEFAULT_HERMES_PYTHON) ? DEFAULT_HERMES_PYTHON : 'python');
 
 function runFlux3Bridge(args: string[], timeoutMs: number): { stdout: string; stderr: string } {

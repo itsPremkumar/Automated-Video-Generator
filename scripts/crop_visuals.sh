@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /c/one/Automated-Video-Generator
+cd "$(dirname "$0")/.."
 FF="./node_modules/ffmpeg-static/ffmpeg.exe"
 for f in sproutern-hero sproutern-tools sproutern-interviews sproutern-about avs-github; do
   src="input/visuals/$f.png"

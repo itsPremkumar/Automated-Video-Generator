@@ -149,6 +149,15 @@ export function makePlaceholder(keywords: string[], kind: 'image' | 'video' | 'm
     }
     const p = base + '.png';
     const color = kind === 'video' ? '0x2a9d8f' : '0x264653';
+    // Orientation-aware: a landscape job must not receive a portrait card
+    // (pillarboxed black bars on both sides of every fallback scene).
+    // Default stays portrait for backward compatibility with 9:16 pipelines.
+    const dims =
+        process.env.AGENTIC_PLACEHOLDER_ORIENTATION === 'landscape'
+            ? '1280x720'
+            : process.env.AGENTIC_PLACEHOLDER_ORIENTATION === 'square'
+              ? '1080x1080'
+              : '720x1280';
     // Burn a human keyword label (never a filename like 'candidate_1' — that
     // leaked into rendered frames when the fallback was called with the
     // downloaded filename as the label). Fall back to a neutral word.
@@ -157,7 +166,7 @@ export function makePlaceholder(keywords: string[], kind: 'image' | 'video' | 'm
     execFileSync(
         ffmpeg,
         [
-            '-f', 'lavfi', '-i', `color=c=${color}:s=720x1280:d=0.1`,
+            '-f', 'lavfi', '-i', `color=c=${color}:s=${dims}:d=0.1`,
             '-vf', `drawtext=text='${safeLabel}':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2`,
             '-frames:v', '1', '-y', p,
         ],

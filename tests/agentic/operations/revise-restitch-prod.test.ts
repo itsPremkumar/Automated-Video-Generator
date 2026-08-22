@@ -6,7 +6,7 @@ import { describe, test } from 'node:test';
 import { execFileSync } from 'child_process';
 import { makeWorkspaceTempDir, resolveWorkspaceTempPath } from '../../../src/shared/runtime/paths.js';
 
-const ROOT = 'C:/one/Automated-Video-Generator';
+const ROOT = process.env.AVS_ROOT ?? process.cwd();
 const FF = path.join(ROOT, 'node_modules', 'ffmpeg-static', 'ffmpeg.exe');
 
 function mkClip(p: string, w: number, h: number, dur: number, audio: boolean) {

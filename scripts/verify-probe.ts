@@ -1,7 +1,8 @@
 import { spawnSync } from 'child_process';
+import * as path from 'path';
 
 const files = process.argv.slice(2);
-const ffmpeg = 'C:\\one\\Automated-Video-Generator\\node_modules\\ffmpeg-static\\ffmpeg.exe';
+const ffmpeg = path.resolve('node_modules', 'ffmpeg-static', 'ffmpeg.exe');
 
 for (const f of files) {
   const r = spawnSync(ffmpeg, ['-i', f, '-f', 'null', '-'], { stdio: ['pipe', 'pipe', 'pipe'] });

@@ -9,7 +9,7 @@ import { makeWorkspaceTempDir } from '../../shared/runtime/paths.js';
 
 // Ensure the controller targets the voicebox provider + real python.
 process.env.TTS_PROVIDER = 'voicebox';
-process.env.VOICEBOX_PYTHON = process.env.VOICEBOX_PYTHON || 'C:/one/voicebox/.venv/Scripts/python.exe';
+process.env.VOICEBOX_PYTHON = process.env.VOICEBOX_PYTHON || '';
 // Drop any pre-set profile so we exercise the AUTO-PROVISION path.
 delete process.env.VOICEBOX_PROFILE_ID;
 

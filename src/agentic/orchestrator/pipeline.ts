@@ -346,7 +346,11 @@ export async function runAgenticPipeline(
 
     const acquireDeps: AcquireDeps = {
         fetchVisual: async (keywords, kind, orientation, sceneIndex = 0) => {
-            // Phase 1: targeted Pexels search with per-scene resultIndex
+            // Placeholder orientation must match the job so fallback cards are
+            // never pillarboxed (makePlaceholder reads this env once per call).
+            process.env.AGENTIC_PLACEHOLDER_ORIENTATION =
+                plan.orientation === 'landscape' ? 'landscape' : plan.orientation === 'square' ? 'square' : 'portrait';
+            // Phase 1: targeted search with per-scene resultIndex
             const bySpecificity = [...keywords].sort((a, b) => b.length - a.length);
             const ladder = [bySpecificity, keywords];
             if (keywords.length > 1) ladder.push([keywords[0]]);
@@ -549,6 +553,10 @@ export async function runAgenticPipeline(
     // candidate, forcing the offline fallback even though assets were arriving.
     // Default 300s = last-resort safety net only; override with ACQUIRE_TIMEBOX_MS.
     const acquireTimeboxMs = Number(process.env.ACQUIRE_TIMEBOX_MS ?? 300000);
+    // Placeholder/fallback orientation follows the job (read by makePlaceholder
+    // and generateFallbackVisual so cards match the frame, never pillarboxed).
+    process.env.AGENTIC_JOB_ORIENTATION = plan.orientation === 'landscape' ? 'landscape' : plan.orientation === 'square' ? 'square' : 'portrait';
+    process.env.AGENTIC_PLACEHOLDER_ORIENTATION = process.env.AGENTIC_JOB_ORIENTATION;
     const acquirePromise = acquireAssets(plan, acquireDeps, req.candidatesPerAsset ?? 2);
     const { workspace, candidates } = await withTimeout(acquirePromise, acquireTimeboxMs, 'acquireAssets')
         .catch((e) => {
