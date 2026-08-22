@@ -225,13 +225,12 @@ async function runSingleJob(job: AgenticCliJob): Promise<WaveResult> {
             : (result.plan.scenes as any[]);
         const composeRes = await composeVideo({
             job: { ...job, filterByScene },
-            scenes: scenesWithGrade,
             sceneVisuals,
             sceneAudio,
             music: musicAsset?.localPath,
             outDir: path.join(outPath, '_compose'),
             inputDir: path.resolve('input', 'visuals'),
-            scenes: result.plan.scenes as any,
+            scenes: scenesWithGrade as any,
         });
         const finalMp4 = composeRes.video ?? composeOut;
 
