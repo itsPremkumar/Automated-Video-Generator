@@ -182,3 +182,7 @@ workspace/remotion-generation/
 /scene-data.json
 /revision-state.json
 /input/scripts/agentic-scripts.json
+# Bundled OFFLINE pack ships WITH the repo (production guarantee) — exempt from *.mp4 / videos/ rules
+!assets/bundled/
+!assets/bundled/videos/
+!assets/bundled/videos/*.mp4
