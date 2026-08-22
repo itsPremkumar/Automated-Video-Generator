@@ -377,6 +377,8 @@ npm run resume                # Resume an interrupted run
 npm run segment               # Rebuild from existing scene data
 npm run agentic               # Generate a video from a topic (agentic pipeline)
 npm run agentic:batch         # Generate + verify multiple videos
+npm run agentic:perspectives  # One topic → 5 editorial angles + comparison sheet
+npm run doctor                # Pre-flight health check (ffmpeg/RAM/network/TTS)
 npm run dev                   # Start the local web portal
 npm run mcp                   # Start the MCP server
 npm run typecheck             # TypeScript validation

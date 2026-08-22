@@ -48,6 +48,11 @@ and error responses.
 | `FREE_VIDEO_DOWNLOAD_STALL_TIMEOUT_MS` | `30000` | Stall guard timeout specifically for free video sources. |
 | `AGENTIC_FFMPEG_TIMEOUT_MS` | `30000` | Hard timeout for ffmpeg operations in the agentic pipeline (milliseconds). |
 | `AGENTIC_FFPROBE_TIMEOUT_MS` | `15000` | Hard timeout for ffprobe operations (milliseconds). |
+| `ACQUIRE_FETCH_ATTEMPTS` | `2` | Retry attempts per keyword in the stock-fetch ladder (backoff + jitter between tries). Raise to `3` on very flaky networks. |
+| `ACQUIRE_FETCH_DEADLINE_MS` | `150000` | Soft deadline for acquire's fetch phase — flushes completed scene-fetches at expiry instead of losing them. |
+| `ACQUIRE_SOFT_DEADLINE_MS` | `90000` | Soft deadline for acquire's download phase (same partial-flush behavior). |
+| `ACQUIRE_TIMEBOX_MS` | `300000` | Outer hard timebox for the whole acquire stage. Must stay longer than the two soft deadlines above. |
+| `AGENTIC_NO_EXIT` | `0` | Set `1` to keep the CLI alive after a successful render (debugging dangling handles); default exits cleanly. |
 | `PINTEREST_ENABLED` | `true` | Enable the free, no-key Pinterest image source as an extra fallback in `fetchVisualsForScene`. Set to `false` to disable. Offline/blocked → silently skipped. |
 | `IMAGE_GEN_PROVIDER` | `openai` | Selects the AI image-generation backend for `visualPreference: 'gen'`. One of `openai` \| `dashscope` (WAN/Seedream). No effect unless a key is set. |
 | `IMAGE_GEN_API_KEY` / `OPENAI_API_KEY` / `DASHSCOPE_API_KEY` | — | API key for the selected AI image generator. When unset, `gen` scenes fall back to stock automatically. |

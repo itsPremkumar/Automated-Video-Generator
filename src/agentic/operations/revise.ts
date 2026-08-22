@@ -217,7 +217,7 @@ async function renderRevisionFromCache(
     const result: any = {
         backend: 'agent',
         plan: revisedPlan,
-        workspace: { root: ws.root, assetsDir: ws.assetsDir },
+        workspace: { jobId: revisionJobId, root: ws.root, assetsDir: ws.assetsDir, imagesDir: ws.imagesDir, videosDir: ws.videosDir, musicDir: ws.musicDir, audioDir: ws.audioDir, verificationDir: ws.verificationDir },
         manifest: manifest.assets ? manifest : {
             assets: revisedPlan.scenes.map((s: any, i: number) => ({
                 sceneIndex: i,

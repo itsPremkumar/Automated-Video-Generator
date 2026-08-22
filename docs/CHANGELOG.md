@@ -9,6 +9,20 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added (2026-08-22 production pass)
+- **`npm run doctor`:** One-command pre-flight health check (ffmpeg/ffprobe, RAM, disk, provider DNS reachability, bundled offline pack, TTS backend) with blocker/warn severities.
+- **`npm run agentic:perspectives`:** One topic → five editorial angles (mechanism/history/impact/howto/myths), batch-rendered with a side-by-side comparison sheet.
+- **Key-free stock relevance gate:** Source titles are scored against scene keywords before download; off-topic fuzzy matches (e.g. a gorilla documentary for "magma chamber") are rejected.
+- **Bundled offline video pack:** Six bright, self-generated CC0-equivalent B-roll clips ship with the repo; offline fallbacks rotate scenes across them instead of repeating one gradient.
+- **Fetch resilience:** Per-provider retry (2 attempts, backoff + jitter) plus partial-flush soft deadlines in acquire — slow networks no longer zero out candidates.
+
+### Fixed
+- CLI no longer hangs after a successful render (dangling ffmpeg/keep-alive handles); `AGENTIC_NO_EXIT=1` restores old behavior.
+- Offline renders no longer letterbox landscape masters into portrait frames — assets are cover-cropped to fill.
+- Burned captions and SRT/VTT sidecars no longer leak `[Visual:]` directive tags.
+- Duration-alignment gate tolerance widened 10%→15% so offline-TTS pacing drift stops failing good renders.
+- Removed a SMPTE test-pattern file that shipped as a "bundled gradient" and could appear in offline renders.
+
 ### Added
 - **GPU acceleration** (`--gpu`): Hardware-accelerated rendering via `h264_amf`/`h264_nvenc`/`h264_qsv` depending on available GPU. Pass `--gpu` to `agentic-run.ts` or set `GPU_ACCEL=true` in `.env`.
 - **Preview thumbnails:** Auto-generated per-scene preview images during rendering.
