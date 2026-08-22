@@ -206,8 +206,26 @@ async function runSingleJob(job: AgenticCliJob): Promise<WaveResult> {
         }
         const musicAsset = assets.find((x) => x.kind === 'music');
         const composeOut = path.join(outPath, `${sanitizeVideoFilename(job.title, id)}.mp4`);
+        // Inline [Filter: bw|vintage|sepia] tags live on plan.scenes[].filter;
+        // composeVideo reads job.filterByScene — bridge the two so the CLI batch
+        // path honors per-scene filters exactly like renderAgenticSlideshow does.
+        const filterByScene: Record<number, 'bw' | 'vintage' | 'sepia'> = {};
+        (result.plan.scenes as any[]).forEach((s, i) => {
+            if (s?.filter && ['bw', 'vintage', 'sepia'].includes(s.filter)) {
+                filterByScene[i] = s.filter;
+            }
+        });
+        // Job-level `grade` (noir/cyberpunk/sunset/…) was mapped into the request
+        // but never reached composeVideo — applySceneGradeVignette only reads
+        // PER-SCENE grade, so noir/cyberpunk/sunset jobs rendered ungraded.
+        // Stamp the job grade onto every scene that doesn't declare its own.
+        const jobGrade = (job as any).grade as string | undefined;
+        const scenesWithGrade = jobGrade
+            ? (result.plan.scenes as any[]).map((s) => ({ ...s, grade: s.grade ?? jobGrade }))
+            : (result.plan.scenes as any[]);
         const composeRes = await composeVideo({
-            job,
+            job: { ...job, filterByScene },
+            scenes: scenesWithGrade,
             sceneVisuals,
             sceneAudio,
             music: musicAsset?.localPath,
