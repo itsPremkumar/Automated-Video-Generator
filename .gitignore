@@ -174,3 +174,11 @@ venv/
 # Autonomous Remotion codegen (generated, regenerable)
 remotion-generation/
 workspace/remotion-generation/
+
+# ── Job runtime artifacts (regenerated per run; never commit) ──
+/archive/
+/audio/
+/plan.json
+/scene-data.json
+/revision-state.json
+/input/scripts/agentic-scripts.json
