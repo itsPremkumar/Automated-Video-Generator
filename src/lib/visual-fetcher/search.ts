@@ -518,6 +518,7 @@ export async function fetchVisualsForScene(
                                 height: wh[1] || 0,
                                 photographer: v.creator || undefined,
                                 videoDuration: v.durationSeconds || TARGET_VIDEO_DURATION_SECONDS,
+                                title: v.title,
                             } as MediaAsset);
                         }
                     }

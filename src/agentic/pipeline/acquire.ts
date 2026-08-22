@@ -118,6 +118,9 @@ export interface FetchedVisual {
     source: string;
     license?: string;
     licenseUrl?: string;
+    /** Source title (Wikimedia file title, Pexels alt text, …) for the
+     *  acquire-stage relevance gate. */
+    title?: string;
 }
 
 export interface AcquireDeps {
@@ -422,7 +425,43 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
         );
     }
     const MAX_CONCURRENT_FETCHES = 6;
-    const results = await mapWithConcurrencyLimit(sceneFetches, MAX_CONCURRENT_FETCHES);
+    // Soft deadline for the FETCH phase (default 60s, env-tunable, 0 disables).
+    // The pipeline's outer hard timebox abandons the WHOLE acquireAssets promise
+    // on expiry — discarding every already-fetched candidate and leaving this
+    // function running as a zombie that later writes into the same workspace.
+    // Racing the fetch phase with a deadline lets us flush partial results
+    // instead (the download phase below has its own soft deadline too).
+    const FETCH_SOFT_DEADLINE_MS = Number(process.env.ACQUIRE_FETCH_DEADLINE_MS ?? 150000);
+    let results: {
+        i: number;
+        kind: 'image' | 'video' | 'gen' | 'video-gen' | 'gen-local' | 'video-gen-local';
+        dir: string;
+        scene: ScenePlan;
+        fetched: FetchedVisual[];
+    }[] = [];
+    if (FETCH_SOFT_DEADLINE_MS > 0) {
+        results = await new Promise((resolve) => {
+            let settled = false;
+            const finish = (v: typeof results) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                resolve(v);
+            };
+            const timer = setTimeout(() => {
+                console.warn(
+                    `⚠ acquire fetch soft deadline (${FETCH_SOFT_DEADLINE_MS}ms) — proceeding with scenes fetched so far`,
+                );
+                finish([]);
+            }, FETCH_SOFT_DEADLINE_MS);
+            mapWithConcurrencyLimit(sceneFetches, MAX_CONCURRENT_FETCHES).then(
+                (v) => finish(v),
+                () => finish([]),
+            );
+        });
+    } else {
+        results = await mapWithConcurrencyLimit(sceneFetches, MAX_CONCURRENT_FETCHES);
+    }
     const downloadTasks: (() => Promise<void>)[] = [];
 
     for (const { i, kind: rawKind, dir, scene, fetched } of results) {
@@ -450,8 +489,29 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
         for (let c = 0; c < Math.min(candidatesPerAsset, fetched.length); c++) {
             const f = fetched[c];
             downloadTasks.push(async () => {
-                const ext = path.extname(f.url).split('?')[0] || (kind === 'image' ? '.jpg' : '.mp4');
+                // Extension must be parsed from the URL with the QUERY STRIPPED
+                // FIRST. The old `path.extname(f.url).split('?')[0]` grabbed text
+                // after the LAST dot anywhere in the URL — e.g. utm values like
+                // "archive.org&utm_campaign=…" produced filenames such as
+                // "candidate_1.org&utm_campaign=imageinfo&…".
+                let ext = path.extname((f.url || '').split(/[?#]/)[0]).toLowerCase();
+                if (!/^\.[a-z0-9]{2,5}$/.test(ext)) ext = kind === 'image' ? '.jpg' : '.mp4';
                 const filename = `candidate_${c + 1}${ext}`;
+                // RELEVANCE gate (key-free) — BEFORE any download: the free
+                // providers do fuzzy full-text search ("magma chamber" → gorilla
+                // documentary, "crust" → anything). When the source TITLE shares
+                // no meaningful token with the scene keywords, drop this candidate
+                // without spending the download; the fetch ladder's other results
+                // or the fallback visual are preferable to confidently wrong footage.
+                {
+                    const { isAssetRelevant } = await import('../ai/agent.js');
+                    if (!isAssetRelevant((f as any).title, scene.searchKeywords)) {
+                        console.warn(
+                            `⚠ relevance gate: scene ${i} cand ${c + 1} title "${String((f as any).title).slice(0, 60)}" shares nothing with [${scene.searchKeywords.slice(0, 4).join(', ')}] — skipped pre-download`,
+                        );
+                        return;
+                    }
+                }
                 // Always materialise the asset into THIS scene's isolated dir. Never
                 // trust f.localPath as the final path — it may be a shared cache
                 // or a stale file from a previous job, which would poison the
@@ -464,9 +524,19 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
                 const destPath = path.join(dir, filename);
                 let localPath = destPath;
                 let usedFallback = false;
+                // Cache keys may carry LOCAL file paths (e.g. a cache-hit in the
+                // fetcher hands back `localPath` as the "url"). Treat any existing
+                // absolute path as a local source so it gets COPIED, not refused
+                // by the downloader's http/https-only guard ("scheme c: not
+                // allowed") which previously wasted a perfectly good cached asset.
+                let urlForDownload = f.url;
+                if (urlForDownload && !/^https?:\/\//i.test(urlForDownload) && fs.existsSync(urlForDownload)) {
+                    f.localPath = f.localPath && fs.existsSync(f.localPath) ? f.localPath : urlForDownload;
+                    urlForDownload = '';
+                }
                 try {
                     // Check shared cache first
-                    if (f.url && f.url.startsWith('http')) {
+                    if (urlForDownload && urlForDownload.startsWith('http')) {
                         const cached = getCached(f.url);
                         if (cached && fs.existsSync(cached.localPath)) {
                             fs.mkdirSync(dir, { recursive: true });

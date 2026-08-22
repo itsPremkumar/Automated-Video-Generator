@@ -17,6 +17,10 @@ export interface MediaAsset {
     licenseUrl?: string;
     /** Quality label from Pexels video_files (sd/hd/uhd) for ranking. */
     quality?: string;
+    /** Source title (Wikimedia/Commons file title, Pexels alt text, …).
+     *  Consumed by the acquire-stage relevance filter to reject off-topic
+     *  assets (e.g. a gorilla clip returned for "magma chamber"). */
+    title?: string;
 }
 
 export interface VideoMetadata {

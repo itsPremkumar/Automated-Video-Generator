@@ -382,6 +382,9 @@ export async function runAgenticPipeline(
                                     source: a.url?.startsWith('http') ? sourceFromUrl(a.url) : (a.photographer || 'unknown'),
                                     license: a.license,
                                     licenseUrl: a.licenseUrl,
+                                    // Source title (Wikimedia file title etc.) — feeds
+                                    // the acquire-stage key-free relevance gate.
+                                    title: (a as any).title,
                                 }) as FetchedVisual,
                         );
                     }
@@ -539,8 +542,13 @@ export async function runAgenticPipeline(
     // Local material pool (off by default): bind scenes to input/visuals files.
     if (req.localPool) acquireDeps.localPool = true;
     // Per-stage timebox: don't let acquisition wedge the whole pipeline.
-    // Default 120s — override with ACQUIRE_TIMEBOX_MS.
-    const acquireTimeboxMs = Number(process.env.ACQUIRE_TIMEBOX_MS ?? 120000);
+    // This must stay LONGER than the sum of the in-acquire soft deadlines
+    // (ACQUIRE_FETCH_DEADLINE_MS + ACQUIRE_SOFT_DEADLINE_MS ≈ 185s) — those
+    // flush partial results gracefully; when THIS fired first (old default
+    // 120s) it abandoned the whole acquireAssets promise and discarded every
+    // candidate, forcing the offline fallback even though assets were arriving.
+    // Default 300s = last-resort safety net only; override with ACQUIRE_TIMEBOX_MS.
+    const acquireTimeboxMs = Number(process.env.ACQUIRE_TIMEBOX_MS ?? 300000);
     const acquirePromise = acquireAssets(plan, acquireDeps, req.candidatesPerAsset ?? 2);
     const { workspace, candidates } = await withTimeout(acquirePromise, acquireTimeboxMs, 'acquireAssets')
         .catch((e) => {
@@ -658,7 +666,12 @@ export async function runAgenticPipeline(
                         assets: offlinePlan.scenes.map((s: any, i: number) => ({
                             sceneNumber: s.sceneNumber,
                             kind: s.visualPreference === 'video' ? 'video' : 'image',
-                            localPath: s.localPath,
+                            // createOfflinePlan binds bundled media via `localAsset`,
+                            // NOT `localPath` — reading only `localPath` handed the
+                            // renderer undefined for every scene, which substituted
+                            // navy placeholder clips (rendered near-black after
+                            // grade+vignette → X10 black-frame failure).
+                            localPath: s.localAsset ?? s.localPath,
                             durationSec: s.durationSec || 5,
                         })),
                         voiceoverDriven: offlineVoiceovers?.voiceoverDriven ?? false,

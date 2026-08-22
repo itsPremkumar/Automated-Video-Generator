@@ -889,7 +889,12 @@ else vfArgs.push(`${videoMap}null[vig]`);
                         try {
                             const { execFileSync } = require('child_process');
                             const ff: string = require('ffmpeg-static');
-                            execFileSync(ff, ['-y', '-f', 'lavfi', '-i', `color=c=navy:s=${W}x${H}:r=25:d=${a.durationSec ?? 4}`, '-t', String(a.durationSec ?? 4), '-pix_fmt', 'yuv420p', ph], { timeout: 30000 });
+                            // Bright warm gradient (NOT solid navy): a dark flat
+                            // color collapses to near-black after the cinematic
+                            // grade (eq contrast 1.12, brightness -0.03) + vignette,
+                            // tripping the X10 black-frame gate. gradients also
+                            // reads as intentional B-roll instead of a dead frame.
+                            execFileSync(ff, ['-y', '-f', 'lavfi', '-i', `gradients=s=${W}x${H}:c0=0xFFF3E0:c1=0xFFB74D:nb_colors=2:speed=0.02:duration=${a.durationSec ?? 4}`, '-t', String(a.durationSec ?? 4), '-pix_fmt', 'yuv420p', ph], { timeout: 30000 });
                         } catch { /* best effort */ }
                     }
                     return fs.existsSync(ph) ? ph : a.localPath;

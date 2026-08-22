@@ -154,6 +154,53 @@ export function writeScriptHeuristic(topic: string, title: string): string {
     return [hook(topic), insight, payoff].join('\n');
 }
 
+// ── Key-free stock RELEVANCE gate ──────────────────────────────────────────
+// The free providers (Wikimedia/Commons especially) do fuzzy full-text search:
+// "magma chamber" returned a gorilla documentary; "crust" matched anything.
+// This gate scores each candidate's SOURCE TITLE against the query keywords
+// and rejects titles that share NO meaningful term with the scene. It is
+// deterministic, offline, zero-AI — same philosophy as the rest of agent.ts.
+
+const STOPWORDS = new Set([
+    'the', 'a', 'an', 'and', 'or', 'of', 'in', 'on', 'at', 'to', 'for', 'with', 'from', 'by',
+    'is', 'are', 'was', 'were', 'be', 'been', 'being', 'this', 'that', 'these', 'those',
+    'it', 'its', 'as', 'into', 'about', 'close', 'up', 'nature', 'wild', 'beautiful',
+    'cinematic', 'video', 'clip', 'footage', 'file', 'photo', 'image', 'picture',
+    'power', 'very', 'how', 'why', 'what', 'when', 'where', 'who',
+]);
+
+function tokenize(text: string): string[] {
+    return (text || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]/g, ' ')
+        .split(/\s+/)
+        .filter((w) => w.length >= 3 && !STOPWORDS.has(w));
+}
+
+/**
+ * True when the candidate's source title shares at least one meaningful token
+ * with the search query. Titles are optional: missing title = pass (other
+ * gates still apply). A stem-lite comparison (prefix match on 4+ char words)
+ * catches plural/suffix variants ("volcano" vs "volcanoes", "eruption" vs
+ * "eruptions") without pulling in a stemming library.
+ */
+export function isAssetRelevant(title: string | undefined | null, keywords: string[]): boolean {
+    if (!title) return true; // no signal → let other gates decide
+    const titleTokens = new Set(tokenize(title));
+    if (titleTokens.size === 0) return true; // untitled/numeric-only → no signal
+    for (const kwRaw of keywords || []) {
+        for (const kw of tokenize(kwRaw)) {
+            for (const t of titleTokens) {
+                if (t === kw) return true;
+                if (kw.length >= 4 && t.length >= 4 && (t.startsWith(kw.slice(0, 4)) || kw.startsWith(t.slice(0, 4)))) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 // ── The agent's DECIDE step ────────────────────────────────────────────────
 // Reads the verification matrix and decides. Deterministic, explainable, free.
 
