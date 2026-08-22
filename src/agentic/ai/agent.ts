@@ -231,43 +231,46 @@ export function scoreCandidate(
 }
 
 /**
- * Compute a 64-bin color histogram (4x4x4 RGB) from an image file.
+ * Compute a 64-bin color histogram (4x4x4 RGB) from an image/video file.
  * Returns a normalized Float32Array of 64 values summing to 1.0, or null on failure.
- * Uses ffmpeg's signalstats filter for fast, dependency-free extraction.
+ *
+ * Method: scale to 4x4 and dump RAW RGB24 bytes to stdout (48 bytes/frame),
+ * then quantize each channel to 4 levels -> 64 bins. This replaced the old
+ * signalstats/YAVG log-parsing approach, which was empirically dead: ffmpeg's
+ * signalstats summary goes to NEITHER stdout nor stderr by default, so every
+ * hash computation silently returned null and the diversity penalty never fired.
  */
-function computeColorHash(imagePath: string): Float32Array | null {
+export function computeAssetColorHash(imagePath: string): Float32Array | null {
     try {
         const fs = require('fs');
         if (!fs.existsSync(imagePath)) return null;
         const { execFileSync } = require('child_process');
         const ffmpeg: string = require('ffmpeg-static');
-        // Extract 4x4 average pixels (16 pixels) via scale + signalstats
-        // signalstats prints YUV values per frame; we use the Y (luma) channel
-        // as a simple brightness histogram proxy — fast and sufficient for
-        // near-duplicate detection without loading the full image into memory.
-        const out = execFileSync(
+        const out: Buffer = execFileSync(
             ffmpeg,
-            ['-i', imagePath, '-vf', 'scale=4:4,signalstats', '-f', 'null', '-'],
-            { encoding: 'utf8', timeout: 10000, stdio: ['pipe', 'pipe', 'pipe'] }
+            ['-i', imagePath, '-frames:v', '1', '-vf', 'scale=4:4', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'],
+            { encoding: 'buffer', timeout: 10000, stdio: ['ignore', 'pipe', 'ignore'] },
         );
-        // Parse YAVG values from signalstats output
-        const yavgMatches = out.match(/YAVG:\d+/g) || [];
-        if (yavgMatches.length === 0) return null;
+        if (!out || out.length < 48) return null;
         const bins = new Float32Array(64);
-        for (let i = 0; i < Math.min(yavgMatches.length, 16); i++) {
-            const val = parseInt(yavgMatches[i].split(':')[1], 10);
-            const bin = Math.min(63, Math.floor((val / 255) * 64));
-            bins[bin] += 1;
+        const q = (v: number) => Math.min(3, v >> 6); // 256->4 levels per channel
+        let px = 0;
+        for (let i = 0; i + 2 < out.length; i += 3) {
+            bins[q(out[i]) * 16 + q(out[i + 1]) * 4 + q(out[i + 2])] += 1;
+            px++;
         }
-        // Normalize
-        const total = bins.reduce((a, b) => a + b, 0);
-        if (total > 0) {
-            for (let i = 0; i < 64; i++) bins[i] /= total;
+        if (px > 0) {
+            for (let i = 0; i < 64; i++) bins[i] /= px;
         }
         return bins;
     } catch {
         return null;
     }
+}
+
+/** Backward-compatible internal alias. */
+function computeColorHash(imagePath: string): Float32Array | null {
+    return computeAssetColorHash(imagePath);
 }
 
 /**

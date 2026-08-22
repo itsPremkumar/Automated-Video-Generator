@@ -681,7 +681,33 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
     }
 
     const MAX_CONCURRENT_DOWNLOADS = 4;
-    await mapWithConcurrencyLimit(downloadTasks, MAX_CONCURRENT_DOWNLOADS);
+    // Soft deadline (default 90s, env-tunable, 0 disables): stop WAITING for
+    // stragglers and flush whatever candidates have already materialised.
+    // Previously the only bound was the pipeline's outer hard timebox, which
+    // ABANDONED the whole acquireAssets promise on expiry — discarding every
+    // fully-downloaded candidate (observed: 3 videos landed at t=113s, timebox
+    // fired at 120s, pipeline received [] and fell back to offline placeholders).
+    const softDeadlineMs = Number(process.env.ACQUIRE_SOFT_DEADLINE_MS ?? 90000);
+    if (softDeadlineMs > 0) {
+        await new Promise<void>((resolve) => {
+            let settled = false;
+            const finish = () => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                resolve();
+            };
+            const timer = setTimeout(() => {
+                console.warn(
+                    `⚠ acquire soft deadline (${softDeadlineMs}ms) — flushing ${candidates.length} candidate(s) fetched so far`,
+                );
+                finish();
+            }, softDeadlineMs);
+            mapWithConcurrencyLimit(downloadTasks, MAX_CONCURRENT_DOWNLOADS).then(finish, finish);
+        });
+    } else {
+        await mapWithConcurrencyLimit(downloadTasks, MAX_CONCURRENT_DOWNLOADS);
+    }
 
     // Sort to keep deterministic scene and candidate order in manifest / output
     candidates.sort((a, b) => {

@@ -1455,7 +1455,13 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             const metaLines: string[] = [';FFMETADATA1'];
             for (let i = 0; i < chapters.length; i++) {
                 const ch = chapters[i];
-                const endMs = i + 1 < chapters.length ? chapters[i + 1].startMs : ch.startMs + 60000;
+                // Last chapter must END at the real rendered duration. The old
+                // hardcoded `start + 60000` made ffmpeg's remux stretch the mp4
+                // container to ~start+60s while A/V streams kept their true
+                // length (observed: 19s media in a 73s container — players
+                // showed a phantom runtime and tail frames didn't exist).
+                const totalMs = Math.max(Math.round(accT * 1000), ch.startMs + 1000);
+                const endMs = i + 1 < chapters.length ? chapters[i + 1].startMs : totalMs;
                 metaLines.push(
                     '[CHAPTER]',
                     'TIMEBASE=1/1000',

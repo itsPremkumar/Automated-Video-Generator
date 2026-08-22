@@ -31,6 +31,22 @@ export async function verifyAll(
     ws: AgenticWorkspace,
     deps: VerifyDeps,
 ): Promise<AssetVerification[]> {
+    return verifyAllForOrientation(candidates, ws, deps, 'portrait');
+}
+
+/**
+ * Orientation-aware verification: the source-check targetAspect must follow
+ * the job's orientation, not a hardcoded 9/16 (a landscape job collecting
+ * "wrong aspect" sourceChecks against 9/16 produced misleading metrics).
+ */
+export async function verifyAllForOrientation(
+    candidates: AssetCandidate[],
+    ws: AgenticWorkspace,
+    deps: VerifyDeps,
+    orientation: 'portrait' | 'landscape' | 'square' = 'portrait',
+): Promise<AssetVerification[]> {
+    const targetAspect =
+        orientation === 'landscape' ? 16 / 9 : orientation === 'square' ? 1 : 9 / 16;
     const results: AssetVerification[] = [];
     const imageResults: AssetVerification[] = [];
     const videoResults: AssetVerification[] = [];
@@ -58,7 +74,7 @@ export async function verifyAll(
             // STAGE-3 source check (I4/I5): resolution + aspect, catches a 240p
             // upscale or wrong-aspect asset BEFORE it wastes a render.
             try {
-                const sc = await checkSourceAsset(c.localPath, { kind: 'image', minWidth: 480, targetAspect: 9 / 16 });
+                const sc = await checkSourceAsset(c.localPath, { kind: 'image', minWidth: 480, targetAspect });
                 v.metrics = { ...(v.metrics ?? {}), sourceChecks: sc };
             } catch {
                 /* probe failure is non-fatal */
@@ -70,7 +86,7 @@ export async function verifyAll(
             const v = toVerification(id, c, r);
             // STAGE-3 source check (V4/V5/V6): resolution/aspect/duration fit.
             try {
-                const sc = await checkSourceAsset(c.localPath, { kind: 'video', minWidth: 480, targetAspect: 9 / 16 });
+                const sc = await checkSourceAsset(c.localPath, { kind: 'video', minWidth: 480, targetAspect });
                 v.metrics = { ...(v.metrics ?? {}), sourceChecks: sc };
             } catch {
                 /* probe failure is non-fatal */

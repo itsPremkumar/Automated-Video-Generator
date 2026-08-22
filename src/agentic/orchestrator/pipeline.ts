@@ -68,7 +68,14 @@ export async function runAgenticPipeline(
 
     pruneWorkspaces(req.pruneWorkspaces ?? Number(process.env.AGENTIC_KEEP_WORKSPACES ?? 2));
 
-    const brainOpts = cfg.brain ? { maxCalls: cfg.brain.maxCalls, maxFails: cfg.brain.maxFails } : undefined;
+    // Merge the job-level brain budget ONTO the env-discovered model config.
+    // Previously this was a bare override: any job setting brain:{maxCalls}
+    // wiped openRouterKey/ollamaUrl/providers, silently degrading every LLM
+    // decision (hook, keywords, pacing, music) to heuristics for that job.
+    const brainOpts: import('../ai/brain.js').BrainOptions = {
+        ...envOpts(),
+        ...(cfg.brain ?? {}),
+    };
     const driverLLM: DriverLlmCallback | undefined = req.driverLLM;
     const bridge: LlmBridge = resolveBridge({
         hasModelKeys: hasModel(brainOpts ?? envOpts()),
@@ -115,6 +122,15 @@ export async function runAgenticPipeline(
             orientation: req.orientation ?? 'portrait',
             voice: resolvedVoice ?? 'en-US-JennyNeural',
             musicQuery: req.musicQuery,
+            // Wave N/O — multi-persona cast: forward the declared persona block
+            // so scenes get voicePersona/dialogue assignments. Previously these
+            // were only wired in the modular CLI path; the main pipeline
+            // silently rendered every persona job with the single default voice.
+            ...(req.personas ? { personas: req.personas } : {}),
+            ...(req.defaultPersona ? { defaultPersona: req.defaultPersona } : {}),
+            ...(req.scenePersonas ? { scenePersonas: req.scenePersonas } : {}),
+            ...(req.dialogueVoices ? { dialogueVoices: req.dialogueVoices } : {}),
+            ...(req.sceneDialogue ? { sceneDialogue: req.sceneDialogue } : {}),
         },
         parseScript,
     );
@@ -557,8 +573,11 @@ export async function runAgenticPipeline(
             const approvedInScene = decisions.filter(
                 (d) => d.sceneIndex === c.sceneIndex && d.decision === 'approved',
             ).length;
-            const { agentDecide } = await import('../ai/agent.js');
-            const result = agentDecide({ candidate: c, verification: v as any, approvedInScene });
+            // Diversity context: color hashes of already-approved assets so the
+            // agent's scoring can penalize near-duplicate visuals per scene.
+            const { agentDecide, computeApprovedHashes } = await import('../ai/agent.js');
+            const approvedHashes = computeApprovedHashes(candidates, decisions);
+            const result = agentDecide({ candidate: c, verification: v as any, approvedInScene, approvedHashes });
             emit({
                 stage: 'decide',
                 percent: 50,
@@ -578,7 +597,17 @@ export async function runAgenticPipeline(
         message: `${decisions.filter((d) => d.decision === 'approved').length} assets approved`,
     });
     const manifest = readJson<RenderManifest>(workspace, 'render-manifest.json');
-    const gate = runFinalGate(plan, candidates, decisions, manifest);
+    // Platform-aware runtime cap (X5): map the job's declared platform to the
+    // gate's platform table instead of defaulting every job to Shorts' 60s.
+    const PLATFORM_TO_GATE = { tiktok: 'tiktok', youtube: 'youtube', instagram: 'reels', reels: 'reels' } as const;
+    const gatePlatform =
+        req.platform && PLATFORM_TO_GATE[req.platform]
+            ? (PLATFORM_TO_GATE[req.platform] as 'shorts' | 'tiktok' | 'reels' | 'youtube')
+            : undefined;
+    const gate = runFinalGate(plan, candidates, decisions, manifest, {
+        ...(gatePlatform ? { platform: gatePlatform } : {}),
+        ...(req.maxRuntimeSec ? { maxRuntimeSec: req.maxRuntimeSec } : {}),
+    });
     emit({ stage: 'gate', percent: 100, message: gate.pass ? 'GATE PASS' : 'GATE FAIL' });
 
     // ── OFFLINE FALLBACK: if gate failed due to missing visuals, retry with bundled assets ──
@@ -604,6 +633,25 @@ export async function runAgenticPipeline(
                     } catch {
                         offlineVoiceovers = await generateAgenticVoiceovers(offlinePlan, workspace, req.voice);
                     }
+
+                    // Sync scene durations to the REAL voiceover lengths. The offline
+                    // plan hardcodes 5s/scene, but actual TTS narration usually runs
+                    // longer; without this sync the render bakes ~N*5s of picture
+                    // under a much longer audio track (observed: 20s of video under
+                    // 75s of audio — container claimed 75s, stream ended at 20s).
+                    try {
+                        const vos: any[] = offlineVoiceovers?.voices ?? offlineVoiceovers?.scenes ?? [];
+                        for (const v of vos) {
+                            const scene: any = (offlinePlan.scenes as any[]).find((s) => s.sceneNumber === v.sceneIndex + 1);
+                            if (scene && v.durationSec > 0) {
+                                scene.durationSec = Math.ceil(v.durationSec);
+                            }
+                        }
+                        (offlinePlan as any).totalDurationSec = (offlinePlan.scenes as any[]).reduce(
+                            (acc, s) => acc + (s.durationSec || 0),
+                            0,
+                        );
+                    } catch { /* keep static durations on any shape mismatch */ }
                     
                     // Build manifest for offline plan
                     const offlineManifest = {
@@ -696,9 +744,11 @@ export async function runAgenticPipeline(
         // generates every scene, then tears the backend down (RAM-aware).
         try {
             const { runVoiceStage } = await import('../media/voice-controller.js');
+            // Pass the declared persona cast so per-scene voicePersona /
+            // in-scene dialogue resolve to distinct VoiceBox profiles.
             const res = await runVoiceStage(plan, workspace, req.voice, (percent, message) => {
                 emit({ stage: 'voiceover', percent, message });
-            });
+            }, req.useClonedVoiceId, req.personas);
             // Normalize into the shape the manifest mapping expects.
             voiceovers = {
                 scenes: res.voices.map((v) => ({

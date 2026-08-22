@@ -82,6 +82,9 @@ export interface PipelineRequest {
     musicIntensity?: 'calm' | 'mid' | 'energetic';
     /** Target platform for auto-tailoring. */
     platform?: 'tiktok' | 'youtube' | 'instagram' | 'reels';
+    /** Explicit runtime-cap override (seconds) for gate check X5. When set,
+     *  takes precedence over the platform table. */
+    maxRuntimeSec?: number;
     /** Video content type for template selection. */
     videoType?: 'facts' | 'tutorial' | 'news' | 'story' | 'product' | 'motivational' | 'nature';
     /** Branding config. */
