@@ -33,7 +33,19 @@ jobs:
                   echo "" >> release-notes.md
                   git log --oneline --no-decorate $(git tag --sort=-creatordate | head -n 1)..HEAD 2>/dev/null | sed 's/^/- /' >> release-notes.md || true
 
+            - name: Check if release already exists
+              id: release_check
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  if gh release view "${{ github.ref_name }}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+                      echo "exists=true" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "exists=false" >> "$GITHUB_OUTPUT"
+                  fi
+
             - name: Create GitHub Release
+              if: steps.release_check.outputs.exists == 'false'
               uses: softprops/action-gh-release@v2
               with:
                   body_path: release-notes.md
@@ -43,7 +55,12 @@ jobs:
 
             - name: Publish to NPM
               if: ${{ !contains(github.ref_name, '-') }}
-              run: npm publish
+              run: |
+                  if [ -z "$NODE_AUTH_TOKEN" ]; then
+                      echo "::warning::NPM_TOKEN secret not set - skipping npm publish."
+                      exit 0
+                  fi
+                  npm publish
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -64,11 +81,15 @@ jobs:
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
+            - name: Compute lowercase image repository
+              id: image
+              run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
             - name: Build and push Docker image
               uses: docker/build-push-action@v6
               with:
                   context: .
                   push: true
                   tags: |
-                      ghcr.io/${{ github.repository }}:${{ github.ref_name }}
-                      ghcr.io/${{ github.repository }}:latest
+                      ghcr.io/${{ steps.image.outputs.name }}:${{ github.ref_name }}
+                      ghcr.io/${{ steps.image.outputs.name }}:latest
