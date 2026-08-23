@@ -4,5 +4,5 @@ contact_links:
     url: https://github.com/itsPremkumar/Automated-Video-Generator#readme
     about: Check the README, QUICKSTART, and setup docs before opening a support issue.
   - name: Security policy
-    url: https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/SECURITY.md
+    url: https://github.com/itsPremkumar/Automated-Video-Generator/blob/main/docs/SECURITY.md
     about: Please do not post security vulnerabilities publicly.
