@@ -7,6 +7,8 @@ import {
     probeDurationSec,
     DEFAULT_SCENE_SEC,
 } from './compose-scene-fx';
+// Cross-path consistency guard: the orchestrator path consumes THIS map.
+import { gradeFilter as orchestratorGradeFilter, type GradeKind } from '../ai/style-engine';
 import type { ScenePlan } from '../types';
 
 test('gradeFilter maps known grades to real ffmpeg filters', () => {
@@ -22,6 +24,21 @@ test('gradeFilter maps known grades to real ffmpeg filters', () => {
     // unknown + neutral stay no-op
     assert.equal(gradeFilter('bogus'), undefined);
     assert.equal(gradeFilter('neutral'), undefined);
+});
+
+test('gradeFilter maps shared GradeKinds via style-engine (wave-A bug #3)', () => {
+    // These three were silent no-ops on the compose path until wave A #3 —
+    // three differently-graded probe renders came out with identical RGB.
+    for (const kind of ['noir', 'sunset', 'cyberpunk'] as const) {
+        const composed = gradeFilter(kind);
+        assert.ok(composed, `${kind} must map to a real filter, not undefined`);
+        assert.doesNotMatch(composed, /colorbalance/); // YUV-native only on CPU build
+        assert.equal(
+            composed,
+            orchestratorGradeFilter(kind as GradeKind),
+            `${kind} must be byte-identical with the orchestrator/render path`,
+        );
+    }
 });
 
 test('gradeFilter returns undefined for neutral and unknown (no-op)', () => {

@@ -22,6 +22,12 @@ import * as path from 'path';
 import { execFileSync } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
 import type { ScenePlan } from '../types.js';
+// Single source of truth for the shared GradeKind vocabulary + its YUV-native
+// filter mappings. The orchestrator/render path consumes style-engine's
+// gradeFilter directly; the compose path delegates the overlapping cases here
+// so the two render paths can NEVER diverge again (that divergence was the
+// root cause of wave-A bug #3).
+import { gradeFilter as styleEngineGradeFilter, type GradeKind } from '../ai/style-engine.js';
 
 // ffprobe-static ships no type declarations; load it via require with a local
 // shape so we stay dependency-free (no @types package needed).
@@ -86,18 +92,33 @@ export function resolveSceneDurations(audios: string[], scenes?: ScenePlan[]): n
     });
 }
 
-/** Map an inline [Grade: ...] value to a real ffmpeg color filter. */
+/**
+ * Map an inline [Grade: ...] value to a real ffmpeg color filter.
+ *
+ * Compose-path-local cases (sepia/bw/vintage…) are handled here; the grades
+ * that ALSO exist on the orchestrator path (`noir` / `sunset` / `cyberpunk`,
+ * members of style-engine's GradeKind union) DELEGATE to style-engine's
+ * `gradeFilter` so both paths emit byte-identical filters.
+ *
+ * BUG wave-A #3: those three cases were absent → inline [Grade: noir] etc.
+ * silently no-oped on the compose path (three differently-graded probe renders
+ * came out with identical frame RGB). Do NOT fix future gaps here by copying
+ * `colorbalance`-based strings from compose.ts buildPaletteFilter — that is
+ * exactly how this divergence happened, and colorbalance forces a slow RGB
+ * colorspace conversion on this CPU-only ffmpeg-static build (near-hang class
+ * on the 6GB box). Extend `GradeKind` in style-engine.ts instead and the
+ * delegation picks it up on BOTH paths.
+ */
 export function gradeFilter(grade: string | undefined): string | undefined {
-    switch ((grade ?? '').toLowerCase()) {
+    const g = (grade ?? '').toLowerCase().trim();
+    switch (g) {
         case 'warm':
             return 'eq=gamma_r=1.12:gamma_b=0.90:saturation=1.10';
         case 'cool':
             return 'eq=gamma_b=1.12:gamma_r=0.92:saturation=1.05';
         case 'cinematic':
-            // Single filter (no comma) — a comma would be read as a filterchain
-            // separator by the caller's filters.join(','), splitting this into two
-            // broken tokens and producing a corrupt/clip-less output (moov atom
-            // missing). eq alone gives the contrast/saturation "cinematic" look.
+            // Single filter (no comma) — see caller's filters.join(',') note.
+            // eq alone gives the contrast/saturation "cinematic" look.
             return 'eq=contrast=1.15:saturation=1.05';
         case 'sepia':
             return 'sepia=0.8';
@@ -112,6 +133,13 @@ export function gradeFilter(grade: string | undefined): string | undefined {
             return 'eq=saturation=1.40:contrast=1.10';
         case 'neutral':
             return undefined; // explicit no-op
+        case 'noir':
+        case 'sunset':
+        case 'cyberpunk':
+            // Shared GradeKind vocabulary → orchestrator's verified YUV-native
+            // mapping (hue=s=0 grayscale / hue=h=N tint; stays in YUV, SIMD-
+            // optimized). Byte-identical with the render.ts path by construction.
+            return styleEngineGradeFilter(g as GradeKind);
         default:
             return undefined;
     }
@@ -146,7 +174,12 @@ export function applySceneGradeVignette(
     try {
         execFileSync(ffmpegBin(), [
             '-y', '-i', clipPath, '-vf', filters.join(','),
-            '-an', '-c:v', 'libx264', '-preset', 'veryfast', out,
+            '-an', '-c:v', 'libx264', '-preset', 'veryfast',
+            // G6 low-RAM recipe for every extra per-scene re-encode stage:
+            // pin yuv420p + single thread so the encoder can't malloc-bomb
+            // the 6GB box (observed x264 `malloc failed` without this).
+            '-pix_fmt', 'yuv420p', '-threads', '1',
+            out,
         ], { stdio: ['ignore', 'ignore', 'pipe'], timeout: 90000 });
         return fs.existsSync(out) && fs.statSync(out).size > 0 ? out : clipPath;
     } catch (e: any) {
