@@ -232,7 +232,7 @@ function parseScriptLocally(script: string): ParsedScript {
         // Per-scene inline tags
         const transitionMatch = line.match(/\[Transition:?\s*(fade|slide|zoomblur|cut|glitch|whippan|morphcut|lightleak|wipe|dissolve|circle|rectcrop|circlecrop|fadewhite|fadeblack|fadecolor|distance|smoothleft|smoothright|smoothup|smoothdown|windowslice|x|diag)\]/is);
         sceneTransition = transitionMatch ? transitionMatch[1].toLowerCase() : undefined;
-        const gradeMatch = line.match(/\[Grade:?\s*(neutral|warm|cool|cinematic|vivid)\]/is);
+        const gradeMatch = line.match(/\[Grade:?\s*(neutral|warm|cool|cinematic|vivid|noir|sunset|cyberpunk)\]/is);
         sceneGrade = gradeMatch ? gradeMatch[1].toLowerCase() : undefined;
         const filterMatch = line.match(/\[Filter:?\s*(bw|vintage|sepia|blur|grayscale|mono)\]/is);
         sceneFilter = filterMatch ? (filterMatch[1].toLowerCase() === 'grayscale' || filterMatch[1].toLowerCase() === 'mono' ? 'bw' : (filterMatch[1].toLowerCase() as 'bw' | 'vintage' | 'sepia' | 'blur')) : undefined;

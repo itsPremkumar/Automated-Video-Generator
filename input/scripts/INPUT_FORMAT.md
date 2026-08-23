@@ -61,7 +61,7 @@ Parsed by `src/lib/script-parser.ts` — each applies to the sentence/scene it s
 and is stripped from the spoken text + subtitles:
 
 `[Visual: kw|file]` · `[Text: on|off]` · `[Transition: fade|slide|zoomblur|cut]` ·
-`[Grade: neutral|warm|cool|cinematic|vivid]` · `[KenBurns: on|off]` ·
+`[Grade: neutral|warm|cool|cinematic|vivid|noir|sunset|cyberpunk]` · `[KenBurns: on|off]` ·
 `[Trim: MM:SS-MM:SS]` · `[Style: top|bottom|center]` · `[Color: white|yellow|…]` ·
 `[FadeIn: 0.3]` · `[FadeOut: 0.3]` · `[Voice: en-US-GuyNeural]` ·
 `[Music: file.mp3]` · `[Volume: 0.8]` ·
