@@ -1,33 +1,21 @@
 # 🚀 Go-Live Kit — Automated Video Generator
 
-Everything needed to push the project past 100 stars. The README + assets are already
-upgraded (real autoplaying demo GIF + clean architecture SVG committed). This file
-covers the two remaining moves: **open contributor issues** and **ship the launch posts**.
+**Status (2026-08-23): Part A is DONE ✅ — Part B (launch posts) is the remaining move.**
+
+What's already shipped:
+- ✅ README landing page: autoplaying real-output demo GIF + showcase + star history
+- ✅ Community health 100%: CONTRIBUTING / CoC / SECURITY in `docs/`, YAML issue templates registered
+- ✅ 6 `good first issue`s open (#21–#26) with labels
+- ✅ v9 release published with curated notes
+- ✅ Release workflow fixed (lowercase GHCR image, npm publish skips gracefully without NPM_TOKEN)
+- ✅ Repo homepage points to the live Pages landing page
+
+Optional before launch: set the `NPM_TOKEN` secret (repo → Settings → Secrets → Actions) if you want
+tagged releases to auto-publish to npm; the workflow now warns and skips instead of failing without it.
 
 ---
 
-## PART A — Open the 6 "good first issues" (pick ONE method)
-
-### Method 1: `gh` CLI (fastest, once installed)
-Install: https://cli.github.com/  → run `gh auth login` → then:
-
-```bash
-cd Automated-Video-Generator
-gh issue create --title "Add an architecture SVG diagram to the README" \
-  --body-file GOOD_FIRST_ISSUES.md --label "good first issue,documentation"
-# ...repeat for each (bodies are in GOOD_FIRST_ISSUES.md). Or paste each body below.
-```
-
-### Method 2: Copy-paste each title + body into github.com/.../issues/new
-The 6 ready issues (title → body) are in **`GOOD_FIRST_ISSUES.md`**.
-Open them at: https://github.com/itsPremkumar/Automated-Video-Generator/issues/new
-
-> Tip: label all 6 with `good first issue` + the tag shown in each. This signals
-> "welcoming to contributors" — GitHub's explore algorithm and new devs both reward it.
-
----
-
-## PART B — Launch sequence (post spread over 2–3 weeks, NOT all at once)
+## PART B — Launch sequence (spread over 2–3 weeks, NOT all at once)
 
 ### Week 1
 - **Tue–Thu, ~12:30pm PT — Product Hunt**
@@ -47,22 +35,4 @@ Open them at: https://github.com/itsPremkumar/Automated-Video-Generator/issues/n
   Outline in `LAUNCH_KIT.md` §5. Link repo top + bottom.
 - **Reply to every comment within 24h** for the first 2 weeks (algorithm boost + trust).
 
----
-
-## PART C — Post-launch momentum
-- Pin a "What's next?" comment asking for features → convert top requests into issues.
-- Thank every new contributor publicly (stars follow active maintainers).
-- When stars cross ~50, add a `star-history` banner to the README (already present).
-- Convert the autoplaying GIF into a 15s YouTube Short and embed it too (proof in-video).
-
----
-
-## Why these moves grow stars (the mechanics)
-1. **Autoplaying demo GIF** = instant "this actually works" trust on the landing page.
-   Most visitors decide in <5s; a moving video beats a static diagram.
-2. **Clean architecture SVG** = looks maintained/professional to devs skimming.
-3. **Open good-first-issues** = GitHub tags the repo "contributor-friendly" and it
-   surfaces in explore / topic pages for newcomers.
-4. **Spaced multi-platform posts** = each platform's algorithm rewards a single
-   high-signal launch post better than a burst; spaced posts keep recurring traffic.
-5. **First-24h replies** = engagement velocity is what pushes Show HN / PH to the front.
+> Ready-to-paste copy lives in `docs/LAUNCH_KIT.md`.
