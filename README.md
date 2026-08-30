@@ -310,6 +310,23 @@ npm run generate
 
 Output: `output/my-first-video/final.mp4` 🎉
 
+### Publishing to social (opt-in)
+
+After a batch run, you can publish the rendered MP4s to TikTok, Instagram, or YouTube via [upload-post.com](https://upload-post.com). This is **opt-in** — the batch CLI only posts when `--post` is passed AND the env vars are configured:
+
+```bash
+# In .env (one-time):
+UPLOAD_POST_ENABLED=true
+UPLOAD_POST_API_KEY=your_upload-post_key
+UPLOAD_POST_USERNAME=your_upload-post_user
+UPLOAD_POST_PLATFORMS=tiktok,instagram   # or youtube,youtube_shorts
+
+# Then:
+npm run agentic:post    # alias for: agentic-batch --post
+```
+
+A `publish-manifest.json` is written next to each posted MP4 with the platform URL(s) and an audit trail. Failures never throw — one bad job can't kill the post step for the rest of the batch.
+
 ### Web Portal
 
 ```bash

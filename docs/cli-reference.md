@@ -59,6 +59,7 @@ Fine-grained batch stage control:
 | `agentic:mode:advanced` | `tsx src/adapters/cli/agentic-batch.ts --mode apply-advanced` | Apply advanced motion FX |
 | `agentic:mode:rerender` | `tsx src/adapters/cli/agentic-batch.ts --mode rerender` | Re-render existing batch jobs |
 | `agentic:mode:compose` | `tsx src/adapters/cli/agentic-batch.ts --mode compose` | Compose final video from batch assets |
+| `agentic:post` | `tsx src/adapters/cli/agentic-batch.ts --post` | After batch completes, post every successful job's MP4 to TikTok / Instagram / YouTube (via upload-post.com). **Opt-in**: requires `UPLOAD_POST_ENABLED=true` + `UPLOAD_POST_API_KEY` + `UPLOAD_POST_USERNAME` in `.env`. Writes `publish-manifest.json` per job as an audit trail. |
 
 ### Utility & Cleanup
 

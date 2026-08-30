@@ -45,20 +45,39 @@ test('noise-reduction reduceNoise is callable', async () => {
     assert.equal(typeof reduceVideoNoise, 'function', 'reduceVideoNoise is function');
 });
 
-// ─── Update Checker ─────────────────────────────────────────────────────────
+// ─── Update / Version Checker (consolidated 2026-08: update-checker.ts
+//      was merged into version-checker.ts with backwards-compat aliases) ─
 
-test('update-checker checkForUpdates is callable', async () => {
-    const { checkForUpdates, getUpdateMessage } = await import('../src/agentic/services/update-checker.js');
-    assert.equal(typeof checkForUpdates, 'function', 'checkForUpdates is function');
-    assert.equal(typeof getUpdateMessage, 'function', 'getUpdateMessage is function');
+test('version-checker checkForUpdates is callable', async () => {
+    const { checkForUpdates, getUpdateMessage } = await import('../src/agentic/services/version-checker.js');
+    assert.ok(typeof checkForUpdates === 'function', 'checkForUpdates is function');
+    assert.ok(typeof getUpdateMessage === 'function', 'getUpdateMessage is function');
+    // UpdateInfo is exported as a type alias (type-only), preserved verbatim
+    // from the old update-checker.ts API. Confirm getUpdateMessage works on
+    // both the new (current/latest) shape and the legacy (currentVersion/
+    // latestVersion) shape.
+    const newShape = {
+        hasUpdate: false, current: '5.0.0', latest: '5.0.0',
+        releaseUrl: '', releaseNotes: '', publishedAt: '',
+    };
+    const legacyShape = {
+        hasUpdate: true, currentVersion: '5.0.0', latestVersion: '6.0.0',
+        releaseUrl: 'https://example.com/release', releaseNotes: '', publishedAt: '',
+    };
+    const a = getUpdateMessage(newShape as any);
+    const b = getUpdateMessage(legacyShape as any);
+    assert.ok(typeof a === 'string' && a.length > 0, 'getUpdateMessage works on new shape');
+    assert.ok(typeof b === 'string' && b.includes('6.0.0'), 'getUpdateMessage works on legacy shape');
 });
 
-test('update-checker checkForUpdates returns valid structure', async () => {
-    const { checkForUpdates } = await import('../src/agentic/services/update-checker.js');
+test('version-checker checkForUpdates returns valid structure', async () => {
+    const { checkForUpdates } = await import('../src/agentic/services/version-checker.js');
     const result = await checkForUpdates();
+    // Network may be down — accept either a fully-populated VersionInfo or null.
+    if (result === null) return;
     assert.ok(typeof result.hasUpdate === 'boolean', 'hasUpdate is boolean');
-    assert.ok(result.currentVersion, 'has currentVersion');
-    assert.ok(result.latestVersion, 'has latestVersion');
+    assert.ok(typeof result.current === 'string', 'current is string');
+    assert.ok(typeof result.latest === 'string', 'latest is string');
 });
 
 // ─── Script Templates ───────────────────────────────────────────────────────

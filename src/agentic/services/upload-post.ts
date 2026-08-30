@@ -45,7 +45,10 @@ export function getUploadPostConfig(): UploadPostConfig {
         apiKey: process.env.UPLOAD_POST_API_KEY || '',
         username: process.env.UPLOAD_POST_USERNAME || '',
         enabled: process.env.UPLOAD_POST_ENABLED === 'true',
-        platforms: (process.env.UPLOAD_POST_PLATFORMS || 'tiktok,instagram').split(',') as Platform[],
+        platforms: (process.env.UPLOAD_POST_PLATFORMS || 'tiktok,instagram')
+            .split(',')
+            .map((p) => p.trim())
+            .filter(Boolean) as Platform[],
         autoUpload: process.env.UPLOAD_POST_AUTO_UPLOAD === 'true',
         youtubePrivacyStatus: (process.env.UPLOAD_POST_YOUTUBE_PRIVACY as any) || 'public',
     };

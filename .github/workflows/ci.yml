@@ -55,3 +55,8 @@ jobs:
         # production change must not silently erode coverage). The floor is set
         # just below the current ~82% so only genuine regressions turn CI red.
         run: npm run test:coverage | node scripts/check-coverage.mjs
+
+      - name: MCP doc freshness
+        # Fails CI if docs/MCP_TOOL_REFERENCE.md is out of date with the
+        # register-*.ts source files. Catches forgotten regenerations.
+        run: npm run verify:mcp-doc
