@@ -67,6 +67,31 @@ function compareVersions(a: string, b: string): number {
     return 0;
 }
 
+/**
+ * Legacy alias: the previous `update-checker.ts` exposed the same shape under
+ * the name `UpdateInfo` (with `currentVersion`/`latestVersion` instead of
+ * `current`/`latest`). Keep it as a structural alias so any third-party
+ * consumers don't break — collapsed in the 2026-08 consolidation when
+ * `update-checker.ts` was deleted in favour of this file.
+ */
+export type UpdateInfo = VersionInfo;
+
+/**
+ * Legacy alias: `update-checker.ts` exposed `getUpdateMessage(info)`.
+ * Returns a human-readable update notification string. Equivalent to
+ * `formatVersionInfo` but with a slightly different message format
+ * (preserved verbatim so the surface stays stable for any consumers).
+ */
+export function getUpdateMessage(info: VersionInfo | UpdateInfo): string {
+    if (!info.hasUpdate) {
+        return `✅ You are running the latest version (${'currentVersion' in info ? info.currentVersion : info.current}).`;
+    }
+    const latest = 'latestVersion' in info ? info.latestVersion : info.latest;
+    const current = 'currentVersion' in info ? info.currentVersion : info.current;
+    const url = info.releaseUrl;
+    return `🔄 New version available: ${latest} (current: ${current})\n   ${url}`;
+}
+
 /** Get current version */
 export function getCurrentVersion(): string {
     return CURRENT_VERSION;
