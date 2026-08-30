@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+node_modules
+node_modules/*
 .npm/
 
 # Build and Output

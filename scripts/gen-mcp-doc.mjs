@@ -170,18 +170,22 @@ function renderDoc(families) {
 }
 
 // Map each register file to a human label + 1-line description.
+// `expected` is a hardcoded floor: if the parser drops tools silently,
+// --check will fail and CI catches it. Update when intentionally adding
+// or removing a tool.
 const FAMILY_META = [
-    { file: 'register-admin-tools.ts', label: 'Admin', description: 'System / config / diagnostics.' },
-    { file: 'register-input-tools.ts', label: 'Input', description: 'Scripts + local asset upload.' },
-    { file: 'register-job-tools.ts', label: 'Job', description: 'Generate / monitor / batch.' },
-    { file: 'register-output-tools.ts', label: 'Output', description: 'List / read / delete outputs.' },
-    { file: 'register-free-video-tools.ts', label: 'Free video', description: 'Search + download CC video.' },
-    { file: 'register-agentic-tools.ts', label: 'Agentic', description: 'Hermes-driven plan→acquire→gate→render.' },
-    { file: 'register-operations-tools.ts', label: 'Operations', description: 'Single-task video edits (merge, trim, …).' },
+    { file: 'register-admin-tools.ts', label: 'Admin', description: 'System / config / diagnostics.', expected: 7 },
+    { file: 'register-input-tools.ts', label: 'Input', description: 'Scripts + local asset upload.', expected: 6 },
+    { file: 'register-job-tools.ts', label: 'Job', description: 'Generate / monitor / batch.', expected: 5 },
+    { file: 'register-output-tools.ts', label: 'Output', description: 'List / read / delete outputs.', expected: 3 },
+    { file: 'register-free-video-tools.ts', label: 'Free video', description: 'Search + download CC video.', expected: 2 },
+    { file: 'register-agentic-tools.ts', label: 'Agentic', description: 'Hermes-driven plan→acquire→gate→render.', expected: 11 },
+    { file: 'register-operations-tools.ts', label: 'Operations', description: 'Single-task video edits (merge, trim, …).', expected: 27 },
 ];
 
 function main() {
     const families = [];
+    let floorFailures = [];
     for (const meta of FAMILY_META) {
         const file = join(MCP_DIR, meta.file);
         if (!exists(file)) {
@@ -193,7 +197,18 @@ function main() {
         if (tools.length === 0) {
             console.warn(`⚠ ${meta.file}: no tools parsed (signature may have changed)`);
         }
+        // Floor check: parser should never drop below the expected count.
+        // If it does, the parse regex is broken — fail loud so CI catches it.
+        if (tools.length < meta.expected) {
+            floorFailures.push(`${meta.file}: parsed ${tools.length}, expected ≥${meta.expected}`);
+        }
         families.push({ ...meta, tools });
+    }
+    if (floorFailures.length > 0) {
+        console.error('✖ MCP tool-count floor check FAILED:');
+        for (const f of floorFailures) console.error(`   - ${f}`);
+        console.error('   Update FAMILY_META expected counts OR fix parseRegisterFile.');
+        process.exit(2);
     }
     const doc = renderDoc(families);
     if (CHECK) {
