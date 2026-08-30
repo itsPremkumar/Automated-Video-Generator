@@ -232,7 +232,9 @@ back to Edge-TTS. For voice cloning, set `TTS_PROVIDER=voicebox` and provide a
 
 
 
-The MCP server lets AI agents (Claude Desktop, Claude Code, Cursor, etc.) create videos autonomously — it exposes 23 tools, 13 resources, and 4 prompts over stdio.
+The MCP server lets AI agents (Claude Desktop, Claude Code, Cursor, etc.) create videos autonomously — it exposes **61 tools** across 7 families, 13 resources, and 4 prompts over stdio.
+
+> 📚 See [`docs/MCP_TOOL_REFERENCE.md`](./docs/MCP_TOOL_REFERENCE.md) for the full tool-by-tool contract (auto-generated from source via `npm run gen:mcp-doc`; CI verifies it's in sync via `npm run verify:mcp-doc`).
 
 **Quick connect (read-only safe mode — default):**
 

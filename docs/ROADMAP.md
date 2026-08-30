@@ -12,6 +12,7 @@ The vision: **Automated Video Generator** aims to become the open-source standar
 |---------|--------|
 | Windows desktop app with bundled runtime | ✅ Done |
 | MCP server for AI agent integration | ✅ Done |
+| MCP tool reference auto-generated from source (npm run gen:mcp-doc) | ✅ Done |
 | AI visual media verification (Ollama / Gemini) | ✅ Done |
 | Free stock media (Openverse, Wikimedia Commons, Internet Archive) | ✅ Done |
 | Local voice synthesis (Voicebox, XTTS, Kokoro) | ✅ Done |
@@ -19,18 +20,22 @@ The vision: **Automated Video Generator** aims to become the open-source standar
 | ESLint + Prettier + EditorConfig | ✅ Done |
 | Comprehensive community health files | ✅ Done |
 | Hexagonal architecture refactor | ✅ Done |
+| Cross-platform upload to TikTok / Instagram / YouTube (--post, opt-in) | ✅ Done |
+| 30-min global pipeline watchdog | ✅ Done |
+| Bundled CC0 offline media pack | ✅ Done |
 
 ### 🚀 v5.5 — v6.0 (Next 3-6 months)
 
-| Priority | Feature | Area |
-|----------|---------|------|
-| 🔴 High | Comprehensive test suite (unit + integration + E2E) | Quality |
-| 🔴 High | Plugin system for custom media sources | Extensibility |
-| 🟡 Medium | Custom subtitle styling (fonts, positions, animations) | Features |
-| 🟡 Medium | Template system for reusable video styles | Features |
-| 🟢 Low | Performance benchmarks and optimization report | Quality |
-| 🟢 Low | macOS and Linux desktop builds | Platform |
-| 🟢 Low | API documentation with Swagger/OpenAPI | Docs |
+| Priority | Feature | Status | Area |
+|----------|---------|--------|------|
+| ✅ Done | Comprehensive test suite (947+ unit tests + integration + E2E) | Shipped 2026-08 | Quality |
+| ✅ Done | Plugin system for custom media sources (31 plugins) | Shipped 2026-08 | Extensibility |
+| 🟡 Medium | Custom subtitle styling (fonts, positions, animations) | — | Features |
+| 🟡 Medium | Template system for reusable video styles | — | Features |
+| 🟡 Medium | Stabilize ffmpeg-flaky tests on 6 GB-RAM boxes (lavfi parallel) | Open | Quality |
+| 🟢 Low | Performance benchmarks and optimization report | — | Quality |
+| 🟢 Low | macOS and Linux desktop builds | — | Platform |
+| 🟢 Low | API documentation with Swagger/OpenAPI | — | Docs |
 
 ### 🌟 v6.0 — v7.0 (6-12 months)
 
@@ -80,4 +85,4 @@ See [CHANGELOG.md](./CHANGELOG.md) for release history.
 
 ---
 
-*Last updated: July 2026*
+*Last updated: 2026-08-30 (post audit-2-batch merge: 6 improvements shipped + flaky-test diagnostic + roadmap sync)*

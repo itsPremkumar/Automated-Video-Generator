@@ -14,7 +14,7 @@ import { runFfmpeg, estimateAudioDurationSafe } from './ffmpeg.js';
 import { buildPaletteFilter, resolveCaptionFont, needsComplexScriptShaping, resolveFontFile } from '../operations/compose.js';
 import type { PipelineResult } from './types.js';
 import { AGENTIC_OUTPUT_DIR } from '../management/workspace.js';
-import { logInfo } from '../../shared/logging/runtime-logging.js';
+import { logInfo, logWarn, logError } from '../../shared/logging/runtime-logging.js';
 
 /* eslint-disable no-control-regex -- intentional: the \x00-\x1F\x7F char-class
    strips control characters from logged ffmpeg args (log-injection defense,
@@ -197,7 +197,7 @@ async function writeOutputArtifacts(
                 if (out.length)
                     logInfo(`🌐 localized subtitles: ${out.length} language(s) -> ${out.map((p) => p.split(/[\\/]/).pop()).join(', ')}`);
             } catch (e: any) {
-                console.warn(`⚠ subtitle localization skipped: ${e?.message ?? e}`);
+                logWarn(`⚠ subtitle localization skipped: ${e?.message ?? e}`);
             }
         }
     }
@@ -223,7 +223,7 @@ async function writeOutputArtifacts(
         for (const ap of aspectPaths) {
             try {
                 const ai = await aiVerifyAsset(ap, 'video', keywords, { aiVerify } as any, brain);
-                if (ai && !ai.pass) console.warn(`⚠ ai(per-aspect ${ap}) failed: ${ai.reason} (conf ${ai.confidence})`);
+                if (ai && !ai.pass) logWarn(`⚠ ai(per-aspect ${ap}) failed: ${ai.reason} (conf ${ai.confidence})`);
             } catch { /* optional */ }
         }
     }
@@ -294,7 +294,7 @@ async function writeOutputArtifacts(
             if (yt.uploaded) logInfo(`⬆️ uploaded to YouTube: ${yt.videoId}`);
             else logInfo(`⬆️ YouTube upload skipped: ${yt.reason} (${yt.note ?? ''})`);
         }
-    } catch (e: any) { console.warn(`⚠ publish step skipped: ${e?.message ?? e}`); }
+    } catch (e: any) { logWarn(`⚠ publish step skipped: ${e?.message ?? e}`); }
     try {
         const { archiveJob } = await import('../delivery/archive.js');
         const arch = archiveJob(res.workspace, mp4);
@@ -616,7 +616,7 @@ export async function renderAgenticSlideshow(
     const runFfmpegSpawn = (args: string[], totalSec = 0, sceneDurations?: number[]): Promise<void> =>
         new Promise<void>((resolve, reject) => {
             if (opts.verbose) {
-                console.error(('[ffmpeg] ' + ffmpeg + ' ' + args.join(' ')).replace(/[\r\n]/g, ' '));
+                logError(('[ffmpeg] ' + ffmpeg + ' ' + args.join(' ')).replace(/[\r\n]/g, ' '));
             }
             const cp = spawn(ffmpeg, args, { stdio: ['ignore', 'ignore', 'pipe'] });
             let lastPct = -1;
@@ -651,7 +651,7 @@ export async function renderAgenticSlideshow(
             cp.on('error', (e: any) => reject(e));
             cp.on('close', (code: number) => {
                 if (code === 0) return resolve();
-                console.error('[ffmpeg stderr tail]\n' + buf.split('\n').slice(-25).join('\n'));
+                logError('[ffmpeg stderr tail]\n' + buf.split('\n').slice(-25).join('\n'));
                 reject(new Error('ffmpeg failed (exit ' + code + ')'));
             });
         });
@@ -1102,7 +1102,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             let segOk = false;
             for (let attempt = 0; attempt < 3; attempt++) {
                 try { await runFfmpegSpawn(args, dur); segOk = true; break; }
-                catch (e) { lastErr = e; console.warn(`⚠ segment ${ci} attempt ${attempt + 1} failed, retrying`); }
+                catch (e) { lastErr = e; logWarn(`⚠ segment ${ci} attempt ${attempt + 1} failed, retrying`); }
             }
             // BUG C2: a failed ffmpeg run can leave a headerless/0-byte file
             // behind, so existsSync alone let a hard per-scene failure become a
@@ -1124,7 +1124,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             // stream-copy is safe once timestamps are normalized.
             const concatArgs = ['-fflags', '+genpts', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', '-y', silent];
             if (opts.verbose) {
-                console.error(('[ffmpeg concat] ' + ffmpeg + ' ' + concatArgs.join(' ')).replace(/[\r\n]/g, ' '));
+                logError(('[ffmpeg concat] ' + ffmpeg + ' ' + concatArgs.join(' ')).replace(/[\r\n]/g, ' '));
             }
             execFile(ffmpeg, concatArgs, (err: any) =>
                 err ? reject(new Error('concat failed: ' + err)) : resolve());
@@ -1192,7 +1192,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             '-t', totalSec.toFixed(2), '-y', silent,
         ];
         if (process.env.DEBUG_FF) {
-            console.error('FILTER_COMPLEX:\n' + [...vfArgs, ...(audioFilter ? [audioFilter] : [])].join(';\n'));
+            logError('FILTER_COMPLEX:\n' + [...vfArgs, ...(audioFilter ? [audioFilter] : [])].join(';\n'));
         }
         const sceneDurations = visuals.map((a: any) => a.durationSec ?? 4);
         try {
@@ -1252,10 +1252,10 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
                     try { fs.rmSync(silent, { force: true }); } catch { /* ignore */ }
                     silent = ovOut;
                 } else {
-                    console.warn('⚠ global-overlay pass produced no usable file; keeping base render');
+                    logWarn('⚠ global-overlay pass produced no usable file; keeping base render');
                 }
             } catch (e: any) {
-                console.warn('⚠ global-overlay pass failed (' + (e?.message ?? e) + '); keeping base render');
+                logWarn('⚠ global-overlay pass failed (' + (e?.message ?? e) + '); keeping base render');
             }
         }
     }
@@ -1323,8 +1323,8 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-shortest', '-y', out,
         ];
         if (process.env.DEBUG_FF) {
-            console.error('PASS2_INPUTS:\n' + inputs.join('\n'));
-            console.error('PASS2_FILTER_COMPLEX:\n' + fc);
+            logError('PASS2_INPUTS:\n' + inputs.join('\n'));
+            logError('PASS2_FILTER_COMPLEX:\n' + fc);
         }
         try {
             await runFfmpegSpawn(pass2);
@@ -1332,7 +1332,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             // Graceful fallback: this ffmpeg build (gyan.dev Windows) crashes
             // (ENOMEM) on volume=eval=frame+between() over real audio, so duck
             // to a flat volume instead. The render still completes.
-            console.warn(`ℹ music duck expression unsupported on this ffmpeg build; using flat volume`);
+            logWarn(`ℹ music duck expression unsupported on this ffmpeg build; using flat volume`);
             const flatFc = sfxLayer && fs.existsSync(sfxLayer)
                 ? silentHasAudio
                     ? `[1:a]volume=${full}[a];[2:a]volume=0.6[sfx];[0:a][a][sfx]amix=inputs=3:duration=longest:normalize=0[amixout];[amixout]apad[ap];[ap]alimiter=limit=0.7:asc=1:level=disabled[aout]`
@@ -1390,7 +1390,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             hasAlpha = /rgba|argb|ya8|ya16|graya|ga|:a$|a@/.test(pix);
         } catch { /* ignore */ }
         if (!hasAlpha) {
-            console.warn('  ⚠ Logo watermark skipped (logo has no alpha channel; would stamp a black box)');
+            logWarn('  ⚠ Logo watermark skipped (logo has no alpha channel; would stamp a black box)');
         } else {
         const logoOut = outDir + '/_logo_' + res.workspace.jobId + '.mp4';
         try {
@@ -1405,7 +1405,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             fs.renameSync(logoOut, out);
             logInfo(`  🎨 Logo watermark applied`);
         } catch {
-            console.warn(`  ⚠ Logo watermark skipped`);
+            logWarn(`  ⚠ Logo watermark skipped`);
             if (fs.existsSync(logoOut)) fs.rmSync(logoOut, { force: true });
         }
         }
@@ -1485,7 +1485,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
             try {
                 const chArgs = ['-i', out, '-i', metaFile, '-map_metadata', '1', '-codec', 'copy', '-y', chapterTmp];
                 if (opts.verbose) {
-                    console.error(('[ffmpeg chapters] ' + ffmpeg + ' ' + chArgs.join(' ')).replace(/[\r\n]/g, ' '));
+                    logError(('[ffmpeg chapters] ' + ffmpeg + ' ' + chArgs.join(' ')).replace(/[\r\n]/g, ' '));
                 }
                 await new Promise<void>((resolve, reject) => {
                     execFile(ffmpeg, chArgs, (err: any) => err ? reject(err) : resolve());
@@ -1494,7 +1494,7 @@ const af = `[1:a]${afBase}${fadeFilter}${volFilter}[a]`;
                 fs.renameSync(chapterTmp, out);
                 logInfo(`  📑 ${chapters.length} chapter markers embedded`);
             } catch (e) {
-                console.warn(`  ⚠ Chapter markers skipped: ${(e as Error).message}`);
+                logWarn(`  ⚠ Chapter markers skipped: ${(e as Error).message}`);
                 if (fs.existsSync(chapterTmp)) fs.rmSync(chapterTmp, { force: true });
             } finally {
                 try { fs.rmSync(metaFile, { force: true }); } catch { /* ignore */ }
@@ -1547,7 +1547,7 @@ export async function renderVariant(res: PipelineResult, preset: string, tag: st
         });
         return out;
     } catch (e) {
-        console.warn(`variant ${tag} failed: ${(e as Error).message}`);
+        logWarn(`variant ${tag} failed: ${(e as Error).message}`);
         return null;
     }
 }
