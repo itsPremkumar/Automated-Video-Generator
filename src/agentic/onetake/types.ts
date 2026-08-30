@@ -21,6 +21,9 @@ export interface OnetakeRequest {
     forceGrade?: string;
     /** Publish: if true, attempt to post when upload-post is configured */
     autoPublish?: boolean;
+    /** Path to user's own voiceover recording (in input/voiceover/).
+     *  When set, the audio is split across scenes instead of running TTS. */
+    personalAudio?: string;
     /** Extra driver LLM callback (advanced) */
     driverLLM?: import('../ai/bridge.js').DriverLlmCallback;
 }

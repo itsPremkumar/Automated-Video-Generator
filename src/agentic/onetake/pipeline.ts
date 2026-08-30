@@ -90,6 +90,7 @@ export async function runOnetake(
             backend: req.backend,
             script: styledScript,
             driverLLM: req.driverLLM,
+            personalAudio: req.personalAudio ? [req.personalAudio] : undefined,
         };
 
         logEvent('pipeline_start', { title: pipelineReq.title, orientation: req.orientation });

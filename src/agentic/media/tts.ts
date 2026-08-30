@@ -106,11 +106,67 @@ export async function generateAgenticVoiceovers(
     ws: AgenticWorkspace,
     voice?: string,
     useClonedVoiceId?: string,
+    personalAudio?: string,
 ): Promise<VoiceoverResult> {
     const root = ws.root;
     const audioDir = path.join(root, 'audio');
     fs.mkdirSync(audioDir, { recursive: true });
     const defaultVoice = voice ?? plan.voice;
+
+    // ─── Personal audio path (opt-in) ────────────────────────────────
+    // If the user supplied their own voiceover recording(s), split them
+    // across scenes and skip TTS entirely. Two modes:
+    //   - Single file: split across scenes by duration (legacy mode)
+    //   - Per-scene array: one file per scene (agentic mode)
+    if (personalAudio && personalAudio.length > 0) {
+        const { inputVoiceoverPath } = await import('../../lib/path-safety.js');
+        const { getAudioDuration, splitAudioFile } = await import('../../lib/audio-processor.js');
+        const scenes: SceneVoiceover[] = [];
+
+        if (personalAudio.length === 1) {
+            // Single file → split across all scenes
+            const personalAudioPath = inputVoiceoverPath(personalAudio[0]);
+            if (fs.existsSync(personalAudioPath)) {
+                const durations = plan.scenes.map((s) => s.durationSec);
+                const split = await splitAudioFile(personalAudioPath, durations, audioDir);
+                for (const s of plan.scenes) {
+                    const entry = split.get(s.sceneNumber);
+                    if (entry) {
+                        scenes.push({
+                            sceneIndex: s.sceneNumber - 1,
+                            audioPath: entry.path,
+                            durationSec: entry.duration,
+                            captionSegments: syllableWordTimings(s.voiceoverText, Math.round(entry.duration * 1000)),
+                        });
+                    }
+                }
+            } else {
+                console.warn(`[TTS] Personal audio not found: ${personalAudioPath} — falling back to TTS`);
+            }
+        } else {
+            // Per-scene files → use each file for its scene
+            for (let i = 0; i < plan.scenes.length && i < personalAudio.length; i++) {
+                const personalAudioPath = inputVoiceoverPath(personalAudio[i]);
+                if (fs.existsSync(personalAudioPath)) {
+                    const scene = plan.scenes[i];
+                    scenes.push({
+                        sceneIndex: scene.sceneNumber - 1,
+                        audioPath: personalAudioPath,
+                        durationSec: scene.durationSec,
+                        captionSegments: syllableWordTimings(scene.voiceoverText, Math.round(scene.durationSec * 1000)),
+                    });
+                }
+            }
+        }
+
+        if (scenes.length === plan.scenes.length) {
+            const sidecars = writeCaptionSidecars(audioDir, toCaptionScenes(plan, scenes), { baseName: 'subtitles' });
+            return { scenes, voiceoverDriven: true, sidecars, fallbackUsed: false };
+        }
+        if (scenes.length > 0) {
+            console.warn(`[TTS] Personal audio partial (${scenes.length}/${plan.scenes.length}) — falling back to TTS`);
+        }
+    }
 
     // PRIMARY: self-contained voicebox backend (in-repo kokoro/chatterbox).
     // Zero-config default; if it cannot come up we fall back below.

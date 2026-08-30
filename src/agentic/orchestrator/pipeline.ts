@@ -664,7 +664,7 @@ export async function runAgenticPipeline(
                         const { runVoiceStage } = await import('../media/voice-controller.js');
                         offlineVoiceovers = await runVoiceStage(offlinePlan, workspace, req.voice, () => {});
                     } catch {
-                        offlineVoiceovers = await generateAgenticVoiceovers(offlinePlan, workspace, req.voice);
+                        offlineVoiceovers = await generateAgenticVoiceovers(offlinePlan, workspace, req.voice, undefined, req.personalAudio?.[0]);
                     }
 
                     // Sync scene durations to the REAL voiceover lengths. The offline
@@ -807,7 +807,7 @@ export async function runAgenticPipeline(
         } catch (e: any) {
             // FALLBACK: Edge-TTS / tone path (never blocks the pipeline).
             console.warn(`⚠ speech backend voice stage failed ("${e?.message}"); falling back to Edge-TTS`);
-            voiceovers = await generateAgenticVoiceovers(plan, workspace, req.voice);
+            voiceovers = await generateAgenticVoiceovers(plan, workspace, req.voice, undefined, req.personalAudio?.[0]);
             emit({
                 stage: 'voiceover',
                 percent: 100,
