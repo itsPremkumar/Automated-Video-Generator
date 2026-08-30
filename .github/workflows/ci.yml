@@ -50,15 +50,9 @@ jobs:
           if-no-files-found: ignore
 
       - name: Coverage
-        # Produces a coverage report (lines/functions/branches) and fails CI if
-        # line coverage drops below a seeded floor (empirical-proof bar: a
-        # production change must not silently erode coverage). The floor is set
-        # just below the current ~82% so only genuine regressions turn CI red.
-        #
-        # Uses the unit + coverage flags (same as test:unit but with
-        # --experimental-test-coverage) so E2E/render tests that require
-        # ffmpeg are skipped — matching the local test:unit behavior.
-        run: MIN_LINE_COVERAGE=78 node --import tsx --experimental-test-coverage --test --experimental-test-module-mocks --test-skip-pattern=^E2E: src/**/*.test.ts remotion/**/*.test.ts | node scripts/check-coverage.mjs
+        # Produces a coverage report and fails CI if line coverage drops below floor.
+        # Excludes render.e2e.test.ts (ffmpeg-dependent). Floor is 78% (~current level).
+        run: MIN_LINE_COVERAGE=78 node --import tsx --experimental-test-coverage --test --experimental-test-module-mocks 'src/**/!(render.e2e).test.ts' remotion/**/*.test.ts | node scripts/check-coverage.mjs
 
       - name: MCP doc freshness
         # Fails CI if docs/MCP_TOOL_REFERENCE.md is out of date with the
