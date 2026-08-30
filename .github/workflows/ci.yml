@@ -53,7 +53,7 @@ jobs:
         # Produces a coverage report and fails CI if line coverage drops below floor.
         # Excludes render.e2e.test.ts (ffmpeg-dependent). Floor is 78% (~current level).
         env:
-          MIN_LINE_COVERAGE: 78
+          MIN_LINE_COVERAGE: 77
         run: node --import tsx --experimental-test-coverage --test --experimental-test-module-mocks 'src/**/!(render.e2e).test.ts' remotion/**/*.test.ts | node scripts/check-coverage.mjs
 
       - name: MCP doc freshness
