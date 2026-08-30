@@ -52,7 +52,9 @@ jobs:
       - name: Coverage
         # Produces a coverage report and fails CI if line coverage drops below floor.
         # Excludes render.e2e.test.ts (ffmpeg-dependent). Floor is 78% (~current level).
-        run: MIN_LINE_COVERAGE=78 node --import tsx --experimental-test-coverage --test --experimental-test-module-mocks 'src/**/!(render.e2e).test.ts' remotion/**/*.test.ts | node scripts/check-coverage.mjs
+        env:
+          MIN_LINE_COVERAGE: 78
+        run: node --import tsx --experimental-test-coverage --test --experimental-test-module-mocks 'src/**/!(render.e2e).test.ts' remotion/**/*.test.ts | node scripts/check-coverage.mjs
 
       - name: MCP doc freshness
         # Fails CI if docs/MCP_TOOL_REFERENCE.md is out of date with the
