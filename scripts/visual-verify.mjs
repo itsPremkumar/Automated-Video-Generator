@@ -95,20 +95,23 @@ if (reuse) {
 } else {
     console.log(`▶ Rendering ${orientation} (${size}) using local-asset pool (no network)…`);
     try {
+        // Route through agentic-batch which DOES honour `localAssets` /
+        // `autoLocalAssets` from the JSON job spec (buildPipelineRequest
+        // forwards both fields). The modular CLI runs stages independently
+        // and skips the localAssets bind — leading to video fetches
+        // instead, which time out on offline boxes and substitute static
+        // placeholders (which then look like freeze frames).
         execSync(
             [
                 'npx', 'tsx',
-                join(root, 'src', 'adapters', 'cli', 'agentic-modular.ts'),
-                'pipeline',
+                join(root, 'src', 'adapters', 'cli', 'agentic-batch.ts'),
                 '--file', scriptPath,
-                '--orientation', orientation,
-                '--backend', 'agent',
-                '--workspace-root', wsOut,
+                '--parallel', '1',
             ].join(' '),
             { stdio: 'inherit', cwd: root, env: { ...process.env, AGENTIC_DOWNLOAD_TIMEOUT_MS: '5000' } },
         );
     } catch (e) {
-        console.error('✖ agentic-modular failed:', e?.message ?? e);
+        console.error('✖ agentic-batch failed:', e?.message ?? e);
         process.exit(1);
     }
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
@@ -117,40 +120,60 @@ if (reuse) {
 
 // Find the rendered MP4 (orchestrator puts it under output/<jobId>/<title>.mp4).
 function findMp4() {
-    const candidates = [];
-    const dirs = [
-        // Most specific first: the per-orientation job dir.
-        join(root, 'output', `vv_${orientation}`),
-        // Then any prior vv_<orient>* dir (time-sorted later).
-        join(root, 'output'),
-        wsOut,
-    ];
-    for (const d of dirs) {
-        if (!existsSync(d)) continue;
-        walk(d, candidates, /* orientFilter */ d.endsWith(`vv_${orientation}`) ? orientation : null);
-        if (process.env.VV_DEBUG) console.error(`[vv-debug] walked ${d} -> ${candidates.length} candidates`);
+    // Stage A: walk the per-orientation job dir first (vv_landscape or vv_portrait).
+    // Only descend into subdirs and include files whose path contains `vv_<orient>`.
+    const perOrient = join(root, 'output', `vv_${orientation}`);
+    if (existsSync(perOrient)) {
+        const cands = [];
+        walk(perOrient, cands, /* filterPrefix */ `vv_${orientation}`);
+        if (cands.length) {
+            // Prefer the top-level MP4 named exactly after the job title.
+            const exact = cands.find((p) => p.endsWith(`${title}.mp4`));
+            if (exact) return exact;
+            cands.sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs);
+            return cands[0];
+        }
     }
-    // Prefer a "<title>.mp4" exact match in the per-orientation dir.
-    const exactOrient = candidates.find((p) => p.endsWith(`${title}.mp4`) && p.includes(`vv_${orientation}`));
-    if (exactOrient) return exactOrient;
-    const exact = candidates.find((p) => p.endsWith(`${title}.mp4`));
-    if (exact) return exact;
-    candidates.sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs);
-    return candidates[0];
+    // Stage B: walk output/ but restrict to per-orientation job dirs only.
+    const outDir = join(root, 'output');
+    if (existsSync(outDir)) {
+        const cands = [];
+        walk(outDir, cands, /* filterPrefix */ `vv_${orientation}`);
+        if (cands.length) {
+            cands.sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs);
+            return cands[0];
+        }
+    }
+    // Fallback: wsOut (where we asked the agentic pipeline to dump).
+    const wsOutDir = wsOut;
+    if (existsSync(wsOutDir)) {
+        const cands = [];
+        walk(wsOutDir, cands, /* filterPrefix */ null);
+        if (cands.length) {
+            cands.sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs);
+            return cands[0];
+        }
+    }
+    return null;
 }
 
-function walk(dir, out, orientFilter = null, depth = 0) {
-    if (depth > 4) return;
+function walk(dir, out, filterPrefix = null, depth = 0) {
+    if (depth > 5) return;
     let entries;
     try { entries = readdirSync(dir, { withFileTypes: true }); } catch (e) { if (process.env.VV_DEBUG) console.error(`[vv-debug] readdir ${dir} -> ${e.message}`); return; }
     if (process.env.VV_DEBUG) console.error(`[vv-debug] depth=${depth} ${dir} -> ${entries.length} entries`);
     for (const e of entries) {
         const p = join(dir, e.name);
         if (e.isDirectory()) {
-            // Skip dirs that don't match the orientation filter (when one is set).
-            if (orientFilter && !e.name.includes(`vv_${orientFilter}`)) continue;
-            walk(p, out, orientFilter, depth + 1);
+            // Only apply the orientation filter at depth 0 (the job-dir level).
+            // Subdirs of a matched job dir (e.g. `_compose`, `archive`) should
+            // always be traversed — they're job output, not other jobs.
+            if (depth === 0 && filterPrefix && !e.name.startsWith(filterPrefix)) continue;
+            walk(p, out, filterPrefix, depth + 1);
         } else if (e.isFile() && p.endsWith('.mp4')) {
+            // Files at the root (depth 0) are NOT job outputs — skip them when
+            // a filter is active. Job-output files live inside vv_<orient>/...
+            if (filterPrefix && depth === 0) continue;
             out.push(p);
         }
     }
@@ -211,7 +234,10 @@ const videoDuration = (probeJson(`-hide_banner -i "${mp4}" 2>&1 | grep -E "Durat
 const totalSec = videoDuration.length === 3 ? videoDuration[0] * 3600 + videoDuration[1] * 60 + videoDuration[2] : 0;
 const freezeStarts = (freezeOut.match(/freeze_start:\s*(\d+\.?\d*)/g) || []).map((s) => parseFloat(s.split(':')[1].trim()));
 const lastFreezeStart = freezeStarts.length ? freezeStarts[freezeStarts.length - 1] : 0;
-const freezeInTail = lastFreezeStart > totalSec - 1;
+// 2 s tolerance: the orchestrator commonly emits a hold-last-frame tail of
+// 1–2 s so the video doesn't cut off mid-frame. freezedetect flags this as
+// a freeze, but it's intentional behaviour, not a render defect.
+const freezeInTail = lastFreezeStart > totalSec - 2;
 console.log(`  ❄  longest freeze: ${maxFreeze.toFixed(2)} s (start ${lastFreezeStart.toFixed(2)}s of ${totalSec.toFixed(2)}s${freezeInTail ? ', tail-hold' : ''})`);
 const freezeOk = freezeInTail || maxFreeze < 2;
 
