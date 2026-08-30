@@ -11,6 +11,7 @@ import { registerOutputTools } from './adapters/mcp/register-output-tools';
 import { registerFreeVideoTools } from './adapters/mcp/register-free-video-tools';
 import { registerAgenticTools } from './adapters/mcp/register-agentic-tools';
 import { registerOperationsTools } from './adapters/mcp/register-operations-tools';
+import { registerOnetakeTools } from './adapters/mcp/register-onetake-tools';
 import { registerPrompts } from './mcp-prompts';
 import { registerResources } from './mcp-resources';
 import { ensureProjectRootCwd, projectRoot, resolveProjectPath } from './shared/runtime/paths';
@@ -31,6 +32,7 @@ registerAdminTools(server);
 registerFreeVideoTools(server);
 registerAgenticTools(server);
 registerOperationsTools(server);
+registerOnetakeTools(server);
 
 async function main() {
     const transport = new StdioServerTransport();

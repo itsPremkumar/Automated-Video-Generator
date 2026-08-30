@@ -36,6 +36,7 @@ The vision: **Automated Video Generator** aims to become the open-source standar
 | 🟢 Low | Performance benchmarks and optimization report | — | Quality |
 | 🟢 Low | macOS and Linux desktop builds | — | Platform |
 | 🟢 Low | API documentation with Swagger/OpenAPI | — | Docs |
+| ✅ Done | One-shot autonomous video generation (`npm run onetake`) | Shipped 2026-08-30 | Features |
 
 ### 🌟 v6.0 — v7.0 (6-12 months)
 
