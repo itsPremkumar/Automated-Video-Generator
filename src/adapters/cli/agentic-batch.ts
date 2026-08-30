@@ -38,6 +38,11 @@ import { buildPipelineRequest } from './cli-job.js';
 import type { AgenticCliJob } from './cli-job.js';
 import { runSingleFeature, type SingleFeatureMode } from '../../agentic/operations/single-feature.js';
 import { normalizeJobId } from '../../shared/identifiers.js';
+import {
+    isUploadConfigured,
+    uploadToAllPlatforms,
+    type UploadResult,
+} from '../../agentic/services/upload-post.js';
 
 const INPUT_DIR = path.join(process.cwd(), 'input', 'scripts');
 const SCRIPTS_FILE = path.join(INPUT_DIR, 'agentic-scripts.json');
@@ -79,6 +84,7 @@ async function main() {
     const parallel = Number(args.parallel || args.waveSize || process.env.AGENTIC_WAVE_SIZE || 3);
     const preview = args.preview === true || process.env.AGENTIC_PREVIEW === '1';
     const generate = args.generate === true;
+    const postFlag = args.post === true || process.env.UPLOAD_POST_AUTO_UPLOAD === '1';
     const topics = args.topics
         ? String(args.topics)
               .split(',')
@@ -286,6 +292,130 @@ async function main() {
                 console.log(`    🎬 ${f} (${sizeKb}KB)`);
             }
         }
+    }
+
+    // ─── --post (opt-in cross-platform upload) ────────────────────────────────
+    // Reads each successful job's *_metadata.txt (title / description / hashtags)
+    // and calls upload-post.com to post to the configured platforms. Gated by
+    // BOTH the --post flag and the UPLOAD_POST_ENABLED env var so a forgotten
+    // flag never accidentally publishes a video.
+    if (postFlag) {
+        await runPostStep(results.filter((r) => r.success), outputDir);
+    }
+}
+
+/**
+ * Walk the output dir for each successful job, find its rendered MP4 + the
+ * generated *_metadata.txt, and post it through upload-post.com.
+ *
+ * Behaviour:
+ *   - If UPLOAD_POST_ENABLED is not 'true', skip silently with a one-line
+ *     informational message — the --post flag alone is NOT enough to publish.
+ *   - For each job we read the metadata sidecar (TITLE / DESCRIPTION / HASHTAGS
+ *     written by orchestrator/render.ts) and call uploadToAllPlatforms().
+ *   - A publish-manifest.json is written per job so the caller has an audit
+ *     trail of what was uploaded where.
+ *   - Failures never throw — they are logged and recorded in the manifest so
+ *     one bad job cannot kill the post step for the rest of the batch.
+ */
+async function runPostStep(successful: { jobId: string; outputPath?: string }[], outputDir: string): Promise<void> {
+    if (!isUploadConfigured()) {
+        console.log(`\n📤 --post: UPLOAD_POST_ENABLED != 'true' or credentials missing — skipping upload step.`);
+        console.log(`   Set UPLOAD_POST_ENABLED=true, UPLOAD_POST_API_KEY=…, UPLOAD_POST_USERNAME=… in .env to enable.`);
+        return;
+    }
+    if (successful.length === 0) {
+        console.log(`\n📤 --post: no successful jobs to upload.`);
+        return;
+    }
+    console.log(`\n📤 --post: uploading ${successful.length} job(s) via upload-post.com…`);
+    for (const job of successful) {
+        try {
+            const jobOutDir = job.outputPath
+                ? path.dirname(job.outputPath)
+                : path.join(outputDir, job.jobId);
+            const mp4 = job.outputPath && fs.existsSync(job.outputPath)
+                ? job.outputPath
+                : pickFirstMp4(jobOutDir);
+            if (!mp4) {
+                console.warn(`  ⚠ ${job.jobId}: no MP4 found in ${jobOutDir}; skipping.`);
+                continue;
+            }
+            const { title, description, hashtags } = readMetadataSidecar(jobOutDir);
+            const result = await uploadToAllPlatforms(
+                mp4,
+                title || path.basename(mp4, '.mp4'),
+                description,
+                hashtags,
+            );
+            writePublishManifest(jobOutDir, mp4, result);
+            for (const r of result.results) {
+                const tag = r.success ? '✅' : '❌';
+                console.log(`    ${tag} ${job.jobId} → ${r.platform}${r.url ? ` (${r.url})` : r.error ? ` — ${r.error}` : ''}`);
+            }
+        } catch (e: any) {
+            console.warn(`  ⚠ ${job.jobId}: post failed: ${e?.message ?? e}`);
+        }
+    }
+}
+
+function pickFirstMp4(dir: string): string | null {
+    if (!fs.existsSync(dir)) return null;
+    const matches = fs.readdirSync(dir).filter((f) => f.endsWith('.mp4'));
+    return matches.length ? path.join(dir, matches[0]) : null;
+}
+
+/**
+ * Parse the *_metadata.txt sidecar produced by the orchestrator's render step.
+ * Format:
+ *   TITLE:
+ *   <text>
+ *   DESCRIPTION:
+ *   <text>
+ *   HASHTAGS:
+ *   #tag1 #tag2 …
+ */
+function readMetadataSidecar(dir: string): { title: string; description: string; hashtags: string[] } {
+    const empty = { title: '', description: '', hashtags: [] as string[] };
+    if (!fs.existsSync(dir)) return empty;
+    const sidecar = fs.readdirSync(dir).find((f) => f.endsWith('_metadata.txt'));
+    if (!sidecar) return empty;
+    const text = fs.readFileSync(path.join(dir, sidecar), 'utf8');
+    const sections: Record<string, string> = {};
+    const re = /^(TITLE|DESCRIPTION|HASHTAGS|TAGS):\s*([\s\S]*?)(?=\n[A-Z]+:|$)/gm;
+    let m: RegExpExecArray | null = null;
+    while ((m = re.exec(text)) !== null) {
+        sections[m[1]] = (m[2] || '').trim();
+    }
+    const hashtagsRaw = (sections.HASHTAGS || sections.TAGS || '').trim();
+    const hashtags = hashtagsRaw
+        .split(/\s+/)
+        .map((s) => s.replace(/^#/, '').trim())
+        .filter(Boolean);
+    return { title: sections.TITLE || '', description: sections.DESCRIPTION || '', hashtags };
+}
+
+function writePublishManifest(dir: string, mp4: string, result: { results: UploadResult[] }): void {
+    try {
+        const manifest = {
+            mp4,
+            timestamp: new Date().toISOString(),
+            platforms: result.results.map((r) => ({
+                platform: r.platform,
+                success: r.success,
+                url: r.url ?? null,
+                error: r.error ?? null,
+            })),
+            summary: {
+                total: result.results.length,
+                passed: result.results.filter((r) => r.success).length,
+                failed: result.results.filter((r) => !r.success).length,
+            },
+        };
+        const manifestPath = path.join(dir, 'publish-manifest.json');
+        fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+    } catch (e: any) {
+        console.warn(`  ⚠ failed to write publish-manifest: ${e?.message ?? e}`);
     }
 }
 

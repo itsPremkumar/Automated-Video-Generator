@@ -114,6 +114,95 @@ test('acquireAssets reuses local assets bound to a scene (no network)', async ()
     fs.rmSync(ws.root, { recursive: true, force: true });
 });
 
+// Regression / round-trip test for P1a local-asset reuse:
+// when a scene declares `scene.localAsset = 'foo.jpg'`, acquire.ts must
+// look up `input/visuals/foo.jpg` via inputAssetPath(), copy it into the
+// workspace, mark it source='local-asset', and SKIP the network ladder
+// entirely (no fetch, no download).
+//
+// We pre-stage the file under the project-root `input/visuals/` dir (which
+// is what inputAssetPath() resolves via resolveProjectPath) and assert:
+//   1) exactly one visual candidate is produced, labeled source='local-asset'
+//   2) the file at candidates[0].localPath matches the staged bytes
+//   3) the network fetcher was never called for that scene
+test('acquireAssets binds scene.localAsset to input/visuals/<name> (round-trip, no fetch)', async () => {
+    const ws = fakeWs();
+    // Stage a fake visual in the real input/visuals/ root.
+    const visualsDir = path.resolve(process.cwd(), 'input', 'visuals');
+    fs.mkdirSync(visualsDir, { recursive: true });
+    const stagedName = `avs_test_${Date.now()}_brand_cover.jpg`;
+    const stagedPath = path.join(visualsDir, stagedName);
+    const stagedBytes = Buffer.from('FAKE-JPEG-BYTES-' + Date.now());
+    fs.writeFileSync(stagedPath, stagedBytes);
+
+    try {
+        const plan = fakePlan([{ kind: 'image', text: 'uses local asset' }]);
+        // Tag the one scene with a localAsset filename.
+        plan.scenes[0].localAsset = stagedName;
+
+        let fetchCalledForScene = false;
+        const deps = {
+            fetchVisual: async () => {
+                fetchCalledForScene = true;
+                return [];
+            },
+            download: async () => {
+                throw new Error('network download should NOT be called when localAsset is bound');
+            },
+            fetchMusic: async () => [],
+        } as any;
+
+        const { candidates, workspace } = await acquireAssets(plan, deps, 1);
+        const visuals = candidates.filter((c) => c.kind !== 'music');
+        assert.equal(visuals.length, 1, 'one local-asset candidate expected');
+        const c = visuals[0];
+        assert.equal(c.source, 'local-asset', `expected source=local-asset, got "${c.source}"`);
+        assert.equal(c.url, `local://${stagedName}`, 'url should be local://<name>');
+        assert.ok(fs.existsSync(c.localPath), 'candidate file should exist on disk');
+        const onDisk = fs.readFileSync(c.localPath);
+        assert.deepEqual(onDisk, stagedBytes, 'candidate bytes must match the staged input file');
+        assert.equal(fetchCalledForScene, false, 'network fetch must be skipped when localAsset is bound');
+
+        fs.rmSync(workspace.root, { recursive: true, force: true });
+    } finally {
+        fs.rmSync(stagedPath, { force: true });
+    }
+    fs.rmSync(ws.root, { recursive: true, force: true });
+});
+
+// When scene.localAsset is set but the file is missing under input/visuals/,
+// acquire must FALL THROUGH to the stock fetch ladder (it must not silently
+// produce an empty candidate, and it must not throw).
+test('acquireAssets falls through to network when scene.localAsset file is missing', async () => {
+    const ws = fakeWs();
+    const plan = fakePlan([{ kind: 'image', text: 'no file present' }]);
+    plan.scenes[0].localAsset = `definitely_missing_${Date.now()}.jpg`;
+
+    let fetchCalled = false;
+    const deps = {
+        fetchVisual: async () => {
+            fetchCalled = true;
+            return [{ url: 'http://stock.example.com/fallback.jpg', localPath: '', source: 'pexels' }];
+        },
+        download: async (url: string, dir: string, filename: string) => {
+            const p = path.join(dir, filename);
+            fs.mkdirSync(path.dirname(p), { recursive: true });
+            fs.writeFileSync(p, 'stock-image');
+            return p;
+        },
+        fetchMusic: async () => [],
+    } as any;
+
+    const { candidates, workspace } = await acquireAssets(plan, deps, 1);
+    const visuals = candidates.filter((c) => c.kind !== 'music');
+    assert.equal(visuals.length, 1, 'one stock candidate expected after fallthrough');
+    assert.notEqual(visuals[0].source, 'local-asset', 'must NOT be labeled local-asset when file was missing');
+    assert.equal(fetchCalled, true, 'network fetch should have been called as fallback');
+
+    fs.rmSync(workspace.root, { recursive: true, force: true });
+    fs.rmSync(ws.root, { recursive: true, force: true });
+});
+
 test('generateFallbackVisual produces a real offline image fallback', () => {
     const dir = makeWorkspaceTempDir('fb-img-');
     const fb = generateFallbackVisual({ voiceoverText: 'hi', searchKeywords: ['a'] }, 'image', dir, 0);
