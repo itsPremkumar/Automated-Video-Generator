@@ -14,7 +14,7 @@ import dotenv from 'dotenv';
 // Load .env from project root before anything else
 dotenv.config();
 
-import { autoRunVideo, AutoRunEvent } from '../src/agentic/autopilot.js';
+import { autoRunVideo, AutoRunEvent } from '../src/agentic/management/autopilot.js';
 import { loadConfig, AgenticConfig } from '../src/agentic/config.js';
 
 function arg(name: string, def: string): string {
