@@ -198,6 +198,50 @@ export function dedupeAcrossScenes(rankedByScene: ScoredCandidate[][]): (ScoredC
     });
 }
 
+/**
+ * Normalized identity key for cross-scene visual dedupe: same photo served
+ * under different crops/URLs must still collide. Uses the URL without query
+ * params (stock CDNs sign URLs per request) backed by the local filename.
+ */
+export function visualDedupeKey(url: string | null | undefined, localPath: string | null | undefined): string {
+    const u = String(url ?? '')
+        .toLowerCase()
+        .split('?')[0]
+        .split('#')[0];
+    const base = String(localPath ?? '')
+        .toLowerCase()
+        .split(/[/\\]/)
+        .pop();
+    // Strip downloader-added prefixes (scene_01_, replaced_<ts>_, vfx_<i>_)
+    // so the same remote file downloaded twice still collides.
+    const stem = (base ?? '')
+        .replace(/\.(jpg|jpeg|png|webp|mp4|mov|webm|m4v)$/, '')
+        .replace(/^(scene_\d+_|replaced_\d+_|vfx_\d+_|shake_\d+_?)/, '');
+    return `${u}::${stem}`;
+}
+
+/**
+ * Pick one asset id per scene so no two scenes share the same visual.
+ * `rankedIdsByScene` must already be ordered best-first per scene.
+ * Scenes with no unused candidate keep their best pick (never blocks).
+ */
+export function pickDistinctPerScene(
+    rankedIdsByScene: { sceneIndex: number; ids: string[] }[],
+    keyOf: (id: string) => string,
+): Map<number, string> {
+    const used = new Set<string>();
+    const picks = new Map<number, string>();
+    for (const { sceneIndex, ids } of rankedIdsByScene) {
+        const fresh = ids.find((id) => !used.has(keyOf(id)));
+        const pick = fresh ?? ids[0] ?? null;
+        if (pick) {
+            picks.set(sceneIndex, pick);
+            used.add(keyOf(pick));
+        }
+    }
+    return picks;
+}
+
 /** Face-safe center crop filter for portrait/landscape (rule-of-thirds bias). */
 export function faceSafeCropFilter(srcW: number, srcH: number, dstW: number, dstH: number): string {
     const targetAr = dstW / dstH;

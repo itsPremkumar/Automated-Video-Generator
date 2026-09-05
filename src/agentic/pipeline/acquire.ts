@@ -488,7 +488,36 @@ export async function acquireAssets(plan: Plan, deps: AcquireDeps, candidatesPer
     }
     const downloadTasks: (() => Promise<void>)[] = [];
 
-    for (const { i, kind: rawKind, dir, scene, fetched } of results) {
+    // IMAGE DIVERSITY (acquire-time): stock providers often return the same
+    // top hit for every scene's query (observed: one Wikimedia file approved
+    // for all 3 scenes). Sink already-claimed http(s) URLs to the back of
+    // each scene's fetch list so scenes download distinct photos when any
+    // alternative exists. Placeholders / local files (non-http) are untouched.
+    // Deterministic: scenes processed in index order regardless of fetch
+    // completion order. Never drops a scene to zero options — worst case the
+    // order is unchanged (previous behavior).
+    const claimedVisualUrls = new Set<string>();
+    const normClaimUrl = (u: string): string | null => {
+        if (!/^https?:\/\//i.test(u ?? '')) return null;
+        return u.toLowerCase().split('?')[0].split('#')[0];
+    };
+    const orderedResults = [...results].sort((a, b) => a.i - b.i);
+    for (const r of orderedResults) {
+        const unused: typeof r.fetched = [];
+        const used: typeof r.fetched = [];
+        for (const f of r.fetched) {
+            const k = normClaimUrl(f.url);
+            if (k && claimedVisualUrls.has(k)) used.push(f);
+            else unused.push(f);
+        }
+        r.fetched = [...unused, ...used];
+        for (const f of r.fetched.slice(0, Math.max(1, Math.min(candidatesPerAsset, r.fetched.length)))) {
+            const k = normClaimUrl(f.url);
+            if (k) claimedVisualUrls.add(k);
+        }
+    }
+
+    for (const { i, kind: rawKind, dir, scene, fetched } of orderedResults) {
         // Coerce 'gen' → 'image' for all registration/fallback paths below.
         const kind = rawKind === 'gen' ? 'image' : rawKind === 'video-gen' ? 'video' : rawKind === 'gen-local' ? 'image' : rawKind === 'video-gen-local' ? 'video' : rawKind;
         // No stock candidates for this scene → generate an offline fallback

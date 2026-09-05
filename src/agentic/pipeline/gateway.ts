@@ -18,6 +18,7 @@ import { acquireAssets, AcquireDeps, FetchedVisual } from './acquire.js';
 import { verifyAllForOrientation, VerifyDeps, VERIFY_PASS_CONFIDENCE } from './verify.js';
 import { AssetCandidate, AssetDecision, Plan, RenderManifest, AssetKind } from '../types.js';
 import { computeApprovedHashes, scoreCandidate } from '../ai/agent.js';
+import { relevanceScore, visualDedupeKey, pickDistinctPerScene } from '../timeline/visual-intel.js';
 
 export type Decider = (
     candidate: AssetCandidate,
@@ -137,7 +138,7 @@ export async function runGateway(
         if (!v) continue;
         try {
             const s = scoreCandidate(c, v as any, { alreadyApprovedHashes: approvedHashesFinal });
-            scores.set(id, s.totalScore);
+            scores.set(id, scoreWithRelevance(s.totalScore, plan.scenes[c.sceneIndex]?.searchKeywords ?? [], c.keywords ?? []));
         } catch { /* unscorable candidate keeps acquisition order */ }
     }
 
@@ -145,6 +146,19 @@ export async function runGateway(
     if (manifest) writeJson(ws, 'render-manifest.json', manifest);
 
     return { workspace: ws, decisions, manifest: manifest! };
+}
+
+/**
+ * IMAGE DIVERSITY (additive): nudge signal scores toward on-topic visuals so
+ * a generic high-res photo can't outrank a relevant one. Bounded to +3 so
+ * confidence/resolution/size still dominate. Pure — safe to unit test.
+ */
+export function scoreWithRelevance(base: number, sceneKeywords: string[], candKeywords: string[]): number {
+    let bonus = 0;
+    try {
+        bonus = Math.max(0, Math.min(10, relevanceScore(sceneKeywords, candKeywords))) * 0.3;
+    } catch { /* keywords missing — no bonus */ }
+    return base + bonus;
 }
 
 function mkDecision(
@@ -191,20 +205,30 @@ export function buildRenderManifest(
         }
     }
 
-    const assets: RenderManifest['assets'] = [];
+    // IMAGE DIVERSITY: rank each scene best-first, then pick distinct visuals
+    // across scenes (same stock photo must not repeat). Falls back to the
+    // best pick when no unused candidate exists — never blocks a render.
+    const idOf = (c: AssetCandidate): string => `${c.kind}_s${c.sceneIndex}_c${c.candidateIndex}`;
+    const rankedByScene: { sceneIndex: number; ids: string[] }[] = [];
+    const candById = new Map<string, AssetCandidate>();
     for (let i = 0; i < plan.scenes.length; i++) {
         const list = approvedByScene.get(i);
         if (!list || list.length === 0) return null; // cannot render: missing scene visual
-        // pick the best-scoring candidate when scores are available; otherwise
-        // keep historical behavior (acquire stores best-first).
-        const pick =
+        const ranked =
             scores && scores.size > 0
-                ? [...list].sort(
-                      (a, b) =>
-                          (scores.get(`${b.kind}_s${b.sceneIndex}_c${b.candidateIndex}`) ?? -Infinity) -
-                          (scores.get(`${a.kind}_s${a.sceneIndex}_c${a.candidateIndex}`) ?? -Infinity),
-                  )[0]
-                : list[0];
+                ? [...list].sort((a, b) => (scores.get(idOf(b)) ?? -Infinity) - (scores.get(idOf(a)) ?? -Infinity))
+                : [...list]; // historical behavior (acquire stores best-first)
+        for (const c of ranked) candById.set(idOf(c), c);
+        rankedByScene.push({ sceneIndex: i, ids: ranked.map(idOf) });
+    }
+    const distinct = pickDistinctPerScene(rankedByScene, (id) => {
+        const c = candById.get(id);
+        return visualDedupeKey(c?.url, c?.localPath);
+    });
+
+    const assets: RenderManifest['assets'] = [];
+    for (let i = 0; i < plan.scenes.length; i++) {
+        const pick = candById.get(distinct.get(i) ?? '') ?? approvedByScene.get(i)![0];
         assets.push({
             kind: pick.kind,
             sceneIndex: i,
