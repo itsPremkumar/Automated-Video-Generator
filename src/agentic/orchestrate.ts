@@ -28,5 +28,14 @@ export {
 export type { PipelineRequest, PipelineResult, PipelineProgress } from './orchestrator/types.js';
 export { runAgenticPipeline } from './orchestrator/pipeline.js';
 export { renderAgenticSlideshow, buildDuckExpression } from './orchestrator/render.js';
+export * from './timeline/timeline.js';
+export * from './timeline/director.js';
+export * from './timeline/visual-intel.js';
+export * from './timeline/audio-master.js';
+export * from './timeline/motion-spec.js';
+export * from './timeline/critique-vision.js';
+export * from './timeline/restitch-partial.js';
+export * from './timeline/proxy.js';
+export * from './timeline/edit-ops.js';
 export { makeContactSheet, writeDecisionsReport } from './orchestrator/artifacts.js';
 export { prepareRemotionAssets, renderAgenticWithRemotion } from './orchestrator/remotion.js';

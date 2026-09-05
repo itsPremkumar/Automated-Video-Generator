@@ -582,6 +582,20 @@ export async function runAgenticPipeline(
         });
     emit({ stage: 'acquire', percent: 100, message: `Acquired ${candidates.length} candidates` });
     writeJson(workspace, 'plan.json', plan);
+    // ADVANCED (timeline IR): persist timeline.json + director.json best-effort.
+    // Additive observability — never blocks pipeline on failure.
+    try {
+        const { buildTimelineArtifacts, persistTimelineArtifacts } = await import('../timeline/integrate.js');
+        const artifacts = buildTimelineArtifacts(plan as never, null, {
+            jCutSec: (req as { jCutSec?: number }).jCutSec ?? 0.4,
+            crossfadeSec: (req as { crossfadeSec?: number }).crossfadeSec ?? 0.5,
+        });
+        if (artifacts && (workspace as { root?: string }).root) {
+            persistTimelineArtifacts((workspace as { root: string }).root, artifacts);
+        }
+    } catch {
+        /* timeline persistence is observability-only */
+    }
     const jobRec = createJob(jobId, workspace, { topic: req.topic, title: req.title, backend, state: 'processing' });
 
     const vision = cfg.visionVerify

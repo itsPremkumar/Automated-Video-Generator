@@ -219,6 +219,30 @@ export async function critiqueVideo(
         }
     }
 
+    // ADVANCED (director vision): deterministic pacing/diversity/audio critique.
+    // Additive — appends to signal suggestions, never removes them.
+    try {
+        const { critiqueVision } = await import('../timeline/critique-vision.js');
+        let planScenes: { durationSec: number; voiceoverText?: string }[] | null = null;
+        if (opts.planPath && fs.existsSync(opts.planPath)) {
+            try {
+                const pj = JSON.parse(fs.readFileSync(opts.planPath, 'utf-8'));
+                if (Array.isArray(pj?.scenes)) planScenes = pj.scenes;
+            } catch {
+                /* ignore malformed plan */
+            }
+        }
+        if (planScenes) {
+            const extra = critiqueVision({
+                plan: { scenes: planScenes },
+                signals: { blackCount, freezeCount, peakDb: audio.peakDb, width: dim.width, height: dim.height },
+            });
+            for (const s of extra) suggestions.push(s as unknown as CritiqueSuggestion);
+        }
+    } catch {
+        /* vision critique is additive-only */
+    }
+
     const ok = suggestions.filter((s) => s.severity === 'blocker' || s.severity === 'major').length === 0;
     return {
         path: mp4Path,
