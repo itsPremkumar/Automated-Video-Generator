@@ -45,7 +45,7 @@ interface GenProvider {
 }
 
 const PRESETS: Record<string, { baseUrl: string; model: string; envKey: string }> = {
-    openai: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-image-1', envKey: 'OPENAI_API_KEY' },
+    openai: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-image-2.5-sunburst', envKey: 'OPENAI_API_KEY' },
     dashscope: { baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'wanx2.1-t2i-turbo', envKey: 'DASHSCOPE_API_KEY' },
 };
 
